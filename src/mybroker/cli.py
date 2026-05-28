@@ -6,6 +6,9 @@ from dataclasses import asdict
 
 from mybroker.data import load_price_csv
 from mybroker.policy import classify_action
+from mybroker.registry import default_registry
+from mybroker.reports import report_to_dict, validate_report_file
+from mybroker.runner import run_research_task
 from mybroker.signals import momentum_signals
 
 
@@ -18,6 +21,19 @@ def main(argv: list[str] | None = None) -> int:
     signals_parser.add_argument("--short-window", type=int, default=3)
     signals_parser.add_argument("--long-window", type=int, default=5)
 
+    research_parser = subcommands.add_parser("research", help="Run a registered local research task and write a report artifact.")
+    research_parser.add_argument("--source", help="Local price CSV path. Defaults to the bundled sample data.")
+    research_parser.add_argument("--task", default="momentum_research_v1")
+    research_parser.add_argument("--short-window", type=int)
+    research_parser.add_argument("--long-window", type=int)
+    research_parser.add_argument("--run-id", default="local-momentum-research")
+    research_parser.add_argument("--output", default="reports/runs/local-momentum-research.json")
+
+    subcommands.add_parser("tasks", help="List registered research tasks.")
+
+    validate_parser = subcommands.add_parser("validate-report", help="Validate a research report artifact.")
+    validate_parser.add_argument("report_path")
+
     policy_parser = subcommands.add_parser("policy", help="Classify a proposed project action.")
     policy_parser.add_argument("--kind", required=True)
 
@@ -26,6 +42,28 @@ def main(argv: list[str] | None = None) -> int:
         bars = load_price_csv(args.csv_path)
         signals = momentum_signals(bars, short_window=args.short_window, long_window=args.long_window)
         print(json.dumps([asdict(signal) for signal in signals], indent=2, default=str))
+        return 0
+    if args.command == "research":
+        report = run_research_task(
+            source=args.source,
+            task_id=args.task,
+            short_window=args.short_window,
+            long_window=args.long_window,
+            run_id=args.run_id,
+            output_path=args.output,
+        )
+        print(json.dumps(report_to_dict(report), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "tasks":
+        tasks = [asdict(task) for task in default_registry().list_tasks()]
+        print(json.dumps(tasks, indent=2))
+        return 0
+    if args.command == "validate-report":
+        errors = validate_report_file(args.report_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
     if args.command == "policy":
         decision = classify_action(args.kind)
