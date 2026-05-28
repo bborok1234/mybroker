@@ -2,17 +2,22 @@
 
 ```text
 local CSV/data source
-  -> mybroker.data
+  -> mybroker.data adapter
+  -> mybroker.registry
   -> mybroker.signals
   -> mybroker.policy
+  -> mybroker.reports
   -> CLI / future app surfaces
 ```
 
 ## Boundaries
 
-- `src/mybroker/data.py`: parse and validate local observations.
+- `src/mybroker/data.py`: parse and validate local observations through CSV/sample adapters.
+- `src/mybroker/registry.py`: expose named research tasks and execution defaults.
 - `src/mybroker/signals.py`: deterministic signal generation.
 - `src/mybroker/policy.py`: classify risky action categories.
+- `src/mybroker/runner.py`: compose adapter, task, signal generation, policy, and report output.
+- `src/mybroker/reports.py`: build and validate `research_report.v1` artifacts.
 - `src/mybroker/cli.py`: local command interface.
 - `.flyhigh/`: project memory, domain skills, dashboard state.
 - `reports/runs/`: task-level evidence.
