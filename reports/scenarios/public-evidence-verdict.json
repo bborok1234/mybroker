@@ -1,7 +1,7 @@
 {
   "schema_version": "market_verdict.v1",
   "run_id": "public-evidence-sim",
-  "generated_at": "2026-05-29T06:57:39.144211+00:00",
+  "generated_at": "2026-05-29T08:29:04.761542+00:00",
   "primary_next_step": {
     "action_type": "learn",
     "title": "먼저 시장 흐름을 학습",

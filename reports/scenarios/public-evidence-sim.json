@@ -1,7 +1,7 @@
 {
   "schema_version": "scenario_report.v1",
   "run_id": "public-evidence-sim",
-  "generated_at": "2026-05-29T06:57:39.144211+00:00",
+  "generated_at": "2026-05-29T08:29:04.761542+00:00",
   "product_mode": "beginner_market_understanding_simulation",
   "seed_sources": [
     {

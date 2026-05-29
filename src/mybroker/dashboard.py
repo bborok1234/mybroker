@@ -226,13 +226,13 @@ def render_dashboard_html(rollup: dict[str, Any]) -> str:
         if comparison.get("available")
         else esc(comparison.get("reason", "No comparison available."))
     )
-    scenario_section = render_scenario_section(latest_scenario)
+    scenario_section = render_scenario_ops_section(latest_scenario)
     return f"""<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MyBroker 시장 시뮬레이션 대시보드</title>
+<title>MyBroker 산출물 운영 대시보드</title>
 <style>
 :root {{ --bg:#f4f1ea; --panel:#fffdf8; --ink:#19212b; --muted:#69717d; --line:#ded6c7; --ok:#0f7a4c; --bad:#a23a3a; --accent:#22577a; --warm:#d48c45; --soft:#e8f1ef; }}
 * {{ box-sizing:border-box; }}
@@ -283,8 +283,8 @@ ul {{ margin:8px 0 0 18px; padding:0; color:var(--muted); }}
 <main>
 <header>
 <div>
-<p class="eyebrow">초보자용 시장 이해 시뮬레이션 OS</p>
-<h1>MyBroker 시장 이해 대시보드</h1>
+<p class="eyebrow">Artifact operations surface</p>
+<h1>MyBroker 산출물 운영 대시보드</h1>
 <p>{esc(rollup.get('disclaimer', ''))}</p>
 </div>
 <p>Generated {esc(rollup.get('generated_at', ''))}</p>
@@ -336,15 +336,14 @@ ul {{ margin:8px 0 0 18px; padding:0; color:var(--muted); }}
 """
 
 
-def render_scenario_section(scenario: dict[str, Any]) -> str:
+def render_scenario_ops_section(scenario: dict[str, Any]) -> str:
     if not scenario:
         return """
 <section class="panel">
-<h2>시장 시뮬레이션</h2>
-<p>아직 scenario_report.v1 artifact가 없습니다. <code>mybroker scenario</code>를 실행하면 시장 지도와 시나리오가 여기에 표시됩니다.</p>
+<h2>Scenario artifact 상태</h2>
+<p>아직 scenario artifact가 없습니다. <code>mybroker scenario</code>를 실행하면 검증 가능한 산출물 상태가 여기에 표시됩니다.</p>
 </section>
 """
-    market_map = scenario.get("market_map", {})
     catalog = scenario.get("evidence_catalog", {})
     profile = scenario.get("profile_context") or {}
     boundary = scenario.get("output_boundary", "generic_research_only")
@@ -365,46 +364,6 @@ def render_scenario_section(scenario: dict[str, Any]) -> str:
         "local_seed": "로컬 seed",
         "unknown": "미확인",
     }.get(freshness, freshness)
-    entities = market_map.get("entities", [])
-    entity_cards = "".join(
-        "<article class='node'>"
-        f"<small>{esc(entity.get('kind', ''))}</small>"
-        f"<strong>{esc(entity.get('name', ''))}</strong>"
-        f"<p>{esc(entity.get('why_it_matters', ''))}</p>"
-        f"<div class='chiprow'>{''.join(chip(item) for item in entity.get('evidence', []))}</div>"
-        "</article>"
-        for entity in entities[:6]
-    )
-    scenario_lanes = "".join(
-        "<article class='lane'>"
-        f"<small>{esc(path.get('probability_label', ''))}</small>"
-        f"<h3>{esc(path.get('name', ''))}</h3>"
-        f"<p>{esc(path.get('beginner_explanation', path.get('summary', '')))}</p>"
-        f"<div class='chiprow'>{''.join(chip(item) for item in path.get('watch_items', []))}</div>"
-        "</article>"
-        for path in scenario.get("scenarios", [])[:3]
-    )
-    personas = "".join(
-        "<article class='persona'>"
-        f"<strong>{esc(view.get('name', ''))}</strong>"
-        f"<p>{esc(view.get('summary', ''))}</p>"
-        f"<small>confidence {esc(view.get('confidence', ''))}</small>"
-        "</article>"
-        for view in scenario.get("persona_views", [])[:4]
-    )
-    candidates = "".join(
-        "<article class='candidate'>"
-        f"<span class='pill valid'>{esc(candidate.get('action_type', ''))}</span>"
-        f"<h3>{esc(candidate.get('title', ''))}</h3>"
-        f"<p>{esc(candidate.get('rationale', ''))}</p>"
-        f"<small>{esc(candidate.get('suitability', ''))}</small>"
-        "</article>"
-        for candidate in scenario.get("action_candidates", [])[:4]
-    )
-    explanations = "".join(
-        f"<li><strong>{esc(item.get('term', ''))}</strong>: {esc(item.get('explanation', ''))}</li>"
-        for item in scenario.get("beginner_explanations", [])[:6]
-    )
     topics = catalog.get("topic_counts", {})
     topic_chips = "".join(chip(f"{topic}: {count}") for topic, count in sorted(topics.items()))
     source_coverage = catalog.get("source_coverage", [])
@@ -425,54 +384,24 @@ def render_scenario_section(scenario: dict[str, Any]) -> str:
         if profile
         else "프로필 없음: generic research-only 후보만 표시"
     )
-    status = "valid" if scenario.get("validation", {}).get("valid") else "invalid"
     return f"""
 <section class="panel">
 <div class="metrics">
-{metric('근거 수', catalog.get('source_count', 0), catalog.get('coverage_status', 'unknown'))}
-{metric('시뮬레이션 판정', meaningfulness_label, '무료/공개 자료 기반 가능성')}
-{metric('자료 신선도', freshness_label, '샘플 캐시는 재현 가능하지만 실시간은 아님')}
-{metric('출력 경계', boundary_label, '맥락을 반영해도 리서치 전용')}
-{metric('초보자 프로필', profile.get('profile_id', 'none'), profile_summary)}
+{metric('Scenario artifact', scenario.get('run_id', 'unknown'), scenario.get('path', ''))}
+{metric('Validation', '통과' if scenario.get('validation', {}).get('valid') else '확인 필요', ', '.join(scenario.get('validation', {}).get('errors', [])) or 'no errors')}
+{metric('Evidence coverage', catalog.get('source_count', 0), catalog.get('coverage_status', 'unknown'))}
+{metric('Feasibility', meaningfulness_label, 'ops-only source sufficiency check')}
+{metric('Freshness', freshness_label, 'live status is a separate gate')}
+{metric('Output boundary', boundary_label, 'research/simulation only')}
+{metric('Profile context', profile.get('profile_id', 'none'), profile_summary)}
 </div>
 <div class="chiprow">{topic_chips}</div>
 </section>
 <section class="panel">
-<h2>공개 자료 커버리지</h2>
-<p>각 시나리오에 영향을 준 무료/공개 source입니다. sample_cache는 재현 가능한 로컬 검증 단계이며, live refresh와 라이선스 검토는 별도 게이트입니다.</p>
+<h2>Public evidence artifact coverage</h2>
+<p>이 영역은 운영/검증용입니다. source 준비도, freshness, 산출물 경로만 보여주며 사용자용 시장 지도나 행동 후보는 렌더링하지 않습니다.</p>
 <div class="source-grid">{source_cards}</div>
-<h3>부족한 맥락</h3>
+<h3>Missing context</h3>
 <div class="chiprow">{''.join(chip(item) for item in catalog.get('missing_context', [])) or chip('none')}</div>
-</section>
-<section class="panel">
-<div class="sim-grid">
-<div>
-<p class="eyebrow">MiroFish 참고 초보자 보기</p>
-<h2>시장 지도</h2>
-<p>{esc(market_map.get('beginner_summary', ''))}</p>
-<div class="map">{entity_cards}</div>
-</div>
-<aside>
-<h2>다음 행동 후보</h2>
-{candidates}
-</aside>
-</div>
-</section>
-<section class="panel">
-<div class="split">
-<article>
-<h2>시나리오 분기</h2>
-<div class="scenario-lanes">{scenario_lanes}</div>
-</article>
-<article>
-<h2>에이전트 관점</h2>
-{personas}
-</article>
-</div>
-</section>
-<section class="panel">
-<h2>초보자 해설과 검증</h2>
-<ul>{explanations}</ul>
-<p><span class="pill {status}">{esc(status)}</span> {esc(scenario.get('path', ''))}</p>
 </section>
 """
