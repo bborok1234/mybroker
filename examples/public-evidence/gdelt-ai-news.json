@@ -1,0 +1,18 @@
+{
+  "articles": [
+    {
+      "title": "AI infrastructure demand keeps data center and chip supply chains in focus",
+      "published_at": "2026-05-28T12:00:00Z",
+      "url": "https://www.gdeltproject.org/",
+      "summary": "Global news coverage continues to connect artificial intelligence spending with data center capacity, GPU supply, cloud infrastructure, electricity demand, and semiconductor supply chain constraints.",
+      "entities": ["AI infrastructure", "data centers", "semiconductors", "cloud"]
+    },
+    {
+      "title": "Higher yields pressure growth themes despite resilient demand",
+      "published_at": "2026-05-28T13:00:00Z",
+      "url": "https://www.gdeltproject.org/",
+      "summary": "Market narratives point to Treasury yield volatility and Federal Reserve rate expectations as a source of pressure for long-duration growth themes, even where consumer and enterprise demand remains resilient.",
+      "entities": ["Treasury yields", "Federal Reserve", "growth stocks", "consumer demand"]
+    }
+  ]
+}

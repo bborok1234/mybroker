@@ -15,6 +15,7 @@ from mybroker.scenario import (
     write_scenario_report,
     write_verdict,
 )
+from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
 
 
 class ScenarioTests(unittest.TestCase):
@@ -58,6 +59,24 @@ class ScenarioTests(unittest.TestCase):
 
         self.assertEqual(scenario_errors, [])
         self.assertEqual(verdict_errors, [])
+
+    def test_market_simulation_uses_public_evidence_catalog(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            catalog_path = write_public_evidence_catalog(
+                build_public_evidence_catalog(),
+                Path(directory) / "public-evidence.json",
+            )
+
+            report = run_market_simulation(
+                seed_sources=["examples/seeds"],
+                evidence_catalog_path=catalog_path,
+                run_id="public-evidence-scenario",
+            )
+
+        self.assertEqual(report.evidence_catalog.meaningfulness_status, "meaningful")
+        self.assertEqual(report.evidence_catalog.freshness_status, "sample_cache")
+        self.assertGreaterEqual(len(report.evidence_catalog.source_coverage), 3)
+        self.assertTrue(any(seed.source.startswith("public:GDELT") for seed in report.seed_sources))
 
     def test_validator_rejects_missing_market_map(self) -> None:
         errors = validate_scenario_payload({"schema_version": "scenario_report.v1"})

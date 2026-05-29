@@ -1,0 +1,487 @@
+{
+  "schema_version": "public_evidence_catalog.v1",
+  "generated_at": "2026-05-29T06:57:30.862711+00:00",
+  "mode": "sample_cache",
+  "source_status": [
+    {
+      "source_id": "gdelt-sample",
+      "source_name": "GDELT",
+      "adapter_id": "gdelt_cached_v1",
+      "item_count": "2",
+      "freshness_status": "sample_cache"
+    },
+    {
+      "source_id": "stooq-sample",
+      "source_name": "Stooq",
+      "adapter_id": "stooq_cached_v1",
+      "item_count": "1",
+      "freshness_status": "sample_cache"
+    },
+    {
+      "source_id": "sec-sample",
+      "source_name": "SEC EDGAR",
+      "adapter_id": "sec_cached_v1",
+      "item_count": "2",
+      "freshness_status": "sample_cache"
+    }
+  ],
+  "source_matrix": [
+    {
+      "source_name": "SEC EDGAR",
+      "access_method": "HTTPS JSON endpoints: submissions and companyfacts",
+      "auth_requirement": "No API key; descriptive User-Agent required for live use",
+      "constraints": "US-listed company coverage; filing latency; structured facts vary by issuer",
+      "coverage": "Company filings, company facts, filing metadata",
+      "freshness": "Near filing publication time",
+      "data_quality_risk": "Narrative text and XBRL tags need issuer-aware interpretation",
+      "license_usage_concern": "Public SEC data; comply with fair access and User-Agent policy",
+      "mybroker_use_case": "Company-specific evidence, event catalysts, risk language, fundamentals context",
+      "implementation_priority": "high"
+    },
+    {
+      "source_name": "FRED",
+      "access_method": "HTTPS API",
+      "auth_requirement": "Free API key",
+      "constraints": "Macro series selection and release calendars must be curated",
+      "coverage": "Rates, inflation, labor, GDP, credit, macro indicators",
+      "freshness": "Official release dependent",
+      "data_quality_risk": "Series revisions and units can be misunderstood by beginners",
+      "license_usage_concern": "Check FRED terms and attribution requirements",
+      "mybroker_use_case": "Macro regime context and scenario branch triggers",
+      "implementation_priority": "medium"
+    },
+    {
+      "source_name": "GDELT",
+      "access_method": "DOC 2.0 API / GKG / cached JSON",
+      "auth_requirement": "No API key",
+      "constraints": "High noise; query design and deduping matter",
+      "coverage": "Global news, events, themes, locations, tone",
+      "freshness": "Near real time",
+      "data_quality_risk": "News duplication, source bias, and weak relevance can distort narratives",
+      "license_usage_concern": "Respect GDELT use guidance and source publisher rights",
+      "mybroker_use_case": "Narrative/event graph and persona disagreement evidence",
+      "implementation_priority": "high"
+    },
+    {
+      "source_name": "Stooq",
+      "access_method": "CSV download / cached CSV",
+      "auth_requirement": "No API key",
+      "constraints": "Coverage and symbols need validation; not an official exchange feed",
+      "coverage": "Historical OHLCV market data",
+      "freshness": "Market-data dependent; often delayed/end-of-day",
+      "data_quality_risk": "Corporate actions, symbol mapping, and stale downloads must be checked",
+      "license_usage_concern": "Confirm use terms before redistribution",
+      "mybroker_use_case": "Price context, trend/risk evidence, scenario validation hints",
+      "implementation_priority": "high"
+    },
+    {
+      "source_name": "Alpha Vantage free tier",
+      "access_method": "HTTPS API",
+      "auth_requirement": "Free API key",
+      "constraints": "Rate-limited free tier; terms and output size restrictions",
+      "coverage": "Market prices, indicators, some economic/company data",
+      "freshness": "Endpoint dependent",
+      "data_quality_risk": "Free-tier throttling and adjusted/unadjusted data choices",
+      "license_usage_concern": "Follow Alpha Vantage terms and attribution requirements",
+      "mybroker_use_case": "Fallback market data and technical indicators",
+      "implementation_priority": "low"
+    },
+    {
+      "source_name": "Nasdaq Data Link",
+      "access_method": "HTTPS API / dataset downloads",
+      "auth_requirement": "Free account/API key for many flows",
+      "constraints": "Free and premium datasets mixed; dataset-specific terms",
+      "coverage": "Curated financial, economic, and alternative datasets",
+      "freshness": "Dataset dependent",
+      "data_quality_risk": "Dataset availability and licensing can change",
+      "license_usage_concern": "Dataset-specific license controls redistribution",
+      "mybroker_use_case": "Optional curated datasets after license review",
+      "implementation_priority": "low"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "gdelt-1",
+      "source_name": "GDELT",
+      "evidence_type": "news_narrative",
+      "title": "AI infrastructure demand keeps data center and chip supply chains in focus",
+      "published_at": "2026-05-28T12:00:00Z",
+      "url": "https://www.gdeltproject.org/",
+      "text": "AI infrastructure demand keeps data center and chip supply chains in focus Global news coverage continues to connect artificial intelligence spending with data center capacity, GPU supply, cloud infrastructure, electricity demand, and semiconductor supply chain constraints.",
+      "topics": [
+        "ai_infrastructure",
+        "semiconductors",
+        "consumer"
+      ],
+      "entities": [
+        "AI infrastructure",
+        "data centers",
+        "semiconductors",
+        "cloud"
+      ],
+      "freshness_status": "sample_cache"
+    },
+    {
+      "item_id": "gdelt-2",
+      "source_name": "GDELT",
+      "evidence_type": "news_narrative",
+      "title": "Higher yields pressure growth themes despite resilient demand",
+      "published_at": "2026-05-28T13:00:00Z",
+      "url": "https://www.gdeltproject.org/",
+      "text": "Higher yields pressure growth themes despite resilient demand Market narratives point to Treasury yield volatility and Federal Reserve rate expectations as a source of pressure for long-duration growth themes, even where consumer and enterprise demand remains resilient.",
+      "topics": [
+        "ai_infrastructure",
+        "rates",
+        "consumer",
+        "risk"
+      ],
+      "entities": [
+        "Treasury yields",
+        "Federal Reserve",
+        "growth stocks",
+        "consumer demand"
+      ],
+      "freshness_status": "sample_cache"
+    },
+    {
+      "item_id": "stooq-spy-trend",
+      "source_name": "Stooq",
+      "evidence_type": "market_price_context",
+      "title": "SPY broad market trend sample",
+      "published_at": "2026-05-28",
+      "url": "https://stooq.com/",
+      "text": "SPY market proxy moved 상승 1.46% from 2026-05-20 to 2026-05-28. This price evidence helps test whether news narratives align with broad market risk appetite, rates pressure, and volatility.",
+      "topics": [
+        "rates",
+        "risk"
+      ],
+      "entities": [
+        "SPY",
+        "broad market"
+      ],
+      "freshness_status": "sample_cache"
+    },
+    {
+      "item_id": "sec-1",
+      "source_name": "SEC EDGAR",
+      "evidence_type": "company_filing",
+      "title": "Apple Inc. 10-Q",
+      "published_at": "2026-05-01",
+      "url": "https://www.sec.gov/edgar/browse/?CIK=320193",
+      "text": "Apple Inc. filed 10-Q on 2026-05-01. Business context: Quarterly filing discusses consumer demand, services revenue, supply chain risk, AI features, and macroeconomic uncertainty.. This public filing evidence can anchor company-specific risk, consumer demand, supply chain, and AI infrastructure narratives.",
+      "topics": [
+        "ai_infrastructure",
+        "semiconductors",
+        "consumer",
+        "risk"
+      ],
+      "entities": [
+        "Apple Inc.",
+        "10-Q"
+      ],
+      "freshness_status": "sample_cache"
+    },
+    {
+      "item_id": "sec-2",
+      "source_name": "SEC EDGAR",
+      "evidence_type": "company_filing",
+      "title": "Apple Inc. 8-K",
+      "published_at": "2026-05-02",
+      "url": "https://www.sec.gov/edgar/browse/?CIK=320193",
+      "text": "Apple Inc. filed 8-K on 2026-05-02. Business context: Current report provides event evidence that can anchor company-specific scenario branches and risk review.. This public filing evidence can anchor company-specific risk, consumer demand, supply chain, and AI infrastructure narratives.",
+      "topics": [
+        "ai_infrastructure",
+        "semiconductors",
+        "consumer",
+        "risk"
+      ],
+      "entities": [
+        "Apple Inc.",
+        "8-K"
+      ],
+      "freshness_status": "sample_cache"
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "source:GDELT",
+        "label": "GDELT",
+        "kind": "source"
+      },
+      {
+        "id": "topic:ai_infrastructure",
+        "label": "ai_infrastructure",
+        "kind": "topic"
+      },
+      {
+        "id": "topic:semiconductors",
+        "label": "semiconductors",
+        "kind": "topic"
+      },
+      {
+        "id": "topic:consumer",
+        "label": "consumer",
+        "kind": "topic"
+      },
+      {
+        "id": "entity:AI infrastructure",
+        "label": "AI infrastructure",
+        "kind": "entity"
+      },
+      {
+        "id": "entity:data centers",
+        "label": "data centers",
+        "kind": "entity"
+      },
+      {
+        "id": "entity:semiconductors",
+        "label": "semiconductors",
+        "kind": "entity"
+      },
+      {
+        "id": "entity:cloud",
+        "label": "cloud",
+        "kind": "entity"
+      },
+      {
+        "id": "topic:rates",
+        "label": "rates",
+        "kind": "topic"
+      },
+      {
+        "id": "topic:risk",
+        "label": "risk",
+        "kind": "topic"
+      },
+      {
+        "id": "entity:Treasury yields",
+        "label": "Treasury yields",
+        "kind": "entity"
+      },
+      {
+        "id": "entity:Federal Reserve",
+        "label": "Federal Reserve",
+        "kind": "entity"
+      },
+      {
+        "id": "entity:growth stocks",
+        "label": "growth stocks",
+        "kind": "entity"
+      },
+      {
+        "id": "entity:consumer demand",
+        "label": "consumer demand",
+        "kind": "entity"
+      },
+      {
+        "id": "source:Stooq",
+        "label": "Stooq",
+        "kind": "source"
+      },
+      {
+        "id": "entity:SPY",
+        "label": "SPY",
+        "kind": "entity"
+      },
+      {
+        "id": "entity:broad market",
+        "label": "broad market",
+        "kind": "entity"
+      },
+      {
+        "id": "source:SEC EDGAR",
+        "label": "SEC EDGAR",
+        "kind": "source"
+      },
+      {
+        "id": "entity:Apple Inc.",
+        "label": "Apple Inc.",
+        "kind": "entity"
+      },
+      {
+        "id": "entity:10-Q",
+        "label": "10-Q",
+        "kind": "entity"
+      },
+      {
+        "id": "entity:8-K",
+        "label": "8-K",
+        "kind": "entity"
+      }
+    ],
+    "edges": [
+      {
+        "source": "source:GDELT",
+        "target": "topic:ai_infrastructure",
+        "relation": "supports"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "topic:semiconductors",
+        "relation": "supports"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "topic:consumer",
+        "relation": "supports"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "entity:AI infrastructure",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "entity:data centers",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "entity:semiconductors",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "entity:cloud",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "topic:ai_infrastructure",
+        "relation": "supports"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "topic:rates",
+        "relation": "supports"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "topic:consumer",
+        "relation": "supports"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "topic:risk",
+        "relation": "supports"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "entity:Treasury yields",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "entity:Federal Reserve",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "entity:growth stocks",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:GDELT",
+        "target": "entity:consumer demand",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:Stooq",
+        "target": "topic:rates",
+        "relation": "supports"
+      },
+      {
+        "source": "source:Stooq",
+        "target": "topic:risk",
+        "relation": "supports"
+      },
+      {
+        "source": "source:Stooq",
+        "target": "entity:SPY",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:Stooq",
+        "target": "entity:broad market",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "topic:ai_infrastructure",
+        "relation": "supports"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "topic:semiconductors",
+        "relation": "supports"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "topic:consumer",
+        "relation": "supports"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "topic:risk",
+        "relation": "supports"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "entity:Apple Inc.",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "entity:10-Q",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "topic:ai_infrastructure",
+        "relation": "supports"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "topic:semiconductors",
+        "relation": "supports"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "topic:consumer",
+        "relation": "supports"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "topic:risk",
+        "relation": "supports"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "entity:Apple Inc.",
+        "relation": "mentions"
+      },
+      {
+        "source": "source:SEC EDGAR",
+        "target": "entity:8-K",
+        "relation": "mentions"
+      }
+    ],
+    "narrative_summary": "Public evidence connects 5 items across topics: ai_infrastructure, consumer, rates, risk, semiconductors."
+  },
+  "feasibility": {
+    "status": "meaningful",
+    "reasons": [
+      "3 source families observed",
+      "5 market topics observed",
+      "21 graph nodes and 31 edges generated"
+    ],
+    "blockers": [],
+    "next_gaps": [
+      "live refresh policy",
+      "deduplication",
+      "source licensing review",
+      "LLM-free entity extraction quality"
+    ]
+  }
+}
