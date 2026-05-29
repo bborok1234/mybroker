@@ -1,15 +1,19 @@
 # MyBroker
 
-MyBroker is a Flyhigh-enabled personal research and signal-generation project.
+MyBroker is a Flyhigh-enabled, beginner-first market understanding and simulation OS.
 
-The first usable scope is deliberately narrow:
+The product goal is not to ask a beginner investor for a perfect ticker, sector, event,
+or investment hypothesis. MyBroker should help create that starting point:
 
-- ingest local price observations;
-- generate explainable research signals;
-- classify risky actions through a policy gate;
-- keep project memory and run artifacts under `.flyhigh/` and `reports/runs/`.
+- read local market/evidence seeds;
+- build a beginner-readable market map;
+- simulate optimistic, base, and downside paths through persona viewpoints;
+- explain unfamiliar concepts in plain language;
+- produce action candidates such as learn, observe, watchlist, defer, or avoid;
+- keep all outputs auditable as local artifacts.
 
-It does not place orders, manage accounts, or provide personalized investment advice.
+It does not place orders, manage accounts, store brokerage credentials, provide discretionary
+trading, or present unsupported personalized financial advice.
 
 ## Commands
 
@@ -21,9 +25,26 @@ PYTHONPATH=src python3 -m mybroker quality --source examples/prices-multi
 PYTHONPATH=src python3 -m mybroker research --source examples/prices.csv --output reports/runs/local-momentum-research.json
 PYTHONPATH=src python3 -m mybroker research --source examples/prices-multi --run-id multi-file-research --output reports/runs/multi-file-research.json
 PYTHONPATH=src python3 -m mybroker validate-report reports/runs/local-momentum-research.json
+PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --output reports/scenarios/beginner-market-sim.json --verdict-output reports/scenarios/verdict.json
+PYTHONPATH=src python3 -m mybroker validate-scenario reports/scenarios/beginner-market-sim.json
+PYTHONPATH=src python3 -m mybroker validate-verdict reports/scenarios/verdict.json
 PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output reports/dashboard.html --rollup-output reports/report-rollup.json
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
 ```
+
+## Beginner Simulation Slice
+
+The MiroFish-inspired slice is local and deterministic by default:
+
+1. Markdown or text seed files describe market context in beginner-readable terms.
+2. The scenario engine extracts themes such as AI infrastructure, semiconductors, rates,
+   inflation, consumer pressure, and market risk.
+3. A `scenario_report.v1` artifact records the market map, relationships, persona views,
+   scenario paths, beginner explanations, policy gate, warnings, and action candidates.
+4. A `market_verdict.v1` artifact summarizes the top next step without turning it into
+   an order or account-specific recommendation.
+5. The dashboard renders a market map, scenario branches, agent perspectives, and action
+   candidates so a beginner can decide what to learn or inspect next.
 
 ## First Pipeline Slice
 

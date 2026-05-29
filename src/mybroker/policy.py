@@ -3,7 +3,7 @@ from __future__ import annotations
 from mybroker.models import PolicyDecision
 
 
-ALLOW = {"research_note", "backtest", "data_quality_check", "signal_generation"}
+ALLOW = {"research_note", "backtest", "data_quality_check", "signal_generation", "scenario_simulation"}
 REVIEW = {"portfolio_change_proposal", "personalized_recommendation", "external_publication"}
 DENY = {"order_execution", "account_access", "discretionary_trade", "credential_storage"}
 

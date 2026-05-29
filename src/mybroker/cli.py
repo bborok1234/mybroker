@@ -10,6 +10,15 @@ from mybroker.policy import classify_action
 from mybroker.registry import default_registry
 from mybroker.reports import report_to_dict, validate_report_file
 from mybroker.runner import make_price_adapter, run_research_task
+from mybroker.scenario import (
+    build_verdict,
+    run_market_simulation,
+    scenario_report_to_dict,
+    validate_scenario_file,
+    validate_verdict_file,
+    write_scenario_report,
+    write_verdict,
+)
 from mybroker.signals import momentum_signals
 
 
@@ -39,6 +48,18 @@ def main(argv: list[str] | None = None) -> int:
     dashboard_parser.add_argument("--reports-dir", default="reports/runs")
     dashboard_parser.add_argument("--output", default="reports/dashboard.html")
     dashboard_parser.add_argument("--rollup-output", default="reports/report-rollup.json")
+
+    scenario_parser = subcommands.add_parser("scenario", help="Run a beginner-first market scenario simulation from local seed files.")
+    scenario_parser.add_argument("--seed", action="append", help="Local markdown/txt seed file or directory. Defaults to examples/seeds.")
+    scenario_parser.add_argument("--run-id", default="beginner-market-sim")
+    scenario_parser.add_argument("--output", default="reports/scenarios/beginner-market-sim.json")
+    scenario_parser.add_argument("--verdict-output", default="reports/scenarios/verdict.json")
+
+    validate_scenario_parser = subcommands.add_parser("validate-scenario", help="Validate a scenario_report.v1 artifact.")
+    validate_scenario_parser.add_argument("scenario_path")
+
+    validate_verdict_parser = subcommands.add_parser("validate-verdict", help="Validate a market_verdict.v1 artifact.")
+    validate_verdict_parser.add_argument("verdict_path")
 
     quality_parser = subcommands.add_parser("quality", help="Inspect local price dataset quality without writing a research report.")
     quality_parser.add_argument("--source", action="append", help="Local price CSV file or directory. Repeat for multiple CSV files. Defaults to the bundled sample data.")
@@ -93,6 +114,35 @@ def main(argv: list[str] | None = None) -> int:
             "report_count": rollup["report_count"],
             "latest_valid": bool((rollup.get("latest_report") or {}).get("validation", {}).get("valid")),
         }, indent=2))
+        return 0
+    if args.command == "scenario":
+        report = run_market_simulation(seed_sources=args.seed, run_id=args.run_id)
+        scenario_path = write_scenario_report(report, args.output)
+        verdict_path = write_verdict(report, args.verdict_output)
+        print(json.dumps({
+            "scenario_report": scenario_path.as_posix(),
+            "verdict": verdict_path.as_posix(),
+            "run_id": report.run_id,
+            "entities": len(report.market_map.entities),
+            "scenarios": len(report.scenarios),
+            "action_candidates": len(report.action_candidates),
+            "primary_next_step": build_verdict(report)["primary_next_step"]["title"],
+            "report": scenario_report_to_dict(report),
+        }, indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "validate-scenario":
+        errors = validate_scenario_file(args.scenario_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-verdict":
+        errors = validate_verdict_file(args.verdict_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
     if args.command == "policy":
         decision = classify_action(args.kind)

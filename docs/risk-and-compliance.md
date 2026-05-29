@@ -16,3 +16,16 @@ This project treats financial-domain behavior as high risk.
 - FINRA highlights that AI use in securities contexts can implicate existing regulatory obligations and supervisory controls: https://www.finra.org/rules-guidance/key-topics/artificial-intelligence
 
 These references shape the engineering boundary: build auditable research infrastructure first, and keep advisory or execution behavior behind explicit policy gates.
+# Research and Simulation Boundary
+
+MyBroker may produce beginner-friendly market explanations, scenario simulations, watchlist
+candidates, and next learning steps. These are not trade instructions.
+
+Required guardrails:
+
+- no order execution;
+- no account access or brokerage credential storage;
+- no discretionary trading;
+- no unsupported personalized recommendation;
+- every candidate should show evidence, risks, and the condition under which the view changes;
+- when user suitability context is missing, the output must remain education/research/simulation first.

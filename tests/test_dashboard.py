@@ -44,9 +44,28 @@ class DashboardTests(unittest.TestCase):
             rollup_exists = rollup_path.exists()
 
         self.assertTrue(rollup_exists)
-        self.assertIn("MyBroker Report Dashboard", html)
-        self.assertIn("Latest Run", html)
+        self.assertIn("MyBroker 시장 이해 대시보드", html)
+        self.assertIn("가격 데이터 리서치 최신 실행", html)
         self.assertIn("Data Quality", html)
+
+    def test_dashboard_includes_scenario_artifacts(self) -> None:
+        from mybroker.scenario import run_market_simulation, write_scenario_report
+
+        with tempfile.TemporaryDirectory() as directory:
+            reports_dir = Path(directory) / "runs"
+            scenarios_dir = Path(directory) / "scenarios"
+            run_research_task(output_path=reports_dir / "report.json")
+            scenario = run_market_simulation(seed_sources=["examples/seeds"], run_id="dashboard-sim")
+            write_scenario_report(scenario, scenarios_dir / "scenario.json")
+
+            rollup = build_report_rollup(reports_dir)
+            dashboard_path = write_dashboard(rollup, Path(directory) / "dashboard.html")
+            html = dashboard_path.read_text(encoding="utf-8")
+
+        self.assertEqual(rollup["scenario_count"], 1)
+        self.assertEqual(rollup["latest_scenario"]["run_id"], "dashboard-sim")
+        self.assertIn("시장 지도", html)
+        self.assertIn("시나리오 분기", html)
 
     def test_rollup_compares_latest_against_previous(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
