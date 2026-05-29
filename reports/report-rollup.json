@@ -1,6 +1,6 @@
 {
   "schema_version": "report_rollup.v1",
-  "generated_at": "2026-05-29T08:29:05.239167+00:00",
+  "generated_at": "2026-05-29T09:53:26.583322+00:00",
   "reports_dir": "reports/runs",
   "report_count": 2,
   "latest_report": {
@@ -125,11 +125,11 @@
     "latest_quality_status": "pass",
     "latest_quality_issue_count": 0
   },
-  "scenario_count": 3,
+  "scenario_count": 4,
   "latest_scenario": {
-    "path": "reports/scenarios/public-evidence-sim.json",
-    "run_id": "public-evidence-sim",
-    "generated_at": "2026-05-29T08:29:04.761542+00:00",
+    "path": "reports/scenarios/daily-research-sim.json",
+    "run_id": "daily-research",
+    "generated_at": "2026-05-29T09:53:26.581478+00:00",
     "product_mode": "beginner_market_understanding_simulation",
     "seed_sources": [
       {
@@ -220,29 +220,169 @@
       "missing_context": [],
       "source_coverage": [
         {
-          "source_id": "gdelt-sample",
+          "source_id": "gdelt",
           "source_name": "GDELT",
-          "adapter_id": "gdelt_cached_v1",
+          "adapter_id": "sample_cache_topic_research",
           "item_count": "2",
           "freshness_status": "sample_cache"
         },
         {
-          "source_id": "stooq-sample",
-          "source_name": "Stooq",
-          "adapter_id": "stooq_cached_v1",
-          "item_count": "1",
-          "freshness_status": "sample_cache"
-        },
-        {
-          "source_id": "sec-sample",
+          "source_id": "sec-edgar",
           "source_name": "SEC EDGAR",
-          "adapter_id": "sec_cached_v1",
+          "adapter_id": "sample_cache_topic_research",
           "item_count": "2",
+          "freshness_status": "sample_cache"
+        },
+        {
+          "source_id": "stooq",
+          "source_name": "Stooq",
+          "adapter_id": "sample_cache_topic_research",
+          "item_count": "1",
           "freshness_status": "sample_cache"
         }
       ],
       "freshness_status": "sample_cache",
-      "meaningfulness_status": "meaningful"
+      "meaningfulness_status": "meaningful",
+      "configured_interests": [
+        {
+          "topic_id": "ai-infrastructure",
+          "name": "AI infrastructure",
+          "description": "AI data center, GPU, cloud, power, and semiconductor demand.",
+          "beginner_focus": "AI 수요가 실제 실적과 공급망으로 이어지는지 이해한다.",
+          "keywords": [
+            "ai",
+            "data center",
+            "gpu",
+            "cloud",
+            "semiconductors"
+          ],
+          "target_topics": [
+            "ai_infrastructure"
+          ],
+          "status": "active"
+        },
+        {
+          "topic_id": "semiconductors",
+          "name": "Semiconductors",
+          "description": "Chip supply chain, memory, foundry, and AI-linked demand.",
+          "beginner_focus": "반도체가 AI 기대와 경기 둔화 리스크를 동시에 받는 이유를 본다.",
+          "keywords": [
+            "semiconductor",
+            "chip",
+            "memory",
+            "supply chain"
+          ],
+          "target_topics": [
+            "ai_infrastructure",
+            "semiconductors"
+          ],
+          "status": "active"
+        },
+        {
+          "topic_id": "us-rates",
+          "name": "US rates",
+          "description": "Treasury yields, Fed expectations, liquidity, and growth-stock pressure.",
+          "beginner_focus": "금리가 성장 테마의 가격 부담을 어떻게 바꾸는지 본다.",
+          "keywords": [
+            "rates",
+            "yield",
+            "fed",
+            "treasury"
+          ],
+          "target_topics": [
+            "rates"
+          ],
+          "status": "active"
+        },
+        {
+          "topic_id": "consumer-weakness",
+          "name": "Consumer weakness",
+          "description": "Consumer demand, retail pressure, employment, and inflation burden.",
+          "beginner_focus": "소비 둔화가 기업 매출과 경기 기대에 주는 영향을 이해한다.",
+          "keywords": [
+            "consumer",
+            "retail",
+            "inflation",
+            "demand",
+            "risk"
+          ],
+          "target_topics": [
+            "ai_infrastructure",
+            "consumer",
+            "inflation",
+            "risk"
+          ],
+          "status": "active"
+        },
+        {
+          "topic_id": "korea-semiconductors",
+          "name": "Korea semiconductors",
+          "description": "Korea memory exporters, AI demand, and cycle risk",
+          "beginner_focus": "Korea semiconductors 흐름이 시장에 왜 중요한지 초보자 관점에서 이해한다.",
+          "keywords": [
+            "korea",
+            "memory",
+            "chip"
+          ],
+          "target_topics": [
+            "ai_infrastructure",
+            "risk",
+            "semiconductors"
+          ],
+          "status": "active"
+        }
+      ],
+      "research_plan": {
+        "run_id": "daily-research",
+        "generated_at": "2026-05-29T09:53:26.579536+00:00",
+        "topic_count": 5,
+        "next_step": "collect_free_public_evidence"
+      },
+      "topic_memory_snapshot": {
+        "memory_path": "reports/memory/topic-memory.json",
+        "run_count": 3,
+        "topics": [
+          {
+            "topic_id": "ai-infrastructure",
+            "name": "AI infrastructure",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+          },
+          {
+            "topic_id": "semiconductors",
+            "name": "Semiconductors",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+          },
+          {
+            "topic_id": "us-rates",
+            "name": "US rates",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음."
+          },
+          {
+            "topic_id": "consumer-weakness",
+            "name": "Consumer weakness",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+          },
+          {
+            "topic_id": "korea-semiconductors",
+            "name": "Korea semiconductors",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+          }
+        ]
+      },
+      "collection_gaps": [
+        "live_refresh_not_enabled",
+        "source_license_review_pending"
+      ]
     },
     "profile_context": {
       "profile_id": "beginner-conservative",
@@ -592,6 +732,611 @@
     }
   },
   "scenarios": [
+    {
+      "path": "reports/scenarios/daily-research-sim.json",
+      "run_id": "daily-research",
+      "generated_at": "2026-05-29T09:53:26.581478+00:00",
+      "product_mode": "beginner_market_understanding_simulation",
+      "seed_sources": [
+        {
+          "source": "examples/seeds/consumer-risk.md",
+          "title": "소비와 리스크 점검",
+          "excerpt": "# 소비와 리스크 점검 소비 지표는 아직 크게 무너지지 않았지만 물가 부담과 고용 둔화 우려가 함께 나온다. 소비가 약해지면 경기 민감 업종은 실적 기대가 낮아질 수 있고, 변동성이 커질 때 초보자는 관심 종목을 바로 매수하기보다 관찰 기준과 보류 조건을 먼저 정해야 한다.",
+          "topics": [
+            "inflation",
+            "consumer",
+            "risk"
+          ]
+        },
+        {
+          "source": "examples/seeds/market-brief.md",
+          "title": "AI와 금리 사이에서 흔들리는 시장",
+          "excerpt": "# AI와 금리 사이에서 흔들리는 시장 이번 주 시장은 AI 데이터센터 투자와 반도체 수요 기대를 계속 주목하고 있다. GPU와 메모리 반도체 공급망은 성장 기대를 받지만, 금리와 국채 수익률이 다시 오르면 성장주 평가에는 부담이 생길 수 있다. 초보자가 먼저 볼 질문은 \"AI 수요가 실제 실적으로 이어지고 있는가\"와 \"금리 변화가 성장 테마의 가격 부담을 키우는가\"이다. 일부 종목은 좋은 뉴스가 이미 가격에 반영되어 과열 위험도 있다.",
+          "topics": [
+            "ai_infrastructure",
+            "semiconductors",
+            "rates",
+            "risk"
+          ]
+        },
+        {
+          "source": "public:GDELT:gdelt-1",
+          "title": "AI infrastructure demand keeps data center and chip supply chains in focus",
+          "excerpt": "AI infrastructure demand keeps data center and chip supply chains in focus Global news coverage continues to connect artificial intelligence spending with data center capacity, GPU supply, cloud infrastructure, electricity demand, and semiconductor supply chain constraints.",
+          "topics": [
+            "ai_infrastructure",
+            "semiconductors",
+            "consumer"
+          ]
+        },
+        {
+          "source": "public:GDELT:gdelt-2",
+          "title": "Higher yields pressure growth themes despite resilient demand",
+          "excerpt": "Higher yields pressure growth themes despite resilient demand Market narratives point to Treasury yield volatility and Federal Reserve rate expectations as a source of pressure for long-duration growth themes, even where consumer and enterprise demand remains resilient.",
+          "topics": [
+            "ai_infrastructure",
+            "rates",
+            "consumer",
+            "risk"
+          ]
+        },
+        {
+          "source": "public:Stooq:stooq-spy-trend",
+          "title": "SPY broad market trend sample",
+          "excerpt": "SPY market proxy moved 상승 1.46% from 2026-05-20 to 2026-05-28. This price evidence helps test whether news narratives align with broad market risk appetite, rates pressure, and volatility.",
+          "topics": [
+            "rates",
+            "risk"
+          ]
+        },
+        {
+          "source": "public:SEC EDGAR:sec-1",
+          "title": "Apple Inc. 10-Q",
+          "excerpt": "Apple Inc. filed 10-Q on 2026-05-01. Business context: Quarterly filing discusses consumer demand, services revenue, supply chain risk, AI features, and macroeconomic uncertainty.. This public filing evidence can anchor company-specific risk, consumer demand, supply chain, and AI infrastructure narratives.",
+          "topics": [
+            "ai_infrastructure",
+            "semiconductors",
+            "consumer",
+            "risk"
+          ]
+        },
+        {
+          "source": "public:SEC EDGAR:sec-2",
+          "title": "Apple Inc. 8-K",
+          "excerpt": "Apple Inc. filed 8-K on 2026-05-02. Business context: Current report provides event evidence that can anchor company-specific scenario branches and risk review.. This public filing evidence can anchor company-specific risk, consumer demand, supply chain, and AI infrastructure narratives.",
+          "topics": [
+            "ai_infrastructure",
+            "semiconductors",
+            "consumer",
+            "risk"
+          ]
+        }
+      ],
+      "evidence_catalog": {
+        "source_count": 7,
+        "topic_counts": {
+          "ai_infrastructure": 5,
+          "consumer": 5,
+          "inflation": 1,
+          "rates": 3,
+          "risk": 6,
+          "semiconductors": 4
+        },
+        "coverage_status": "strong",
+        "missing_context": [],
+        "source_coverage": [
+          {
+            "source_id": "gdelt",
+            "source_name": "GDELT",
+            "adapter_id": "sample_cache_topic_research",
+            "item_count": "2",
+            "freshness_status": "sample_cache"
+          },
+          {
+            "source_id": "sec-edgar",
+            "source_name": "SEC EDGAR",
+            "adapter_id": "sample_cache_topic_research",
+            "item_count": "2",
+            "freshness_status": "sample_cache"
+          },
+          {
+            "source_id": "stooq",
+            "source_name": "Stooq",
+            "adapter_id": "sample_cache_topic_research",
+            "item_count": "1",
+            "freshness_status": "sample_cache"
+          }
+        ],
+        "freshness_status": "sample_cache",
+        "meaningfulness_status": "meaningful",
+        "configured_interests": [
+          {
+            "topic_id": "ai-infrastructure",
+            "name": "AI infrastructure",
+            "description": "AI data center, GPU, cloud, power, and semiconductor demand.",
+            "beginner_focus": "AI 수요가 실제 실적과 공급망으로 이어지는지 이해한다.",
+            "keywords": [
+              "ai",
+              "data center",
+              "gpu",
+              "cloud",
+              "semiconductors"
+            ],
+            "target_topics": [
+              "ai_infrastructure"
+            ],
+            "status": "active"
+          },
+          {
+            "topic_id": "semiconductors",
+            "name": "Semiconductors",
+            "description": "Chip supply chain, memory, foundry, and AI-linked demand.",
+            "beginner_focus": "반도체가 AI 기대와 경기 둔화 리스크를 동시에 받는 이유를 본다.",
+            "keywords": [
+              "semiconductor",
+              "chip",
+              "memory",
+              "supply chain"
+            ],
+            "target_topics": [
+              "ai_infrastructure",
+              "semiconductors"
+            ],
+            "status": "active"
+          },
+          {
+            "topic_id": "us-rates",
+            "name": "US rates",
+            "description": "Treasury yields, Fed expectations, liquidity, and growth-stock pressure.",
+            "beginner_focus": "금리가 성장 테마의 가격 부담을 어떻게 바꾸는지 본다.",
+            "keywords": [
+              "rates",
+              "yield",
+              "fed",
+              "treasury"
+            ],
+            "target_topics": [
+              "rates"
+            ],
+            "status": "active"
+          },
+          {
+            "topic_id": "consumer-weakness",
+            "name": "Consumer weakness",
+            "description": "Consumer demand, retail pressure, employment, and inflation burden.",
+            "beginner_focus": "소비 둔화가 기업 매출과 경기 기대에 주는 영향을 이해한다.",
+            "keywords": [
+              "consumer",
+              "retail",
+              "inflation",
+              "demand",
+              "risk"
+            ],
+            "target_topics": [
+              "ai_infrastructure",
+              "consumer",
+              "inflation",
+              "risk"
+            ],
+            "status": "active"
+          },
+          {
+            "topic_id": "korea-semiconductors",
+            "name": "Korea semiconductors",
+            "description": "Korea memory exporters, AI demand, and cycle risk",
+            "beginner_focus": "Korea semiconductors 흐름이 시장에 왜 중요한지 초보자 관점에서 이해한다.",
+            "keywords": [
+              "korea",
+              "memory",
+              "chip"
+            ],
+            "target_topics": [
+              "ai_infrastructure",
+              "risk",
+              "semiconductors"
+            ],
+            "status": "active"
+          }
+        ],
+        "research_plan": {
+          "run_id": "daily-research",
+          "generated_at": "2026-05-29T09:53:26.579536+00:00",
+          "topic_count": 5,
+          "next_step": "collect_free_public_evidence"
+        },
+        "topic_memory_snapshot": {
+          "memory_path": "reports/memory/topic-memory.json",
+          "run_count": 3,
+          "topics": [
+            {
+              "topic_id": "ai-infrastructure",
+              "name": "AI infrastructure",
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+            },
+            {
+              "topic_id": "semiconductors",
+              "name": "Semiconductors",
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+            },
+            {
+              "topic_id": "us-rates",
+              "name": "US rates",
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음."
+            },
+            {
+              "topic_id": "consumer-weakness",
+              "name": "Consumer weakness",
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+            },
+            {
+              "topic_id": "korea-semiconductors",
+              "name": "Korea semiconductors",
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+            }
+          ]
+        },
+        "collection_gaps": [
+          "live_refresh_not_enabled",
+          "source_license_review_pending"
+        ]
+      },
+      "profile_context": {
+        "profile_id": "beginner-conservative",
+        "experience_level": "new",
+        "learning_goal": "market_overview",
+        "risk_comfort": "low",
+        "time_horizon": "months",
+        "decision_style": "risk_first",
+        "capital_context": "unspecified"
+      },
+      "output_boundary": "context_aware_research_only",
+      "market_map": {
+        "entities": [
+          {
+            "name": "리스크",
+            "kind": "risk",
+            "beginner_label": "시장 위험 요인",
+            "why_it_matters": "과열, 실적 실망, 지정학, 환율 같은 위험은 좋은 이야기의 가격 반영 여부를 확인하게 만든다.",
+            "mentions": 6,
+            "evidence": [
+              "소비와 리스크 점검",
+              "AI와 금리 사이에서 흔들리는 시장",
+              "Higher yields pressure growth themes despite resilient demand"
+            ]
+          },
+          {
+            "name": "AI 인프라",
+            "kind": "theme",
+            "beginner_label": "AI 서버/데이터센터 수요",
+            "why_it_matters": "AI 서비스가 늘면 서버, 반도체, 전력, 냉각, 클라우드 기업의 실적 기대가 함께 움직인다.",
+            "mentions": 5,
+            "evidence": [
+              "AI와 금리 사이에서 흔들리는 시장",
+              "AI infrastructure demand keeps data center and chip supply chains in focus",
+              "Higher yields pressure growth themes despite resilient demand"
+            ]
+          },
+          {
+            "name": "소비",
+            "kind": "sector",
+            "beginner_label": "소비와 경기 민감 업종",
+            "why_it_matters": "소비 지표는 기업 매출과 경기 체감의 빠른 신호로 쓰인다.",
+            "mentions": 5,
+            "evidence": [
+              "소비와 리스크 점검",
+              "AI infrastructure demand keeps data center and chip supply chains in focus",
+              "Higher yields pressure growth themes despite resilient demand"
+            ]
+          },
+          {
+            "name": "반도체",
+            "kind": "sector",
+            "beginner_label": "반도체 업종",
+            "why_it_matters": "AI와 전자제품 수요의 핵심 공급망이라 성장 기대와 경기 둔화 우려를 동시에 반영한다.",
+            "mentions": 4,
+            "evidence": [
+              "AI와 금리 사이에서 흔들리는 시장",
+              "AI infrastructure demand keeps data center and chip supply chains in focus",
+              "Apple Inc. 10-Q"
+            ]
+          },
+          {
+            "name": "금리",
+            "kind": "macro",
+            "beginner_label": "금리와 유동성",
+            "why_it_matters": "금리는 주식의 할인율과 투자자 위험선호를 바꾸므로 성장주와 배당주의 평가에 영향을 준다.",
+            "mentions": 3,
+            "evidence": [
+              "AI와 금리 사이에서 흔들리는 시장",
+              "Higher yields pressure growth themes despite resilient demand",
+              "SPY broad market trend sample"
+            ]
+          },
+          {
+            "name": "물가",
+            "kind": "macro",
+            "beginner_label": "물가와 소비 부담",
+            "why_it_matters": "물가가 높으면 중앙은행이 금리를 오래 높게 둘 수 있고 소비 여력이 약해질 수 있다.",
+            "mentions": 1,
+            "evidence": [
+              "소비와 리스크 점검"
+            ]
+          }
+        ],
+        "relationships": [
+          {
+            "source": "AI 인프라",
+            "target": "반도체",
+            "relation": "수요 연결",
+            "beginner_explanation": "AI 서비스가 늘수록 GPU와 메모리 같은 반도체 수요 기대가 커집니다.",
+            "evidence": [
+              "seed topics: ai_infrastructure + semiconductors"
+            ]
+          },
+          {
+            "source": "금리",
+            "target": "성장 기대 업종",
+            "relation": "평가 압력",
+            "beginner_explanation": "금리가 높으면 미래 성장 기대가 큰 업종의 현재 가치가 눌릴 수 있습니다.",
+            "evidence": [
+              "seed topics: rates + growth themes"
+            ]
+          },
+          {
+            "source": "물가",
+            "target": "금리",
+            "relation": "정책 연결",
+            "beginner_explanation": "물가가 높으면 중앙은행이 금리 인하를 늦출 수 있어 시장 기대가 바뀝니다.",
+            "evidence": [
+              "seed topics: inflation + rates"
+            ]
+          },
+          {
+            "source": "리스크",
+            "target": "관찰 후보",
+            "relation": "진입 조건",
+            "beginner_explanation": "좋은 이야기라도 가격이 이미 많이 올랐거나 근거가 약하면 관찰부터 해야 합니다.",
+            "evidence": [
+              "seed topics: risk"
+            ]
+          }
+        ],
+        "beginner_summary": "이번 seed에서 먼저 볼 흐름은 리스크, AI 인프라, 소비입니다. 초보자는 가격보다 '왜 이 흐름이 생겼는지'와 '무엇이 바뀌면 틀리는지'를 먼저 확인해야 합니다."
+      },
+      "persona_views": [
+        {
+          "persona_id": "beginner_tutor",
+          "name": "초보자 튜터",
+          "role": "용어와 인과관계 해설",
+          "stance": "explain_first",
+          "summary": "리스크 먼저 보는 성향이므로 상방보다 보류 조건과 반대 시나리오를 먼저 읽어야 한다고 봅니다.",
+          "confidence": 0.82,
+          "evidence": [
+            "소비와 리스크 점검",
+            "AI와 금리 사이에서 흔들리는 시장",
+            "AI infrastructure demand keeps data center and chip supply chains in focus"
+          ]
+        },
+        {
+          "persona_id": "macro_strategist",
+          "name": "매크로 전략가",
+          "role": "금리/물가/유동성 관점",
+          "stance": "rates_first",
+          "summary": "금리와 물가가 있으면 성장 테마의 평가가 흔들릴 수 있으므로 거시 변수 확인을 우선합니다.",
+          "confidence": 0.74,
+          "evidence": [
+            "소비와 리스크 점검",
+            "AI와 금리 사이에서 흔들리는 시장",
+            "AI infrastructure demand keeps data center and chip supply chains in focus"
+          ]
+        },
+        {
+          "persona_id": "growth_investor",
+          "name": "성장주 관찰자",
+          "role": "AI/반도체/수요 확장 관점",
+          "stance": "watch_growth",
+          "summary": "AI와 반도체가 함께 보이면 실적 기대가 이어지는지 관찰 후보로 둘 만하다고 봅니다.",
+          "confidence": 0.78,
+          "evidence": [
+            "소비와 리스크 점검",
+            "AI와 금리 사이에서 흔들리는 시장",
+            "AI infrastructure demand keeps data center and chip supply chains in focus"
+          ]
+        },
+        {
+          "persona_id": "risk_manager",
+          "name": "리스크 관리자",
+          "role": "과열/근거 부족/손실 가능성 점검",
+          "stance": "guardrails",
+          "summary": "초보자는 이야기의 매력보다 손실 조건, 과열 여부, 분산 여부를 먼저 확인해야 한다고 경고합니다.",
+          "confidence": 0.86,
+          "evidence": [
+            "소비와 리스크 점검",
+            "AI와 금리 사이에서 흔들리는 시장",
+            "AI infrastructure demand keeps data center and chip supply chains in focus"
+          ]
+        }
+      ],
+      "scenarios": [
+        {
+          "scenario_id": "base",
+          "name": "기준 경로",
+          "probability_label": "중간",
+          "summary": "시장은 주요 테마를 인정하지만 금리, 실적, 가격 부담을 함께 확인하며 천천히 재평가합니다.",
+          "triggers": [
+            "실적 발표가 기대에 부합",
+            "금리 기대가 급격히 악화되지 않음",
+            "거래량이 과열 없이 유지"
+          ],
+          "watch_items": [
+            "리스크",
+            "AI 인프라",
+            "소비"
+          ],
+          "beginner_explanation": "가장 먼저 볼 경로입니다. 지금 당장 결론을 내리기보다 어떤 조건이 유지되는지 체크합니다.",
+          "risk_notes": [
+            "낮은 위험 선호에서는 관찰 기준과 보류 조건을 먼저 정해야 합니다."
+          ]
+        },
+        {
+          "scenario_id": "bull",
+          "name": "상방 경로",
+          "probability_label": "가능하지만 확인 필요",
+          "summary": "AI/반도체 같은 성장 테마의 실적 근거가 강화되고 금리 부담이 줄어 관심 후보가 넓어집니다.",
+          "triggers": [
+            "수요 증가 근거가 반복 확인",
+            "금리 하락 또는 완화 기대",
+            "섹터 내 후발 종목으로 관심 확산"
+          ],
+          "watch_items": [
+            "리스크",
+            "AI 인프라",
+            "소비",
+            "동종업계 확산"
+          ],
+          "beginner_explanation": "상방 경로는 '좋아 보인다'가 아니라 근거가 여러 번 확인될 때 힘을 얻습니다.",
+          "risk_notes": [
+            "추격 매수는 손실 폭을 키울 수 있어 분할/관찰 기준이 필요합니다."
+          ]
+        },
+        {
+          "scenario_id": "bear",
+          "name": "하방 경로",
+          "probability_label": "항상 대비",
+          "summary": "금리, 실적 실망, 과열 해소가 겹치면 좋은 테마도 조정받고 관찰 후보가 보류 후보로 바뀝니다.",
+          "triggers": [
+            "실적 가이던스 하향",
+            "금리 상승",
+            "뉴스는 좋은데 가격 반응이 약함"
+          ],
+          "watch_items": [
+            "손절/보류 조건",
+            "현금 비중",
+            "반대 근거"
+          ],
+          "beginner_explanation": "하방 경로는 겁주기용이 아니라 틀렸을 때 무엇을 할지 미리 정하는 장치입니다.",
+          "risk_notes": [
+            "개인 상황 없이 평균적 시나리오만 제공합니다."
+          ]
+        }
+      ],
+      "beginner_explanations": [
+        {
+          "term": "관찰 후보",
+          "explanation": "지금 바로 사라는 뜻이 아니라 뉴스, 가격, 실적, 리스크를 계속 볼 가치가 있다는 뜻입니다."
+        },
+        {
+          "term": "반대 시나리오",
+          "explanation": "내 생각이 틀리는 경우를 미리 적어두는 것입니다. 초보자일수록 이 단계가 중요합니다."
+        },
+        {
+          "term": "컨텍스트 반영",
+          "explanation": "학습 목표, 위험 선호, 투자 기간 같은 입력은 설명의 우선순위를 조정할 뿐 매수/매도 지시가 되지 않습니다."
+        },
+        {
+          "term": "보류 조건",
+          "explanation": "낮은 위험 선호에서는 언제 하지 않을지를 먼저 정해 손실 가능성을 줄이는 기준입니다."
+        },
+        {
+          "term": "AI 인프라",
+          "explanation": "AI 서비스를 돌리는 데 필요한 반도체, 서버, 데이터센터, 전력 설비를 묶어 부르는 말입니다."
+        },
+        {
+          "term": "경기 민감주",
+          "explanation": "경기가 좋아질 때 실적 기대가 커지고, 나빠질 때 압박을 받기 쉬운 업종입니다."
+        },
+        {
+          "term": "인플레이션",
+          "explanation": "전반적인 상품과 서비스 가격이 계속 오르는 현상입니다."
+        },
+        {
+          "term": "할인율",
+          "explanation": "미래 이익을 현재 가치로 바꿀 때 쓰는 비율입니다. 높아지면 성장주의 현재 가치가 낮아질 수 있습니다."
+        },
+        {
+          "term": "변동성",
+          "explanation": "가격이 오르내리는 폭입니다. 변동성이 크면 수익 기회와 손실 위험이 함께 커집니다."
+        },
+        {
+          "term": "공급망",
+          "explanation": "제품이 만들어져 소비자에게 오기까지 필요한 회사와 공정의 연결망입니다."
+        }
+      ],
+      "action_candidates": [
+        {
+          "action_type": "learn",
+          "title": "먼저 시장 흐름을 학습",
+          "rationale": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
+          "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+          "confidence": 0.94,
+          "evidence": [
+            "이번 seed에서 먼저 볼 흐름은 리스크, AI 인프라, 소비입니다. 초보자는 가격보다 '왜 이 흐름이 생겼는지'와 '무엇이 바뀌면 틀리는지'를 먼저 확인해야 합니다."
+          ],
+          "risk_notes": [
+            "학습 없이 후보를 매수 결론으로 해석하지 마세요."
+          ]
+        },
+        {
+          "action_type": "observe",
+          "title": "관찰 리스트 만들기",
+          "rationale": "주요 흐름과 반대 시나리오를 같이 적어두면 다음 뉴스의 의미를 빠르게 판단할 수 있습니다.",
+          "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+          "confidence": 0.78,
+          "evidence": [
+            "리스크",
+            "AI 인프라",
+            "소비"
+          ],
+          "risk_notes": [
+            "관찰은 투자 실행이 아니며 수익을 보장하지 않습니다."
+          ]
+        },
+        {
+          "action_type": "watchlist",
+          "title": "AI/반도체 흐름을 관심 테마로 등록",
+          "rationale": "seed에서 AI 인프라와 반도체가 함께 나타나 수요 연결을 추적할 가치가 있습니다.",
+          "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+          "confidence": 0.68,
+          "evidence": [
+            "AI 인프라와 반도체 관계가 market_map에 포착됨"
+          ],
+          "risk_notes": [
+            "테마주는 과열될 수 있어 가격이 아니라 근거 변화를 먼저 봐야 합니다."
+          ]
+        },
+        {
+          "action_type": "defer",
+          "title": "금리 민감 구간에서는 진입 판단 보류",
+          "rationale": "금리 변화는 성장 테마의 평가를 흔들 수 있으므로 확인 전까지 보류가 합리적일 수 있습니다.",
+          "suitability": "손실 회피 성향이 높거나 투자기간이 짧은 사용자에게 특히 중요합니다.",
+          "confidence": 0.72,
+          "evidence": [
+            "금리 topic detected"
+          ],
+          "risk_notes": [
+            "보류도 기회비용이 있으므로 조건을 명확히 정해야 합니다."
+          ]
+        }
+      ],
+      "warnings": [
+        "교육/리서치/시뮬레이션 목적의 로컬 산출물입니다. 계좌 접근, 주문 실행, 일임 운용을 하지 않습니다.",
+        "사용자 입력은 학습/위험/기간 맥락만 반영합니다. 개인화된 매수/매도 지시나 포트폴리오 운용은 아닙니다."
+      ],
+      "validation": {
+        "valid": true,
+        "errors": []
+      }
+    },
     {
       "path": "reports/scenarios/public-evidence-sim.json",
       "run_id": "public-evidence-sim",
@@ -1798,6 +2543,1050 @@
       }
     }
   ],
+  "daily_research": {
+    "plan_path": "reports/daily/research-plan.json",
+    "memory_path": "reports/memory/topic-memory.json",
+    "evidence_path": "reports/evidence/daily-evidence-catalog.json",
+    "plan": {
+      "schema_version": "daily_research_plan.v1",
+      "run_id": "daily-research",
+      "generated_at": "2026-05-29T09:53:26.579536+00:00",
+      "topics_path": "config/topics.json",
+      "policy": {
+        "output_boundary": "research_only",
+        "disallowed": [
+          "paid_api_operations",
+          "account_credentials",
+          "live_trading",
+          "discretionary_management",
+          "unsupported_personalized_recommendations"
+        ]
+      },
+      "plan_items": [
+        {
+          "topic_id": "ai-infrastructure",
+          "name": "AI infrastructure",
+          "priority": 1,
+          "target_topics": [
+            "ai_infrastructure"
+          ],
+          "beginner_reason": "AI 수요가 실제 실적과 공급망으로 이어지는지 이해한다.",
+          "daily_questions": [
+            "오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "source_needs": [
+            "GDELT news/event narratives",
+            "SEC EDGAR company filings",
+            "Stooq broad market price context"
+          ],
+          "missing_evidence": [
+            "live_refresh",
+            "deduplication",
+            "source_terms_review"
+          ]
+        },
+        {
+          "topic_id": "semiconductors",
+          "name": "Semiconductors",
+          "priority": 2,
+          "target_topics": [
+            "ai_infrastructure",
+            "semiconductors"
+          ],
+          "beginner_reason": "반도체가 AI 기대와 경기 둔화 리스크를 동시에 받는 이유를 본다.",
+          "daily_questions": [
+            "오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "source_needs": [
+            "GDELT news/event narratives",
+            "SEC EDGAR company filings",
+            "Stooq broad market price context"
+          ],
+          "missing_evidence": [
+            "live_refresh",
+            "deduplication",
+            "source_terms_review"
+          ]
+        },
+        {
+          "topic_id": "us-rates",
+          "name": "US rates",
+          "priority": 3,
+          "target_topics": [
+            "rates"
+          ],
+          "beginner_reason": "금리가 성장 테마의 가격 부담을 어떻게 바꾸는지 본다.",
+          "daily_questions": [
+            "오늘 US rates에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "금리와 국채 수익률 변화가 이 테마의 가격 부담을 키우고 있나요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "source_needs": [
+            "FRED macro series once free-key support is configured",
+            "GDELT news/event narratives",
+            "Stooq broad market price context"
+          ],
+          "missing_evidence": [
+            "live_refresh",
+            "deduplication",
+            "source_terms_review"
+          ]
+        },
+        {
+          "topic_id": "consumer-weakness",
+          "name": "Consumer weakness",
+          "priority": 4,
+          "target_topics": [
+            "ai_infrastructure",
+            "consumer",
+            "inflation",
+            "risk"
+          ],
+          "beginner_reason": "소비 둔화가 기업 매출과 경기 기대에 주는 영향을 이해한다.",
+          "daily_questions": [
+            "오늘 Consumer weakness에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+            "소비와 물가 흐름이 기업 매출 기대를 약하게 만들 신호가 있나요?",
+            "이 주제가 틀릴 수 있는 가장 중요한 반대 근거는 무엇인가요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "source_needs": [
+            "FRED macro series once free-key support is configured",
+            "GDELT news/event narratives",
+            "SEC EDGAR company filings",
+            "Stooq broad market price context"
+          ],
+          "missing_evidence": [
+            "live_refresh",
+            "deduplication",
+            "source_terms_review"
+          ]
+        },
+        {
+          "topic_id": "korea-semiconductors",
+          "name": "Korea semiconductors",
+          "priority": 5,
+          "target_topics": [
+            "ai_infrastructure",
+            "risk",
+            "semiconductors"
+          ],
+          "beginner_reason": "Korea semiconductors 흐름이 시장에 왜 중요한지 초보자 관점에서 이해한다.",
+          "daily_questions": [
+            "오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+            "이 주제가 틀릴 수 있는 가장 중요한 반대 근거는 무엇인가요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "source_needs": [
+            "GDELT news/event narratives",
+            "SEC EDGAR company filings",
+            "Stooq broad market price context"
+          ],
+          "missing_evidence": [
+            "live_refresh",
+            "deduplication",
+            "source_terms_review"
+          ]
+        }
+      ],
+      "next_step": "collect_free_public_evidence"
+    },
+    "memory": {
+      "schema_version": "topic_memory.v1",
+      "generated_at": "2026-05-29T09:53:26.580631+00:00",
+      "run_count": 3,
+      "topics": [
+        {
+          "topic_id": "ai-infrastructure",
+          "name": "AI infrastructure",
+          "target_topics": [
+            "ai_infrastructure"
+          ],
+          "last_seen_item_ids": [
+            "gdelt-1",
+            "gdelt-2",
+            "sec-1",
+            "sec-2"
+          ],
+          "latest_titles": [
+            "AI infrastructure demand keeps data center and chip supply chains in focus",
+            "Higher yields pressure growth themes despite resilient demand",
+            "Apple Inc. 10-Q",
+            "Apple Inc. 8-K"
+          ],
+          "source_names": [
+            "GDELT",
+            "SEC EDGAR"
+          ],
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.",
+          "daily_questions": [
+            "오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "collection_gaps": [
+            "deduplication",
+            "live_refresh"
+          ]
+        },
+        {
+          "topic_id": "semiconductors",
+          "name": "Semiconductors",
+          "target_topics": [
+            "ai_infrastructure",
+            "semiconductors"
+          ],
+          "last_seen_item_ids": [
+            "gdelt-1",
+            "gdelt-2",
+            "sec-1",
+            "sec-2"
+          ],
+          "latest_titles": [
+            "AI infrastructure demand keeps data center and chip supply chains in focus",
+            "Higher yields pressure growth themes despite resilient demand",
+            "Apple Inc. 10-Q",
+            "Apple Inc. 8-K"
+          ],
+          "source_names": [
+            "GDELT",
+            "SEC EDGAR"
+          ],
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.",
+          "daily_questions": [
+            "오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "collection_gaps": [
+            "deduplication",
+            "live_refresh"
+          ]
+        },
+        {
+          "topic_id": "us-rates",
+          "name": "US rates",
+          "target_topics": [
+            "rates"
+          ],
+          "last_seen_item_ids": [
+            "gdelt-2",
+            "stooq-spy-trend"
+          ],
+          "latest_titles": [
+            "Higher yields pressure growth themes despite resilient demand",
+            "SPY broad market trend sample"
+          ],
+          "source_names": [
+            "GDELT",
+            "Stooq"
+          ],
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음.",
+          "daily_questions": [
+            "오늘 US rates에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "금리와 국채 수익률 변화가 이 테마의 가격 부담을 키우고 있나요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "collection_gaps": [
+            "deduplication",
+            "live_refresh"
+          ]
+        },
+        {
+          "topic_id": "consumer-weakness",
+          "name": "Consumer weakness",
+          "target_topics": [
+            "ai_infrastructure",
+            "consumer",
+            "inflation",
+            "risk"
+          ],
+          "last_seen_item_ids": [
+            "gdelt-1",
+            "gdelt-2",
+            "sec-1",
+            "sec-2",
+            "stooq-spy-trend"
+          ],
+          "latest_titles": [
+            "AI infrastructure demand keeps data center and chip supply chains in focus",
+            "Higher yields pressure growth themes despite resilient demand",
+            "SPY broad market trend sample",
+            "Apple Inc. 10-Q",
+            "Apple Inc. 8-K"
+          ],
+          "source_names": [
+            "GDELT",
+            "SEC EDGAR",
+            "Stooq"
+          ],
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.",
+          "daily_questions": [
+            "오늘 Consumer weakness에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+            "소비와 물가 흐름이 기업 매출 기대를 약하게 만들 신호가 있나요?",
+            "이 주제가 틀릴 수 있는 가장 중요한 반대 근거는 무엇인가요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "collection_gaps": [
+            "deduplication",
+            "live_refresh"
+          ]
+        },
+        {
+          "topic_id": "korea-semiconductors",
+          "name": "Korea semiconductors",
+          "target_topics": [
+            "ai_infrastructure",
+            "risk",
+            "semiconductors"
+          ],
+          "last_seen_item_ids": [
+            "gdelt-1",
+            "gdelt-2",
+            "sec-1",
+            "sec-2",
+            "stooq-spy-trend"
+          ],
+          "latest_titles": [
+            "AI infrastructure demand keeps data center and chip supply chains in focus",
+            "Higher yields pressure growth themes despite resilient demand",
+            "SPY broad market trend sample",
+            "Apple Inc. 10-Q",
+            "Apple Inc. 8-K"
+          ],
+          "source_names": [
+            "GDELT",
+            "SEC EDGAR",
+            "Stooq"
+          ],
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.",
+          "daily_questions": [
+            "오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+            "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+            "이 주제가 틀릴 수 있는 가장 중요한 반대 근거는 무엇인가요?",
+            "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?"
+          ],
+          "collection_gaps": [
+            "deduplication",
+            "live_refresh"
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "run_id": "daily-research",
+          "generated_at": "2026-05-29T09:50:43.859798+00:00",
+          "evidence_catalog": "2026-05-29T09:50:43.859719+00:00",
+          "topic_count": 5,
+          "changed_topics": [
+            "ai-infrastructure",
+            "semiconductors",
+            "us-rates",
+            "consumer-weakness",
+            "korea-semiconductors"
+          ]
+        },
+        {
+          "run_id": "daily-research",
+          "generated_at": "2026-05-29T09:51:11.869011+00:00",
+          "evidence_catalog": "2026-05-29T09:51:11.868873+00:00",
+          "topic_count": 5,
+          "changed_topics": []
+        },
+        {
+          "run_id": "daily-research",
+          "generated_at": "2026-05-29T09:53:26.580628+00:00",
+          "evidence_catalog": "2026-05-29T09:53:26.580476+00:00",
+          "topic_count": 5,
+          "changed_topics": []
+        }
+      ],
+      "policy": {
+        "output_boundary": "research_only",
+        "disallowed": [
+          "paid_api_operations",
+          "account_credentials",
+          "live_trading",
+          "discretionary_management",
+          "unsupported_personalized_recommendations"
+        ]
+      }
+    },
+    "evidence": {
+      "schema_version": "public_evidence_catalog.v1",
+      "generated_at": "2026-05-29T09:53:26.580476+00:00",
+      "mode": "sample_cache_topic_research",
+      "source_status": [
+        {
+          "source_id": "gdelt",
+          "source_name": "GDELT",
+          "adapter_id": "sample_cache_topic_research",
+          "item_count": "2",
+          "freshness_status": "sample_cache"
+        },
+        {
+          "source_id": "sec-edgar",
+          "source_name": "SEC EDGAR",
+          "adapter_id": "sample_cache_topic_research",
+          "item_count": "2",
+          "freshness_status": "sample_cache"
+        },
+        {
+          "source_id": "stooq",
+          "source_name": "Stooq",
+          "adapter_id": "sample_cache_topic_research",
+          "item_count": "1",
+          "freshness_status": "sample_cache"
+        }
+      ],
+      "source_matrix": [
+        {
+          "source_name": "SEC EDGAR",
+          "access_method": "HTTPS JSON endpoints: submissions and companyfacts",
+          "auth_requirement": "No API key; descriptive User-Agent required for live use",
+          "constraints": "US-listed company coverage; filing latency; structured facts vary by issuer",
+          "coverage": "Company filings, company facts, filing metadata",
+          "freshness": "Near filing publication time",
+          "data_quality_risk": "Narrative text and XBRL tags need issuer-aware interpretation",
+          "license_usage_concern": "Public SEC data; comply with fair access and User-Agent policy",
+          "mybroker_use_case": "Company-specific evidence, event catalysts, risk language, fundamentals context",
+          "implementation_priority": "high"
+        },
+        {
+          "source_name": "FRED",
+          "access_method": "HTTPS API",
+          "auth_requirement": "Free API key",
+          "constraints": "Macro series selection and release calendars must be curated",
+          "coverage": "Rates, inflation, labor, GDP, credit, macro indicators",
+          "freshness": "Official release dependent",
+          "data_quality_risk": "Series revisions and units can be misunderstood by beginners",
+          "license_usage_concern": "Check FRED terms and attribution requirements",
+          "mybroker_use_case": "Macro regime context and scenario branch triggers",
+          "implementation_priority": "medium"
+        },
+        {
+          "source_name": "GDELT",
+          "access_method": "DOC 2.0 API / GKG / cached JSON",
+          "auth_requirement": "No API key",
+          "constraints": "High noise; query design and deduping matter",
+          "coverage": "Global news, events, themes, locations, tone",
+          "freshness": "Near real time",
+          "data_quality_risk": "News duplication, source bias, and weak relevance can distort narratives",
+          "license_usage_concern": "Respect GDELT use guidance and source publisher rights",
+          "mybroker_use_case": "Narrative/event graph and persona disagreement evidence",
+          "implementation_priority": "high"
+        },
+        {
+          "source_name": "Stooq",
+          "access_method": "CSV download / cached CSV",
+          "auth_requirement": "No API key",
+          "constraints": "Coverage and symbols need validation; not an official exchange feed",
+          "coverage": "Historical OHLCV market data",
+          "freshness": "Market-data dependent; often delayed/end-of-day",
+          "data_quality_risk": "Corporate actions, symbol mapping, and stale downloads must be checked",
+          "license_usage_concern": "Confirm use terms before redistribution",
+          "mybroker_use_case": "Price context, trend/risk evidence, scenario validation hints",
+          "implementation_priority": "high"
+        },
+        {
+          "source_name": "Alpha Vantage free tier",
+          "access_method": "HTTPS API",
+          "auth_requirement": "Free API key",
+          "constraints": "Rate-limited free tier; terms and output size restrictions",
+          "coverage": "Market prices, indicators, some economic/company data",
+          "freshness": "Endpoint dependent",
+          "data_quality_risk": "Free-tier throttling and adjusted/unadjusted data choices",
+          "license_usage_concern": "Follow Alpha Vantage terms and attribution requirements",
+          "mybroker_use_case": "Fallback market data and technical indicators",
+          "implementation_priority": "low"
+        },
+        {
+          "source_name": "Nasdaq Data Link",
+          "access_method": "HTTPS API / dataset downloads",
+          "auth_requirement": "Free account/API key for many flows",
+          "constraints": "Free and premium datasets mixed; dataset-specific terms",
+          "coverage": "Curated financial, economic, and alternative datasets",
+          "freshness": "Dataset dependent",
+          "data_quality_risk": "Dataset availability and licensing can change",
+          "license_usage_concern": "Dataset-specific license controls redistribution",
+          "mybroker_use_case": "Optional curated datasets after license review",
+          "implementation_priority": "low"
+        }
+      ],
+      "items": [
+        {
+          "item_id": "gdelt-1",
+          "source_name": "GDELT",
+          "evidence_type": "news_narrative",
+          "title": "AI infrastructure demand keeps data center and chip supply chains in focus",
+          "published_at": "2026-05-28T12:00:00Z",
+          "url": "https://www.gdeltproject.org/",
+          "text": "AI infrastructure demand keeps data center and chip supply chains in focus Global news coverage continues to connect artificial intelligence spending with data center capacity, GPU supply, cloud infrastructure, electricity demand, and semiconductor supply chain constraints.",
+          "topics": [
+            "ai_infrastructure",
+            "semiconductors",
+            "consumer"
+          ],
+          "entities": [
+            "AI infrastructure",
+            "data centers",
+            "semiconductors",
+            "cloud"
+          ],
+          "freshness_status": "sample_cache",
+          "matched_interests": [
+            "ai-infrastructure",
+            "semiconductors",
+            "consumer-weakness",
+            "korea-semiconductors"
+          ]
+        },
+        {
+          "item_id": "gdelt-2",
+          "source_name": "GDELT",
+          "evidence_type": "news_narrative",
+          "title": "Higher yields pressure growth themes despite resilient demand",
+          "published_at": "2026-05-28T13:00:00Z",
+          "url": "https://www.gdeltproject.org/",
+          "text": "Higher yields pressure growth themes despite resilient demand Market narratives point to Treasury yield volatility and Federal Reserve rate expectations as a source of pressure for long-duration growth themes, even where consumer and enterprise demand remains resilient.",
+          "topics": [
+            "ai_infrastructure",
+            "rates",
+            "consumer",
+            "risk"
+          ],
+          "entities": [
+            "Treasury yields",
+            "Federal Reserve",
+            "growth stocks",
+            "consumer demand"
+          ],
+          "freshness_status": "sample_cache",
+          "matched_interests": [
+            "ai-infrastructure",
+            "semiconductors",
+            "us-rates",
+            "consumer-weakness",
+            "korea-semiconductors"
+          ]
+        },
+        {
+          "item_id": "stooq-spy-trend",
+          "source_name": "Stooq",
+          "evidence_type": "market_price_context",
+          "title": "SPY broad market trend sample",
+          "published_at": "2026-05-28",
+          "url": "https://stooq.com/",
+          "text": "SPY market proxy moved 상승 1.46% from 2026-05-20 to 2026-05-28. This price evidence helps test whether news narratives align with broad market risk appetite, rates pressure, and volatility.",
+          "topics": [
+            "rates",
+            "risk"
+          ],
+          "entities": [
+            "SPY",
+            "broad market"
+          ],
+          "freshness_status": "sample_cache",
+          "matched_interests": [
+            "us-rates",
+            "consumer-weakness",
+            "korea-semiconductors"
+          ]
+        },
+        {
+          "item_id": "sec-1",
+          "source_name": "SEC EDGAR",
+          "evidence_type": "company_filing",
+          "title": "Apple Inc. 10-Q",
+          "published_at": "2026-05-01",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=320193",
+          "text": "Apple Inc. filed 10-Q on 2026-05-01. Business context: Quarterly filing discusses consumer demand, services revenue, supply chain risk, AI features, and macroeconomic uncertainty.. This public filing evidence can anchor company-specific risk, consumer demand, supply chain, and AI infrastructure narratives.",
+          "topics": [
+            "ai_infrastructure",
+            "semiconductors",
+            "consumer",
+            "risk"
+          ],
+          "entities": [
+            "Apple Inc.",
+            "10-Q"
+          ],
+          "freshness_status": "sample_cache",
+          "matched_interests": [
+            "ai-infrastructure",
+            "semiconductors",
+            "consumer-weakness",
+            "korea-semiconductors"
+          ]
+        },
+        {
+          "item_id": "sec-2",
+          "source_name": "SEC EDGAR",
+          "evidence_type": "company_filing",
+          "title": "Apple Inc. 8-K",
+          "published_at": "2026-05-02",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=320193",
+          "text": "Apple Inc. filed 8-K on 2026-05-02. Business context: Current report provides event evidence that can anchor company-specific scenario branches and risk review.. This public filing evidence can anchor company-specific risk, consumer demand, supply chain, and AI infrastructure narratives.",
+          "topics": [
+            "ai_infrastructure",
+            "semiconductors",
+            "consumer",
+            "risk"
+          ],
+          "entities": [
+            "Apple Inc.",
+            "8-K"
+          ],
+          "freshness_status": "sample_cache",
+          "matched_interests": [
+            "ai-infrastructure",
+            "semiconductors",
+            "consumer-weakness",
+            "korea-semiconductors"
+          ]
+        }
+      ],
+      "graph": {
+        "nodes": [
+          {
+            "id": "source:GDELT",
+            "label": "GDELT",
+            "kind": "source"
+          },
+          {
+            "id": "topic:ai_infrastructure",
+            "label": "ai_infrastructure",
+            "kind": "topic"
+          },
+          {
+            "id": "topic:semiconductors",
+            "label": "semiconductors",
+            "kind": "topic"
+          },
+          {
+            "id": "topic:consumer",
+            "label": "consumer",
+            "kind": "topic"
+          },
+          {
+            "id": "entity:AI infrastructure",
+            "label": "AI infrastructure",
+            "kind": "entity"
+          },
+          {
+            "id": "entity:data centers",
+            "label": "data centers",
+            "kind": "entity"
+          },
+          {
+            "id": "entity:semiconductors",
+            "label": "semiconductors",
+            "kind": "entity"
+          },
+          {
+            "id": "entity:cloud",
+            "label": "cloud",
+            "kind": "entity"
+          },
+          {
+            "id": "topic:rates",
+            "label": "rates",
+            "kind": "topic"
+          },
+          {
+            "id": "topic:risk",
+            "label": "risk",
+            "kind": "topic"
+          },
+          {
+            "id": "entity:Treasury yields",
+            "label": "Treasury yields",
+            "kind": "entity"
+          },
+          {
+            "id": "entity:Federal Reserve",
+            "label": "Federal Reserve",
+            "kind": "entity"
+          },
+          {
+            "id": "entity:growth stocks",
+            "label": "growth stocks",
+            "kind": "entity"
+          },
+          {
+            "id": "entity:consumer demand",
+            "label": "consumer demand",
+            "kind": "entity"
+          },
+          {
+            "id": "source:Stooq",
+            "label": "Stooq",
+            "kind": "source"
+          },
+          {
+            "id": "entity:SPY",
+            "label": "SPY",
+            "kind": "entity"
+          },
+          {
+            "id": "entity:broad market",
+            "label": "broad market",
+            "kind": "entity"
+          },
+          {
+            "id": "source:SEC EDGAR",
+            "label": "SEC EDGAR",
+            "kind": "source"
+          },
+          {
+            "id": "entity:Apple Inc.",
+            "label": "Apple Inc.",
+            "kind": "entity"
+          },
+          {
+            "id": "entity:10-Q",
+            "label": "10-Q",
+            "kind": "entity"
+          },
+          {
+            "id": "entity:8-K",
+            "label": "8-K",
+            "kind": "entity"
+          }
+        ],
+        "edges": [
+          {
+            "source": "source:GDELT",
+            "target": "topic:ai_infrastructure",
+            "relation": "supports"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "topic:semiconductors",
+            "relation": "supports"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "topic:consumer",
+            "relation": "supports"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "entity:AI infrastructure",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "entity:data centers",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "entity:semiconductors",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "entity:cloud",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "topic:ai_infrastructure",
+            "relation": "supports"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "topic:rates",
+            "relation": "supports"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "topic:consumer",
+            "relation": "supports"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "topic:risk",
+            "relation": "supports"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "entity:Treasury yields",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "entity:Federal Reserve",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "entity:growth stocks",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:GDELT",
+            "target": "entity:consumer demand",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:Stooq",
+            "target": "topic:rates",
+            "relation": "supports"
+          },
+          {
+            "source": "source:Stooq",
+            "target": "topic:risk",
+            "relation": "supports"
+          },
+          {
+            "source": "source:Stooq",
+            "target": "entity:SPY",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:Stooq",
+            "target": "entity:broad market",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "topic:ai_infrastructure",
+            "relation": "supports"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "topic:semiconductors",
+            "relation": "supports"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "topic:consumer",
+            "relation": "supports"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "topic:risk",
+            "relation": "supports"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "entity:Apple Inc.",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "entity:10-Q",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "topic:ai_infrastructure",
+            "relation": "supports"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "topic:semiconductors",
+            "relation": "supports"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "topic:consumer",
+            "relation": "supports"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "topic:risk",
+            "relation": "supports"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "entity:Apple Inc.",
+            "relation": "mentions"
+          },
+          {
+            "source": "source:SEC EDGAR",
+            "target": "entity:8-K",
+            "relation": "mentions"
+          }
+        ],
+        "narrative_summary": "Public evidence connects 5 items across topics: ai_infrastructure, consumer, rates, risk, semiconductors."
+      },
+      "feasibility": {
+        "status": "meaningful",
+        "reasons": [
+          "3 source families observed",
+          "5 market topics observed",
+          "21 graph nodes and 31 edges generated"
+        ],
+        "blockers": [],
+        "next_gaps": [
+          "live refresh policy",
+          "deduplication",
+          "source licensing review",
+          "LLM-free entity extraction quality"
+        ]
+      },
+      "configured_interests": [
+        {
+          "topic_id": "ai-infrastructure",
+          "name": "AI infrastructure",
+          "description": "AI data center, GPU, cloud, power, and semiconductor demand.",
+          "beginner_focus": "AI 수요가 실제 실적과 공급망으로 이어지는지 이해한다.",
+          "keywords": [
+            "ai",
+            "data center",
+            "gpu",
+            "cloud",
+            "semiconductors"
+          ],
+          "target_topics": [
+            "ai_infrastructure"
+          ],
+          "status": "active"
+        },
+        {
+          "topic_id": "semiconductors",
+          "name": "Semiconductors",
+          "description": "Chip supply chain, memory, foundry, and AI-linked demand.",
+          "beginner_focus": "반도체가 AI 기대와 경기 둔화 리스크를 동시에 받는 이유를 본다.",
+          "keywords": [
+            "semiconductor",
+            "chip",
+            "memory",
+            "supply chain"
+          ],
+          "target_topics": [
+            "ai_infrastructure",
+            "semiconductors"
+          ],
+          "status": "active"
+        },
+        {
+          "topic_id": "us-rates",
+          "name": "US rates",
+          "description": "Treasury yields, Fed expectations, liquidity, and growth-stock pressure.",
+          "beginner_focus": "금리가 성장 테마의 가격 부담을 어떻게 바꾸는지 본다.",
+          "keywords": [
+            "rates",
+            "yield",
+            "fed",
+            "treasury"
+          ],
+          "target_topics": [
+            "rates"
+          ],
+          "status": "active"
+        },
+        {
+          "topic_id": "consumer-weakness",
+          "name": "Consumer weakness",
+          "description": "Consumer demand, retail pressure, employment, and inflation burden.",
+          "beginner_focus": "소비 둔화가 기업 매출과 경기 기대에 주는 영향을 이해한다.",
+          "keywords": [
+            "consumer",
+            "retail",
+            "inflation",
+            "demand",
+            "risk"
+          ],
+          "target_topics": [
+            "ai_infrastructure",
+            "consumer",
+            "inflation",
+            "risk"
+          ],
+          "status": "active"
+        },
+        {
+          "topic_id": "korea-semiconductors",
+          "name": "Korea semiconductors",
+          "description": "Korea memory exporters, AI demand, and cycle risk",
+          "beginner_focus": "Korea semiconductors 흐름이 시장에 왜 중요한지 초보자 관점에서 이해한다.",
+          "keywords": [
+            "korea",
+            "memory",
+            "chip"
+          ],
+          "target_topics": [
+            "ai_infrastructure",
+            "risk",
+            "semiconductors"
+          ],
+          "status": "active"
+        }
+      ],
+      "research_plan": {
+        "run_id": "daily-research",
+        "generated_at": "2026-05-29T09:53:26.579536+00:00",
+        "topic_count": 5,
+        "next_step": "collect_free_public_evidence"
+      },
+      "collection_gaps": [
+        "live_refresh_not_enabled",
+        "source_license_review_pending"
+      ],
+      "topic_memory_snapshot": {
+        "memory_path": "reports/memory/topic-memory.json",
+        "run_count": 3,
+        "topics": [
+          {
+            "topic_id": "ai-infrastructure",
+            "name": "AI infrastructure",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+          },
+          {
+            "topic_id": "semiconductors",
+            "name": "Semiconductors",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+          },
+          {
+            "topic_id": "us-rates",
+            "name": "US rates",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음."
+          },
+          {
+            "topic_id": "consumer-weakness",
+            "name": "Consumer weakness",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+          },
+          {
+            "topic_id": "korea-semiconductors",
+            "name": "Korea semiconductors",
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+          }
+        ]
+      }
+    },
+    "ready": true
+  },
   "totals": {
     "total_signals": 4,
     "positive_watch": 2,

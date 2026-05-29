@@ -82,6 +82,35 @@ class DashboardTests(unittest.TestCase):
         self.assertNotIn("다음 행동 후보", html)
         self.assertNotIn("MiroFish 참고 초보자 보기", html)
 
+    def test_dashboard_includes_daily_research_ops_without_product_ui(self) -> None:
+        from mybroker.topics import build_research_plan, collect_topic_evidence, init_topic_config
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reports_dir = root / "reports" / "runs"
+            topics_path = root / "topics.json"
+            plan_path = root / "reports" / "daily" / "research-plan.json"
+            catalog_path = root / "reports" / "evidence" / "daily-evidence-catalog.json"
+            memory_path = root / "reports" / "memory" / "topic-memory.json"
+            init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path)
+            collect_topic_evidence(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                output_path=catalog_path,
+                memory_path=memory_path,
+            )
+
+            rollup = build_report_rollup(reports_dir)
+            dashboard_path = write_dashboard(rollup, root / "reports" / "dashboard.html")
+            html = dashboard_path.read_text(encoding="utf-8")
+
+        self.assertTrue(rollup["daily_research"]["ready"])
+        self.assertIn("Daily research loop 상태", html)
+        self.assertIn("Topic memory", html)
+        self.assertIn("Collection gaps", html)
+        self.assertNotIn("다음 행동 후보", html)
+
     def test_rollup_compares_latest_against_previous(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             reports_dir = Path(directory) / "runs"

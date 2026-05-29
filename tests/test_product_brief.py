@@ -27,6 +27,7 @@ class ProductBriefTests(unittest.TestCase):
             html = brief_path.read_text(encoding="utf-8")
 
         self.assertIn("MyBroker 시장 브리프", html)
+        self.assertIn("오늘 바뀐 점", html)
         self.assertIn("시장 관계 지도", html)
         self.assertIn("세 가지 경로", html)
         self.assertIn("다음에 확인할 질문", html)

@@ -16,6 +16,8 @@ Shows report counts, source coverage, freshness, validation, generated artifact 
 
 Must not be treated as the product UX.
 
+For the autonomous daily research loop it may show topic coverage, latest run status, source freshness, collection gaps, topic memory health, and artifact paths. It still must not render the beginner market map or action candidates as the main product surface.
+
 ## 3. MyBroker Product Brief
 
 Purpose: beginner-facing market understanding.
@@ -31,6 +33,9 @@ Purpose: reproducibility and audit.
 Machine-readable artifacts include:
 
 - `public_evidence_catalog.v1`
+- `topic_config.v1`
+- `daily_research_plan.v1`
+- `topic_memory.v1`
 - `scenario_report.v1`
 - `market_verdict.v1`
 - `research_report.v1`

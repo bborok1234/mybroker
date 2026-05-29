@@ -37,6 +37,8 @@ def render_product_brief(scenario: dict[str, Any], verdict: dict[str, Any]) -> s
         for source in catalog.get("source_coverage", [])
         if source.get("source_name")
     })
+    memory_snapshot = catalog.get("topic_memory_snapshot", {})
+    memory_topics = memory_snapshot.get("topics", []) if isinstance(memory_snapshot, dict) else []
     product_confidence = _product_confidence(catalog)
 
     entity_cards = "".join(
@@ -78,6 +80,16 @@ def render_product_brief(scenario: dict[str, Any], verdict: dict[str, Any]) -> s
         f"<li><strong>{esc(item.get('term', ''))}</strong><span>{esc(item.get('explanation', ''))}</span></li>"
         for item in explanations[:7]
     )
+    change_cards = "".join(
+        "<article class='change-card'>"
+        f"<span>{esc('새 근거' if item.get('changed_since_previous') else '누적 관찰')}</span>"
+        f"<h3>{esc(_interest_label(item.get('name', '')))}</h3>"
+        f"<p>{esc(_interest_summary_label(item.get('summary', '')))}</p>"
+        "</article>"
+        for item in memory_topics[:4]
+    )
+    if not change_cards:
+        change_cards = "<p>아직 누적 관심 주제 기록이 없습니다. 오늘 브리프는 현재 근거만 바탕으로 작성되었습니다.</p>"
     source_text = ", ".join(source_names) if source_names else "로컬 seed"
     topic_chips = "".join(chip(f"{_topic_label(topic)} {count}", "topic") for topic, count in sorted(topic_counts.items(), key=lambda item: (-item[1], item[0]))[:6])
     questions = _inspection_questions(topic_counts, product_confidence)
@@ -116,6 +128,9 @@ p {{ margin:0; color:var(--muted); }}
 .path-card:nth-child(3) {{ border-color:#e8c4c4; background:#fff8f8; }}
 .split {{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }}
 .persona-card,.action-card {{ margin-bottom:10px; }}
+.change-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.change-card {{ border:1px solid var(--line); border-radius:8px; padding:14px; background:#ffffff; }}
+.change-card span {{ display:inline-flex; margin-bottom:8px; color:var(--green); font-size:12px; font-weight:800; }}
 .chiprow {{ display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }}
 .chip {{ display:inline-flex; align-items:center; min-height:28px; border-radius:999px; padding:3px 10px; background:#edf2ef; color:#244238; font-size:12px; font-weight:700; }}
 .chip.topic {{ background:#eef4fb; color:#1f4f78; }}
@@ -127,7 +142,7 @@ p {{ margin:0; color:var(--muted); }}
 .terms strong {{ color:var(--ink); }}
 .terms span {{ color:var(--muted); }}
 .boundary {{ border-left:4px solid var(--green); background:#f6fbf8; }}
-@media (max-width:900px) {{ main {{ padding:16px; }} header,.split {{ display:block; min-height:auto; }} h1 {{ font-size:32px; }} .grid-4,.map-grid,.scenario-grid,.questions {{ grid-template-columns:1fr; }} .terms li {{ grid-template-columns:1fr; }} }}
+@media (max-width:900px) {{ main {{ padding:16px; }} header,.split {{ display:block; min-height:auto; }} h1 {{ font-size:32px; }} .grid-4,.map-grid,.scenario-grid,.questions,.change-grid {{ grid-template-columns:1fr; }} .terms li {{ grid-template-columns:1fr; }} }}
 </style>
 </head>
 <body>
@@ -150,6 +165,10 @@ p {{ margin:0; color:var(--muted); }}
 <article class="metric"><span>초보자 맥락</span><strong>{esc(profile.get('experience_level', '일반'))}</strong><p>{esc(profile.get('learning_goal', '시장 이해'))}</p></article>
 <article class="metric"><span>관찰 대상</span><strong>{esc(len(entities))}</strong><p>테마와 리스크 연결</p></article>
 <article class="metric"><span>출력 경계</span><strong>리서치 전용</strong><p>주문 실행이나 일임 운용이 아닙니다.</p></article>
+</section>
+<section class="panel">
+<h2>오늘 바뀐 점</h2>
+<div class="change-grid">{change_cards}</div>
 </section>
 <section class="panel">
 <h2>시장 관계 지도</h2>
@@ -216,6 +235,32 @@ def _topic_label(topic: str) -> str:
         "consumer": "소비",
         "risk": "리스크",
     }.get(topic, topic)
+
+
+def _interest_label(name: str) -> str:
+    return {
+        "AI infrastructure": "AI 인프라",
+        "Semiconductors": "반도체",
+        "US rates": "미국 금리",
+        "Consumer weakness": "소비 둔화",
+        "Korea semiconductors": "한국 반도체",
+    }.get(name, name)
+
+
+def _interest_summary_label(summary: str) -> str:
+    replacements = {
+        "AI infrastructure": "AI 인프라",
+        "Semiconductors": "반도체",
+        "US rates": "미국 금리",
+        "Consumer weakness": "소비 둔화",
+        "Korea semiconductors": "한국 반도체",
+        "sample cache": "샘플 자료",
+        "new evidence": "새 근거",
+    }
+    updated = summary
+    for source, target in replacements.items():
+        updated = updated.replace(source, target)
+    return updated
 
 
 def _action_label(action_type: str) -> str:
