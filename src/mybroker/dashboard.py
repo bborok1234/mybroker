@@ -88,6 +88,9 @@ def build_report_rollup(reports_dir: str | Path = "reports/runs") -> dict[str, A
             "generated_at": payload.get("generated_at", ""),
             "product_mode": payload.get("product_mode", ""),
             "seed_sources": payload.get("seed_sources", []),
+            "evidence_catalog": payload.get("evidence_catalog", {}),
+            "profile_context": payload.get("profile_context"),
+            "output_boundary": payload.get("output_boundary", ""),
             "market_map": payload.get("market_map", {}),
             "persona_views": payload.get("persona_views", []),
             "scenarios": payload.get("scenarios", []),
@@ -245,7 +248,7 @@ p {{ margin:0; color:var(--muted); }}
 .metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }}
 .metric {{ border:1px solid var(--line); border-radius:8px; padding:12px; background:#fffaf1; min-height:106px; }}
 .metric span {{ display:block; color:var(--muted); font-size:12px; font-weight:700; }}
-.metric strong {{ display:block; margin-top:6px; font-size:24px; }}
+.metric strong {{ display:block; margin-top:6px; font-size:24px; line-height:1.15; overflow-wrap:anywhere; }}
 .metric small {{ display:block; color:var(--muted); margin-top:6px; overflow:hidden; text-overflow:ellipsis; }}
 .split {{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }}
 .sim-grid {{ display:grid; grid-template-columns:1.05fr .95fr; gap:14px; }}
@@ -338,6 +341,9 @@ def render_scenario_section(scenario: dict[str, Any]) -> str:
 </section>
 """
     market_map = scenario.get("market_map", {})
+    catalog = scenario.get("evidence_catalog", {})
+    profile = scenario.get("profile_context") or {}
+    boundary = scenario.get("output_boundary", "generic_research_only")
     entities = market_map.get("entities", [])
     entity_cards = "".join(
         "<article class='node'>"
@@ -378,8 +384,25 @@ def render_scenario_section(scenario: dict[str, Any]) -> str:
         f"<li><strong>{esc(item.get('term', ''))}</strong>: {esc(item.get('explanation', ''))}</li>"
         for item in scenario.get("beginner_explanations", [])[:6]
     )
+    topics = catalog.get("topic_counts", {})
+    topic_chips = "".join(chip(f"{topic}: {count}") for topic, count in sorted(topics.items()))
+    profile_summary = (
+        f"{esc(profile.get('experience_level', ''))} / {esc(profile.get('learning_goal', ''))} / "
+        f"{esc(profile.get('risk_comfort', ''))} / {esc(profile.get('time_horizon', ''))}"
+        if profile
+        else "프로필 없음: generic research-only 후보만 표시"
+    )
     status = "valid" if scenario.get("validation", {}).get("valid") else "invalid"
     return f"""
+<section class="panel">
+<div class="metrics">
+{metric('Evidence sources', catalog.get('source_count', 0), catalog.get('coverage_status', 'unknown'))}
+{metric('Output boundary', boundary, 'context-aware is still research-only')}
+{metric('Beginner profile', profile.get('profile_id', 'none'), profile_summary)}
+{metric('Missing context', len(catalog.get('missing_context', [])), ', '.join(catalog.get('missing_context', [])) or 'none')}
+</div>
+<div class="chiprow">{topic_chips}</div>
+</section>
 <section class="panel">
 <div class="sim-grid">
 <div>

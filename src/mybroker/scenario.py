@@ -9,7 +9,9 @@ from typing import Any, Iterable
 
 from mybroker.models import (
     ActionCandidate,
+    BeginnerProfile,
     BeginnerExplanation,
+    EvidenceCatalog,
     EvidenceSeed,
     MarketEntity,
     MarketMap,
@@ -20,6 +22,7 @@ from mybroker.models import (
     ScenarioReport,
 )
 from mybroker.policy import classify_action
+from mybroker.profile import load_beginner_profile
 
 
 SCENARIO_SCHEMA_VERSION = "scenario_report.v1"
@@ -127,30 +130,60 @@ def build_market_map(seeds: list[EvidenceSeed]) -> MarketMap:
     return MarketMap(entities=entities, relationships=relationships, beginner_summary=summary)
 
 
+def build_evidence_catalog(seeds: list[EvidenceSeed], profile: BeginnerProfile | None = None) -> EvidenceCatalog:
+    topic_counts: dict[str, int] = {}
+    for seed in seeds:
+        for topic in seed.topics:
+            topic_counts[topic] = topic_counts.get(topic, 0) + 1
+    missing_context = []
+    if not profile:
+        missing_context.append("beginner_profile")
+    if len(seeds) < 2:
+        missing_context.append("multiple_evidence_sources")
+    if "risk" not in topic_counts:
+        missing_context.append("explicit_risk_evidence")
+    coverage_status = "strong" if len(seeds) >= 2 and "risk" in topic_counts else "limited"
+    return EvidenceCatalog(
+        source_count=len(seeds),
+        topic_counts=dict(sorted(topic_counts.items())),
+        coverage_status=coverage_status,
+        missing_context=missing_context,
+    )
+
+
 def run_market_simulation(
     *,
     seed_sources: Iterable[str | Path] | None = None,
+    profile_path: str | Path | None = None,
     run_id: str = "beginner-market-sim",
     generated_at: datetime | None = None,
 ) -> ScenarioReport:
     seeds = load_evidence_seeds(seed_sources)
+    profile = load_beginner_profile(profile_path)
+    evidence_catalog = build_evidence_catalog(seeds, profile)
     market_map = build_market_map(seeds)
     topics = {topic for seed in seeds for topic in seed.topics}
-    personas = _persona_views(topics, seeds)
-    scenarios = _scenario_paths(topics, market_map)
-    explanations = _beginner_explanations(topics)
-    action_candidates = _action_candidates(topics, market_map)
+    personas = _persona_views(topics, seeds, profile)
+    scenarios = _scenario_paths(topics, market_map, profile)
+    explanations = _beginner_explanations(topics, profile)
+    action_candidates = _action_candidates(topics, market_map, profile)
     policy = classify_action("scenario_simulation")
     warnings = [
         "교육/리서치/시뮬레이션 목적의 로컬 산출물입니다. 계좌 접근, 주문 실행, 일임 운용을 하지 않습니다.",
-        "사용자 재무상황과 위험성향이 없으므로 개인화된 매수/매도 지시가 아니라 다음 관찰 후보만 제공합니다.",
     ]
+    if profile:
+        warnings.append("사용자 입력은 학습/위험/기간 맥락만 반영합니다. 개인화된 매수/매도 지시나 포트폴리오 운용은 아닙니다.")
+    else:
+        warnings.append("사용자 재무상황과 위험성향이 없으므로 generic next-action 후보만 제공합니다.")
     return ScenarioReport(
         schema_version=SCENARIO_SCHEMA_VERSION,
         run_id=run_id,
         generated_at=generated_at or datetime.now(timezone.utc),
         product_mode="beginner_market_understanding_simulation",
         seed_sources=seeds,
+        evidence_catalog=evidence_catalog,
+        profile_context=profile,
+        output_boundary=_output_boundary(profile),
         market_map=market_map,
         persona_views=personas,
         scenarios=scenarios,
@@ -183,6 +216,9 @@ def build_verdict(report: ScenarioReport) -> dict[str, Any]:
         "generated_at": report.generated_at.isoformat(),
         "primary_next_step": asdict(primary) if primary else None,
         "action_candidates": [asdict(candidate) for candidate in candidates],
+        "profile_context": asdict(report.profile_context) if report.profile_context else None,
+        "output_boundary": report.output_boundary,
+        "evidence_catalog": asdict(report.evidence_catalog),
         "scenario_count": len(report.scenarios),
         "policy": asdict(report.policy),
         "operator_note": "초보자는 후보를 매수 지시로 받아들이지 말고 근거, 반대 시나리오, 본인 투자기간을 먼저 확인해야 합니다.",
@@ -209,6 +245,8 @@ def validate_scenario_payload(payload: dict[str, Any]) -> list[str]:
         "scenarios",
         "beginner_explanations",
         "action_candidates",
+        "evidence_catalog",
+        "output_boundary",
         "policy",
         "warnings",
     }
@@ -219,6 +257,17 @@ def validate_scenario_payload(payload: dict[str, Any]) -> list[str]:
         errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
     if not payload.get("seed_sources"):
         errors.append("seed_sources must not be empty")
+    evidence_catalog = payload.get("evidence_catalog", {})
+    for field in ["source_count", "topic_counts", "coverage_status", "missing_context"]:
+        if field not in evidence_catalog:
+            errors.append(f"evidence_catalog missing {field}")
+    if payload.get("profile_context") is not None:
+        profile = payload.get("profile_context", {})
+        for field in ["profile_id", "experience_level", "learning_goal", "risk_comfort", "time_horizon", "decision_style"]:
+            if field not in profile:
+                errors.append(f"profile_context missing {field}")
+    if payload.get("output_boundary") not in {"generic_research_only", "context_aware_research_only"}:
+        errors.append(f"invalid output_boundary: {payload.get('output_boundary')}")
     market_map = payload.get("market_map", {})
     if not market_map.get("entities"):
         errors.append("market_map.entities must not be empty")
@@ -262,6 +311,8 @@ def validate_verdict_payload(payload: dict[str, Any]) -> list[str]:
     policy = payload.get("policy", {})
     if policy.get("kind") != "scenario_simulation":
         errors.append("policy.kind must be scenario_simulation")
+    if payload.get("output_boundary") not in {"generic_research_only", "context_aware_research_only"}:
+        errors.append("output_boundary is required")
     return errors
 
 
@@ -338,15 +389,20 @@ def _beginner_market_summary(entities: list[MarketEntity]) -> str:
     return f"이번 seed에서 먼저 볼 흐름은 {', '.join(names)}입니다. 초보자는 가격보다 '왜 이 흐름이 생겼는지'와 '무엇이 바뀌면 틀리는지'를 먼저 확인해야 합니다."
 
 
-def _persona_views(topics: set[str], seeds: list[EvidenceSeed]) -> list[PersonaView]:
+def _persona_views(topics: set[str], seeds: list[EvidenceSeed], profile: BeginnerProfile | None = None) -> list[PersonaView]:
     evidence = [seed.title for seed in seeds][:3]
+    tutor_summary = "종목부터 고르기보다 시장이 움직인 이유, 연결된 업종, 틀릴 조건을 먼저 이해해야 한다고 봅니다."
+    if profile and profile.learning_goal == "vocabulary":
+        tutor_summary = "용어 이해가 우선 목표이므로 각 후보를 행동보다 개념 학습 단위로 쪼개야 한다고 봅니다."
+    if profile and profile.decision_style == "risk_first":
+        tutor_summary = "리스크 먼저 보는 성향이므로 상방보다 보류 조건과 반대 시나리오를 먼저 읽어야 한다고 봅니다."
     views = [
         PersonaView(
             persona_id="beginner_tutor",
             name="초보자 튜터",
             role="용어와 인과관계 해설",
             stance="explain_first",
-            summary="종목부터 고르기보다 시장이 움직인 이유, 연결된 업종, 틀릴 조건을 먼저 이해해야 한다고 봅니다.",
+            summary=tutor_summary,
             confidence=0.82,
             evidence=evidence,
         ),
@@ -381,8 +437,11 @@ def _persona_views(topics: set[str], seeds: list[EvidenceSeed]) -> list[PersonaV
     return views
 
 
-def _scenario_paths(topics: set[str], market_map: MarketMap) -> list[ScenarioPath]:
+def _scenario_paths(topics: set[str], market_map: MarketMap, profile: BeginnerProfile | None = None) -> list[ScenarioPath]:
     primary_watch = [entity.name for entity in market_map.entities[:3]]
+    risk_note = "좋은 뉴스가 이미 가격에 반영됐을 수 있습니다."
+    if profile and profile.risk_comfort == "low":
+        risk_note = "낮은 위험 선호에서는 관찰 기준과 보류 조건을 먼저 정해야 합니다."
     return [
         ScenarioPath(
             scenario_id="base",
@@ -392,7 +451,7 @@ def _scenario_paths(topics: set[str], market_map: MarketMap) -> list[ScenarioPat
             triggers=["실적 발표가 기대에 부합", "금리 기대가 급격히 악화되지 않음", "거래량이 과열 없이 유지"],
             watch_items=primary_watch,
             beginner_explanation="가장 먼저 볼 경로입니다. 지금 당장 결론을 내리기보다 어떤 조건이 유지되는지 체크합니다.",
-            risk_notes=["좋은 뉴스가 이미 가격에 반영됐을 수 있습니다."],
+            risk_notes=[risk_note],
         ),
         ScenarioPath(
             scenario_id="bull",
@@ -417,11 +476,14 @@ def _scenario_paths(topics: set[str], market_map: MarketMap) -> list[ScenarioPat
     ]
 
 
-def _beginner_explanations(topics: set[str]) -> list[BeginnerExplanation]:
+def _beginner_explanations(topics: set[str], profile: BeginnerProfile | None = None) -> list[BeginnerExplanation]:
     explanations: list[BeginnerExplanation] = [
         BeginnerExplanation("관찰 후보", "지금 바로 사라는 뜻이 아니라 뉴스, 가격, 실적, 리스크를 계속 볼 가치가 있다는 뜻입니다."),
         BeginnerExplanation("반대 시나리오", "내 생각이 틀리는 경우를 미리 적어두는 것입니다. 초보자일수록 이 단계가 중요합니다."),
+        BeginnerExplanation("컨텍스트 반영", "학습 목표, 위험 선호, 투자 기간 같은 입력은 설명의 우선순위를 조정할 뿐 매수/매도 지시가 되지 않습니다."),
     ]
+    if profile and profile.risk_comfort == "low":
+        explanations.append(BeginnerExplanation("보류 조건", "낮은 위험 선호에서는 언제 하지 않을지를 먼저 정해 손실 가능성을 줄이는 기준입니다."))
     seen = {item.term for item in explanations}
     for topic in sorted(topics):
         for term, explanation in TOPIC_DEFINITIONS.get(topic, {}).get("terms", []):
@@ -431,15 +493,17 @@ def _beginner_explanations(topics: set[str]) -> list[BeginnerExplanation]:
     return explanations
 
 
-def _action_candidates(topics: set[str], market_map: MarketMap) -> list[ActionCandidate]:
+def _action_candidates(topics: set[str], market_map: MarketMap, profile: BeginnerProfile | None = None) -> list[ActionCandidate]:
     entities = [entity.name for entity in market_map.entities[:3]]
+    learn_confidence = 0.94 if profile and profile.experience_level in {"new", "beginner"} else 0.9
+    observe_confidence = 0.78 if profile and profile.risk_comfort == "low" else 0.84
     candidates = [
         ActionCandidate(
             action_type="learn",
             title="먼저 시장 흐름을 학습",
             rationale=f"{', '.join(entities) or '핵심 흐름'}가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
-            suitability="종목 선택 기준이 아직 없는 초보자에게 적합합니다.",
-            confidence=0.9,
+            suitability=_profile_suitability(profile, "종목 선택 기준이 아직 없는 초보자에게 적합합니다."),
+            confidence=learn_confidence,
             evidence=[market_map.beginner_summary],
             risk_notes=["학습 없이 후보를 매수 결론으로 해석하지 마세요."],
         ),
@@ -447,8 +511,8 @@ def _action_candidates(topics: set[str], market_map: MarketMap) -> list[ActionCa
             action_type="observe",
             title="관찰 리스트 만들기",
             rationale="주요 흐름과 반대 시나리오를 같이 적어두면 다음 뉴스의 의미를 빠르게 판단할 수 있습니다.",
-            suitability="시장을 따라가고 싶지만 바로 투자하기 부담스러운 사용자에게 적합합니다.",
-            confidence=0.84,
+            suitability=_profile_suitability(profile, "시장을 따라가고 싶지만 바로 투자하기 부담스러운 사용자에게 적합합니다."),
+            confidence=observe_confidence,
             evidence=entities,
             risk_notes=["관찰은 투자 실행이 아니며 수익을 보장하지 않습니다."],
         ),
@@ -459,8 +523,8 @@ def _action_candidates(topics: set[str], market_map: MarketMap) -> list[ActionCa
                 action_type="watchlist",
                 title="AI/반도체 흐름을 관심 테마로 등록",
                 rationale="seed에서 AI 인프라와 반도체가 함께 나타나 수요 연결을 추적할 가치가 있습니다.",
-                suitability="테마가 왜 움직이는지 배우며 후보군을 좁히고 싶은 사용자에게 적합합니다.",
-                confidence=0.78,
+                suitability=_profile_suitability(profile, "테마가 왜 움직이는지 배우며 후보군을 좁히고 싶은 사용자에게 적합합니다."),
+                confidence=0.68 if profile and profile.risk_comfort == "low" else 0.78,
                 evidence=["AI 인프라와 반도체 관계가 market_map에 포착됨"],
                 risk_notes=["테마주는 과열될 수 있어 가격이 아니라 근거 변화를 먼저 봐야 합니다."],
             )
@@ -478,3 +542,19 @@ def _action_candidates(topics: set[str], market_map: MarketMap) -> list[ActionCa
             )
         )
     return candidates
+
+
+def _output_boundary(profile: BeginnerProfile | None) -> str:
+    return "context_aware_research_only" if profile else "generic_research_only"
+
+
+def _profile_suitability(profile: BeginnerProfile | None, fallback: str) -> str:
+    if not profile:
+        return fallback
+    parts = [
+        f"경험 수준={profile.experience_level}",
+        f"목표={profile.learning_goal}",
+        f"위험 선호={profile.risk_comfort}",
+        f"기간={profile.time_horizon}",
+    ]
+    return " / ".join(parts) + " 맥락에서 교육/리서치 후보로만 적합합니다."

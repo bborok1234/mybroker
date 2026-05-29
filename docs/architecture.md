@@ -36,11 +36,13 @@ The scenario layer is intentionally deterministic in v0. It turns local seed fil
 
 1. evidence seeds;
 2. detected market topics;
-3. a market map of entities and relationships;
-4. persona views;
-5. scenario paths;
-6. beginner explanations;
-7. safe action candidates.
+3. an evidence catalog with coverage and missing-context notes;
+4. optional beginner profile context;
+5. a market map of entities and relationships;
+6. persona views;
+7. scenario paths;
+8. beginner explanations;
+9. safe action candidates.
 
 This keeps the product useful before live data, paid APIs, external LLM calls, brokerage
 credentials, or account-specific personalization are introduced.
@@ -48,5 +50,6 @@ credentials, or account-specific personalization are introduced.
 Policy boundary:
 
 - scenario simulation is allowed as research/education;
+- beginner profile context may change explanation priority but not create trade instructions;
 - order execution, account access, credential storage, and discretionary trading are blocked;
 - personalized recommendations require human review and suitability context.

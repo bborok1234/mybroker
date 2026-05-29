@@ -29,7 +29,23 @@ class ScenarioTests(unittest.TestCase):
         self.assertTrue(any(candidate.action_type == "learn" for candidate in report.action_candidates))
         self.assertEqual(report.policy.kind, "scenario_simulation")
         self.assertTrue(report.policy.allowed)
+        self.assertEqual(report.output_boundary, "generic_research_only")
+        self.assertGreaterEqual(report.evidence_catalog.source_count, 2)
         self.assertIn("seed_sources", payload)
+
+    def test_market_simulation_uses_beginner_profile_as_context(self) -> None:
+        report = run_market_simulation(
+            seed_sources=["examples/seeds"],
+            profile_path="examples/profiles/beginner-conservative.json",
+            run_id="profile-scenario",
+        )
+        verdict = build_verdict(report)
+
+        self.assertEqual(report.output_boundary, "context_aware_research_only")
+        self.assertEqual(report.profile_context.profile_id, "beginner-conservative")
+        self.assertIn("위험 선호=low", report.action_candidates[0].suitability)
+        self.assertEqual(verdict["profile_context"]["risk_comfort"], "low")
+        self.assertEqual(verdict["output_boundary"], "context_aware_research_only")
 
     def test_scenario_report_and_verdict_validate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

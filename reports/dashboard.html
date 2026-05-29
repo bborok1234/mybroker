@@ -19,7 +19,7 @@ p { margin:0; color:var(--muted); }
 .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
 .metric { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fffaf1; min-height:106px; }
 .metric span { display:block; color:var(--muted); font-size:12px; font-weight:700; }
-.metric strong { display:block; margin-top:6px; font-size:24px; }
+.metric strong { display:block; margin-top:6px; font-size:24px; line-height:1.15; overflow-wrap:anywhere; }
 .metric small { display:block; color:var(--muted); margin-top:6px; overflow:hidden; text-overflow:ellipsis; }
 .split { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .sim-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:14px; }
@@ -54,17 +54,26 @@ ul { margin:8px 0 0 18px; padding:0; color:var(--muted); }
 <h1>MyBroker 시장 이해 대시보드</h1>
 <p>교육/리서치/시뮬레이션 전용 로컬 화면입니다. 주문 실행, 계좌 접근, 일임 운용, 근거 없는 개인화 투자 조언을 하지 않습니다.</p>
 </div>
-<p>Generated 2026-05-29T05:55:25.973821+00:00</p>
+<p>Generated 2026-05-29T06:16:42.838418+00:00</p>
 </header>
 <section class="panel">
 <div class="metrics">
-<article class='metric'><span>시나리오</span><strong>1</strong><small>beginner-market-sim</small></article>
+<article class='metric'><span>시나리오</span><strong>2</strong><small>beginner-profile-sim</small></article>
 <article class='metric'><span>리서치 리포트</span><strong>2</strong><small>reports/runs</small></article>
 <article class='metric'><span>신호 수</span><strong>4</strong><small>research_report artifacts</small></article>
 <article class='metric'><span>검증 상태</span><strong>통과</strong><small>multi-file-research</small></article>
 </div>
 </section>
 
+<section class="panel">
+<div class="metrics">
+<article class='metric'><span>Evidence sources</span><strong>2</strong><small>strong</small></article>
+<article class='metric'><span>Output boundary</span><strong>context_aware_research_only</strong><small>context-aware is still research-only</small></article>
+<article class='metric'><span>Beginner profile</span><strong>beginner-conservative</strong><small>new / market_overview / low / months</small></article>
+<article class='metric'><span>Missing context</span><strong>0</strong><small>none</small></article>
+</div>
+<div class="chiprow"><span class='chip'>ai_infrastructure: 1</span><span class='chip'>consumer: 1</span><span class='chip'>inflation: 1</span><span class='chip'>rates: 1</span><span class='chip'>risk: 2</span><span class='chip'>semiconductors: 1</span></div>
+</section>
 <section class="panel">
 <div class="sim-grid">
 <div>
@@ -75,7 +84,7 @@ ul { margin:8px 0 0 18px; padding:0; color:var(--muted); }
 </div>
 <aside>
 <h2>다음 행동 후보</h2>
-<article class='candidate'><span class='pill valid'>learn</span><h3>먼저 시장 흐름을 학습</h3><p>리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.</p><small>종목 선택 기준이 아직 없는 초보자에게 적합합니다.</small></article><article class='candidate'><span class='pill valid'>observe</span><h3>관찰 리스트 만들기</h3><p>주요 흐름과 반대 시나리오를 같이 적어두면 다음 뉴스의 의미를 빠르게 판단할 수 있습니다.</p><small>시장을 따라가고 싶지만 바로 투자하기 부담스러운 사용자에게 적합합니다.</small></article><article class='candidate'><span class='pill valid'>watchlist</span><h3>AI/반도체 흐름을 관심 테마로 등록</h3><p>seed에서 AI 인프라와 반도체가 함께 나타나 수요 연결을 추적할 가치가 있습니다.</p><small>테마가 왜 움직이는지 배우며 후보군을 좁히고 싶은 사용자에게 적합합니다.</small></article><article class='candidate'><span class='pill valid'>defer</span><h3>금리 민감 구간에서는 진입 판단 보류</h3><p>금리 변화는 성장 테마의 평가를 흔들 수 있으므로 확인 전까지 보류가 합리적일 수 있습니다.</p><small>손실 회피 성향이 높거나 투자기간이 짧은 사용자에게 특히 중요합니다.</small></article>
+<article class='candidate'><span class='pill valid'>learn</span><h3>먼저 시장 흐름을 학습</h3><p>리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.</p><small>경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.</small></article><article class='candidate'><span class='pill valid'>observe</span><h3>관찰 리스트 만들기</h3><p>주요 흐름과 반대 시나리오를 같이 적어두면 다음 뉴스의 의미를 빠르게 판단할 수 있습니다.</p><small>경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.</small></article><article class='candidate'><span class='pill valid'>watchlist</span><h3>AI/반도체 흐름을 관심 테마로 등록</h3><p>seed에서 AI 인프라와 반도체가 함께 나타나 수요 연결을 추적할 가치가 있습니다.</p><small>경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.</small></article><article class='candidate'><span class='pill valid'>defer</span><h3>금리 민감 구간에서는 진입 판단 보류</h3><p>금리 변화는 성장 테마의 평가를 흔들 수 있으므로 확인 전까지 보류가 합리적일 수 있습니다.</p><small>손실 회피 성향이 높거나 투자기간이 짧은 사용자에게 특히 중요합니다.</small></article>
 </aside>
 </div>
 </section>
@@ -87,14 +96,14 @@ ul { margin:8px 0 0 18px; padding:0; color:var(--muted); }
 </article>
 <article>
 <h2>에이전트 관점</h2>
-<article class='persona'><strong>초보자 튜터</strong><p>종목부터 고르기보다 시장이 움직인 이유, 연결된 업종, 틀릴 조건을 먼저 이해해야 한다고 봅니다.</p><small>confidence 0.82</small></article><article class='persona'><strong>매크로 전략가</strong><p>금리와 물가가 있으면 성장 테마의 평가가 흔들릴 수 있으므로 거시 변수 확인을 우선합니다.</p><small>confidence 0.74</small></article><article class='persona'><strong>성장주 관찰자</strong><p>AI와 반도체가 함께 보이면 실적 기대가 이어지는지 관찰 후보로 둘 만하다고 봅니다.</p><small>confidence 0.78</small></article><article class='persona'><strong>리스크 관리자</strong><p>초보자는 이야기의 매력보다 손실 조건, 과열 여부, 분산 여부를 먼저 확인해야 한다고 경고합니다.</p><small>confidence 0.86</small></article>
+<article class='persona'><strong>초보자 튜터</strong><p>리스크 먼저 보는 성향이므로 상방보다 보류 조건과 반대 시나리오를 먼저 읽어야 한다고 봅니다.</p><small>confidence 0.82</small></article><article class='persona'><strong>매크로 전략가</strong><p>금리와 물가가 있으면 성장 테마의 평가가 흔들릴 수 있으므로 거시 변수 확인을 우선합니다.</p><small>confidence 0.74</small></article><article class='persona'><strong>성장주 관찰자</strong><p>AI와 반도체가 함께 보이면 실적 기대가 이어지는지 관찰 후보로 둘 만하다고 봅니다.</p><small>confidence 0.78</small></article><article class='persona'><strong>리스크 관리자</strong><p>초보자는 이야기의 매력보다 손실 조건, 과열 여부, 분산 여부를 먼저 확인해야 한다고 경고합니다.</p><small>confidence 0.86</small></article>
 </article>
 </div>
 </section>
 <section class="panel">
 <h2>초보자 해설과 검증</h2>
-<ul><li><strong>관찰 후보</strong>: 지금 바로 사라는 뜻이 아니라 뉴스, 가격, 실적, 리스크를 계속 볼 가치가 있다는 뜻입니다.</li><li><strong>반대 시나리오</strong>: 내 생각이 틀리는 경우를 미리 적어두는 것입니다. 초보자일수록 이 단계가 중요합니다.</li><li><strong>AI 인프라</strong>: AI 서비스를 돌리는 데 필요한 반도체, 서버, 데이터센터, 전력 설비를 묶어 부르는 말입니다.</li><li><strong>경기 민감주</strong>: 경기가 좋아질 때 실적 기대가 커지고, 나빠질 때 압박을 받기 쉬운 업종입니다.</li><li><strong>인플레이션</strong>: 전반적인 상품과 서비스 가격이 계속 오르는 현상입니다.</li><li><strong>할인율</strong>: 미래 이익을 현재 가치로 바꿀 때 쓰는 비율입니다. 높아지면 성장주의 현재 가치가 낮아질 수 있습니다.</li></ul>
-<p><span class="pill valid">valid</span> reports/scenarios/beginner-market-sim.json</p>
+<ul><li><strong>관찰 후보</strong>: 지금 바로 사라는 뜻이 아니라 뉴스, 가격, 실적, 리스크를 계속 볼 가치가 있다는 뜻입니다.</li><li><strong>반대 시나리오</strong>: 내 생각이 틀리는 경우를 미리 적어두는 것입니다. 초보자일수록 이 단계가 중요합니다.</li><li><strong>컨텍스트 반영</strong>: 학습 목표, 위험 선호, 투자 기간 같은 입력은 설명의 우선순위를 조정할 뿐 매수/매도 지시가 되지 않습니다.</li><li><strong>보류 조건</strong>: 낮은 위험 선호에서는 언제 하지 않을지를 먼저 정해 손실 가능성을 줄이는 기준입니다.</li><li><strong>AI 인프라</strong>: AI 서비스를 돌리는 데 필요한 반도체, 서버, 데이터센터, 전력 설비를 묶어 부르는 말입니다.</li><li><strong>경기 민감주</strong>: 경기가 좋아질 때 실적 기대가 커지고, 나빠질 때 압박을 받기 쉬운 업종입니다.</li></ul>
+<p><span class="pill valid">valid</span> reports/scenarios/beginner-profile-sim.json</p>
 </section>
 
 <section class="split">
