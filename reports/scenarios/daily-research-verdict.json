@@ -1,0 +1,272 @@
+{
+  "schema_version": "market_verdict.v1",
+  "run_id": "daily-research",
+  "generated_at": "2026-05-29T09:53:26.581478+00:00",
+  "primary_next_step": {
+    "action_type": "learn",
+    "title": "먼저 시장 흐름을 학습",
+    "rationale": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
+    "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+    "confidence": 0.94,
+    "evidence": [
+      "이번 seed에서 먼저 볼 흐름은 리스크, AI 인프라, 소비입니다. 초보자는 가격보다 '왜 이 흐름이 생겼는지'와 '무엇이 바뀌면 틀리는지'를 먼저 확인해야 합니다."
+    ],
+    "risk_notes": [
+      "학습 없이 후보를 매수 결론으로 해석하지 마세요."
+    ]
+  },
+  "action_candidates": [
+    {
+      "action_type": "learn",
+      "title": "먼저 시장 흐름을 학습",
+      "rationale": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
+      "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+      "confidence": 0.94,
+      "evidence": [
+        "이번 seed에서 먼저 볼 흐름은 리스크, AI 인프라, 소비입니다. 초보자는 가격보다 '왜 이 흐름이 생겼는지'와 '무엇이 바뀌면 틀리는지'를 먼저 확인해야 합니다."
+      ],
+      "risk_notes": [
+        "학습 없이 후보를 매수 결론으로 해석하지 마세요."
+      ]
+    },
+    {
+      "action_type": "observe",
+      "title": "관찰 리스트 만들기",
+      "rationale": "주요 흐름과 반대 시나리오를 같이 적어두면 다음 뉴스의 의미를 빠르게 판단할 수 있습니다.",
+      "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+      "confidence": 0.78,
+      "evidence": [
+        "리스크",
+        "AI 인프라",
+        "소비"
+      ],
+      "risk_notes": [
+        "관찰은 투자 실행이 아니며 수익을 보장하지 않습니다."
+      ]
+    },
+    {
+      "action_type": "defer",
+      "title": "금리 민감 구간에서는 진입 판단 보류",
+      "rationale": "금리 변화는 성장 테마의 평가를 흔들 수 있으므로 확인 전까지 보류가 합리적일 수 있습니다.",
+      "suitability": "손실 회피 성향이 높거나 투자기간이 짧은 사용자에게 특히 중요합니다.",
+      "confidence": 0.72,
+      "evidence": [
+        "금리 topic detected"
+      ],
+      "risk_notes": [
+        "보류도 기회비용이 있으므로 조건을 명확히 정해야 합니다."
+      ]
+    },
+    {
+      "action_type": "watchlist",
+      "title": "AI/반도체 흐름을 관심 테마로 등록",
+      "rationale": "seed에서 AI 인프라와 반도체가 함께 나타나 수요 연결을 추적할 가치가 있습니다.",
+      "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+      "confidence": 0.68,
+      "evidence": [
+        "AI 인프라와 반도체 관계가 market_map에 포착됨"
+      ],
+      "risk_notes": [
+        "테마주는 과열될 수 있어 가격이 아니라 근거 변화를 먼저 봐야 합니다."
+      ]
+    }
+  ],
+  "profile_context": {
+    "profile_id": "beginner-conservative",
+    "experience_level": "new",
+    "learning_goal": "market_overview",
+    "risk_comfort": "low",
+    "time_horizon": "months",
+    "decision_style": "risk_first",
+    "capital_context": "unspecified"
+  },
+  "output_boundary": "context_aware_research_only",
+  "evidence_catalog": {
+    "source_count": 7,
+    "topic_counts": {
+      "ai_infrastructure": 5,
+      "consumer": 5,
+      "inflation": 1,
+      "rates": 3,
+      "risk": 6,
+      "semiconductors": 4
+    },
+    "coverage_status": "strong",
+    "missing_context": [],
+    "source_coverage": [
+      {
+        "source_id": "gdelt",
+        "source_name": "GDELT",
+        "adapter_id": "sample_cache_topic_research",
+        "item_count": "2",
+        "freshness_status": "sample_cache"
+      },
+      {
+        "source_id": "sec-edgar",
+        "source_name": "SEC EDGAR",
+        "adapter_id": "sample_cache_topic_research",
+        "item_count": "2",
+        "freshness_status": "sample_cache"
+      },
+      {
+        "source_id": "stooq",
+        "source_name": "Stooq",
+        "adapter_id": "sample_cache_topic_research",
+        "item_count": "1",
+        "freshness_status": "sample_cache"
+      }
+    ],
+    "freshness_status": "sample_cache",
+    "meaningfulness_status": "meaningful",
+    "configured_interests": [
+      {
+        "topic_id": "ai-infrastructure",
+        "name": "AI infrastructure",
+        "description": "AI data center, GPU, cloud, power, and semiconductor demand.",
+        "beginner_focus": "AI 수요가 실제 실적과 공급망으로 이어지는지 이해한다.",
+        "keywords": [
+          "ai",
+          "data center",
+          "gpu",
+          "cloud",
+          "semiconductors"
+        ],
+        "target_topics": [
+          "ai_infrastructure"
+        ],
+        "status": "active"
+      },
+      {
+        "topic_id": "semiconductors",
+        "name": "Semiconductors",
+        "description": "Chip supply chain, memory, foundry, and AI-linked demand.",
+        "beginner_focus": "반도체가 AI 기대와 경기 둔화 리스크를 동시에 받는 이유를 본다.",
+        "keywords": [
+          "semiconductor",
+          "chip",
+          "memory",
+          "supply chain"
+        ],
+        "target_topics": [
+          "ai_infrastructure",
+          "semiconductors"
+        ],
+        "status": "active"
+      },
+      {
+        "topic_id": "us-rates",
+        "name": "US rates",
+        "description": "Treasury yields, Fed expectations, liquidity, and growth-stock pressure.",
+        "beginner_focus": "금리가 성장 테마의 가격 부담을 어떻게 바꾸는지 본다.",
+        "keywords": [
+          "rates",
+          "yield",
+          "fed",
+          "treasury"
+        ],
+        "target_topics": [
+          "rates"
+        ],
+        "status": "active"
+      },
+      {
+        "topic_id": "consumer-weakness",
+        "name": "Consumer weakness",
+        "description": "Consumer demand, retail pressure, employment, and inflation burden.",
+        "beginner_focus": "소비 둔화가 기업 매출과 경기 기대에 주는 영향을 이해한다.",
+        "keywords": [
+          "consumer",
+          "retail",
+          "inflation",
+          "demand",
+          "risk"
+        ],
+        "target_topics": [
+          "ai_infrastructure",
+          "consumer",
+          "inflation",
+          "risk"
+        ],
+        "status": "active"
+      },
+      {
+        "topic_id": "korea-semiconductors",
+        "name": "Korea semiconductors",
+        "description": "Korea memory exporters, AI demand, and cycle risk",
+        "beginner_focus": "Korea semiconductors 흐름이 시장에 왜 중요한지 초보자 관점에서 이해한다.",
+        "keywords": [
+          "korea",
+          "memory",
+          "chip"
+        ],
+        "target_topics": [
+          "ai_infrastructure",
+          "risk",
+          "semiconductors"
+        ],
+        "status": "active"
+      }
+    ],
+    "research_plan": {
+      "run_id": "daily-research",
+      "generated_at": "2026-05-29T09:53:26.579536+00:00",
+      "topic_count": 5,
+      "next_step": "collect_free_public_evidence"
+    },
+    "topic_memory_snapshot": {
+      "memory_path": "reports/memory/topic-memory.json",
+      "run_count": 3,
+      "topics": [
+        {
+          "topic_id": "ai-infrastructure",
+          "name": "AI infrastructure",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+        },
+        {
+          "topic_id": "semiconductors",
+          "name": "Semiconductors",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+        },
+        {
+          "topic_id": "us-rates",
+          "name": "US rates",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음."
+        },
+        {
+          "topic_id": "consumer-weakness",
+          "name": "Consumer weakness",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+        },
+        {
+          "topic_id": "korea-semiconductors",
+          "name": "Korea semiconductors",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+        }
+      ]
+    },
+    "collection_gaps": [
+      "live_refresh_not_enabled",
+      "source_license_review_pending"
+    ]
+  },
+  "scenario_count": 3,
+  "policy": {
+    "kind": "scenario_simulation",
+    "allowed": true,
+    "human_review_required": false,
+    "reasons": [
+      "Research-only action with no account access or personalized instruction."
+    ]
+  },
+  "operator_note": "초보자는 후보를 매수 지시로 받아들이지 말고 근거, 반대 시나리오, 본인 투자기간을 먼저 확인해야 합니다."
+}

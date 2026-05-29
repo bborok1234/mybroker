@@ -31,7 +31,13 @@ PYTHONPATH=src python3 -m mybroker validate-profile examples/profiles/beginner-c
 PYTHONPATH=src python3 -m mybroker evidence-sources
 PYTHONPATH=src python3 -m mybroker ingest-public-evidence --output reports/evidence/public-evidence-catalog.json
 PYTHONPATH=src python3 -m mybroker validate-public-evidence reports/evidence/public-evidence-catalog.json
+PYTHONPATH=src python3 -m mybroker topics init --output config/topics.json
+PYTHONPATH=src python3 -m mybroker topics add "Korea semiconductors" --description "Korea memory exporters, AI demand, and cycle risk" --keyword korea --keyword memory --keyword chip --config config/topics.json
+PYTHONPATH=src python3 -m mybroker topics list --config config/topics.json
+PYTHONPATH=src python3 -m mybroker research-plan --topics config/topics.json --output reports/daily/research-plan.json --run-id daily-research
+PYTHONPATH=src python3 -m mybroker collect-evidence --topics config/topics.json --plan reports/daily/research-plan.json --output reports/evidence/daily-evidence-catalog.json --memory-output reports/memory/topic-memory.json
 PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --profile examples/profiles/beginner-conservative.json --evidence-catalog reports/evidence/public-evidence-catalog.json --run-id public-evidence-sim --output reports/scenarios/public-evidence-sim.json --verdict-output reports/scenarios/public-evidence-verdict.json
+PYTHONPATH=src python3 -m mybroker daily-research --topics config/topics.json --profile examples/profiles/beginner-conservative.json --run-id daily-research
 PYTHONPATH=src python3 -m mybroker validate-scenario reports/scenarios/beginner-market-sim.json
 PYTHONPATH=src python3 -m mybroker validate-verdict reports/scenarios/verdict.json
 PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output reports/dashboard.html --rollup-output reports/report-rollup.json
@@ -90,6 +96,26 @@ accounts, or execution are introduced.
 
 This proof is intentionally reproducible with local cached samples. Live refresh, source
 licensing review, deduplication, and stronger entity extraction remain explicit follow-up gates.
+
+## Autonomous Daily Research Loop
+
+The next product loop starts from broad interests rather than source dumps. A beginner can
+configure topics such as AI infrastructure, semiconductors, US rates, consumer weakness, or
+Korea semiconductors. MyBroker then proposes daily questions, collects cached free/public
+evidence, updates topic memory, runs scenario simulation, and generates the beginner product
+brief.
+
+1. `topics init/add/list` manages local `topic_config.v1` interests under `config/topics.json`.
+2. `research-plan` writes `daily_research_plan.v1` with daily questions, source needs, and missing-evidence notes.
+3. `collect-evidence` filters no-key cached public evidence by configured interests and writes
+   `reports/evidence/daily-evidence-catalog.json`.
+4. The same command updates `topic_memory.v1` under `reports/memory/topic-memory.json`, so daily
+   research compounds instead of starting fresh.
+5. `daily-research` runs the local loop end to end: plan, collect, memory, scenario, verdict,
+   ops dashboard, rollup, and product brief.
+
+Manual source ingestion can be added later, but it is not the primary beginner UX. The default
+path is AI-initiated research from user interests.
 
 ## First Pipeline Slice
 

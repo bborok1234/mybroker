@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import asdict
+from pathlib import Path
 
 from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
@@ -28,6 +29,20 @@ from mybroker.scenario import (
     write_verdict,
 )
 from mybroker.signals import momentum_signals
+from mybroker.topics import (
+    DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    DEFAULT_RESEARCH_PLAN_OUTPUT,
+    DEFAULT_TOPIC_MEMORY_OUTPUT,
+    DEFAULT_TOPICS_PATH,
+    add_interest,
+    build_research_plan,
+    collect_topic_evidence,
+    init_topic_config,
+    load_topic_config,
+    validate_research_plan_file,
+    validate_topic_config_file,
+    validate_topic_memory_file,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -83,10 +98,55 @@ def main(argv: list[str] | None = None) -> int:
     validate_public_parser = subcommands.add_parser("validate-public-evidence", help="Validate a public_evidence_catalog.v1 artifact.")
     validate_public_parser.add_argument("catalog_path")
 
+    topics_parser = subcommands.add_parser("topics", help="Manage beginner-readable MyBroker research interests.")
+    topics_subcommands = topics_parser.add_subparsers(dest="topics_command", required=True)
+    topics_init_parser = topics_subcommands.add_parser("init", help="Initialize local topic/interest config.")
+    topics_init_parser.add_argument("--output", default=DEFAULT_TOPICS_PATH.as_posix())
+    topics_add_parser = topics_subcommands.add_parser("add", help="Add or update one research interest.")
+    topics_add_parser.add_argument("name")
+    topics_add_parser.add_argument("--description", default="")
+    topics_add_parser.add_argument("--beginner-focus", default="")
+    topics_add_parser.add_argument("--keyword", action="append", default=[])
+    topics_add_parser.add_argument("--config", default=DEFAULT_TOPICS_PATH.as_posix())
+    topics_list_parser = topics_subcommands.add_parser("list", help="List configured research interests.")
+    topics_list_parser.add_argument("--config", default=DEFAULT_TOPICS_PATH.as_posix())
+
+    research_plan_parser = subcommands.add_parser("research-plan", help="Generate a daily research plan from configured interests.")
+    research_plan_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
+    research_plan_parser.add_argument("--output", default=DEFAULT_RESEARCH_PLAN_OUTPUT.as_posix())
+    research_plan_parser.add_argument("--run-id", default="daily-research")
+
+    collect_parser = subcommands.add_parser("collect-evidence", help="Collect cached free/public evidence for configured interests and update topic memory.")
+    collect_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
+    collect_parser.add_argument("--plan", default=DEFAULT_RESEARCH_PLAN_OUTPUT.as_posix())
+    collect_parser.add_argument("--output", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    collect_parser.add_argument("--memory-output", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    collect_parser.add_argument("--source", action="append", help="Public evidence adapter id. Defaults to no-key cached samples.")
+
+    validate_topics_parser = subcommands.add_parser("validate-topics", help="Validate a topic_config.v1 artifact.")
+    validate_topics_parser.add_argument("topics_path")
+    validate_plan_parser = subcommands.add_parser("validate-research-plan", help="Validate a daily_research_plan.v1 artifact.")
+    validate_plan_parser.add_argument("plan_path")
+    validate_memory_parser = subcommands.add_parser("validate-topic-memory", help="Validate a topic_memory.v1 artifact.")
+    validate_memory_parser.add_argument("memory_path")
+
     brief_parser = subcommands.add_parser("brief", help="Build a user-facing MyBroker product brief from scenario and verdict artifacts.")
     brief_parser.add_argument("--scenario", required=True, help="scenario_report.v1 artifact path.")
     brief_parser.add_argument("--verdict", required=True, help="market_verdict.v1 artifact path.")
     brief_parser.add_argument("--output", default="reports/product/market-brief.html")
+
+    daily_parser = subcommands.add_parser("daily-research", help="Run topic planning, free/public evidence collection, memory update, scenario, dashboard, and product brief.")
+    daily_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
+    daily_parser.add_argument("--profile", help="Optional beginner profile JSON.")
+    daily_parser.add_argument("--run-id", default="daily-research")
+    daily_parser.add_argument("--plan-output", default=DEFAULT_RESEARCH_PLAN_OUTPUT.as_posix())
+    daily_parser.add_argument("--evidence-output", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    daily_parser.add_argument("--memory-output", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    daily_parser.add_argument("--scenario-output", default="reports/scenarios/daily-research-sim.json")
+    daily_parser.add_argument("--verdict-output", default="reports/scenarios/daily-research-verdict.json")
+    daily_parser.add_argument("--dashboard-output", default="reports/dashboard.html")
+    daily_parser.add_argument("--rollup-output", default="reports/report-rollup.json")
+    daily_parser.add_argument("--brief-output", default="reports/product/market-brief.html")
 
     quality_parser = subcommands.add_parser("quality", help="Inspect local price dataset quality without writing a research report.")
     quality_parser.add_argument("--source", action="append", help="Local price CSV file or directory. Repeat for multiple CSV files. Defaults to the bundled sample data.")
@@ -185,9 +245,127 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "topics":
+        if args.topics_command == "init":
+            payload = init_topic_config(args.output)
+            print(json.dumps({
+                "topics": args.output,
+                "schema_version": payload["schema_version"],
+                "interest_count": len(payload["interests"]),
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.topics_command == "add":
+            payload = add_interest(
+                name=args.name,
+                description=args.description,
+                keywords=args.keyword,
+                beginner_focus=args.beginner_focus,
+                path=args.config,
+            )
+            print(json.dumps({
+                "topics": args.config,
+                "interest_count": len(payload["interests"]),
+                "latest": payload["interests"][-1],
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.topics_command == "list":
+            payload = load_topic_config(args.config)
+            print(json.dumps({
+                "topics": args.config,
+                "interest_count": len(payload.get("interests", [])),
+                "interests": payload.get("interests", []),
+                "policy": payload.get("policy", {}),
+            }, indent=2, ensure_ascii=False))
+            return 0
+    if args.command == "research-plan":
+        payload = build_research_plan(topics_path=args.topics, output_path=args.output, run_id=args.run_id)
+        print(json.dumps({
+            "research_plan": args.output,
+            "schema_version": payload["schema_version"],
+            "run_id": payload["run_id"],
+            "topic_count": len(payload["plan_items"]),
+            "next_step": payload["next_step"],
+        }, indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "collect-evidence":
+        payload = collect_topic_evidence(
+            topics_path=args.topics,
+            plan_path=args.plan,
+            output_path=args.output,
+            memory_path=args.memory_output,
+            source_ids=args.source,
+        )
+        print(json.dumps({
+            "catalog": args.output,
+            "memory": args.memory_output,
+            "schema_version": payload["schema_version"],
+            "mode": payload["mode"],
+            "item_count": len(payload["items"]),
+            "topic_count": len(payload.get("configured_interests", [])),
+            "feasibility": payload["feasibility"],
+        }, indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "validate-topics":
+        errors = validate_topic_config_file(args.topics_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-research-plan":
+        errors = validate_research_plan_file(args.plan_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-topic-memory":
+        errors = validate_topic_memory_file(args.memory_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "brief":
         path = write_product_brief(args.scenario, args.verdict, args.output)
         print(json.dumps({"product_brief": path.as_posix()}, indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "daily-research":
+        topics_path = args.topics
+        if not Path(topics_path).exists():
+            init_topic_config(topics_path)
+        plan = build_research_plan(topics_path=topics_path, output_path=args.plan_output, run_id=args.run_id)
+        catalog = collect_topic_evidence(
+            topics_path=topics_path,
+            plan_path=args.plan_output,
+            output_path=args.evidence_output,
+            memory_path=args.memory_output,
+        )
+        report = run_market_simulation(
+            seed_sources=["examples/seeds"],
+            profile_path=args.profile,
+            evidence_catalog_path=args.evidence_output,
+            run_id=args.run_id,
+        )
+        scenario_path = write_scenario_report(report, args.scenario_output)
+        verdict_path = write_verdict(report, args.verdict_output)
+        rollup = build_report_rollup("reports/runs")
+        dashboard_path = write_dashboard(rollup, args.dashboard_output)
+        rollup_path = write_rollup(rollup, args.rollup_output)
+        brief_path = write_product_brief(scenario_path, verdict_path, args.brief_output)
+        print(json.dumps({
+            "topics": topics_path,
+            "research_plan": args.plan_output,
+            "evidence_catalog": args.evidence_output,
+            "topic_memory": args.memory_output,
+            "scenario_report": scenario_path.as_posix(),
+            "verdict": verdict_path.as_posix(),
+            "dashboard": dashboard_path.as_posix(),
+            "rollup": rollup_path.as_posix(),
+            "product_brief": brief_path.as_posix(),
+            "topic_count": len(plan["plan_items"]),
+            "evidence_items": len(catalog["items"]),
+        }, indent=2, ensure_ascii=False))
         return 0
     if args.command == "validate-profile":
         errors = validate_profile_file(args.profile_path)

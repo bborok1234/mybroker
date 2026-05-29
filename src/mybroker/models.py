@@ -110,6 +110,10 @@ class EvidenceCatalog:
     source_coverage: list[dict[str, str]] = field(default_factory=list)
     freshness_status: str = "unknown"
     meaningfulness_status: str = "unknown"
+    configured_interests: list[dict[str, str]] = field(default_factory=list)
+    research_plan: dict[str, str | int] = field(default_factory=dict)
+    topic_memory_snapshot: dict[str, object] = field(default_factory=dict)
+    collection_gaps: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

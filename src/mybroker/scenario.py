@@ -157,6 +157,10 @@ def build_evidence_catalog(seeds: list[EvidenceSeed], profile: BeginnerProfile |
         source_coverage=source_coverage,
         freshness_status=freshness_status,
         meaningfulness_status=meaningfulness_status,
+        configured_interests=public_catalog.get("configured_interests", []) if public_catalog else [],
+        research_plan=public_catalog.get("research_plan", {}) if public_catalog else {},
+        topic_memory_snapshot=public_catalog.get("topic_memory_snapshot", {}) if public_catalog else {},
+        collection_gaps=public_catalog.get("collection_gaps", []) if public_catalog else [],
     )
 
 

@@ -58,11 +58,11 @@ ul { margin:8px 0 0 18px; padding:0; color:var(--muted); }
 <h1>MyBroker 산출물 운영 대시보드</h1>
 <p>교육/리서치/시뮬레이션 전용 로컬 화면입니다. 주문 실행, 계좌 접근, 일임 운용, 근거 없는 개인화 투자 조언을 하지 않습니다.</p>
 </div>
-<p>Generated 2026-05-29T08:29:05.239167+00:00</p>
+<p>Generated 2026-05-29T09:53:26.583322+00:00</p>
 </header>
 <section class="panel">
 <div class="metrics">
-<article class='metric'><span>시나리오</span><strong>3</strong><small>public-evidence-sim</small></article>
+<article class='metric'><span>시나리오</span><strong>4</strong><small>daily-research</small></article>
 <article class='metric'><span>리서치 리포트</span><strong>2</strong><small>reports/runs</small></article>
 <article class='metric'><span>신호 수</span><strong>4</strong><small>research_report artifacts</small></article>
 <article class='metric'><span>검증 상태</span><strong>통과</strong><small>multi-file-research</small></article>
@@ -70,8 +70,25 @@ ul { margin:8px 0 0 18px; padding:0; color:var(--muted); }
 </section>
 
 <section class="panel">
+<h2>Daily research loop 상태</h2>
+<p>관심 주제 기반 자율 리서치의 운영/검증 화면입니다. 사용자용 시장 지도나 행동 후보가 아니라 topic coverage, source freshness, memory change, artifact path만 표시합니다.</p>
 <div class="metrics">
-<article class='metric'><span>Scenario artifact</span><strong>public-evidence-sim</strong><small>reports/scenarios/public-evidence-sim.json</small></article>
+<article class='metric'><span>Research plan</span><strong>daily-research</strong><small>reports/daily/research-plan.json</small></article>
+<article class='metric'><span>Configured topics</span><strong>5</strong><small>broad interests</small></article>
+<article class='metric'><span>Topic memory runs</span><strong>3</strong><small>reports/memory/topic-memory.json</small></article>
+<article class='metric'><span>Evidence items</span><strong>5</strong><small>sample_cache_topic_research</small></article>
+<article class='metric'><span>Feasibility</span><strong>meaningful</strong><small>free/public evidence only</small></article>
+<article class='metric'><span>Collection gaps</span><strong>2</strong><small>live_refresh_not_enabled; source_license_review_pending</small></article>
+</div>
+<div class="source-grid"><article class='source-card'><strong>GDELT</strong><small>items: 2</small><small>freshness: sample_cache</small></article><article class='source-card'><strong>SEC EDGAR</strong><small>items: 2</small><small>freshness: sample_cache</small></article><article class='source-card'><strong>Stooq</strong><small>items: 1</small><small>freshness: sample_cache</small></article></div>
+<h3>Topic memory</h3>
+<table><thead><tr><th>Topic</th><th>New evidence</th><th>Change</th><th>Sources</th><th>Gaps</th></tr></thead><tbody><tr><td><strong>AI infrastructure</strong><span>ai-infrastructure</span></td><td>0</td><td>unchanged</td><td>GDELT, SEC EDGAR</td><td>deduplication; live_refresh</td></tr><tr><td><strong>Semiconductors</strong><span>semiconductors</span></td><td>0</td><td>unchanged</td><td>GDELT, SEC EDGAR</td><td>deduplication; live_refresh</td></tr><tr><td><strong>US rates</strong><span>us-rates</span></td><td>0</td><td>unchanged</td><td>GDELT, Stooq</td><td>deduplication; live_refresh</td></tr><tr><td><strong>Consumer weakness</strong><span>consumer-weakness</span></td><td>0</td><td>unchanged</td><td>GDELT, SEC EDGAR, Stooq</td><td>deduplication; live_refresh</td></tr><tr><td><strong>Korea semiconductors</strong><span>korea-semiconductors</span></td><td>0</td><td>unchanged</td><td>GDELT, SEC EDGAR, Stooq</td><td>deduplication; live_refresh</td></tr></tbody></table>
+</section>
+
+
+<section class="panel">
+<div class="metrics">
+<article class='metric'><span>Scenario artifact</span><strong>daily-research</strong><small>reports/scenarios/daily-research-sim.json</small></article>
 <article class='metric'><span>Validation</span><strong>통과</strong><small>no errors</small></article>
 <article class='metric'><span>Evidence coverage</span><strong>7</strong><small>strong</small></article>
 <article class='metric'><span>Feasibility</span><strong>의미 있음</strong><small>ops-only source sufficiency check</small></article>
@@ -84,7 +101,7 @@ ul { margin:8px 0 0 18px; padding:0; color:var(--muted); }
 <section class="panel">
 <h2>Public evidence artifact coverage</h2>
 <p>이 영역은 운영/검증용입니다. source 준비도, freshness, 산출물 경로만 보여주며 사용자용 시장 지도나 행동 후보는 렌더링하지 않습니다.</p>
-<div class="source-grid"><article class='source-card'><strong>GDELT</strong><small>adapter: gdelt_cached_v1</small><small>items: 2</small><small>freshness: sample_cache</small></article><article class='source-card'><strong>Stooq</strong><small>adapter: stooq_cached_v1</small><small>items: 1</small><small>freshness: sample_cache</small></article><article class='source-card'><strong>SEC EDGAR</strong><small>adapter: sec_cached_v1</small><small>items: 2</small><small>freshness: sample_cache</small></article></div>
+<div class="source-grid"><article class='source-card'><strong>GDELT</strong><small>adapter: sample_cache_topic_research</small><small>items: 2</small><small>freshness: sample_cache</small></article><article class='source-card'><strong>SEC EDGAR</strong><small>adapter: sample_cache_topic_research</small><small>items: 2</small><small>freshness: sample_cache</small></article><article class='source-card'><strong>Stooq</strong><small>adapter: sample_cache_topic_research</small><small>items: 1</small><small>freshness: sample_cache</small></article></div>
 <h3>Missing context</h3>
 <div class="chiprow"><span class='chip'>none</span></div>
 </section>

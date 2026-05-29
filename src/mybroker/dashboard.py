@@ -107,6 +107,7 @@ def build_report_rollup(reports_dir: str | Path = "reports/runs") -> dict[str, A
     latest = report_rows[0] if report_rows else None
     previous = report_rows[1] if len(report_rows) > 1 else None
     latest_scenario = scenario_rows[0] if scenario_rows else None
+    daily_research = load_daily_research_state(reports_dir)
     return {
         "schema_version": ROLLUP_SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -119,10 +120,38 @@ def build_report_rollup(reports_dir: str | Path = "reports/runs") -> dict[str, A
         "scenario_count": len(scenario_rows),
         "latest_scenario": latest_scenario,
         "scenarios": scenario_rows,
+        "daily_research": daily_research,
         "totals": totals,
         "reports": report_rows,
         "disclaimer": "교육/리서치/시뮬레이션 전용 로컬 화면입니다. 주문 실행, 계좌 접근, 일임 운용, 근거 없는 개인화 투자 조언을 하지 않습니다.",
     }
+
+
+def load_daily_research_state(reports_dir: str | Path) -> dict[str, Any]:
+    root = Path(reports_dir)
+    reports_root = root.parent if root.name == "runs" else root
+    plan_path = reports_root / "daily" / "research-plan.json"
+    memory_path = reports_root / "memory" / "topic-memory.json"
+    evidence_path = reports_root / "evidence" / "daily-evidence-catalog.json"
+    state = {
+        "plan_path": plan_path.as_posix(),
+        "memory_path": memory_path.as_posix(),
+        "evidence_path": evidence_path.as_posix(),
+        "plan": _load_optional_json(plan_path),
+        "memory": _load_optional_json(memory_path),
+        "evidence": _load_optional_json(evidence_path),
+    }
+    state["ready"] = bool(state["plan"] and state["memory"] and state["evidence"])
+    return state
+
+
+def _load_optional_json(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
 
 
 def compare_reports(latest: dict[str, Any] | None, previous: dict[str, Any] | None) -> dict[str, Any]:
@@ -227,6 +256,7 @@ def render_dashboard_html(rollup: dict[str, Any]) -> str:
         else esc(comparison.get("reason", "No comparison available."))
     )
     scenario_section = render_scenario_ops_section(latest_scenario)
+    daily_section = render_daily_research_ops_section(rollup.get("daily_research", {}))
     return f"""<!doctype html>
 <html lang="ko">
 <head>
@@ -297,6 +327,7 @@ ul {{ margin:8px 0 0 18px; padding:0; color:var(--muted); }}
 {metric('검증 상태', '통과' if validation.get('valid') else '확인 필요', latest.get('run_id', 'no latest report'))}
 </div>
 </section>
+{daily_section}
 {scenario_section}
 <section class="split">
 <article class="panel">
@@ -333,6 +364,64 @@ ul {{ margin:8px 0 0 18px; padding:0; color:var(--muted); }}
 </main>
 </body>
 </html>
+"""
+
+
+def render_daily_research_ops_section(state: dict[str, Any]) -> str:
+    plan = state.get("plan") or {}
+    memory = state.get("memory") or {}
+    evidence = state.get("evidence") or {}
+    if not state.get("ready"):
+        return f"""
+<section class="panel">
+<h2>Daily research loop 상태</h2>
+<p>아직 topic 기반 daily research artifact가 준비되지 않았습니다. <code>mybroker topics init</code>, <code>mybroker research-plan</code>, <code>mybroker collect-evidence</code>를 실행하면 이 영역에 topic coverage, freshness, collection gap이 표시됩니다.</p>
+<div class="source-grid">
+<article class="source-card"><strong>Plan</strong><small>{esc(state.get('plan_path', ''))}</small></article>
+<article class="source-card"><strong>Memory</strong><small>{esc(state.get('memory_path', ''))}</small></article>
+<article class="source-card"><strong>Evidence</strong><small>{esc(state.get('evidence_path', ''))}</small></article>
+</div>
+</section>
+"""
+    topics = memory.get("topics", [])
+    topic_rows = "".join(
+        "<tr>"
+        f"<td><strong>{esc(topic.get('name', ''))}</strong><span>{esc(topic.get('topic_id', ''))}</span></td>"
+        f"<td>{esc(topic.get('new_evidence_count', 0))}</td>"
+        f"<td>{esc('changed' if topic.get('changed_since_previous') else 'unchanged')}</td>"
+        f"<td>{esc(', '.join(topic.get('source_names', [])) or 'none')}</td>"
+        f"<td>{esc('; '.join(topic.get('collection_gaps', [])) or 'none')}</td>"
+        "</tr>"
+        for topic in topics
+    )
+    if not topic_rows:
+        topic_rows = "<tr><td colspan='5'>No topic memory rows.</td></tr>"
+    gaps = evidence.get("collection_gaps", [])
+    source_status = evidence.get("source_status", [])
+    source_cards = "".join(
+        "<article class='source-card'>"
+        f"<strong>{esc(source.get('source_name', 'unknown'))}</strong>"
+        f"<small>items: {esc(source.get('item_count', '0'))}</small>"
+        f"<small>freshness: {esc(source.get('freshness_status', 'unknown'))}</small>"
+        "</article>"
+        for source in source_status
+    )
+    return f"""
+<section class="panel">
+<h2>Daily research loop 상태</h2>
+<p>관심 주제 기반 자율 리서치의 운영/검증 화면입니다. 사용자용 시장 지도나 행동 후보가 아니라 topic coverage, source freshness, memory change, artifact path만 표시합니다.</p>
+<div class="metrics">
+{metric('Research plan', plan.get('run_id', 'unknown'), state.get('plan_path', ''))}
+{metric('Configured topics', len(plan.get('plan_items', [])), 'broad interests')}
+{metric('Topic memory runs', memory.get('run_count', 0), state.get('memory_path', ''))}
+{metric('Evidence items', len(evidence.get('items', [])), evidence.get('mode', 'unknown'))}
+{metric('Feasibility', evidence.get('feasibility', {}).get('status', 'unknown'), 'free/public evidence only')}
+{metric('Collection gaps', len(gaps), '; '.join(gaps[:2]) or 'none')}
+</div>
+<div class="source-grid">{source_cards}</div>
+<h3>Topic memory</h3>
+<table><thead><tr><th>Topic</th><th>New evidence</th><th>Change</th><th>Sources</th><th>Gaps</th></tr></thead><tbody>{topic_rows}</tbody></table>
+</section>
 """
 
 
