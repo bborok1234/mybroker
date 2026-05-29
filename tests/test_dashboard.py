@@ -21,6 +21,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(rollup["report_count"], 1)
         self.assertEqual(rollup["latest_report"]["run_id"], "dashboard-run")
         self.assertTrue(rollup["latest_report"]["validation"]["valid"])
+        self.assertEqual(rollup["latest_report"]["data_quality"]["status"], "pass")
         self.assertEqual(rollup["totals"]["total_signals"], 2)
 
     def test_empty_rollup_is_valid_operator_state(self) -> None:
@@ -45,6 +46,18 @@ class DashboardTests(unittest.TestCase):
         self.assertTrue(rollup_exists)
         self.assertIn("MyBroker Report Dashboard", html)
         self.assertIn("Latest Run", html)
+        self.assertIn("Data Quality", html)
+
+    def test_rollup_compares_latest_against_previous(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            reports_dir = Path(directory) / "runs"
+            run_research_task(output_path=reports_dir / "a.json", run_id="run-a")
+            run_research_task(output_path=reports_dir / "b.json", run_id="run-b")
+
+            rollup = build_report_rollup(reports_dir)
+
+        self.assertTrue(rollup["latest_vs_previous"]["available"])
+        self.assertEqual(rollup["latest_vs_previous"]["delta_total_signals"], 0)
 
     def test_discovers_nested_report_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

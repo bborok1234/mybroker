@@ -9,7 +9,7 @@ from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollu
 from mybroker.policy import classify_action
 from mybroker.registry import default_registry
 from mybroker.reports import report_to_dict, validate_report_file
-from mybroker.runner import run_research_task
+from mybroker.runner import make_price_adapter, run_research_task
 from mybroker.signals import momentum_signals
 
 
@@ -23,7 +23,7 @@ def main(argv: list[str] | None = None) -> int:
     signals_parser.add_argument("--long-window", type=int, default=5)
 
     research_parser = subcommands.add_parser("research", help="Run a registered local research task and write a report artifact.")
-    research_parser.add_argument("--source", help="Local price CSV path. Defaults to the bundled sample data.")
+    research_parser.add_argument("--source", action="append", help="Local price CSV file or directory. Repeat for multiple CSV files. Defaults to the bundled sample data.")
     research_parser.add_argument("--task", default="momentum_research_v1")
     research_parser.add_argument("--short-window", type=int)
     research_parser.add_argument("--long-window", type=int)
@@ -39,6 +39,10 @@ def main(argv: list[str] | None = None) -> int:
     dashboard_parser.add_argument("--reports-dir", default="reports/runs")
     dashboard_parser.add_argument("--output", default="reports/dashboard.html")
     dashboard_parser.add_argument("--rollup-output", default="reports/report-rollup.json")
+
+    quality_parser = subcommands.add_parser("quality", help="Inspect local price dataset quality without writing a research report.")
+    quality_parser.add_argument("--source", action="append", help="Local price CSV file or directory. Repeat for multiple CSV files. Defaults to the bundled sample data.")
+    quality_parser.add_argument("--min-history", type=int, default=5)
 
     policy_parser = subcommands.add_parser("policy", help="Classify a proposed project action.")
     policy_parser.add_argument("--kind", required=True)
@@ -71,6 +75,14 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "quality":
+        adapter = make_price_adapter(args.source)
+        dataset = adapter.load_dataset(min_history=args.min_history)
+        print(json.dumps({
+            "metadata": asdict(dataset.metadata),
+            "data_quality": asdict(dataset.quality),
+        }, indent=2, ensure_ascii=False))
+        return 1 if dataset.quality.error_count else 0
     if args.command == "dashboard":
         rollup = build_report_rollup(args.reports_dir)
         dashboard_path = write_dashboard(rollup, args.output)
