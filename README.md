@@ -19,6 +19,7 @@ PYTHONPATH=src python3 -m mybroker signals examples/prices.csv
 PYTHONPATH=src python3 -m mybroker tasks
 PYTHONPATH=src python3 -m mybroker research --source examples/prices.csv --output reports/runs/local-momentum-research.json
 PYTHONPATH=src python3 -m mybroker validate-report reports/runs/local-momentum-research.json
+PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output reports/dashboard.html --rollup-output reports/report-rollup.json
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
 ```
 
@@ -31,6 +32,7 @@ The first vertical slice is intentionally local and auditable:
 3. The runner generates explainable signals through the existing policy gate.
 4. A `research_report.v1` JSON artifact is written under `reports/runs/`.
 5. The artifact validator checks schema, source metadata, signals, policy, and summary consistency.
+6. The report dashboard command turns local report artifacts into `reports/dashboard.html` and `reports/report-rollup.json` so the latest run can be inspected without reading raw JSON.
 
 ## Flyhigh
 
