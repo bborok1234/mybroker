@@ -18,6 +18,8 @@ local CSV/data source, CSV directory, or repeated CSV sources
 - `src/mybroker/policy.py`: classify risky action categories.
 - `src/mybroker/runner.py`: compose adapter, task, signal generation, policy, and report output.
 - `src/mybroker/reports.py`: build and validate `research_report.v1` artifacts with source metadata and data-quality evidence.
+- `src/mybroker/dashboard.py`: build the operator-facing ops/artifact dashboard from local artifacts.
+- `src/mybroker/product_brief.py`: build the beginner-facing MiroFish-inspired product brief from scenario and verdict artifacts.
 - `src/mybroker/cli.py`: local command interface.
 - `.flyhigh/`: project memory, domain skills, dashboard state.
 - `reports/runs/`: task-level evidence.
@@ -46,6 +48,13 @@ The scenario layer is intentionally deterministic in v0. It turns local seed fil
 
 This keeps the product useful before live data, paid APIs, external LLM calls, brokerage
 credentials, or account-specific personalization are introduced.
+
+Surface boundaries:
+
+- Flyhigh dashboard is only a project progress board.
+- MyBroker ops/artifact dashboard is only for artifact trust and validation.
+- MyBroker product brief is the beginner-facing product surface.
+- JSON artifacts are machine-readable inputs, not user screens.
 
 Policy boundary:
 

@@ -8,6 +8,7 @@ from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
 from mybroker.policy import classify_action
 from mybroker.profile import validate_profile_file
+from mybroker.product_brief import write_product_brief
 from mybroker.public_evidence import (
     SOURCE_MATRIX,
     build_public_evidence_catalog,
@@ -81,6 +82,11 @@ def main(argv: list[str] | None = None) -> int:
 
     validate_public_parser = subcommands.add_parser("validate-public-evidence", help="Validate a public_evidence_catalog.v1 artifact.")
     validate_public_parser.add_argument("catalog_path")
+
+    brief_parser = subcommands.add_parser("brief", help="Build a user-facing MyBroker product brief from scenario and verdict artifacts.")
+    brief_parser.add_argument("--scenario", required=True, help="scenario_report.v1 artifact path.")
+    brief_parser.add_argument("--verdict", required=True, help="market_verdict.v1 artifact path.")
+    brief_parser.add_argument("--output", default="reports/product/market-brief.html")
 
     quality_parser = subcommands.add_parser("quality", help="Inspect local price dataset quality without writing a research report.")
     quality_parser.add_argument("--source", action="append", help="Local price CSV file or directory. Repeat for multiple CSV files. Defaults to the bundled sample data.")
@@ -178,6 +184,10 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "brief":
+        path = write_product_brief(args.scenario, args.verdict, args.output)
+        print(json.dumps({"product_brief": path.as_posix()}, indent=2, ensure_ascii=False))
         return 0
     if args.command == "validate-profile":
         errors = validate_profile_file(args.profile_path)

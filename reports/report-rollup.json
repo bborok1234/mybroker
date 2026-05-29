@@ -1,6 +1,6 @@
 {
   "schema_version": "report_rollup.v1",
-  "generated_at": "2026-05-29T06:59:41.869911+00:00",
+  "generated_at": "2026-05-29T08:29:05.239167+00:00",
   "reports_dir": "reports/runs",
   "report_count": 2,
   "latest_report": {
@@ -129,7 +129,7 @@
   "latest_scenario": {
     "path": "reports/scenarios/public-evidence-sim.json",
     "run_id": "public-evidence-sim",
-    "generated_at": "2026-05-29T06:57:39.144211+00:00",
+    "generated_at": "2026-05-29T08:29:04.761542+00:00",
     "product_mode": "beginner_market_understanding_simulation",
     "seed_sources": [
       {
@@ -595,7 +595,7 @@
     {
       "path": "reports/scenarios/public-evidence-sim.json",
       "run_id": "public-evidence-sim",
-      "generated_at": "2026-05-29T06:57:39.144211+00:00",
+      "generated_at": "2026-05-29T08:29:04.761542+00:00",
       "product_mode": "beginner_market_understanding_simulation",
       "seed_sources": [
         {

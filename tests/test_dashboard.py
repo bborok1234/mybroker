@@ -44,7 +44,7 @@ class DashboardTests(unittest.TestCase):
             rollup_exists = rollup_path.exists()
 
         self.assertTrue(rollup_exists)
-        self.assertIn("MyBroker 시장 이해 대시보드", html)
+        self.assertIn("MyBroker 산출물 운영 대시보드", html)
         self.assertIn("가격 데이터 리서치 최신 실행", html)
         self.assertIn("Data Quality", html)
 
@@ -75,11 +75,12 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(rollup["scenario_count"], 1)
         self.assertEqual(rollup["latest_scenario"]["run_id"], "dashboard-sim")
         self.assertEqual(rollup["latest_scenario"]["profile_context"]["profile_id"], "beginner-conservative")
-        self.assertIn("시장 지도", html)
-        self.assertIn("시나리오 분기", html)
-        self.assertIn("출력 경계", html)
-        self.assertIn("공개 자료 커버리지", html)
+        self.assertIn("Scenario artifact", html)
+        self.assertIn("Output boundary", html)
+        self.assertIn("Public evidence artifact coverage", html)
         self.assertIn("의미 있음", html)
+        self.assertNotIn("다음 행동 후보", html)
+        self.assertNotIn("MiroFish 참고 초보자 보기", html)
 
     def test_rollup_compares_latest_against_previous(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
