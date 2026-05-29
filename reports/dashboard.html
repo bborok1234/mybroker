@@ -37,25 +37,27 @@ ul { margin:8px 0 0 18px; padding:0; color:var(--muted); }
 <h1>MyBroker Report Dashboard</h1>
 <p>Research-only local artifact view. Not trading execution or personalized investment advice.</p>
 </div>
-<p>Generated 2026-05-29T04:02:47.537234+00:00</p>
+<p>Generated 2026-05-29T05:10:19.910659+00:00</p>
 </header>
 <section class="panel">
 <div class="metrics">
-<article class='metric'><span>Reports</span><strong>1</strong><small>reports/runs</small></article>
-<article class='metric'><span>Total signals</span><strong>2</strong><small>across artifacts</small></article>
-<article class='metric'><span>Positive watch</span><strong>1</strong><small>research signal count</small></article>
-<article class='metric'><span>Latest valid</span><strong>yes</strong><small>local-momentum-research</small></article>
+<article class='metric'><span>Reports</span><strong>2</strong><small>reports/runs</small></article>
+<article class='metric'><span>Total signals</span><strong>4</strong><small>across artifacts</small></article>
+<article class='metric'><span>Dataset symbols</span><strong>2</strong><small>ABC, XYZ</small></article>
+<article class='metric'><span>Latest valid</span><strong>yes</strong><small>multi-file-research</small></article>
 </div>
 </section>
 <section class="split">
 <article class="panel">
 <h2>Latest Run</h2>
 <table><tbody>
-<tr><th>Run</th><td>local-momentum-research</td></tr>
+<tr><th>Run</th><td>multi-file-research</td></tr>
 <tr><th>Task</th><td>momentum_research_v1</td></tr>
-<tr><th>Generated</th><td>2026-05-29T03:49:20.706482+00:00</td></tr>
-<tr><th>Source</th><td>examples/prices.csv</td></tr>
+<tr><th>Generated</th><td>2026-05-29T05:10:12.068606+00:00</td></tr>
+<tr><th>Source</th><td>examples/prices-multi</td></tr>
+<tr><th>Files</th><td>2</td></tr>
 <tr><th>Rows</th><td>10</td></tr>
+<tr><th>Range</th><td>2026-01-01 to 2026-01-05</td></tr>
 <tr><th>Symbols</th><td>ABC, XYZ</td></tr>
 </tbody></table>
 </article>
@@ -63,13 +65,19 @@ ul { margin:8px 0 0 18px; padding:0; color:var(--muted); }
 <h2>Validation and Warnings</h2>
 <h3>Validation</h3>
 <ul><li>Latest report validates cleanly.</li></ul>
+<h3>Data Quality</h3>
+<ul><li>Latest dataset quality checks passed.</li></ul>
 <h3>Warnings</h3>
 <ul><li>No warnings.</li></ul>
 </article>
 </section>
 <section class="panel">
+<h2>Run Comparison</h2>
+<p>Compared with local-momentum-research: total 0, positive 0, added none, removed none</p>
+</section>
+<section class="panel">
 <h2>Artifacts</h2>
-<table><thead><tr><th>Run</th><th>Generated</th><th>Signals</th><th>Validation</th></tr></thead><tbody><tr><td><strong>local-momentum-research</strong><span>reports/runs/local-momentum-research.json</span></td><td>2026-05-29T03:49:20.706482+00:00</td><td>2</td><td><span class='pill valid'>valid</span></td></tr></tbody></table>
+<table><thead><tr><th>Run</th><th>Generated</th><th>Signals</th><th>Quality</th><th>Validation</th></tr></thead><tbody><tr><td><strong>multi-file-research</strong><span>reports/runs/multi-file-research.json</span></td><td>2026-05-29T05:10:12.068606+00:00</td><td>2</td><td>pass</td><td><span class='pill valid'>valid</span></td></tr><tr><td><strong>local-momentum-research</strong><span>reports/runs/local-momentum-research.json</span></td><td>2026-05-29T05:10:11.952293+00:00</td><td>2</td><td>pass</td><td><span class='pill valid'>valid</span></td></tr></tbody></table>
 </section>
 </main>
 </body>

@@ -52,21 +52,62 @@ def build_report_rollup(reports_dir: str | Path = "reports/runs") -> dict[str, A
             "source": payload.get("source", {}),
             "summary": summary,
             "warnings": payload.get("warnings", []),
+            "data_quality": payload.get("data_quality", {}),
             "validation": {
                 "valid": not errors,
                 "errors": errors,
             },
         })
     report_rows.sort(key=lambda row: row.get("generated_at", ""), reverse=True)
+    latest = report_rows[0] if report_rows else None
+    previous = report_rows[1] if len(report_rows) > 1 else None
     return {
         "schema_version": ROLLUP_SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "reports_dir": Path(reports_dir).as_posix(),
         "report_count": len(report_rows),
-        "latest_report": report_rows[0] if report_rows else None,
+        "latest_report": latest,
+        "previous_report": previous,
+        "latest_vs_previous": compare_reports(latest, previous),
+        "dataset_coverage": dataset_coverage(report_rows),
         "totals": totals,
         "reports": report_rows,
         "disclaimer": "Research-only local artifact view. Not trading execution or personalized investment advice.",
+    }
+
+
+def compare_reports(latest: dict[str, Any] | None, previous: dict[str, Any] | None) -> dict[str, Any]:
+    if not latest or not previous:
+        return {"available": False, "reason": "Need at least two research reports."}
+    latest_summary = latest.get("summary", {})
+    previous_summary = previous.get("summary", {})
+    latest_symbols = set(latest.get("source", {}).get("symbols", []))
+    previous_symbols = set(previous.get("source", {}).get("symbols", []))
+    return {
+        "available": True,
+        "previous_run_id": previous.get("run_id", ""),
+        "delta_total_signals": int(latest_summary.get("total_signals", 0) or 0) - int(previous_summary.get("total_signals", 0) or 0),
+        "delta_positive_watch": int(latest_summary.get("positive_watch", 0) or 0) - int(previous_summary.get("positive_watch", 0) or 0),
+        "added_symbols": sorted(latest_symbols - previous_symbols),
+        "removed_symbols": sorted(previous_symbols - latest_symbols),
+    }
+
+
+def dataset_coverage(reports: list[dict[str, Any]]) -> dict[str, Any]:
+    symbols: set[str] = set()
+    sources: set[str] = set()
+    latest_quality = (reports[0].get("data_quality", {}) if reports else {})
+    for report in reports:
+        source = report.get("source", {})
+        symbols.update(source.get("symbols", []))
+        sources.update(source.get("sources", []) or [source.get("source", "")])
+    return {
+        "symbols": sorted(symbol for symbol in symbols if symbol),
+        "sources": sorted(source for source in sources if source),
+        "symbol_count": len(symbols),
+        "source_count": len(sources),
+        "latest_quality_status": latest_quality.get("status", "unknown"),
+        "latest_quality_issue_count": latest_quality.get("issue_count", 0),
     }
 
 
@@ -98,6 +139,9 @@ def render_dashboard_html(rollup: dict[str, Any]) -> str:
     source = latest.get("source", {}) if latest else {}
     validation = latest.get("validation", {}) if latest else {}
     warnings = latest.get("warnings", []) if latest else []
+    data_quality = latest.get("data_quality", {}) if latest else {}
+    coverage = rollup.get("dataset_coverage", {})
+    comparison = rollup.get("latest_vs_previous", {})
     report_rows = []
     for report in rollup.get("reports", []):
         status = "valid" if report.get("validation", {}).get("valid") else "invalid"
@@ -106,6 +150,7 @@ def render_dashboard_html(rollup: dict[str, Any]) -> str:
             f"<td><strong>{esc(report.get('run_id', ''))}</strong><span>{esc(report.get('path', ''))}</span></td>"
             f"<td>{esc(report.get('generated_at', ''))}</td>"
             f"<td>{esc(report.get('summary', {}).get('total_signals', 0))}</td>"
+            f"<td>{esc(report.get('data_quality', {}).get('status', 'unknown'))}</td>"
             f"<td><span class='pill {status}'>{esc(status)}</span></td>"
             "</tr>"
         )
@@ -114,6 +159,19 @@ def render_dashboard_html(rollup: dict[str, Any]) -> str:
     warning_items = "".join(f"<li>{esc(item)}</li>" for item in warnings) or "<li>No warnings.</li>"
     validation_errors = validation.get("errors", [])
     validation_items = "".join(f"<li>{esc(item)}</li>" for item in validation_errors) or "<li>Latest report validates cleanly.</li>"
+    quality_items = "".join(
+        f"<li>{esc(issue.get('level', ''))}: {esc(issue.get('code', ''))} - {esc(issue.get('message', ''))}</li>"
+        for issue in data_quality.get("issues", [])
+    ) or "<li>Latest dataset quality checks passed.</li>"
+    comparison_text = (
+        f"Compared with {esc(comparison.get('previous_run_id', ''))}: "
+        f"total {esc(comparison.get('delta_total_signals', 0))}, "
+        f"positive {esc(comparison.get('delta_positive_watch', 0))}, "
+        f"added {esc(', '.join(comparison.get('added_symbols', [])) or 'none')}, "
+        f"removed {esc(', '.join(comparison.get('removed_symbols', [])) or 'none')}"
+        if comparison.get("available")
+        else esc(comparison.get("reason", "No comparison available."))
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -159,7 +217,7 @@ ul {{ margin:8px 0 0 18px; padding:0; color:var(--muted); }}
 <div class="metrics">
 {metric('Reports', rollup.get('report_count', 0), rollup.get('reports_dir', ''))}
 {metric('Total signals', totals.get('total_signals', 0), 'across artifacts')}
-{metric('Positive watch', totals.get('positive_watch', 0), 'research signal count')}
+{metric('Dataset symbols', coverage.get('symbol_count', 0), ', '.join(coverage.get('symbols', [])))}
 {metric('Latest valid', 'yes' if validation.get('valid') else 'no', latest.get('run_id', 'no latest report'))}
 </div>
 </section>
@@ -171,7 +229,9 @@ ul {{ margin:8px 0 0 18px; padding:0; color:var(--muted); }}
 <tr><th>Task</th><td>{esc(latest.get('task_id', ''))}</td></tr>
 <tr><th>Generated</th><td>{esc(latest.get('generated_at', ''))}</td></tr>
 <tr><th>Source</th><td>{esc(source.get('source', ''))}</td></tr>
+<tr><th>Files</th><td>{esc(source.get('file_count', ''))}</td></tr>
 <tr><th>Rows</th><td>{esc(source.get('row_count', ''))}</td></tr>
+<tr><th>Range</th><td>{esc(source.get('start_date', ''))} to {esc(source.get('end_date', ''))}</td></tr>
 <tr><th>Symbols</th><td>{esc(', '.join(source.get('symbols', [])))}</td></tr>
 </tbody></table>
 </article>
@@ -179,13 +239,19 @@ ul {{ margin:8px 0 0 18px; padding:0; color:var(--muted); }}
 <h2>Validation and Warnings</h2>
 <h3>Validation</h3>
 <ul>{validation_items}</ul>
+<h3>Data Quality</h3>
+<ul>{quality_items}</ul>
 <h3>Warnings</h3>
 <ul>{warning_items}</ul>
 </article>
 </section>
 <section class="panel">
+<h2>Run Comparison</h2>
+<p>{comparison_text}</p>
+</section>
+<section class="panel">
 <h2>Artifacts</h2>
-<table><thead><tr><th>Run</th><th>Generated</th><th>Signals</th><th>Validation</th></tr></thead><tbody>{''.join(report_rows)}</tbody></table>
+<table><thead><tr><th>Run</th><th>Generated</th><th>Signals</th><th>Quality</th><th>Validation</th></tr></thead><tbody>{''.join(report_rows)}</tbody></table>
 </section>
 </main>
 </body>

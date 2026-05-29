@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from mybroker.models import DataSourceMetadata, PolicyDecision, ResearchReport, Signal
+from mybroker.models import DataQualityResult, DataSourceMetadata, PolicyDecision, ResearchReport, Signal
 
 
 REPORT_SCHEMA_VERSION = "research_report.v1"
@@ -18,6 +18,7 @@ def build_research_report(
     run_id: str,
     task_id: str,
     source: DataSourceMetadata,
+    data_quality: DataQualityResult,
     signals: list[Signal],
     policy: PolicyDecision,
     generated_at: datetime | None = None,
@@ -25,6 +26,8 @@ def build_research_report(
     warnings = []
     if not policy.allowed:
         warnings.append("policy gate blocked autonomous use of this report")
+    if data_quality.status != "pass":
+        warnings.append(f"data quality status is {data_quality.status}")
     if any(signal.direction == "insufficient_data" for signal in signals):
         warnings.append("one or more symbols have insufficient data")
     return ResearchReport(
@@ -36,6 +39,7 @@ def build_research_report(
         signals=signals,
         policy=policy,
         summary=_signal_summary(signals),
+        data_quality=data_quality,
         warnings=warnings,
     )
 
@@ -61,14 +65,14 @@ def load_report(path: str | Path) -> dict[str, Any]:
 
 def validate_report_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    required = {"schema_version", "run_id", "generated_at", "task_id", "source", "signals", "policy", "summary", "warnings"}
+    required = {"schema_version", "run_id", "generated_at", "task_id", "source", "signals", "policy", "summary", "data_quality", "warnings"}
     missing = sorted(required.difference(payload))
     if missing:
         errors.append(f"missing required report fields: {', '.join(missing)}")
     if payload.get("schema_version") != REPORT_SCHEMA_VERSION:
         errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
     source = payload.get("source", {})
-    for field in ["adapter_id", "source", "row_count", "symbols"]:
+    for field in ["adapter_id", "source", "row_count", "symbols", "sources", "source_type", "file_count", "start_date", "end_date"]:
         if field not in source:
             errors.append(f"source missing {field}")
     if source.get("row_count", 0) <= 0:
@@ -79,6 +83,18 @@ def validate_report_payload(payload: dict[str, Any]) -> list[str]:
     for field in ["kind", "allowed", "human_review_required", "reasons"]:
         if field not in policy:
             errors.append(f"policy missing {field}")
+    data_quality = payload.get("data_quality", {})
+    for field in ["status", "checks", "issue_count", "warning_count", "error_count", "issues"]:
+        if field not in data_quality:
+            errors.append(f"data_quality missing {field}")
+    if data_quality.get("status") not in {"pass", "warning", "error"}:
+        errors.append(f"data_quality has invalid status {data_quality.get('status')}")
+    if data_quality.get("error_count", 0) > 0:
+        errors.append("data_quality contains blocking errors")
+    for index, issue in enumerate(data_quality.get("issues", [])):
+        for field in ["level", "code", "message"]:
+            if field not in issue:
+                errors.append(f"data_quality.issues[{index}] missing {field}")
     signals = payload.get("signals", [])
     if not signals:
         errors.append("signals must not be empty")

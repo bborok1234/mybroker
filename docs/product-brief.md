@@ -4,7 +4,8 @@ MyBroker starts as a personal research and signal-generation system on top of Fl
 
 ## Scope
 
-- Local data ingestion.
+- Local data ingestion from one file, repeated files, or a directory of CSV files.
+- Dataset quality checks before research output.
 - Explainable signal generation.
 - Evidence-backed research notes.
 - Policy classification before actions that could affect accounts, recommendations, or external communication.

@@ -20,6 +20,7 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(payload["schema_version"], "research_report.v1")
         self.assertEqual(payload["summary"]["total_signals"], 2)
         self.assertEqual(payload["policy"]["kind"], "signal_generation")
+        self.assertEqual(payload["data_quality"]["status"], "pass")
         self.assertEqual(validate_report_payload(payload), [])
 
     def test_report_validator_rejects_missing_fields(self) -> None:

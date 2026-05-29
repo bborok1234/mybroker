@@ -1,21 +1,22 @@
 {
   "schema_version": "research_report.v1",
-  "run_id": "local-momentum-research",
-  "generated_at": "2026-05-29T05:10:11.952293+00:00",
+  "run_id": "multi-file-research",
+  "generated_at": "2026-05-29T05:10:12.068606+00:00",
   "task_id": "momentum_research_v1",
   "source": {
-    "adapter_id": "csv_price_v1",
-    "source": "examples/prices.csv",
+    "adapter_id": "directory_csv_price_v1",
+    "source": "examples/prices-multi",
     "row_count": 10,
     "symbols": [
       "ABC",
       "XYZ"
     ],
     "sources": [
-      "examples/prices.csv"
+      "examples/prices-multi/abc.csv",
+      "examples/prices-multi/xyz.csv"
     ],
-    "source_type": "file",
-    "file_count": 1,
+    "source_type": "directory",
+    "file_count": 2,
     "start_date": "2026-01-01",
     "end_date": "2026-01-05"
   },

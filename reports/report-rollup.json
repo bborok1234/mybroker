@@ -1,21 +1,29 @@
 {
   "schema_version": "report_rollup.v1",
-  "generated_at": "2026-05-29T04:02:47.537234+00:00",
+  "generated_at": "2026-05-29T05:10:19.910659+00:00",
   "reports_dir": "reports/runs",
-  "report_count": 1,
+  "report_count": 2,
   "latest_report": {
-    "path": "reports/runs/local-momentum-research.json",
-    "run_id": "local-momentum-research",
+    "path": "reports/runs/multi-file-research.json",
+    "run_id": "multi-file-research",
     "task_id": "momentum_research_v1",
-    "generated_at": "2026-05-29T03:49:20.706482+00:00",
+    "generated_at": "2026-05-29T05:10:12.068606+00:00",
     "source": {
-      "adapter_id": "csv_price_v1",
-      "source": "examples/prices.csv",
+      "adapter_id": "directory_csv_price_v1",
+      "source": "examples/prices-multi",
       "row_count": 10,
       "symbols": [
         "ABC",
         "XYZ"
-      ]
+      ],
+      "sources": [
+        "examples/prices-multi/abc.csv",
+        "examples/prices-multi/xyz.csv"
+      ],
+      "source_type": "directory",
+      "file_count": 2,
+      "start_date": "2026-01-01",
+      "end_date": "2026-01-05"
     },
     "summary": {
       "total_signals": 2,
@@ -25,32 +33,127 @@
       "insufficient_data": 0
     },
     "warnings": [],
+    "data_quality": {
+      "status": "pass",
+      "checks": {
+        "schema": true,
+        "missing_values": true,
+        "duplicates": true,
+        "date_order": true,
+        "symbol_coverage": true,
+        "insufficient_history": true
+      },
+      "issue_count": 0,
+      "warning_count": 0,
+      "error_count": 0,
+      "issues": []
+    },
     "validation": {
       "valid": true,
       "errors": []
     }
   },
+  "previous_report": {
+    "path": "reports/runs/local-momentum-research.json",
+    "run_id": "local-momentum-research",
+    "task_id": "momentum_research_v1",
+    "generated_at": "2026-05-29T05:10:11.952293+00:00",
+    "source": {
+      "adapter_id": "csv_price_v1",
+      "source": "examples/prices.csv",
+      "row_count": 10,
+      "symbols": [
+        "ABC",
+        "XYZ"
+      ],
+      "sources": [
+        "examples/prices.csv"
+      ],
+      "source_type": "file",
+      "file_count": 1,
+      "start_date": "2026-01-01",
+      "end_date": "2026-01-05"
+    },
+    "summary": {
+      "total_signals": 2,
+      "positive_watch": 1,
+      "negative_watch": 1,
+      "neutral_watch": 0,
+      "insufficient_data": 0
+    },
+    "warnings": [],
+    "data_quality": {
+      "status": "pass",
+      "checks": {
+        "schema": true,
+        "missing_values": true,
+        "duplicates": true,
+        "date_order": true,
+        "symbol_coverage": true,
+        "insufficient_history": true
+      },
+      "issue_count": 0,
+      "warning_count": 0,
+      "error_count": 0,
+      "issues": []
+    },
+    "validation": {
+      "valid": true,
+      "errors": []
+    }
+  },
+  "latest_vs_previous": {
+    "available": true,
+    "previous_run_id": "local-momentum-research",
+    "delta_total_signals": 0,
+    "delta_positive_watch": 0,
+    "added_symbols": [],
+    "removed_symbols": []
+  },
+  "dataset_coverage": {
+    "symbols": [
+      "ABC",
+      "XYZ"
+    ],
+    "sources": [
+      "examples/prices-multi/abc.csv",
+      "examples/prices-multi/xyz.csv",
+      "examples/prices.csv"
+    ],
+    "symbol_count": 2,
+    "source_count": 3,
+    "latest_quality_status": "pass",
+    "latest_quality_issue_count": 0
+  },
   "totals": {
-    "total_signals": 2,
-    "positive_watch": 1,
-    "negative_watch": 1,
+    "total_signals": 4,
+    "positive_watch": 2,
+    "negative_watch": 2,
     "neutral_watch": 0,
     "insufficient_data": 0
   },
   "reports": [
     {
-      "path": "reports/runs/local-momentum-research.json",
-      "run_id": "local-momentum-research",
+      "path": "reports/runs/multi-file-research.json",
+      "run_id": "multi-file-research",
       "task_id": "momentum_research_v1",
-      "generated_at": "2026-05-29T03:49:20.706482+00:00",
+      "generated_at": "2026-05-29T05:10:12.068606+00:00",
       "source": {
-        "adapter_id": "csv_price_v1",
-        "source": "examples/prices.csv",
+        "adapter_id": "directory_csv_price_v1",
+        "source": "examples/prices-multi",
         "row_count": 10,
         "symbols": [
           "ABC",
           "XYZ"
-        ]
+        ],
+        "sources": [
+          "examples/prices-multi/abc.csv",
+          "examples/prices-multi/xyz.csv"
+        ],
+        "source_type": "directory",
+        "file_count": 2,
+        "start_date": "2026-01-01",
+        "end_date": "2026-01-05"
       },
       "summary": {
         "total_signals": 2,
@@ -60,6 +163,70 @@
         "insufficient_data": 0
       },
       "warnings": [],
+      "data_quality": {
+        "status": "pass",
+        "checks": {
+          "schema": true,
+          "missing_values": true,
+          "duplicates": true,
+          "date_order": true,
+          "symbol_coverage": true,
+          "insufficient_history": true
+        },
+        "issue_count": 0,
+        "warning_count": 0,
+        "error_count": 0,
+        "issues": []
+      },
+      "validation": {
+        "valid": true,
+        "errors": []
+      }
+    },
+    {
+      "path": "reports/runs/local-momentum-research.json",
+      "run_id": "local-momentum-research",
+      "task_id": "momentum_research_v1",
+      "generated_at": "2026-05-29T05:10:11.952293+00:00",
+      "source": {
+        "adapter_id": "csv_price_v1",
+        "source": "examples/prices.csv",
+        "row_count": 10,
+        "symbols": [
+          "ABC",
+          "XYZ"
+        ],
+        "sources": [
+          "examples/prices.csv"
+        ],
+        "source_type": "file",
+        "file_count": 1,
+        "start_date": "2026-01-01",
+        "end_date": "2026-01-05"
+      },
+      "summary": {
+        "total_signals": 2,
+        "positive_watch": 1,
+        "negative_watch": 1,
+        "neutral_watch": 0,
+        "insufficient_data": 0
+      },
+      "warnings": [],
+      "data_quality": {
+        "status": "pass",
+        "checks": {
+          "schema": true,
+          "missing_values": true,
+          "duplicates": true,
+          "date_order": true,
+          "symbol_coverage": true,
+          "insufficient_history": true
+        },
+        "issue_count": 0,
+        "warning_count": 0,
+        "error_count": 0,
+        "issues": []
+      },
       "validation": {
         "valid": true,
         "errors": []

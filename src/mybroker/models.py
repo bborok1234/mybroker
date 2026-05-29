@@ -37,6 +37,37 @@ class DataSourceMetadata:
     source: str
     row_count: int
     symbols: list[str]
+    sources: list[str] = field(default_factory=list)
+    source_type: str = "file"
+    file_count: int = 1
+    start_date: str = ""
+    end_date: str = ""
+
+
+@dataclass(frozen=True)
+class DataQualityIssue:
+    level: str
+    code: str
+    message: str
+    source: str = ""
+    symbol: str = ""
+
+
+@dataclass(frozen=True)
+class DataQualityResult:
+    status: str
+    checks: dict[str, bool]
+    issue_count: int
+    warning_count: int
+    error_count: int
+    issues: list[DataQualityIssue] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class PriceDataset:
+    bars: list[PriceBar]
+    metadata: DataSourceMetadata
+    quality: DataQualityResult
 
 
 @dataclass(frozen=True)
@@ -58,4 +89,5 @@ class ResearchReport:
     signals: list[Signal]
     policy: PolicyDecision
     summary: dict[str, int]
+    data_quality: DataQualityResult | None = None
     warnings: list[str] = field(default_factory=list)
