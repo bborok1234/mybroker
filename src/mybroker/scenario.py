@@ -130,7 +130,7 @@ def build_market_map(seeds: list[EvidenceSeed]) -> MarketMap:
     return MarketMap(entities=entities, relationships=relationships, beginner_summary=summary)
 
 
-def build_evidence_catalog(seeds: list[EvidenceSeed], profile: BeginnerProfile | None = None) -> EvidenceCatalog:
+def build_evidence_catalog(seeds: list[EvidenceSeed], profile: BeginnerProfile | None = None, public_catalog: dict[str, Any] | None = None) -> EvidenceCatalog:
     topic_counts: dict[str, int] = {}
     for seed in seeds:
         for topic in seed.topics:
@@ -142,12 +142,21 @@ def build_evidence_catalog(seeds: list[EvidenceSeed], profile: BeginnerProfile |
         missing_context.append("multiple_evidence_sources")
     if "risk" not in topic_counts:
         missing_context.append("explicit_risk_evidence")
+    source_coverage = []
+    freshness_status = "sample_cache" if public_catalog else "local_seed"
+    meaningfulness_status = "unknown"
+    if public_catalog:
+        source_coverage = public_catalog.get("source_status", [])
+        meaningfulness_status = public_catalog.get("feasibility", {}).get("status", "unknown")
     coverage_status = "strong" if len(seeds) >= 2 and "risk" in topic_counts else "limited"
     return EvidenceCatalog(
         source_count=len(seeds),
         topic_counts=dict(sorted(topic_counts.items())),
         coverage_status=coverage_status,
         missing_context=missing_context,
+        source_coverage=source_coverage,
+        freshness_status=freshness_status,
+        meaningfulness_status=meaningfulness_status,
     )
 
 
@@ -155,12 +164,15 @@ def run_market_simulation(
     *,
     seed_sources: Iterable[str | Path] | None = None,
     profile_path: str | Path | None = None,
+    evidence_catalog_path: str | Path | None = None,
     run_id: str = "beginner-market-sim",
     generated_at: datetime | None = None,
 ) -> ScenarioReport:
     seeds = load_evidence_seeds(seed_sources)
+    public_catalog = _load_public_catalog(evidence_catalog_path)
+    seeds.extend(_public_catalog_to_seeds(public_catalog))
     profile = load_beginner_profile(profile_path)
-    evidence_catalog = build_evidence_catalog(seeds, profile)
+    evidence_catalog = build_evidence_catalog(seeds, profile, public_catalog)
     market_map = build_market_map(seeds)
     topics = {topic for seed in seeds for topic in seed.topics}
     personas = _persona_views(topics, seeds, profile)
@@ -334,6 +346,28 @@ def _extract_title(text: str, path: Path) -> str:
 def _excerpt(text: str) -> str:
     compact = re.sub(r"\s+", " ", text).strip()
     return compact[:360]
+
+
+def _load_public_catalog(path: str | Path | None) -> dict[str, Any] | None:
+    if path is None:
+        return None
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _public_catalog_to_seeds(catalog: dict[str, Any] | None) -> list[EvidenceSeed]:
+    if not catalog:
+        return []
+    seeds = []
+    for item in catalog.get("items", []):
+        seeds.append(
+            EvidenceSeed(
+                source=f"public:{item.get('source_name', '')}:{item.get('item_id', '')}",
+                title=item.get("title", ""),
+                excerpt=_excerpt(item.get("text", "")),
+                topics=item.get("topics", []) or ["risk"],
+            )
+        )
+    return seeds
 
 
 def _relationships_for_topics(topic_counts: dict[str, int]) -> list[MarketRelationship]:

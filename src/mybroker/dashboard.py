@@ -262,6 +262,10 @@ p {{ margin:0; color:var(--muted); }}
 .lane:nth-child(3) {{ border-left-color:var(--bad); }}
 .persona {{ border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:8px; background:#ffffff; }}
 .candidate {{ border:1px solid var(--line); border-radius:8px; padding:12px; background:#ffffff; margin-top:8px; }}
+.source-grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:12px; }}
+.source-card {{ border:1px solid var(--line); border-radius:8px; padding:12px; background:#f8fbff; min-height:104px; }}
+.source-card strong {{ display:block; font-size:15px; margin-bottom:5px; }}
+.source-card small {{ display:block; color:var(--muted); overflow-wrap:anywhere; }}
 .chiprow {{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }}
 .chip {{ display:inline-flex; align-items:center; min-height:26px; padding:3px 9px; border-radius:999px; background:#edf2f0; color:#26433d; font-size:12px; font-weight:700; }}
 table {{ width:100%; border-collapse:collapse; }}
@@ -272,14 +276,14 @@ ul {{ margin:8px 0 0 18px; padding:0; color:var(--muted); }}
 .pill {{ display:inline-flex; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700; background:#eef2f7; }}
 .pill.valid {{ color:var(--ok); background:#e7f5ee; }}
 .pill.invalid {{ color:var(--bad); background:#fae8e8; }}
-@media (max-width:900px) {{ header,.split,.sim-grid {{ display:block; }} .metrics,.map,.scenario-lanes {{ grid-template-columns:1fr; }} main {{ padding:16px; }} }}
+@media (max-width:900px) {{ header,.split,.sim-grid {{ display:block; }} .metrics,.map,.scenario-lanes,.source-grid {{ grid-template-columns:1fr; }} main {{ padding:16px; }} }}
 </style>
 </head>
 <body>
 <main>
 <header>
 <div>
-<p class="eyebrow">Beginner-first market simulation OS</p>
+<p class="eyebrow">초보자용 시장 이해 시뮬레이션 OS</p>
 <h1>MyBroker 시장 이해 대시보드</h1>
 <p>{esc(rollup.get('disclaimer', ''))}</p>
 </div>
@@ -344,6 +348,23 @@ def render_scenario_section(scenario: dict[str, Any]) -> str:
     catalog = scenario.get("evidence_catalog", {})
     profile = scenario.get("profile_context") or {}
     boundary = scenario.get("output_boundary", "generic_research_only")
+    boundary_label = {
+        "generic_research_only": "일반 리서치 전용",
+        "context_aware_research_only": "맥락 반영 리서치 전용",
+    }.get(boundary, boundary)
+    meaningfulness = catalog.get("meaningfulness_status", "unknown")
+    meaningfulness_label = {
+        "meaningful": "의미 있음",
+        "weak": "약함",
+        "blocked": "차단",
+        "unknown": "미확인",
+    }.get(meaningfulness, meaningfulness)
+    freshness = catalog.get("freshness_status", "unknown")
+    freshness_label = {
+        "sample_cache": "샘플 캐시",
+        "local_seed": "로컬 seed",
+        "unknown": "미확인",
+    }.get(freshness, freshness)
     entities = market_map.get("entities", [])
     entity_cards = "".join(
         "<article class='node'>"
@@ -386,6 +407,18 @@ def render_scenario_section(scenario: dict[str, Any]) -> str:
     )
     topics = catalog.get("topic_counts", {})
     topic_chips = "".join(chip(f"{topic}: {count}") for topic, count in sorted(topics.items()))
+    source_coverage = catalog.get("source_coverage", [])
+    source_cards = "".join(
+        "<article class='source-card'>"
+        f"<strong>{esc(source.get('source_name', 'unknown source'))}</strong>"
+        f"<small>adapter: {esc(source.get('adapter_id', ''))}</small>"
+        f"<small>items: {esc(source.get('item_count', '0'))}</small>"
+        f"<small>freshness: {esc(source.get('freshness_status', 'unknown'))}</small>"
+        "</article>"
+        for source in source_coverage[:6]
+    )
+    if not source_cards:
+        source_cards = "<p>공개 자료 catalog가 연결되지 않았습니다.</p>"
     profile_summary = (
         f"{esc(profile.get('experience_level', ''))} / {esc(profile.get('learning_goal', ''))} / "
         f"{esc(profile.get('risk_comfort', ''))} / {esc(profile.get('time_horizon', ''))}"
@@ -396,17 +429,25 @@ def render_scenario_section(scenario: dict[str, Any]) -> str:
     return f"""
 <section class="panel">
 <div class="metrics">
-{metric('Evidence sources', catalog.get('source_count', 0), catalog.get('coverage_status', 'unknown'))}
-{metric('Output boundary', boundary, 'context-aware is still research-only')}
-{metric('Beginner profile', profile.get('profile_id', 'none'), profile_summary)}
-{metric('Missing context', len(catalog.get('missing_context', [])), ', '.join(catalog.get('missing_context', [])) or 'none')}
+{metric('근거 수', catalog.get('source_count', 0), catalog.get('coverage_status', 'unknown'))}
+{metric('시뮬레이션 판정', meaningfulness_label, '무료/공개 자료 기반 가능성')}
+{metric('자료 신선도', freshness_label, '샘플 캐시는 재현 가능하지만 실시간은 아님')}
+{metric('출력 경계', boundary_label, '맥락을 반영해도 리서치 전용')}
+{metric('초보자 프로필', profile.get('profile_id', 'none'), profile_summary)}
 </div>
 <div class="chiprow">{topic_chips}</div>
 </section>
 <section class="panel">
+<h2>공개 자료 커버리지</h2>
+<p>각 시나리오에 영향을 준 무료/공개 source입니다. sample_cache는 재현 가능한 로컬 검증 단계이며, live refresh와 라이선스 검토는 별도 게이트입니다.</p>
+<div class="source-grid">{source_cards}</div>
+<h3>부족한 맥락</h3>
+<div class="chiprow">{''.join(chip(item) for item in catalog.get('missing_context', [])) or chip('none')}</div>
+</section>
+<section class="panel">
 <div class="sim-grid">
 <div>
-<p class="eyebrow">MiroFish-inspired beginner view</p>
+<p class="eyebrow">MiroFish 참고 초보자 보기</p>
 <h2>시장 지도</h2>
 <p>{esc(market_map.get('beginner_summary', ''))}</p>
 <div class="map">{entity_cards}</div>

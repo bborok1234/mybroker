@@ -49,15 +49,21 @@ class DashboardTests(unittest.TestCase):
         self.assertIn("Data Quality", html)
 
     def test_dashboard_includes_scenario_artifacts(self) -> None:
+        from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
         from mybroker.scenario import run_market_simulation, write_scenario_report
 
         with tempfile.TemporaryDirectory() as directory:
             reports_dir = Path(directory) / "runs"
             scenarios_dir = Path(directory) / "scenarios"
+            evidence_path = write_public_evidence_catalog(
+                build_public_evidence_catalog(),
+                Path(directory) / "evidence" / "public-evidence.json",
+            )
             run_research_task(output_path=reports_dir / "report.json")
             scenario = run_market_simulation(
                 seed_sources=["examples/seeds"],
                 profile_path="examples/profiles/beginner-conservative.json",
+                evidence_catalog_path=evidence_path,
                 run_id="dashboard-sim",
             )
             write_scenario_report(scenario, scenarios_dir / "scenario.json")
@@ -71,7 +77,9 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(rollup["latest_scenario"]["profile_context"]["profile_id"], "beginner-conservative")
         self.assertIn("시장 지도", html)
         self.assertIn("시나리오 분기", html)
-        self.assertIn("Output boundary", html)
+        self.assertIn("출력 경계", html)
+        self.assertIn("공개 자료 커버리지", html)
+        self.assertIn("의미 있음", html)
 
     def test_rollup_compares_latest_against_previous(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

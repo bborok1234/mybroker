@@ -28,6 +28,10 @@ PYTHONPATH=src python3 -m mybroker validate-report reports/runs/local-momentum-r
 PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --output reports/scenarios/beginner-market-sim.json --verdict-output reports/scenarios/verdict.json
 PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --profile examples/profiles/beginner-conservative.json --run-id beginner-profile-sim --output reports/scenarios/beginner-profile-sim.json --verdict-output reports/scenarios/profile-verdict.json
 PYTHONPATH=src python3 -m mybroker validate-profile examples/profiles/beginner-conservative.json
+PYTHONPATH=src python3 -m mybroker evidence-sources
+PYTHONPATH=src python3 -m mybroker ingest-public-evidence --output reports/evidence/public-evidence-catalog.json
+PYTHONPATH=src python3 -m mybroker validate-public-evidence reports/evidence/public-evidence-catalog.json
+PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --profile examples/profiles/beginner-conservative.json --evidence-catalog reports/evidence/public-evidence-catalog.json --run-id public-evidence-sim --output reports/scenarios/public-evidence-sim.json --verdict-output reports/scenarios/public-evidence-verdict.json
 PYTHONPATH=src python3 -m mybroker validate-scenario reports/scenarios/beginner-market-sim.json
 PYTHONPATH=src python3 -m mybroker validate-verdict reports/scenarios/verdict.json
 PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output reports/dashboard.html --rollup-output reports/report-rollup.json
@@ -52,6 +56,27 @@ The MiroFish-inspired slice is local and deterministic by default:
 Optional beginner profile context can adjust explanation priority and candidate ordering.
 It is deliberately limited to learning goal, risk comfort, time horizon, and decision style.
 It does not create account-specific instructions or discretionary trading authority.
+
+## Free/Public Evidence Proof
+
+The public evidence slice tests whether beginner-first simulation can work before paid data,
+accounts, or execution are introduced.
+
+1. `evidence-sources` prints a feasibility matrix for SEC EDGAR, FRED, GDELT, Stooq,
+   Alpha Vantage free tier, Nasdaq Data Link, and any later free source additions.
+2. `ingest-public-evidence` reads cached, no-key public-source samples and writes a
+   `public_evidence_catalog.v1` artifact under `reports/evidence/`.
+3. The catalog records source coverage, freshness, data quality risks, implementation
+   priority, normalized evidence items, a market/entity/event graph, and a feasibility
+   verdict of `meaningful`, `weak`, or `blocked`.
+4. `scenario --evidence-catalog ...` injects the public evidence graph into
+   `scenario_report.v1` so scenarios and action candidates can show which free sources
+   influenced them.
+5. The dashboard shows source coverage, freshness, graph-driven topics, missing evidence,
+   and whether the simulation is meaningful enough for the next local research step.
+
+This proof is intentionally reproducible with local cached samples. Live refresh, source
+licensing review, deduplication, and stronger entity extraction remain explicit follow-up gates.
 
 ## First Pipeline Slice
 

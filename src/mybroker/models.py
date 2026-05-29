@@ -107,6 +107,9 @@ class EvidenceCatalog:
     topic_counts: dict[str, int]
     coverage_status: str
     missing_context: list[str] = field(default_factory=list)
+    source_coverage: list[dict[str, str]] = field(default_factory=list)
+    freshness_status: str = "unknown"
+    meaningfulness_status: str = "unknown"
 
 
 @dataclass(frozen=True)
