@@ -18,6 +18,12 @@ class PolicyTests(unittest.TestCase):
         self.assertFalse(decision.allowed)
         self.assertTrue(decision.human_review_required)
 
+    def test_scenario_simulation_is_research_allowed(self) -> None:
+        decision = classify_action("scenario_simulation")
+
+        self.assertTrue(decision.allowed)
+        self.assertFalse(decision.human_review_required)
+
     def test_unknown_action_requires_review(self) -> None:
         decision = classify_action("new_action")
 

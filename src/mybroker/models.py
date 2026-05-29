@@ -91,3 +91,93 @@ class ResearchReport:
     summary: dict[str, int]
     data_quality: DataQualityResult | None = None
     warnings: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class EvidenceSeed:
+    source: str
+    title: str
+    excerpt: str
+    topics: list[str]
+
+
+@dataclass(frozen=True)
+class MarketEntity:
+    name: str
+    kind: str
+    beginner_label: str
+    why_it_matters: str
+    mentions: int
+    evidence: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class MarketRelationship:
+    source: str
+    target: str
+    relation: str
+    beginner_explanation: str
+    evidence: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class MarketMap:
+    entities: list[MarketEntity]
+    relationships: list[MarketRelationship]
+    beginner_summary: str
+
+
+@dataclass(frozen=True)
+class PersonaView:
+    persona_id: str
+    name: str
+    role: str
+    stance: str
+    summary: str
+    confidence: float
+    evidence: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ScenarioPath:
+    scenario_id: str
+    name: str
+    probability_label: str
+    summary: str
+    triggers: list[str]
+    watch_items: list[str]
+    beginner_explanation: str
+    risk_notes: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class BeginnerExplanation:
+    term: str
+    explanation: str
+
+
+@dataclass(frozen=True)
+class ActionCandidate:
+    action_type: str
+    title: str
+    rationale: str
+    suitability: str
+    confidence: float
+    evidence: list[str] = field(default_factory=list)
+    risk_notes: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ScenarioReport:
+    schema_version: str
+    run_id: str
+    generated_at: datetime
+    product_mode: str
+    seed_sources: list[EvidenceSeed]
+    market_map: MarketMap
+    persona_views: list[PersonaView]
+    scenarios: list[ScenarioPath]
+    beginner_explanations: list[BeginnerExplanation]
+    action_candidates: list[ActionCandidate]
+    policy: PolicyDecision
+    warnings: list[str] = field(default_factory=list)
