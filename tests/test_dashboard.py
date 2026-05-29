@@ -55,7 +55,11 @@ class DashboardTests(unittest.TestCase):
             reports_dir = Path(directory) / "runs"
             scenarios_dir = Path(directory) / "scenarios"
             run_research_task(output_path=reports_dir / "report.json")
-            scenario = run_market_simulation(seed_sources=["examples/seeds"], run_id="dashboard-sim")
+            scenario = run_market_simulation(
+                seed_sources=["examples/seeds"],
+                profile_path="examples/profiles/beginner-conservative.json",
+                run_id="dashboard-sim",
+            )
             write_scenario_report(scenario, scenarios_dir / "scenario.json")
 
             rollup = build_report_rollup(reports_dir)
@@ -64,8 +68,10 @@ class DashboardTests(unittest.TestCase):
 
         self.assertEqual(rollup["scenario_count"], 1)
         self.assertEqual(rollup["latest_scenario"]["run_id"], "dashboard-sim")
+        self.assertEqual(rollup["latest_scenario"]["profile_context"]["profile_id"], "beginner-conservative")
         self.assertIn("시장 지도", html)
         self.assertIn("시나리오 분기", html)
+        self.assertIn("Output boundary", html)
 
     def test_rollup_compares_latest_against_previous(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

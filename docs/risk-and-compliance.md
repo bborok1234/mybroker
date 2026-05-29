@@ -27,5 +27,6 @@ Required guardrails:
 - no account access or brokerage credential storage;
 - no discretionary trading;
 - no unsupported personalized recommendation;
+- beginner profile fields are learning/risk/time context only and must not be treated as full suitability analysis;
 - every candidate should show evidence, risks, and the condition under which the view changes;
 - when user suitability context is missing, the output must remain education/research/simulation first.

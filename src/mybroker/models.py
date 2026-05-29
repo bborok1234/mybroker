@@ -102,6 +102,25 @@ class EvidenceSeed:
 
 
 @dataclass(frozen=True)
+class EvidenceCatalog:
+    source_count: int
+    topic_counts: dict[str, int]
+    coverage_status: str
+    missing_context: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class BeginnerProfile:
+    profile_id: str
+    experience_level: str
+    learning_goal: str
+    risk_comfort: str
+    time_horizon: str
+    decision_style: str
+    capital_context: str = "unspecified"
+
+
+@dataclass(frozen=True)
 class MarketEntity:
     name: str
     kind: str
@@ -174,6 +193,9 @@ class ScenarioReport:
     generated_at: datetime
     product_mode: str
     seed_sources: list[EvidenceSeed]
+    evidence_catalog: EvidenceCatalog
+    profile_context: BeginnerProfile | None
+    output_boundary: str
     market_map: MarketMap
     persona_views: list[PersonaView]
     scenarios: list[ScenarioPath]

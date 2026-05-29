@@ -7,6 +7,7 @@ from dataclasses import asdict
 from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
 from mybroker.policy import classify_action
+from mybroker.profile import validate_profile_file
 from mybroker.registry import default_registry
 from mybroker.reports import report_to_dict, validate_report_file
 from mybroker.runner import make_price_adapter, run_research_task
@@ -52,6 +53,7 @@ def main(argv: list[str] | None = None) -> int:
     scenario_parser = subcommands.add_parser("scenario", help="Run a beginner-first market scenario simulation from local seed files.")
     scenario_parser.add_argument("--seed", action="append", help="Local markdown/txt seed file or directory. Defaults to examples/seeds.")
     scenario_parser.add_argument("--run-id", default="beginner-market-sim")
+    scenario_parser.add_argument("--profile", help="Optional beginner profile JSON. Adjusts explanation priority without creating trade instructions.")
     scenario_parser.add_argument("--output", default="reports/scenarios/beginner-market-sim.json")
     scenario_parser.add_argument("--verdict-output", default="reports/scenarios/verdict.json")
 
@@ -60,6 +62,9 @@ def main(argv: list[str] | None = None) -> int:
 
     validate_verdict_parser = subcommands.add_parser("validate-verdict", help="Validate a market_verdict.v1 artifact.")
     validate_verdict_parser.add_argument("verdict_path")
+
+    validate_profile_parser = subcommands.add_parser("validate-profile", help="Validate a beginner profile JSON artifact.")
+    validate_profile_parser.add_argument("profile_path")
 
     quality_parser = subcommands.add_parser("quality", help="Inspect local price dataset quality without writing a research report.")
     quality_parser.add_argument("--source", action="append", help="Local price CSV file or directory. Repeat for multiple CSV files. Defaults to the bundled sample data.")
@@ -116,7 +121,7 @@ def main(argv: list[str] | None = None) -> int:
         }, indent=2))
         return 0
     if args.command == "scenario":
-        report = run_market_simulation(seed_sources=args.seed, run_id=args.run_id)
+        report = run_market_simulation(seed_sources=args.seed, profile_path=args.profile, run_id=args.run_id)
         scenario_path = write_scenario_report(report, args.output)
         verdict_path = write_verdict(report, args.verdict_output)
         print(json.dumps({
@@ -126,9 +131,17 @@ def main(argv: list[str] | None = None) -> int:
             "entities": len(report.market_map.entities),
             "scenarios": len(report.scenarios),
             "action_candidates": len(report.action_candidates),
+            "output_boundary": report.output_boundary,
             "primary_next_step": build_verdict(report)["primary_next_step"]["title"],
             "report": scenario_report_to_dict(report),
         }, indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "validate-profile":
+        errors = validate_profile_file(args.profile_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
     if args.command == "validate-scenario":
         errors = validate_scenario_file(args.scenario_path)

@@ -26,6 +26,8 @@ PYTHONPATH=src python3 -m mybroker research --source examples/prices.csv --outpu
 PYTHONPATH=src python3 -m mybroker research --source examples/prices-multi --run-id multi-file-research --output reports/runs/multi-file-research.json
 PYTHONPATH=src python3 -m mybroker validate-report reports/runs/local-momentum-research.json
 PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --output reports/scenarios/beginner-market-sim.json --verdict-output reports/scenarios/verdict.json
+PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --profile examples/profiles/beginner-conservative.json --run-id beginner-profile-sim --output reports/scenarios/beginner-profile-sim.json --verdict-output reports/scenarios/profile-verdict.json
+PYTHONPATH=src python3 -m mybroker validate-profile examples/profiles/beginner-conservative.json
 PYTHONPATH=src python3 -m mybroker validate-scenario reports/scenarios/beginner-market-sim.json
 PYTHONPATH=src python3 -m mybroker validate-verdict reports/scenarios/verdict.json
 PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output reports/dashboard.html --rollup-output reports/report-rollup.json
@@ -40,11 +42,16 @@ The MiroFish-inspired slice is local and deterministic by default:
 2. The scenario engine extracts themes such as AI infrastructure, semiconductors, rates,
    inflation, consumer pressure, and market risk.
 3. A `scenario_report.v1` artifact records the market map, relationships, persona views,
-   scenario paths, beginner explanations, policy gate, warnings, and action candidates.
+   evidence catalog, optional beginner profile context, output boundary, scenario paths,
+   beginner explanations, policy gate, warnings, and action candidates.
 4. A `market_verdict.v1` artifact summarizes the top next step without turning it into
    an order or account-specific recommendation.
 5. The dashboard renders a market map, scenario branches, agent perspectives, and action
    candidates so a beginner can decide what to learn or inspect next.
+
+Optional beginner profile context can adjust explanation priority and candidate ordering.
+It is deliberately limited to learning goal, risk comfort, time horizon, and decision style.
+It does not create account-specific instructions or discretionary trading authority.
 
 ## First Pipeline Slice
 

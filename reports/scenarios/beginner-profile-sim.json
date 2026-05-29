@@ -1,7 +1,7 @@
 {
   "schema_version": "scenario_report.v1",
-  "run_id": "beginner-market-sim",
-  "generated_at": "2026-05-29T06:15:37.653213+00:00",
+  "run_id": "beginner-profile-sim",
+  "generated_at": "2026-05-29T06:15:55.971183+00:00",
   "product_mode": "beginner_market_understanding_simulation",
   "seed_sources": [
     {
@@ -37,12 +37,18 @@
       "semiconductors": 1
     },
     "coverage_status": "strong",
-    "missing_context": [
-      "beginner_profile"
-    ]
+    "missing_context": []
   },
-  "profile_context": null,
-  "output_boundary": "generic_research_only",
+  "profile_context": {
+    "profile_id": "beginner-conservative",
+    "experience_level": "new",
+    "learning_goal": "market_overview",
+    "risk_comfort": "low",
+    "time_horizon": "months",
+    "decision_style": "risk_first",
+    "capital_context": "unspecified"
+  },
+  "output_boundary": "context_aware_research_only",
   "market_map": {
     "entities": [
       {
@@ -153,7 +159,7 @@
       "name": "초보자 튜터",
       "role": "용어와 인과관계 해설",
       "stance": "explain_first",
-      "summary": "종목부터 고르기보다 시장이 움직인 이유, 연결된 업종, 틀릴 조건을 먼저 이해해야 한다고 봅니다.",
+      "summary": "리스크 먼저 보는 성향이므로 상방보다 보류 조건과 반대 시나리오를 먼저 읽어야 한다고 봅니다.",
       "confidence": 0.82,
       "evidence": [
         "소비와 리스크 점검",
@@ -215,7 +221,7 @@
       ],
       "beginner_explanation": "가장 먼저 볼 경로입니다. 지금 당장 결론을 내리기보다 어떤 조건이 유지되는지 체크합니다.",
       "risk_notes": [
-        "좋은 뉴스가 이미 가격에 반영됐을 수 있습니다."
+        "낮은 위험 선호에서는 관찰 기준과 보류 조건을 먼저 정해야 합니다."
       ]
     },
     {
@@ -274,6 +280,10 @@
       "explanation": "학습 목표, 위험 선호, 투자 기간 같은 입력은 설명의 우선순위를 조정할 뿐 매수/매도 지시가 되지 않습니다."
     },
     {
+      "term": "보류 조건",
+      "explanation": "낮은 위험 선호에서는 언제 하지 않을지를 먼저 정해 손실 가능성을 줄이는 기준입니다."
+    },
+    {
       "term": "AI 인프라",
       "explanation": "AI 서비스를 돌리는 데 필요한 반도체, 서버, 데이터센터, 전력 설비를 묶어 부르는 말입니다."
     },
@@ -303,8 +313,8 @@
       "action_type": "learn",
       "title": "먼저 시장 흐름을 학습",
       "rationale": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
-      "suitability": "종목 선택 기준이 아직 없는 초보자에게 적합합니다.",
-      "confidence": 0.9,
+      "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+      "confidence": 0.94,
       "evidence": [
         "이번 seed에서 먼저 볼 흐름은 리스크, AI 인프라, 소비입니다. 초보자는 가격보다 '왜 이 흐름이 생겼는지'와 '무엇이 바뀌면 틀리는지'를 먼저 확인해야 합니다."
       ],
@@ -316,8 +326,8 @@
       "action_type": "observe",
       "title": "관찰 리스트 만들기",
       "rationale": "주요 흐름과 반대 시나리오를 같이 적어두면 다음 뉴스의 의미를 빠르게 판단할 수 있습니다.",
-      "suitability": "시장을 따라가고 싶지만 바로 투자하기 부담스러운 사용자에게 적합합니다.",
-      "confidence": 0.84,
+      "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+      "confidence": 0.78,
       "evidence": [
         "리스크",
         "AI 인프라",
@@ -331,8 +341,8 @@
       "action_type": "watchlist",
       "title": "AI/반도체 흐름을 관심 테마로 등록",
       "rationale": "seed에서 AI 인프라와 반도체가 함께 나타나 수요 연결을 추적할 가치가 있습니다.",
-      "suitability": "테마가 왜 움직이는지 배우며 후보군을 좁히고 싶은 사용자에게 적합합니다.",
-      "confidence": 0.78,
+      "suitability": "경험 수준=new / 목표=market_overview / 위험 선호=low / 기간=months 맥락에서 교육/리서치 후보로만 적합합니다.",
+      "confidence": 0.68,
       "evidence": [
         "AI 인프라와 반도체 관계가 market_map에 포착됨"
       ],
@@ -364,6 +374,6 @@
   },
   "warnings": [
     "교육/리서치/시뮬레이션 목적의 로컬 산출물입니다. 계좌 접근, 주문 실행, 일임 운용을 하지 않습니다.",
-    "사용자 재무상황과 위험성향이 없으므로 generic next-action 후보만 제공합니다."
+    "사용자 입력은 학습/위험/기간 맥락만 반영합니다. 개인화된 매수/매도 지시나 포트폴리오 운용은 아닙니다."
   ]
 }
