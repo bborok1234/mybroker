@@ -5,6 +5,7 @@ import json
 from dataclasses import asdict
 
 from mybroker.data import load_price_csv
+from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
 from mybroker.policy import classify_action
 from mybroker.registry import default_registry
 from mybroker.reports import report_to_dict, validate_report_file
@@ -33,6 +34,11 @@ def main(argv: list[str] | None = None) -> int:
 
     validate_parser = subcommands.add_parser("validate-report", help="Validate a research report artifact.")
     validate_parser.add_argument("report_path")
+
+    dashboard_parser = subcommands.add_parser("dashboard", help="Build a local HTML dashboard from research report artifacts.")
+    dashboard_parser.add_argument("--reports-dir", default="reports/runs")
+    dashboard_parser.add_argument("--output", default="reports/dashboard.html")
+    dashboard_parser.add_argument("--rollup-output", default="reports/report-rollup.json")
 
     policy_parser = subcommands.add_parser("policy", help="Classify a proposed project action.")
     policy_parser.add_argument("--kind", required=True)
@@ -64,6 +70,17 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "dashboard":
+        rollup = build_report_rollup(args.reports_dir)
+        dashboard_path = write_dashboard(rollup, args.output)
+        rollup_path = write_rollup(rollup, args.rollup_output)
+        print(json.dumps({
+            "dashboard": dashboard_path.as_posix(),
+            "rollup": rollup_path.as_posix(),
+            "report_count": rollup["report_count"],
+            "latest_valid": bool((rollup.get("latest_report") or {}).get("validation", {}).get("valid")),
+        }, indent=2))
         return 0
     if args.command == "policy":
         decision = classify_action(args.kind)

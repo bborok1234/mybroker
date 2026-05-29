@@ -1,0 +1,70 @@
+{
+  "schema_version": "report_rollup.v1",
+  "generated_at": "2026-05-29T03:49:58.447209+00:00",
+  "reports_dir": "reports/runs",
+  "report_count": 1,
+  "latest_report": {
+    "path": "reports/runs/local-momentum-research.json",
+    "run_id": "local-momentum-research",
+    "task_id": "momentum_research_v1",
+    "generated_at": "2026-05-29T03:49:20.706482+00:00",
+    "source": {
+      "adapter_id": "csv_price_v1",
+      "source": "examples/prices.csv",
+      "row_count": 10,
+      "symbols": [
+        "ABC",
+        "XYZ"
+      ]
+    },
+    "summary": {
+      "total_signals": 2,
+      "positive_watch": 1,
+      "negative_watch": 1,
+      "neutral_watch": 0,
+      "insufficient_data": 0
+    },
+    "warnings": [],
+    "validation": {
+      "valid": true,
+      "errors": []
+    }
+  },
+  "totals": {
+    "total_signals": 2,
+    "positive_watch": 1,
+    "negative_watch": 1,
+    "neutral_watch": 0,
+    "insufficient_data": 0
+  },
+  "reports": [
+    {
+      "path": "reports/runs/local-momentum-research.json",
+      "run_id": "local-momentum-research",
+      "task_id": "momentum_research_v1",
+      "generated_at": "2026-05-29T03:49:20.706482+00:00",
+      "source": {
+        "adapter_id": "csv_price_v1",
+        "source": "examples/prices.csv",
+        "row_count": 10,
+        "symbols": [
+          "ABC",
+          "XYZ"
+        ]
+      },
+      "summary": {
+        "total_signals": 2,
+        "positive_watch": 1,
+        "negative_watch": 1,
+        "neutral_watch": 0,
+        "insufficient_data": 0
+      },
+      "warnings": [],
+      "validation": {
+        "valid": true,
+        "errors": []
+      }
+    }
+  ],
+  "disclaimer": "Research-only local artifact view. Not trading execution or personalized investment advice."
+}

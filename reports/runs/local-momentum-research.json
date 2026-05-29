@@ -1,0 +1,61 @@
+{
+  "schema_version": "research_report.v1",
+  "run_id": "local-momentum-research",
+  "generated_at": "2026-05-29T03:49:20.706482+00:00",
+  "task_id": "momentum_research_v1",
+  "source": {
+    "adapter_id": "csv_price_v1",
+    "source": "examples/prices.csv",
+    "row_count": 10,
+    "symbols": [
+      "ABC",
+      "XYZ"
+    ]
+  },
+  "signals": [
+    {
+      "symbol": "ABC",
+      "as_of": "2026-01-05",
+      "name": "momentum",
+      "score": 0.022436,
+      "direction": "positive_watch",
+      "confidence": 0.2244,
+      "rationale": "3-period average 106.3333 versus 5-period average 104.0000.",
+      "evidence": [
+        "short_window=3",
+        "long_window=5",
+        "last_close=110.0"
+      ]
+    },
+    {
+      "symbol": "XYZ",
+      "as_of": "2026-01-05",
+      "name": "momentum",
+      "score": -0.020833,
+      "direction": "negative_watch",
+      "confidence": 0.2083,
+      "rationale": "3-period average 47.0000 versus 5-period average 48.0000.",
+      "evidence": [
+        "short_window=3",
+        "long_window=5",
+        "last_close=46.0"
+      ]
+    }
+  ],
+  "policy": {
+    "kind": "signal_generation",
+    "allowed": true,
+    "human_review_required": false,
+    "reasons": [
+      "Research-only action with no account access or personalized instruction."
+    ]
+  },
+  "summary": {
+    "total_signals": 2,
+    "positive_watch": 1,
+    "negative_watch": 1,
+    "neutral_watch": 0,
+    "insufficient_data": 0
+  },
+  "warnings": []
+}
