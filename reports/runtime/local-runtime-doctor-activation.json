@@ -1,0 +1,106 @@
+{
+  "schema_version": "local_runtime_doctor.v1",
+  "generated_at": "2026-06-05T07:40:38.397433+00:00",
+  "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
+  "status": "blocked",
+  "fail_count": 1,
+  "warn_count": 0,
+  "checks": [
+    {
+      "name": "project_root",
+      "status": "pass",
+      "message": "MyBroker project root exists.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker"
+    },
+    {
+      "name": "topics_config",
+      "status": "pass",
+      "message": "Daily interests are configured.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/config/topics.json"
+    },
+    {
+      "name": "runner_script",
+      "status": "pass",
+      "message": "Daily runner script exists.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/ops/local/run-daily-analyst.sh"
+    },
+    {
+      "name": "launchd_plist",
+      "status": "pass",
+      "message": "LaunchAgent plist exists.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/ops/local/com.mybroker.daily-analyst.plist"
+    },
+    {
+      "name": "phone_access_plan",
+      "status": "pass",
+      "message": "Private phone access guidance exists.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/phone-access.json"
+    },
+    {
+      "name": "today_surface",
+      "status": "pass",
+      "message": "Phone-readable today surface exists.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/today.html",
+      "age_hours": 0.36
+    },
+    {
+      "name": "memory_surface",
+      "status": "pass",
+      "message": "Accumulated memory surface exists.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/memory.html",
+      "age_hours": 0.36
+    },
+    {
+      "name": "memory_query_surface",
+      "status": "pass",
+      "message": "Memory recall surface exists.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/memory-query.html",
+      "age_hours": 0.97
+    },
+    {
+      "name": "archive_manifest",
+      "status": "pass",
+      "message": "Latest daily archive manifest exists.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/archive/2026-06-05/manifest.json",
+      "age_hours": 0.36
+    },
+    {
+      "name": "notification_payload",
+      "status": "pass",
+      "message": "Notification payload is dry-run ready; real send remains explicitly gated.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/notifications/latest.json",
+      "provider": "telegram",
+      "delivery_status": "dry_run_ready",
+      "missing_env": [
+        "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_CHAT_ID"
+      ]
+    },
+    {
+      "name": "launchd_loaded",
+      "status": "fail",
+      "message": "LaunchAgent is not loaded yet; install remains a host-level explicit step.",
+      "plist": "/Users/mirlim/sidejob/mybroker/mybroker/ops/local/com.mybroker.daily-analyst.plist",
+      "loaded": false,
+      "command": "launchctl print gui/501/com.mybroker.daily-analyst"
+    }
+  ],
+  "next_actions": [
+    "Install the LaunchAgent manually only after reviewing reports/runtime/local-runtime-doctor.json."
+  ],
+  "install_boundary": {
+    "launchd_install_is_host_level": true,
+    "default_behavior": "diagnose_only",
+    "manual_install_commands": [
+      "mkdir -p ~/Library/LaunchAgents",
+      "cp /Users/mirlim/sidejob/mybroker/mybroker/ops/local/com.mybroker.daily-analyst.plist ~/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+      "launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+      "launchctl kickstart -k gui/$(id -u)/com.mybroker.daily-analyst"
+    ],
+    "manual_uninstall_commands": [
+      "launchctl bootout gui/$(id -u)/com.mybroker.daily-analyst",
+      "rm ~/Library/LaunchAgents/com.mybroker.daily-analyst.plist"
+    ]
+  },
+  "policy": "research_only"
+}
