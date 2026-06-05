@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_scout.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T19:39:26.255654+00:00",
+  "generated_at": "2026-06-05T19:56:15.853538+00:00",
   "inputs": {
     "topics_path": "config/topics.json",
     "plan_path": "reports/daily/research-plan.json",

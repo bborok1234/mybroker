@@ -54,6 +54,7 @@ launchd
   -> local_scheduler_activation_preflight.v1
   -> local_scheduler_activation_verify.v1
   -> morning_control_packet.v1 + /morning control surface
+  -> daily_run_ledger.v1 + /run-ledger heartbeat surface
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -129,6 +130,7 @@ PYTHONPATH=src python3 -m mybroker appliance task-ledger
 PYTHONPATH=src python3 -m mybroker appliance task-response 'AT-001 complete "checked source freshness"'
 PYTHONPATH=src python3 -m mybroker appliance task-status-apply
 PYTHONPATH=src python3 -m mybroker appliance morning
+PYTHONPATH=src python3 -m mybroker appliance run-ledger
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance council
@@ -167,6 +169,8 @@ The local loop now writes three memory-facing surfaces:
   response handoff.
 - `reports/runtime/agent-pattern-radar.json`: machine-readable record of which external agentic workflow patterns are adopted, partially adopted, or rejected for the local daily analyst loop.
 - `reports/product/pattern-radar.html`: phone-readable workflow evolution radar for the next safe slice and safety guardrails.
+- `reports/runtime/daily-run-ledger.json`: machine-readable heartbeat ledger for canonical daily run, duplicate same-day runs, archive link, scheduler status, and external-effect proof.
+- `reports/product/run-ledger.html`: phone-readable run ledger that answers which run to trust when scheduled, manual, and validation runs all happened today.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
 - `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
 - `reports/runtime/daily-readiness.json`: machine-readable freshness/readiness proof for required daily artifacts.
@@ -281,6 +285,12 @@ memory, agenda, source refresh brief, scenario, verdict, journal, task queue, ta
 review, scheduler operations, and today surface. It summarizes what shaped today's output, marks
 missing or stale steps, and links the relevant phone surfaces. It does not execute live network,
 send notifications, write host scheduler state, use credentials, or touch account flows.
+
+`appliance run-ledger` is the local heartbeat ledger. It writes `daily_run_ledger.v1` and
+`reports/product/run-ledger.html` by reading the latest run trace, morning control, readiness,
+scheduler operations, and archive manifest. It marks one canonical run for the local day and
+labels additional same-day runs as duplicate/manual validation runs. It does not execute live
+network, send notifications, write host scheduler state, use credentials, or touch account flows.
 
 `appliance drift-review` is the local direction check that uses trace evidence. It writes
 `local_drift_review.v1` and `reports/product/drift-review.html` by reading the run trace, pattern

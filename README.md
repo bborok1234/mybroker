@@ -90,6 +90,7 @@ PYTHONPATH=src python3 -m mybroker appliance task-ledger
 PYTHONPATH=src python3 -m mybroker appliance task-response 'AT-001 complete "checked source freshness"'
 PYTHONPATH=src python3 -m mybroker appliance task-status-apply
 PYTHONPATH=src python3 -m mybroker appliance pattern-radar
+PYTHONPATH=src python3 -m mybroker appliance run-ledger
 PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
@@ -101,6 +102,7 @@ PYTHONPATH=src python3 -m mybroker validate-vault reports/vault/compile.json
 PYTHONPATH=src python3 -m mybroker validate-memory-audit reports/memory/audit.json
 PYTHONPATH=src python3 -m mybroker validate-analyst-council reports/runtime/analyst-council.json
 PYTHONPATH=src python3 -m mybroker validate-council-response-apply reports/runtime/council-response-apply.json
+PYTHONPATH=src python3 -m mybroker validate-daily-run-ledger reports/runtime/daily-run-ledger.json
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
 ```
@@ -232,6 +234,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/runtime/review-response-apply.json` and `reports/product/review-response-apply.html`: one-command local proof that a copied review response was recorded, daily review was regenerated, scout read the updated review, and review effect was refreshed;
 - `reports/runtime/agent-pattern-radar.json` and `reports/product/pattern-radar.html`: local workflow evolution radar that records which Hermes/OpenClaw/MiroFish/TradingAgents/work-buddy/Dexter/TaskWeaver/TraceAgent/Obsidian-style patterns are adopted, partially adopted, deferred, or rejected before they shape the daily analyst loop;
 - `reports/runtime/run-trace.json` and `reports/product/run-trace.html`: compact local proof of which daily steps and artifacts shaped today's phone brief, memory, task queue, and control surfaces;
+- `reports/runtime/daily-run-ledger.json` and `reports/product/run-ledger.html`: local heartbeat ledger that marks the canonical run for the day, duplicate/manual validation runs, archive links, scheduler status, and no-external-effect proof;
 - `reports/runtime/drift-review.json` and `reports/product/drift-review.html`: trace-backed local direction review that recommends continue, inspect, defer, or approval-needed next branches before the loop widens authority;
 - `reports/daily/brief-agenda.json` and `reports/product/daily-agenda.html`: the phone-first daily study agenda that says what to read first, which sources influenced it, what is weak, and what the analyst roles should do next;
 - `reports/daily/source-refresh-plan.json`: dry-run source refresh actions for the scout recommendation;

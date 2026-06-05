@@ -51,6 +51,8 @@ from mybroker.appliance import (
     DEFAULT_MORNING_CONTROL_OUTPUT,
     DEFAULT_MORNING_CONTROL_SURFACE,
     DEFAULT_PHONE_ACCESS_OUTPUT,
+    DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
+    DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     DEFAULT_RUN_TRACE_OUTPUT,
     DEFAULT_RUN_TRACE_SURFACE,
     DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
@@ -94,6 +96,7 @@ from mybroker.appliance import (
     write_operator_decision_apply,
     write_operator_decision_packet,
     write_phone_access_plan,
+    write_daily_run_ledger,
     write_run_trace,
     write_runtime_doctor,
     write_runtime_playbook,
@@ -121,6 +124,7 @@ from mybroker.appliance import (
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
     validate_memory_audit_file,
+    validate_daily_run_ledger_file,
     validate_run_trace_file,
     validate_scheduler_operations_file,
     validate_source_refresh_brief_file,
@@ -363,6 +367,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_morning_parser.add_argument("morning_control_path")
     validate_run_trace_parser = subcommands.add_parser("validate-run-trace", help="Validate a local_run_trace.v1 artifact.")
     validate_run_trace_parser.add_argument("run_trace_path")
+    validate_run_ledger_parser = subcommands.add_parser("validate-daily-run-ledger", help="Validate a daily_run_ledger.v1 artifact.")
+    validate_run_ledger_parser.add_argument("run_ledger_path")
     validate_drift_review_parser = subcommands.add_parser("validate-drift-review", help="Validate a local_drift_review.v1 artifact.")
     validate_drift_review_parser.add_argument("drift_review_path")
     validate_scheduler_operations_parser = subcommands.add_parser("validate-scheduler-operations", help="Validate a local_scheduler_operations.v1 artifact.")
@@ -627,6 +633,10 @@ def main(argv: list[str] | None = None) -> int:
     appliance_trace_parser = appliance_subcommands.add_parser("trace", help="Render a compact local run trace proof from existing daily artifacts.")
     appliance_trace_parser.add_argument("--artifact-output", default=DEFAULT_RUN_TRACE_OUTPUT.as_posix())
     appliance_trace_parser.add_argument("--output", default=DEFAULT_RUN_TRACE_SURFACE.as_posix())
+    appliance_run_ledger_parser = appliance_subcommands.add_parser("run-ledger", help="Render the daily run ledger and canonical run proof.")
+    appliance_run_ledger_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_RUN_LEDGER_OUTPUT.as_posix())
+    appliance_run_ledger_parser.add_argument("--output", default=DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix())
+    appliance_run_ledger_parser.add_argument("--archive-manifest")
     appliance_drift_parser = appliance_subcommands.add_parser("drift-review", help="Render a trace-backed local direction drift review.")
     appliance_drift_parser.add_argument("--artifact-output", default=DEFAULT_DRIFT_REVIEW_OUTPUT.as_posix())
     appliance_drift_parser.add_argument("--output", default=DEFAULT_DRIFT_REVIEW_SURFACE.as_posix())
@@ -644,6 +654,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_morning_parser.add_argument("--source-refresh-surface", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--pattern-radar-surface", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--run-trace-surface", default=DEFAULT_RUN_TRACE_SURFACE.as_posix())
+    appliance_morning_parser.add_argument("--run-ledger-surface", default=DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--drift-review-surface", default=DEFAULT_DRIFT_REVIEW_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--analyst-council-surface", default=DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--artifact-output", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
@@ -1146,6 +1157,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-run-trace":
         errors = validate_run_trace_file(args.run_trace_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-daily-run-ledger":
+        errors = validate_daily_run_ledger_file(args.run_ledger_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1920,6 +1938,23 @@ def main(argv: list[str] | None = None) -> int:
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "run-ledger":
+            path = write_daily_run_ledger(
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+                archive_manifest_path=args.archive_manifest,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "daily_run_ledger": args.artifact_output,
+                "daily_run_ledger_surface": path.as_posix(),
+                "status": payload["status"],
+                "today_run_count": payload["summary"]["today_run_count"],
+                "duplicate_today_count": payload["summary"]["duplicate_today_count"],
+                "canonical_entry_id": payload["canonical_entry_id"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "drift-review":
             path = write_drift_review(
                 artifact_output_path=args.artifact_output,
@@ -1949,6 +1984,7 @@ def main(argv: list[str] | None = None) -> int:
                 source_refresh_surface_path=args.source_refresh_surface,
                 pattern_radar_surface_path=args.pattern_radar_surface,
                 run_trace_surface_path=args.run_trace_surface,
+                run_ledger_surface_path=args.run_ledger_surface,
                 drift_review_surface_path=args.drift_review_surface,
                 analyst_council_surface_path=args.analyst_council_surface,
                 artifact_output_path=args.artifact_output,
@@ -2098,6 +2134,8 @@ def main(argv: list[str] | None = None) -> int:
             pattern_radar_surface_path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE
             run_trace_artifact_path = DEFAULT_RUN_TRACE_OUTPUT
             run_trace_surface_path = DEFAULT_RUN_TRACE_SURFACE
+            run_ledger_artifact_path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT
+            run_ledger_surface_path = DEFAULT_DAILY_RUN_LEDGER_SURFACE
             drift_review_artifact_path = DEFAULT_DRIFT_REVIEW_OUTPUT
             drift_review_surface_path = DEFAULT_DRIFT_REVIEW_SURFACE
             readiness_artifact_path = DEFAULT_DAILY_READINESS_OUTPUT
@@ -2470,6 +2508,7 @@ def main(argv: list[str] | None = None) -> int:
                 memory_audit_surface_path=written_memory_audit,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=written_run_trace,
+                run_ledger_surface_path=run_ledger_surface_path,
                 drift_review_surface_path=written_drift_review,
                 artifact_output_path=morning_artifact_path,
                 surface_output_path=morning_path,
@@ -2504,6 +2543,20 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=review_effect_artifact_path,
                 surface_output_path=review_effect_surface_path,
             )
+            written_run_ledger = write_daily_run_ledger(
+                artifact_output_path=run_ledger_artifact_path,
+                surface_output_path=run_ledger_surface_path,
+                run_trace_path=run_trace_artifact_path,
+                morning_path=morning_artifact_path,
+                readiness_path=readiness_artifact_path,
+                scheduler_operations_path=scheduler_operations_artifact_path,
+                archive_manifest_path=archive_manifest,
+            )
+            written_readiness = write_daily_readiness(
+                project_root=".",
+                artifact_output_path=readiness_artifact_path,
+                surface_output_path=readiness_surface_path,
+            )
             add_archive_artifacts(
                 manifest_path=archive_manifest,
                 artifacts={
@@ -2525,6 +2578,8 @@ def main(argv: list[str] | None = None) -> int:
                     "memory_audit_surface": written_memory_audit,
                     "run_trace": run_trace_artifact_path,
                     "run_trace_surface": written_run_trace,
+                    "daily_run_ledger": run_ledger_artifact_path,
+                    "daily_run_ledger_surface": written_run_ledger,
                     "drift_review": drift_review_artifact_path,
                     "drift_review_surface": written_drift_review,
                     "today": written_today,
@@ -2554,6 +2609,8 @@ def main(argv: list[str] | None = None) -> int:
                     "agent_pattern_radar_surface": written_pattern_radar.as_posix(),
                     "run_trace": run_trace_artifact_path.as_posix(),
                     "run_trace_surface": written_run_trace.as_posix(),
+                    "daily_run_ledger": run_ledger_artifact_path.as_posix(),
+                    "daily_run_ledger_surface": written_run_ledger.as_posix(),
                     "drift_review": drift_review_artifact_path.as_posix(),
                     "drift_review_surface": written_drift_review.as_posix(),
                     "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),

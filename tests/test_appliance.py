@@ -4,6 +4,7 @@ import json
 import os
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 from mybroker.cli import main as cli_main
@@ -31,6 +32,7 @@ from mybroker.appliance import (
     write_runtime_playbook,
     write_run_trace,
     write_daily_review,
+    write_daily_run_ledger,
     write_drift_review,
     write_operator_review_prompt,
     write_operator_review_effect,
@@ -53,6 +55,7 @@ from mybroker.appliance import (
     validate_daily_readiness_payload,
     validate_daily_review_file,
     validate_daily_review_payload,
+    validate_daily_run_ledger_file,
     validate_drift_review_file,
     validate_operator_review_prompt_file,
     validate_operator_review_effect_file,
@@ -1007,6 +1010,8 @@ class LocalApplianceTests(unittest.TestCase):
             pattern_radar_errors = validate_agent_pattern_radar_file(root / "reports" / "runtime" / "agent-pattern-radar.json")
             run_trace_payload = json.loads((root / "reports" / "runtime" / "run-trace.json").read_text(encoding="utf-8"))
             run_trace_errors = validate_run_trace_file(root / "reports" / "runtime" / "run-trace.json")
+            run_ledger_payload = json.loads((root / "reports" / "runtime" / "daily-run-ledger.json").read_text(encoding="utf-8"))
+            run_ledger_errors = validate_daily_run_ledger_file(root / "reports" / "runtime" / "daily-run-ledger.json")
             drift_review_payload = json.loads((root / "reports" / "runtime" / "drift-review.json").read_text(encoding="utf-8"))
             drift_review_errors = validate_drift_review_file(root / "reports" / "runtime" / "drift-review.json")
             review_payload = json.loads((root / "reports" / "memory" / "daily-review.json").read_text(encoding="utf-8"))
@@ -1025,6 +1030,7 @@ class LocalApplianceTests(unittest.TestCase):
             source_refresh_html = (root / "reports" / "product" / "source-refresh.html").read_text(encoding="utf-8")
             pattern_radar_html = (root / "reports" / "product" / "pattern-radar.html").read_text(encoding="utf-8")
             run_trace_html = (root / "reports" / "product" / "run-trace.html").read_text(encoding="utf-8")
+            run_ledger_html = (root / "reports" / "product" / "run-ledger.html").read_text(encoding="utf-8")
             drift_review_html = (root / "reports" / "product" / "drift-review.html").read_text(encoding="utf-8")
             review_html = (root / "reports" / "product" / "review.html").read_text(encoding="utf-8")
             review_prompt_html = (root / "reports" / "product" / "review-prompt.html").read_text(encoding="utf-8")
@@ -1048,6 +1054,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("source_refresh", morning_payload["phone_links"])
         self.assertIn("pattern_radar", morning_payload["phone_links"])
         self.assertIn("trace", morning_payload["phone_links"])
+        self.assertIn("run_ledger", morning_payload["phone_links"])
         self.assertIn("drift_review", morning_payload["phone_links"])
         self.assertIn("review", morning_payload["phone_links"])
         self.assertIn("review_prompt", morning_payload["phone_links"])
@@ -1084,6 +1091,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("source_refresh", readiness_payload["phone_links"])
         self.assertIn("scheduler", readiness_payload["phone_links"])
         self.assertIn("trace", readiness_payload["phone_links"])
+        self.assertIn("run_ledger", readiness_payload["phone_links"])
         self.assertIn("drift_review", readiness_payload["phone_links"])
         self.assertIn("review_prompt", readiness_payload["phone_links"])
         self.assertIn("review_effect", readiness_payload["phone_links"])
@@ -1121,6 +1129,13 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(step["name"] == "analyst_council" for step in run_trace_payload["trace_steps"]))
         self.assertTrue(any(step["name"] == "memory_audit" for step in run_trace_payload["trace_steps"]))
         self.assertTrue(any(step["name"] == "today_surface" for step in run_trace_payload["trace_steps"]))
+        self.assertEqual(run_ledger_payload["schema_version"], "daily_run_ledger.v1")
+        self.assertEqual(run_ledger_errors, [])
+        self.assertFalse(run_ledger_payload["external_effect_performed"])
+        self.assertFalse(run_ledger_payload["host_write_performed"])
+        self.assertEqual(run_ledger_payload["summary"]["today_run_count"], 1)
+        self.assertEqual(run_ledger_payload["summary"]["duplicate_today_count"], 0)
+        self.assertEqual(run_ledger_payload["entries"][0]["canonical_status"], "canonical")
         self.assertEqual(drift_review_payload["schema_version"], "local_drift_review.v1")
         self.assertEqual(drift_review_errors, [])
         self.assertFalse(drift_review_payload["external_effect_performed"])
@@ -1167,6 +1182,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("agent_pattern_radar_surface", manifest_payload["artifacts"])
         self.assertIn("run_trace", manifest_payload["artifacts"])
         self.assertIn("run_trace_surface", manifest_payload["artifacts"])
+        self.assertIn("daily_run_ledger", manifest_payload["artifacts"])
+        self.assertIn("daily_run_ledger_surface", manifest_payload["artifacts"])
         self.assertIn("drift_review", manifest_payload["artifacts"])
         self.assertIn("drift_review_surface", manifest_payload["artifacts"])
         self.assertIn("source_refresh_brief", manifest_payload["artifacts"])
@@ -1194,6 +1211,9 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("오늘 실행 근거 추적", run_trace_html)
         self.assertIn("단계별 trace", run_trace_html)
         self.assertNotIn("schema_version", run_trace_html)
+        self.assertIn("오늘 어떤 run을 믿을지", run_ledger_html)
+        self.assertIn("Run history", run_ledger_html)
+        self.assertNotIn("schema_version", run_ledger_html)
         self.assertIn("오늘 방향 이탈 점검", drift_review_html)
         self.assertIn("판단 신호", drift_review_html)
         self.assertNotIn("schema_version", drift_review_html)
@@ -1207,6 +1227,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("readiness", morning_html)
         self.assertIn("source_refresh", morning_html)
         self.assertIn("trace", morning_html)
+        self.assertIn("run_ledger", morning_html)
         self.assertIn("drift_review", morning_html)
         self.assertIn("review_prompt", morning_html)
         self.assertIn("review_effect", morning_html)
@@ -1219,6 +1240,94 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("역할별 검토", council_html)
         self.assertIn("council-response-apply", council_html)
         self.assertIn("컴파일된 리서치 노트", vault_html)
+
+    def test_daily_run_ledger_marks_latest_same_day_run_as_canonical(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            trace_path = root / "run-trace.json"
+            morning_path = root / "morning.json"
+            readiness_path = root / "readiness.json"
+            scheduler_path = root / "scheduler.json"
+            archive_dir = root / "archive" / "2026-06-05"
+            archive_dir.mkdir(parents=True)
+            archive_path = archive_dir / "manifest.json"
+            trace_path.write_text(json.dumps({
+                "schema_version": "local_run_trace.v1",
+                "generated_at": "2026-06-05T07:30:00+00:00",
+                "status": "ready",
+                "run_id": "daily-research",
+                "what_shaped_today": [{"label": "근거 개수", "value": "5", "source": "evidence_catalog"}],
+                "external_effect_performed": False,
+                "host_write_performed": False,
+            }), encoding="utf-8")
+            morning_path.write_text(json.dumps({
+                "schema_version": "morning_control_packet.v1",
+                "generated_at": "2026-06-05T07:31:00+00:00",
+                "status": "ready",
+                "run_id": "daily-research",
+                "external_effect_performed": False,
+                "host_write_performed": False,
+            }), encoding="utf-8")
+            readiness_path.write_text(json.dumps({
+                "schema_version": "daily_readiness.v1",
+                "generated_at": "2026-06-05T07:32:00+00:00",
+                "status": "ready",
+                "summary": {"fresh_required_count": 8},
+                "external_effect_performed": False,
+                "host_write_performed": False,
+            }), encoding="utf-8")
+            scheduler_path.write_text(json.dumps({
+                "schema_version": "local_scheduler_operations.v1",
+                "generated_at": "2026-06-05T07:33:00+00:00",
+                "status": "manual_ready",
+                "external_effect_performed": False,
+                "host_write_performed": False,
+            }), encoding="utf-8")
+            archive_path.write_text(json.dumps({
+                "schema_version": "daily_archive.v1",
+                "run_id": "daily-research",
+                "generated_at": "2026-06-05T07:34:00+00:00",
+                "archive_dir": archive_dir.as_posix(),
+                "artifacts": {"today": "reports/product/today.html"},
+                "policy": "research_only",
+            }), encoding="utf-8")
+            ledger_path = root / "daily-run-ledger.json"
+            surface_path = root / "run-ledger.html"
+
+            write_daily_run_ledger(
+                artifact_output_path=ledger_path,
+                surface_output_path=surface_path,
+                run_trace_path=trace_path,
+                morning_path=morning_path,
+                readiness_path=readiness_path,
+                scheduler_operations_path=scheduler_path,
+                archive_manifest_path=archive_path,
+                generated_at=datetime(2026, 6, 5, 7, 40, tzinfo=timezone.utc),
+            )
+            write_daily_run_ledger(
+                artifact_output_path=ledger_path,
+                surface_output_path=surface_path,
+                run_trace_path=trace_path,
+                morning_path=morning_path,
+                readiness_path=readiness_path,
+                scheduler_operations_path=scheduler_path,
+                archive_manifest_path=archive_path,
+                generated_at=datetime(2026, 6, 5, 8, 5, tzinfo=timezone.utc),
+            )
+
+            payload = json.loads(ledger_path.read_text(encoding="utf-8"))
+            html = surface_path.read_text(encoding="utf-8")
+            errors = validate_daily_run_ledger_file(ledger_path)
+
+        self.assertEqual(errors, [])
+        self.assertEqual(payload["summary"]["today_run_count"], 2)
+        self.assertEqual(payload["summary"]["duplicate_today_count"], 1)
+        self.assertEqual(sum(1 for entry in payload["entries"] if entry["canonical_status"] == "canonical"), 1)
+        self.assertTrue(payload["entries"][0]["recorded_at"] > payload["entries"][1]["recorded_at"])
+        self.assertEqual(payload["entries"][0]["canonical_status"], "canonical")
+        self.assertEqual(payload["entries"][1]["canonical_status"], "duplicate_same_day")
+        self.assertIn("canonical run", html)
+        self.assertIn("Duplicates", html)
 
     def test_task_status_response_apply_updates_ledger_locally(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

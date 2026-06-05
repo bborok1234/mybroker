@@ -52,6 +52,7 @@ OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION = "operator_review_response_apply.
 OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION = "operator_council_response_apply.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUN_TRACE_SCHEMA_VERSION = "local_run_trace.v1"
+DAILY_RUN_LEDGER_SCHEMA_VERSION = "daily_run_ledger.v1"
 DRIFT_REVIEW_SCHEMA_VERSION = "local_drift_review.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
@@ -107,6 +108,8 @@ DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
 DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
 DEFAULT_RUN_TRACE_OUTPUT = Path("reports/runtime/run-trace.json")
 DEFAULT_RUN_TRACE_SURFACE = Path("reports/product/run-trace.html")
+DEFAULT_DAILY_RUN_LEDGER_OUTPUT = Path("reports/runtime/daily-run-ledger.json")
+DEFAULT_DAILY_RUN_LEDGER_SURFACE = Path("reports/product/run-ledger.html")
 DEFAULT_DRIFT_REVIEW_OUTPUT = Path("reports/runtime/drift-review.json")
 DEFAULT_DRIFT_REVIEW_SURFACE = Path("reports/product/drift-review.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
@@ -178,6 +181,7 @@ def write_runtime_playbook(output_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OU
             "phone_access": "Tailscale Serve or private LAN URL before public deployment",
             "notification": "Pushover or Telegram via explicit environment secrets; dry-run by default",
             "storage": "local reports/ artifacts plus topic memory and daily archive",
+            "run_control": "daily-run-ledger keeps one canonical run per local day and shows duplicate/manual validation runs separately",
         },
         "agent_roles": [
             "source_scout",
@@ -339,6 +343,17 @@ def build_agent_pattern_radar(
             "risk": "trace volume can become another unreadable log pile",
             "guardrail": "summarize traces into a small daily proof, keep raw traces linkable, and validate freshness",
             "priority": "medium",
+        },
+        {
+            "source": "Hermes/OpenClaw-style heartbeat ledgers",
+            "source_url": "",
+            "observed_pattern": "persistent local agent loops keep heartbeat, latest-run, and duplicate-run state visible to the operator",
+            "decision": "adopt_partial",
+            "mybroker_translation": "write a daily run ledger that identifies the canonical run for each local day, duplicate/manual runs, archive links, and no-external-effect proof",
+            "why": "A scheduled personal analyst must stay understandable when launchd, manual runs, and validation runs happen on the same day.",
+            "risk": "a ledger can become another unread log if it is not phone-readable",
+            "guardrail": "render a compact run-ledger surface and link it from morning/readiness/trace outputs",
+            "priority": "high",
         },
         {
             "source": "Hosted trading bots and broker-connected agents",
@@ -1647,6 +1662,8 @@ def build_daily_readiness(
         ("morning_surface", DEFAULT_MORNING_CONTROL_SURFACE, "phone_surface", True),
         ("run_trace", DEFAULT_RUN_TRACE_OUTPUT, "control_artifact", False),
         ("run_trace_surface", DEFAULT_RUN_TRACE_SURFACE, "phone_surface", False),
+        ("daily_run_ledger", DEFAULT_DAILY_RUN_LEDGER_OUTPUT, "control_artifact", False),
+        ("daily_run_ledger_surface", DEFAULT_DAILY_RUN_LEDGER_SURFACE, "phone_surface", False),
         ("drift_review", DEFAULT_DRIFT_REVIEW_OUTPUT, "control_artifact", False),
         ("drift_review_surface", DEFAULT_DRIFT_REVIEW_SURFACE, "phone_surface", False),
         ("review_prompt", DEFAULT_REVIEW_PROMPT_OUTPUT, "control_artifact", False),
@@ -1714,6 +1731,7 @@ def build_daily_readiness(
             "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+            "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
             "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
@@ -1878,6 +1896,7 @@ def build_run_trace(
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+            "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
             "council": DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix(),
@@ -1953,6 +1972,226 @@ def validate_run_trace_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_run_trace_file(path: str | Path) -> list[str]:
     return validate_run_trace_payload(load_json(path))
+
+
+def build_daily_run_ledger(
+    *,
+    previous_ledger_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
+    run_trace_path: str | Path = DEFAULT_RUN_TRACE_OUTPUT,
+    morning_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
+    readiness_path: str | Path = DEFAULT_DAILY_READINESS_OUTPUT,
+    scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
+    archive_manifest_path: str | Path | None = None,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    trace = _load_optional_json(run_trace_path)
+    morning = _load_optional_json(morning_path)
+    readiness = _load_optional_json(readiness_path)
+    scheduler = _load_optional_json(scheduler_operations_path)
+    archive_path = Path(archive_manifest_path) if archive_manifest_path else _latest_archive_manifest(DEFAULT_ARCHIVE_ROOT)
+    archive = _load_optional_json(archive_path) if archive_path else {}
+    previous = _load_optional_json(previous_ledger_path)
+    previous_entries = previous.get("entries", []) if previous.get("schema_version") == DAILY_RUN_LEDGER_SCHEMA_VERSION else []
+    entry = _daily_run_ledger_entry(
+        generated=generated,
+        trace=trace,
+        morning=morning,
+        readiness=readiness,
+        scheduler=scheduler,
+        archive=archive,
+        archive_path=archive_path,
+        run_trace_path=run_trace_path,
+        morning_path=morning_path,
+        readiness_path=readiness_path,
+        scheduler_operations_path=scheduler_operations_path,
+    )
+    entries = _daily_run_ledger_entries(previous_entries=previous_entries, current_entry=entry)
+    local_day = entry["local_day"]
+    today_entries = [item for item in entries if item.get("local_day") == local_day]
+    canonical_entry_id = _daily_run_ledger_canonical_entry_id(today_entries)
+    for item in entries:
+        if item.get("local_day") == local_day:
+            item["canonical_status"] = "canonical" if item.get("entry_id") == canonical_entry_id else "duplicate_same_day"
+        elif item.get("canonical_status") == "canonical":
+            item["canonical_status"] = "historical_canonical"
+    payload = {
+        "schema_version": DAILY_RUN_LEDGER_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": "ready" if entry["run_status"] in {"ready", "review", "aligned"} else "review",
+        "canonical_entry_id": canonical_entry_id,
+        "today_local_day": local_day,
+        "summary": {
+            "entry_count": len(entries),
+            "today_run_count": len(today_entries),
+            "duplicate_today_count": max(0, len(today_entries) - 1),
+            "latest_run_status": entry["run_status"],
+            "latest_scheduler_status": entry["scheduler_status"],
+            "latest_external_effect_performed": entry["external_effect_performed"],
+            "latest_host_write_performed": entry["host_write_performed"],
+        },
+        "entries": entries[:40],
+        "phone_links": {
+            "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+            "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+            "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "ledger_reads_existing_artifacts_only",
+            "does_not_execute_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_live_trading",
+            "external_effects_require_separate_gate",
+        ],
+    }
+    return payload
+
+
+def write_daily_run_ledger(
+    *,
+    artifact_output_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
+    **paths: Any,
+) -> Path:
+    payload = build_daily_run_ledger(previous_ledger_path=artifact_output_path, **paths)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_daily_run_ledger(payload), encoding="utf-8")
+    return target
+
+
+def validate_daily_run_ledger_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != DAILY_RUN_LEDGER_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"ready", "review"}:
+        errors.append(f"invalid status {payload.get('status')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if not payload.get("canonical_entry_id"):
+        errors.append("canonical_entry_id must not be empty")
+    entries = payload.get("entries", [])
+    if not entries:
+        errors.append("entries must not be empty")
+    canonical_count = sum(1 for entry in entries if entry.get("canonical_status") == "canonical")
+    if canonical_count != 1:
+        errors.append("exactly one current canonical entry is required")
+    for index, entry in enumerate(entries):
+        for field in ["entry_id", "local_day", "run_id", "generated_at", "run_status", "canonical_status", "archive_manifest", "today_path"]:
+            if field not in entry:
+                errors.append(f"entries[{index}] missing {field}")
+        if entry.get("external_effect_performed") is not False:
+            errors.append(f"entries[{index}] external_effect_performed must be false")
+        if entry.get("host_write_performed") is not False:
+            errors.append(f"entries[{index}] host_write_performed must be false")
+    boundary = payload.get("safety_boundary", [])
+    if "ledger_reads_existing_artifacts_only" not in boundary:
+        errors.append("safety_boundary must include ledger_reads_existing_artifacts_only")
+    if "does_not_write_host_scheduler" not in boundary:
+        errors.append("safety_boundary must include does_not_write_host_scheduler")
+    return errors
+
+
+def validate_daily_run_ledger_file(path: str | Path) -> list[str]:
+    return validate_daily_run_ledger_payload(load_json(path))
+
+
+def render_daily_run_ledger(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    rows = "".join(
+        "<tr>"
+        f"<td><strong>{esc(entry.get('local_day', ''))}</strong><span>{esc(entry.get('canonical_status', ''))}</span></td>"
+        f"<td>{esc(entry.get('run_id', ''))}</td>"
+        f"<td>{esc(entry.get('run_status', ''))}</td>"
+        f"<td>{esc(entry.get('scheduler_status', ''))}</td>"
+        f"<td><a href='{esc(_relative_href(Path(entry.get('today_path', ''))))}'>today</a> · <a href='{esc(_relative_href(Path(entry.get('archive_manifest', ''))))}'>archive</a></td>"
+        "</tr>"
+        for entry in payload.get("entries", [])[:12]
+    )
+    duplicate_note = (
+        "오늘 같은 local day에 여러 run이 있습니다. canonical run만 먼저 읽고 나머지는 validation/manual run으로 취급하세요."
+        if summary.get("duplicate_today_count", 0)
+        else "오늘은 현재 canonical run 하나만 기록되어 있습니다."
+    )
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if path and label != "run_ledger"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Run Ledger</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:840px; margin:0 auto; padding:16px; }}
+a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
+.eyebrow {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small,td span {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
+.metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
+.metric strong {{ display:block; font-size:24px; }}
+table {{ width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }}
+td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }}
+td strong,td span {{ display:block; }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }}
+@media (max-width:680px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.links {{ grid-template-columns:1fr; }} table {{ font-size:13px; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Run Ledger · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>오늘 어떤 run을 믿을지</h1>
+<p>예약 실행, 수동 실행, 검증 실행이 같은 날 겹쳐도 canonical run과 중복 run을 분리해서 봅니다.</p>
+</header>
+<section class="hero">
+<div class="metrics">
+<article class="metric"><span>Today Runs</span><strong>{esc(summary.get('today_run_count', 0))}</strong></article>
+<article class="metric"><span>Duplicates</span><strong>{esc(summary.get('duplicate_today_count', 0))}</strong></article>
+<article class="metric"><span>Status</span><strong>{esc(summary.get('latest_run_status', ''))}</strong></article>
+<article class="metric"><span>Effects</span><strong>{esc('yes' if summary.get('latest_external_effect_performed') else 'no')}</strong></article>
+</div>
+<p>{esc(duplicate_note)}</p>
+</section>
+<section class="section">
+<h2>Run history</h2>
+<table><thead><tr><th>Day</th><th>Run</th><th>Status</th><th>Scheduler</th><th>Links</th></tr></thead><tbody>{rows}</tbody></table>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 ledger는 기존 로컬 artifact만 읽고 오늘의 canonical run을 표시합니다. live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def build_drift_review(
@@ -5692,6 +5931,7 @@ def build_morning_control_packet(
     memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
+    run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
@@ -5757,6 +5997,7 @@ def build_morning_control_packet(
             "memory_audit": Path(memory_audit_surface_path).as_posix(),
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
             "trace": Path(run_trace_surface_path).as_posix(),
+            "run_ledger": Path(run_ledger_surface_path).as_posix(),
             "drift_review": Path(drift_review_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
             "journal": Path(journal_surface_path).as_posix(),
@@ -5822,6 +6063,7 @@ def write_morning_control_packet(
     memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
+    run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
@@ -5848,6 +6090,7 @@ def write_morning_control_packet(
         memory_audit_surface_path=memory_audit_surface_path,
         pattern_radar_surface_path=pattern_radar_surface_path,
         run_trace_surface_path=run_trace_surface_path,
+        run_ledger_surface_path=run_ledger_surface_path,
         drift_review_surface_path=drift_review_surface_path,
     )
     write_json(payload, artifact_output_path)
@@ -7428,6 +7671,94 @@ def _run_trace_weak_spots(
     if external_flags:
         weak.append(f"외부효과 flag 확인 필요: {', '.join(external_flags)}")
     return weak
+
+
+def _daily_run_ledger_entry(
+    *,
+    generated: datetime,
+    trace: dict[str, Any],
+    morning: dict[str, Any],
+    readiness: dict[str, Any],
+    scheduler: dict[str, Any],
+    archive: dict[str, Any],
+    archive_path: Path | None,
+    run_trace_path: str | Path,
+    morning_path: str | Path,
+    readiness_path: str | Path,
+    scheduler_operations_path: str | Path,
+) -> dict[str, Any]:
+    run_id = trace.get("run_id") or morning.get("run_id") or archive.get("run_id") or "daily-research"
+    generated_at = trace.get("generated_at") or archive.get("generated_at") or generated.isoformat()
+    local_day = _short_date(generated_at)
+    artifacts = archive.get("artifacts", {}) if archive.get("schema_version") == ARCHIVE_SCHEMA_VERSION else {}
+    entry_id = f"{local_day}:{run_id}:{generated.isoformat()}"
+    trace_external = bool(trace.get("external_effect_performed"))
+    morning_external = bool(morning.get("external_effect_performed"))
+    readiness_external = bool(readiness.get("external_effect_performed"))
+    scheduler_external = bool(scheduler.get("external_effect_performed"))
+    trace_host = bool(trace.get("host_write_performed"))
+    morning_host = bool(morning.get("host_write_performed"))
+    readiness_host = bool(readiness.get("host_write_performed"))
+    scheduler_host = bool(scheduler.get("host_write_performed"))
+    return {
+        "entry_id": entry_id,
+        "local_day": local_day,
+        "run_id": str(run_id),
+        "generated_at": generated_at,
+        "recorded_at": generated.isoformat(),
+        "canonical_status": "candidate",
+        "run_status": trace.get("status", morning.get("status", readiness.get("status", "review"))),
+        "morning_status": morning.get("status", "missing"),
+        "readiness_status": readiness.get("status", "missing"),
+        "scheduler_status": scheduler.get("status", "missing"),
+        "archive_manifest": archive_path.as_posix() if archive_path else "",
+        "archive_dir": archive.get("archive_dir", ""),
+        "today_path": artifacts.get("today", DEFAULT_TODAY_OUTPUT.as_posix()),
+        "morning_path": Path(morning_path).as_posix(),
+        "readiness_path": Path(readiness_path).as_posix(),
+        "run_trace_path": Path(run_trace_path).as_posix(),
+        "scheduler_operations_path": Path(scheduler_operations_path).as_posix(),
+        "source_count": _ledger_source_count(trace=trace, readiness=readiness),
+        "external_effect_performed": trace_external or morning_external or readiness_external or scheduler_external,
+        "host_write_performed": trace_host or morning_host or readiness_host or scheduler_host,
+        "operator_note": _daily_run_ledger_note(trace=trace, readiness=readiness, scheduler=scheduler),
+    }
+
+
+def _daily_run_ledger_entries(
+    *,
+    previous_entries: list[dict[str, Any]],
+    current_entry: dict[str, Any],
+) -> list[dict[str, Any]]:
+    entries = [dict(entry) for entry in previous_entries if entry.get("entry_id") != current_entry["entry_id"]]
+    entries.append(current_entry)
+    return sorted(entries, key=lambda entry: entry.get("recorded_at", entry.get("generated_at", "")), reverse=True)
+
+
+def _daily_run_ledger_canonical_entry_id(entries: list[dict[str, Any]]) -> str:
+    if not entries:
+        return ""
+    return sorted(entries, key=lambda entry: entry.get("recorded_at", entry.get("generated_at", "")), reverse=True)[0].get("entry_id", "")
+
+
+def _daily_run_ledger_note(*, trace: dict[str, Any], readiness: dict[str, Any], scheduler: dict[str, Any]) -> str:
+    if readiness.get("status") in {"blocked", "stale"}:
+        return "필수 산출물 freshness를 먼저 확인한 뒤 today를 읽으세요."
+    if trace.get("status") == "blocked":
+        return "trace에 필수 단계 누락이 있습니다. run-trace를 먼저 확인하세요."
+    if scheduler.get("status") in {"not_ready", "blocked", "missing"}:
+        return "자동 실행 증거가 약합니다. scheduler 화면에서 run-once/preflight 상태를 확인하세요."
+    return "오늘 canonical run으로 읽어도 됩니다. 외부효과는 수행되지 않았습니다."
+
+
+def _ledger_source_count(*, trace: dict[str, Any], readiness: dict[str, Any]) -> int:
+    for influence in trace.get("what_shaped_today", []):
+        if influence.get("label") == "근거 개수":
+            try:
+                return int(str(influence.get("value", "0")).split()[0])
+            except ValueError:
+                return 0
+    return int(readiness.get("summary", {}).get("fresh_required_count", 0) or 0)
 
 
 def _drift_review_signals(
