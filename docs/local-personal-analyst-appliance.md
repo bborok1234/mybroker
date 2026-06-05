@@ -264,6 +264,15 @@ lessons explicit: adopted patterns become local surfaces, memory, review, role s
 maps, recall quality, or future trace proofs; deferred patterns wait for stronger schemas and
 sandboxing; rejected patterns remain outside the product when they imply credentials, live
 execution, account access, or unsupported personalized recommendations.
+New external agent or research patterns do not become product behavior directly. They must move
+through the radar's dry-run queue first: local proof command, expected artifact, validator,
+operator-facing explanation, and explicit approval scope. Browser/scraper/live-source patterns
+remain gated until source-refresh approval and preflight prove the boundary.
+
+`source-refresh` writes `source_refresh_brief.v1` and `reports/product/source-refresh.html`. It
+shows source actions, weak evidence, and a source freshness scorecard. The scorecard separates
+fresh-enough sources from sample/cache/fallback sources so the operator can study the brief without
+mistaking cached evidence for current market evidence.
 
 The local vault is the raw inbox side of the same pattern:
 

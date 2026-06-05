@@ -1,15 +1,18 @@
 {
   "schema_version": "agent_pattern_radar.v1",
-  "generated_at": "2026-06-05T21:42:29.989022+00:00",
+  "generated_at": "2026-06-05T21:53:34.841548+00:00",
   "status": "ready",
   "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
   "playbook_source": "reports/runtime/local-analyst-playbook.json",
   "playbook_pattern_count": 6,
   "summary": {
-    "case_count": 15,
+    "case_count": 16,
     "adopted_count": 12,
-    "deferred_count": 1,
+    "deferred_count": 2,
     "rejected_count": 2,
+    "dry_run_candidate_count": 4,
+    "ready_dry_run_count": 2,
+    "gated_dry_run_count": 1,
     "top_next_pattern": "pattern freshness audit before adding new runtime authority"
   },
   "cases": [
@@ -89,6 +92,17 @@
       "risk": "browser/scraper access can quietly expand authority or pull weak sources into memory",
       "guardrail": "live network, host writes, notifications, credentials, and paid/API operations stay behind scoped gates; copied feedback uses review-response-apply only",
       "priority": "high"
+    },
+    {
+      "source": "Browser-use / Playwright / Firecrawl",
+      "source_url": "https://github.com/browser-use/browser-use",
+      "observed_pattern": "agent-driven browser use and web extraction can gather current evidence beyond local cache",
+      "decision": "defer",
+      "mybroker_translation": "treat browser and scraper tools as live-source candidates behind source-refresh preflight, not as default daily behavior",
+      "why": "They can improve source freshness, but they also widen the authority and source-quality surface.",
+      "risk": "unreviewed web extraction can import weak, stale, or unsafe source content into memory",
+      "guardrail": "only move through source-refresh approval, preflight, cached output, and validation before it influences the daily brief",
+      "priority": "watch"
     },
     {
       "source": "work-buddy",
@@ -179,6 +193,76 @@
       "priority": "blocked"
     }
   ],
+  "dry_run_candidates": [
+    {
+      "candidate_id": "pattern-memory-recall-quality",
+      "source": "Obsidian vault research workflow",
+      "status": "ready",
+      "why": "Local vault, memory, archive, and audit artifacts can be evaluated without external effects.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance audit",
+      "expected_artifact": "reports/memory/audit.json",
+      "approval_scope": "local_dry_run_only",
+      "promotion_rule": "Adopt only if memory audit artifact validates and phone surface shows stale or weak coverage clearly.",
+      "source_decision": "adopt",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-run-trace-observability",
+      "source": "TraceAgent",
+      "status": "ready",
+      "why": "Run trace already exists and can prove which local steps influenced the daily loop.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-run-trace reports/runtime/run-trace.json",
+      "expected_artifact": "reports/runtime/run-trace.json",
+      "approval_scope": "local_dry_run_only",
+      "promotion_rule": "Adopt only if trace stays compact, fresh, and linked from daily home/readiness surfaces.",
+      "source_decision": "adopt_partial",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-live-source-browser-gateway",
+      "source": "Browser-use / Playwright / Firecrawl",
+      "status": "requires_approval",
+      "why": "Browser/scraper tools can improve freshness but cross the live-network boundary.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-live-preflight --intend-execute --confirm-live-network",
+      "expected_artifact": "reports/daily/source-refresh-live-preflight.json",
+      "approval_scope": "live_network_refresh",
+      "promotion_rule": "Adopt only after scoped approval, preflight, cached output validation, and source freshness labeling.",
+      "source_decision": "defer",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-code-analytics-sandbox",
+      "source": "TaskWeaver",
+      "status": "blocked",
+      "why": "Generated analysis code needs a deterministic sandbox and report schema before it can shape the daily brief.",
+      "proof_command": "not_available_until_sandbox_schema_exists",
+      "expected_artifact": "reports/runtime/analytics-sandbox-proof.json",
+      "approval_scope": "future_local_sandbox",
+      "promotion_rule": "Adopt only after deterministic inputs, saved outputs, validator, and no external effect proof exist.",
+      "source_decision": "defer",
+      "external_effect_performed": false
+    }
+  ],
+  "adoption_gate": {
+    "allowed_transitions": [
+      "observed_to_candidate",
+      "candidate_to_dry_run",
+      "dry_run_to_adopted",
+      "dry_run_to_rejected"
+    ],
+    "required_evidence_before_adopted": [
+      "local proof artifact generated",
+      "validator covers the artifact schema",
+      "phone surface explains operator impact",
+      "source freshness or memory quality impact is explicit",
+      "external effects remain separated by approval scope"
+    ],
+    "blocked_transitions": [
+      "observed_to_adopted_without_dry_run",
+      "candidate_to_live_execution_without_preflight",
+      "dry_run_to_external_effect_without_scoped_approval"
+    ]
+  },
   "adopted_patterns": [
     {
       "source": "Hermes Agent",
