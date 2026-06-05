@@ -31,7 +31,7 @@ broad user interests
 - `src/mybroker/reports.py`: build and validate `research_report.v1` artifacts with source metadata and data-quality evidence.
 - `src/mybroker/dashboard.py`: build the operator-facing ops/artifact dashboard from local artifacts.
 - `src/mybroker/product_brief.py`: build the beginner-facing MiroFish-inspired product brief from scenario and verdict artifacts.
-- `src/mybroker/appliance.py`: build local personal-analyst surfaces including `/today`, memory, journal, role-based task queue, notification dry-run, phone access guidance, and scheduler proofs.
+- `src/mybroker/appliance.py`: build local personal-analyst surfaces including `/today`, memory, journal, role-based task queue, workflow-pattern radar, notification dry-run, phone access guidance, and scheduler proofs.
 - `src/mybroker/topics.py`: manage broad interests, daily research plans, topic-aware public evidence collection, topic memory, daily scout recommendations, dry-run source refresh planning, refresh execution-readiness packets, scoped live-refresh approval gates, guarded live-run proof artifacts, and no-network live execution preflight proofs.
 - `src/mybroker/cli.py`: local command interface.
 - `.flyhigh/`: project memory, domain skills, dashboard state.

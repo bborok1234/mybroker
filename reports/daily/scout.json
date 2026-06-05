@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_scout.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T16:58:09.386554+00:00",
+  "generated_at": "2026-06-05T17:18:58.063966+00:00",
   "inputs": {
     "topics_path": "config/topics.json",
     "plan_path": "reports/daily/research-plan.json",
@@ -310,7 +310,7 @@
     "mode": "sample_cache_topic_research"
   },
   "review_context": {
-    "schema_version": "",
+    "schema_version": "daily_review.v1",
     "response_count": 0,
     "signal_count": 0
   },

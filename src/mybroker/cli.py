@@ -15,6 +15,8 @@ from mybroker.appliance import (
     DEFAULT_ANALYST_TASK_LEDGER_OUTPUT,
     DEFAULT_ANALYST_TASK_RESPONSES,
     DEFAULT_ANALYST_TASK_STATUS_APPLY,
+    DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
+    DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     DEFAULT_DAILY_READINESS_OUTPUT,
@@ -47,6 +49,7 @@ from mybroker.appliance import (
     add_archive_artifacts,
     archive_daily_run,
     send_notification_payload,
+    write_agent_pattern_radar,
     write_launchd_assets,
     write_analyst_journal,
     write_analyst_task_queue,
@@ -77,6 +80,7 @@ from mybroker.appliance import (
     validate_analyst_journal_file,
     validate_analyst_task_queue_file,
     validate_analyst_task_ledger_file,
+    validate_agent_pattern_radar_file,
     validate_daily_brief_agenda_file,
     validate_daily_readiness_file,
     validate_daily_review_file,
@@ -297,6 +301,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_memory_parser.add_argument("memory_path")
     validate_review_parser = subcommands.add_parser("validate-daily-review", help="Validate a daily_review.v1 artifact.")
     validate_review_parser.add_argument("review_path")
+    validate_pattern_radar_parser = subcommands.add_parser("validate-agent-pattern-radar", help="Validate an agent_pattern_radar.v1 artifact.")
+    validate_pattern_radar_parser.add_argument("pattern_radar_path")
     validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
     validate_journal_parser.add_argument("journal_path")
     validate_tasks_parser = subcommands.add_parser("validate-analyst-task-queue", help="Validate a personal_analyst_task_queue.v1 artifact.")
@@ -412,6 +418,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--agenda", default=DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--agenda-surface", default=DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix())
     appliance_today_parser.add_argument("--source-refresh-surface", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
+    appliance_today_parser.add_argument("--pattern-radar-surface", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
     appliance_today_parser.add_argument("--brief", default="reports/product/market-brief.html")
     appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--archive-manifest")
@@ -502,6 +509,10 @@ def main(argv: list[str] | None = None) -> int:
     appliance_review_parser.add_argument("--responses", default=DEFAULT_DAILY_REVIEW_RESPONSES.as_posix())
     appliance_review_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_REVIEW_OUTPUT.as_posix())
     appliance_review_parser.add_argument("--output", default=DEFAULT_DAILY_REVIEW_SURFACE.as_posix())
+    appliance_pattern_radar_parser = appliance_subcommands.add_parser("pattern-radar", help="Render the workflow-pattern radar for local analyst evolution.")
+    appliance_pattern_radar_parser.add_argument("--playbook", default=DEFAULT_RUNTIME_PLAYBOOK_OUTPUT.as_posix())
+    appliance_pattern_radar_parser.add_argument("--artifact-output", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
+    appliance_pattern_radar_parser.add_argument("--output", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
     appliance_morning_parser = appliance_subcommands.add_parser("morning", help="Render the morning analyst control packet from existing daily artifacts.")
     appliance_morning_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--journal", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
@@ -514,6 +525,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_morning_parser.add_argument("--runtime-doctor", default=DEFAULT_RUNTIME_DOCTOR_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--scheduler-surface", default=DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--source-refresh-surface", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
+    appliance_morning_parser.add_argument("--pattern-radar-surface", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--artifact-output", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--output", default=DEFAULT_MORNING_CONTROL_SURFACE.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
@@ -910,6 +922,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-agent-pattern-radar":
+        errors = validate_agent_pattern_radar_file(args.pattern_radar_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-analyst-journal":
         errors = validate_analyst_journal_file(args.journal_path)
         if errors:
@@ -1228,6 +1247,7 @@ def main(argv: list[str] | None = None) -> int:
                 agenda_path=args.agenda,
                 agenda_surface_path=args.agenda_surface,
                 source_refresh_surface_path=args.source_refresh_surface,
+                pattern_radar_surface_path=args.pattern_radar_surface,
                 brief_path=args.brief,
                 output_path=args.output,
                 archive_manifest_path=args.archive_manifest,
@@ -1432,6 +1452,21 @@ def main(argv: list[str] | None = None) -> int:
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "pattern-radar":
+            path = write_agent_pattern_radar(
+                playbook_path=args.playbook,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "agent_pattern_radar": args.artifact_output,
+                "agent_pattern_radar_surface": path.as_posix(),
+                "case_count": payload["summary"]["case_count"],
+                "adopted_count": payload["summary"]["adopted_count"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "morning":
             path = write_morning_control_packet(
                 scout_path=args.scout,
@@ -1445,6 +1480,7 @@ def main(argv: list[str] | None = None) -> int:
                 runtime_doctor_path=args.runtime_doctor,
                 scheduler_surface_path=args.scheduler_surface,
                 source_refresh_surface_path=args.source_refresh_surface,
+                pattern_radar_surface_path=args.pattern_radar_surface,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
@@ -1543,6 +1579,8 @@ def main(argv: list[str] | None = None) -> int:
             agenda_surface_path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE
             review_artifact_path = DEFAULT_DAILY_REVIEW_OUTPUT
             review_surface_path = DEFAULT_DAILY_REVIEW_SURFACE
+            pattern_radar_artifact_path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT
+            pattern_radar_surface_path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE
             readiness_artifact_path = DEFAULT_DAILY_READINESS_OUTPUT
             readiness_surface_path = DEFAULT_DAILY_READINESS_SURFACE
             source_refresh_brief_artifact_path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT
@@ -1552,6 +1590,11 @@ def main(argv: list[str] | None = None) -> int:
             vault_compile_path = Path(args.vault_output)
             vault_surface_path = Path(args.vault_surface_output)
             playbook_path = write_runtime_playbook(args.playbook_output)
+            written_pattern_radar = write_agent_pattern_radar(
+                playbook_path=playbook_path,
+                artifact_output_path=pattern_radar_artifact_path,
+                surface_output_path=pattern_radar_surface_path,
+            )
             vault_compile = None
             if not args.skip_vault_compile and Path(args.vault_raw_dir).exists():
                 vault_compile = compile_knowledge_vault(
@@ -1682,6 +1725,7 @@ def main(argv: list[str] | None = None) -> int:
                 agenda_surface_path=written_agenda,
                 source_refresh_surface_path=written_source_refresh_brief,
                 review_surface_path=provisional_review,
+                pattern_radar_surface_path=written_pattern_radar,
                 brief_path=written_brief,
                 output_path=today_path,
                 journal_surface_path=provisional_journal,
@@ -1706,6 +1750,8 @@ def main(argv: list[str] | None = None) -> int:
                 task_ledger_path=provisional_task_ledger,
                 daily_review_path=review_artifact_path,
                 daily_review_surface_path=provisional_review,
+                pattern_radar_path=pattern_radar_artifact_path,
+                pattern_radar_surface_path=written_pattern_radar,
                 vault_compile_path=active_vault_path,
                 vault_surface_path=active_vault_surface,
                 agenda_path=agenda_artifact_path,
@@ -1768,6 +1814,7 @@ def main(argv: list[str] | None = None) -> int:
                 agenda_surface_path=written_agenda,
                 source_refresh_surface_path=written_source_refresh_brief,
                 review_surface_path=written_review,
+                pattern_radar_surface_path=written_pattern_radar,
                 brief_path=written_brief,
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,
@@ -1809,6 +1856,7 @@ def main(argv: list[str] | None = None) -> int:
                 agenda_path=agenda_artifact_path,
                 agenda_surface_path=written_agenda,
                 review_surface_path=written_review,
+                pattern_radar_surface_path=written_pattern_radar,
                 artifact_output_path=morning_artifact_path,
                 surface_output_path=morning_path,
             )
@@ -1844,9 +1892,11 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_agenda_surface": written_agenda.as_posix(),
                 "daily_readiness": readiness_artifact_path.as_posix(),
                 "daily_readiness_surface": written_readiness.as_posix(),
-                "daily_review": review_artifact_path.as_posix(),
-                "daily_review_surface": written_review.as_posix(),
-                "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),
+                    "daily_review": review_artifact_path.as_posix(),
+                    "daily_review_surface": written_review.as_posix(),
+                    "agent_pattern_radar": pattern_radar_artifact_path.as_posix(),
+                    "agent_pattern_radar_surface": written_pattern_radar.as_posix(),
+                    "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),
                 "source_refresh_brief_surface": written_source_refresh_brief.as_posix(),
                 "scheduler_operations": scheduler_operations_artifact_path.as_posix(),
                 "scheduler_operations_surface": written_scheduler_operations.as_posix(),
