@@ -1,6 +1,6 @@
 {
   "schema_version": "local_runtime_doctor.v1",
-  "generated_at": "2026-06-05T07:00:40.551662+00:00",
+  "generated_at": "2026-06-05T07:15:47.060225+00:00",
   "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
   "status": "ready",
   "fail_count": 0,
@@ -41,28 +41,28 @@
       "status": "pass",
       "message": "Phone-readable today surface exists.",
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/today.html",
-      "age_hours": 0.31
+      "age_hours": 0.0
     },
     {
       "name": "memory_surface",
       "status": "pass",
       "message": "Accumulated memory surface exists.",
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/memory.html",
-      "age_hours": 0.26
+      "age_hours": 0.0
     },
     {
       "name": "memory_query_surface",
       "status": "pass",
       "message": "Memory recall surface exists.",
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/memory-query.html",
-      "age_hours": 0.31
+      "age_hours": 0.56
     },
     {
       "name": "archive_manifest",
       "status": "pass",
       "message": "Latest daily archive manifest exists.",
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/archive/2026-06-05/manifest.json",
-      "age_hours": 0.26
+      "age_hours": 0.0
     },
     {
       "name": "notification_payload",

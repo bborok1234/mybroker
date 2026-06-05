@@ -49,6 +49,7 @@ PYTHONPATH=src python3 -m mybroker appliance access
 PYTHONPATH=src python3 -m mybroker appliance doctor
 PYTHONPATH=src python3 -m mybroker appliance scheduler status
 PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now
+PYTHONPATH=src python3 -m mybroker appliance scheduler run-once
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
@@ -143,6 +144,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/runtime/local-runtime-doctor.json`: local runtime readiness proof for runner assets, artifact freshness, notification gate, and launchd state;
 - `reports/runtime/scheduler-status.json`: scheduler install/load status plus explicit host-level commands;
 - `reports/runtime/scheduler-apply.json`: dry-run or confirmed scheduler action proof;
+- `reports/runtime/scheduler-run-once.json`: local runner execution proof without launchd install/load;
 - `reports/product/today.html`: a mobile-first `/today` surface for the phone;
 - `reports/product/memory.html` and `reports/memory/index.json`: accumulated topic memory, source relevance, and archive history;
 - `reports/product/memory-query.html` and `reports/memory/latest-query.json`: deterministic recall over accumulated memory and archives;
@@ -169,6 +171,10 @@ source asset state, installed plist state, launchd loaded state, log paths, and 
 without writing to `~/Library/LaunchAgents`.
 Run `appliance scheduler apply --install --load --start-now` to create a dry-run activation plan.
 Actual host-level writes require adding `--confirm-host-write`.
+Run `appliance scheduler run-once` before host-level activation when you need proof that the
+same runner script launchd would call can execute once locally. It records return code, duration,
+stdout/stderr excerpts, fresh scheduler status, and doctor paths while keeping
+`host_write_performed=false`.
 
 ## First Pipeline Slice
 

@@ -1,6 +1,6 @@
 {
   "schema_version": "public_evidence_catalog.v1",
-  "generated_at": "2026-06-05T06:42:22.069835+00:00",
+  "generated_at": "2026-06-05T07:15:47.037470+00:00",
   "mode": "sample_cache_topic_research",
   "source_status": [
     {
@@ -8,8 +8,8 @@
       "source_name": "GDELT",
       "adapter_id": "sample_cache_topic_research",
       "item_count": "2",
-      "freshness_status": "live_error_fallback_sample",
-      "relevance_score": "0.98",
+      "freshness_status": "sample_cache",
+      "relevance_score": "0.97",
       "relevance_label": "strong"
     },
     {
@@ -26,8 +26,8 @@
       "source_name": "Stooq",
       "adapter_id": "sample_cache_topic_research",
       "item_count": "1",
-      "freshness_status": "live_error_fallback_sample",
-      "relevance_score": "0.81",
+      "freshness_status": "sample_cache",
+      "relevance_score": "0.78",
       "relevance_label": "strong"
     }
   ],
@@ -125,12 +125,12 @@
         "semiconductors",
         "cloud"
       ],
-      "freshness_status": "live_error_fallback_sample",
+      "freshness_status": "sample_cache",
       "relevance": {
-        "score": 0.97,
+        "score": 0.94,
         "label": "strong",
         "reasons": [
-          "fallback sample",
+          "cached sample",
           "source URL",
           "context text",
           "news_narrative"
@@ -163,12 +163,12 @@
         "growth stocks",
         "consumer demand"
       ],
-      "freshness_status": "live_error_fallback_sample",
+      "freshness_status": "sample_cache",
       "relevance": {
         "score": 1.0,
         "label": "strong",
         "reasons": [
-          "fallback sample",
+          "cached sample",
           "source URL",
           "context text",
           "news_narrative"
@@ -198,12 +198,12 @@
         "SPY",
         "broad market"
       ],
-      "freshness_status": "live_error_fallback_sample",
+      "freshness_status": "sample_cache",
       "relevance": {
-        "score": 0.81,
+        "score": 0.78,
         "label": "strong",
         "reasons": [
-          "fallback sample",
+          "cached sample",
           "source URL",
           "context text",
           "market_price_context"
@@ -661,7 +661,7 @@
   ],
   "research_plan": {
     "run_id": "daily-research",
-    "generated_at": "2026-06-05T06:42:15.824022+00:00",
+    "generated_at": "2026-06-05T07:15:47.036712+00:00",
     "topic_count": 5,
     "next_step": "collect_free_public_evidence"
   },
@@ -671,7 +671,7 @@
   ],
   "topic_memory_snapshot": {
     "memory_path": "reports/memory/topic-memory.json",
-    "run_count": 8,
+    "run_count": 10,
     "topics": [
       {
         "topic_id": "ai-infrastructure",

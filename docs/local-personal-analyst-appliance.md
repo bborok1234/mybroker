@@ -43,6 +43,7 @@ launchd
   -> local_runtime_doctor.v1
   -> local_scheduler_status.v1
   -> local_scheduler_apply.v1
+  -> local_scheduler_run_once.v1
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -100,6 +101,7 @@ PYTHONPATH=src python3 -m mybroker appliance access
 PYTHONPATH=src python3 -m mybroker appliance doctor
 PYTHONPATH=src python3 -m mybroker appliance scheduler status
 PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now
+PYTHONPATH=src python3 -m mybroker appliance scheduler run-once
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
@@ -145,6 +147,12 @@ and the exact install/load/start/status/unload/uninstall commands for review.
 `host_write_performed=false`. To actually install, load, or start the LaunchAgent, the operator
 must add `--confirm-host-write`; that host-level action should be treated as a separate explicit
 operation with fresh status and doctor evidence afterward.
+
+`appliance scheduler run-once` writes `reports/runtime/scheduler-run-once.json`. It executes the
+local `ops/local/run-daily-analyst.sh` runner once, records command, return code, duration,
+stdout/stderr excerpts, post-run scheduler status, and doctor paths, and keeps
+`host_write_performed=false`. This is the proof step between a dry-run activation plan and a
+host-level launchd install/load.
 
 ## Safety Boundary
 
