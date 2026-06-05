@@ -14,6 +14,7 @@ broad user interests
   -> daily_research_plan.v1
   -> cached free/public evidence collection
   -> topic_memory.v1
+  -> daily_scout.v1
   -> public_evidence_catalog.v1
   -> scenario_report.v1 + market_verdict.v1
   -> ops dashboard + beginner product brief
@@ -29,7 +30,7 @@ broad user interests
 - `src/mybroker/reports.py`: build and validate `research_report.v1` artifacts with source metadata and data-quality evidence.
 - `src/mybroker/dashboard.py`: build the operator-facing ops/artifact dashboard from local artifacts.
 - `src/mybroker/product_brief.py`: build the beginner-facing MiroFish-inspired product brief from scenario and verdict artifacts.
-- `src/mybroker/topics.py`: manage broad interests, daily research plans, topic-aware public evidence collection, and topic memory.
+- `src/mybroker/topics.py`: manage broad interests, daily research plans, topic-aware public evidence collection, topic memory, and daily scout recommendations.
 - `src/mybroker/cli.py`: local command interface.
 - `.flyhigh/`: project memory, domain skills, dashboard state.
 - `reports/runs/`: task-level evidence.
@@ -63,6 +64,8 @@ The autonomous daily research loop adds a compounding layer above the scenario e
 configure broad interests instead of supplying documents or tickers. MyBroker creates daily
 questions, uses no-key cached public evidence first, updates topic memory, and feeds the latest
 evidence into the same scenario/verdict/product-brief artifact path.
+`daily_scout.v1` ranks configured interests with memory changes, source breadth, evidence gaps,
+and linked vault notes so the phone-readable daily surface can explain what to inspect first.
 
 Surface boundaries:
 

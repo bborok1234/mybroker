@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from mybroker.topics import DEFAULT_DAILY_SCOUT_OUTPUT
 from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT
 
 
@@ -734,6 +735,7 @@ def write_today_surface(
     evidence_path: str | Path,
     brief_path: str | Path,
     vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -743,6 +745,7 @@ def write_today_surface(
     memory = load_json(memory_path)
     evidence = load_json(evidence_path)
     vault = load_json(vault_path) if Path(vault_path).exists() else {}
+    scout = load_json(scout_path) if Path(scout_path).exists() else {}
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
@@ -752,6 +755,7 @@ def write_today_surface(
             memory=memory,
             evidence=evidence,
             vault_notes=_vault_notes_for_memory(vault),
+            scout=scout,
             brief_path=Path(brief_path),
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
@@ -768,6 +772,7 @@ def render_today_surface(
     memory: dict[str, Any],
     evidence: dict[str, Any],
     vault_notes: list[dict[str, Any]],
+    scout: dict[str, Any],
     brief_path: Path,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
@@ -779,6 +784,16 @@ def render_today_surface(
     source_rows = evidence.get("source_status", [])
     gaps = evidence.get("collection_gaps", [])
     generated_at = scenario.get("generated_at", _now())
+    scout_recommendations = scout.get("recommendations", []) if scout.get("schema_version") == "daily_scout.v1" else []
+    scout_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(item.get('action', 'monitor'))} · #{esc(item.get('priority_rank', ''))}</span>"
+        f"<strong>{esc(item.get('name', ''))}</strong>"
+        f"<p>{esc(item.get('why', ''))}</p>"
+        f"<small>질문: {esc(item.get('next_question', ''))}</small>"
+        "</article>"
+        for item in scout_recommendations[:3]
+    ) or "<p>오늘 scout 추천이 아직 없습니다.</p>"
     theme_cards = "".join(
         "<article class='card'>"
         f"<span>{esc(topic.get('name', ''))}</span>"
@@ -827,7 +842,7 @@ def render_today_surface(
         if memory_surface_path
         else "<span>누적 기억 없음</span>"
     )
-    questions = _daily_questions(memory_topics, evidence, vault_notes)
+    questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
     return f"""<!doctype html>
@@ -839,9 +854,10 @@ def render_today_surface(
 <style>
 :root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
 * {{ box-sizing:border-box; }}
+html,body {{ max-width:100%; overflow-x:hidden; }}
 body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
 a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
-main {{ max-width:760px; margin:0 auto; padding:16px; }}
+main {{ width:100%; max-width:430px; min-width:0; margin:0; padding:16px; }}
 header {{ padding:26px 0 16px; }}
 .eyebrow {{ color:var(--green); font-size:12px; font-weight:900; }}
 h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }}
@@ -850,14 +866,16 @@ h3 {{ margin:0 0 8px; font-size:17px; }}
 p {{ margin:0; color:var(--muted); }}
 .hero {{ border:1px solid var(--line); border-radius:8px; background:linear-gradient(180deg,#fffefa,#f1f7f3); padding:18px; }}
 .primary {{ display:block; margin-top:14px; font-size:24px; color:var(--ink); }}
-.section {{ margin:14px 0; padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
-.stack {{ display:grid; gap:10px; }}
-.card,.path,.question {{ border:1px solid var(--line); border-radius:8px; background:white; padding:14px; }}
+.section {{ width:100%; min-width:0; overflow:hidden; margin:14px 0; padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.stack {{ display:grid; grid-template-columns:minmax(0,1fr); min-width:0; gap:10px; }}
+.card,.path,.question {{ min-width:0; border:1px solid var(--line); border-radius:8px; background:white; padding:14px; }}
 .card span,.path span {{ display:block; margin-bottom:7px; color:var(--blue); font-size:12px; font-weight:900; }}
 .card strong {{ display:block; margin-bottom:6px; }}
+.card p,.card small,.path p,.question p {{ overflow-wrap:anywhere; word-break:break-word; }}
+.card small {{ display:block; color:var(--ink); line-height:1.5; }}
 .chips {{ display:flex; flex-wrap:wrap; gap:7px; }}
 .chip {{ display:inline-flex; min-height:28px; align-items:center; border-radius:999px; padding:3px 10px; background:#eef4fb; color:#1f4f78; font-size:12px; font-weight:800; }}
-.links {{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }}
+.links {{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }}
 .links a,.links span {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
 ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 .boundary {{ border-left:4px solid var(--green); }}
@@ -874,6 +892,10 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <span class="eyebrow">가장 먼저 볼 것</span>
 <strong class="primary">{esc(primary.get('title', '근거 확인부터 시작'))}</strong>
 <p>{esc(primary.get('rationale', market_map.get('beginner_summary', '오늘 브리프를 만들 근거를 점검합니다.')))}</p>
+</section>
+<section class="section">
+<h2>오늘 Scout 추천</h2>
+<div class="stack">{scout_cards}</div>
 </section>
 <section class="section">
 <h2>오늘의 주제 기억</h2>
@@ -1528,8 +1550,17 @@ def _post_form(url: str, data: bytes) -> dict[str, Any]:
     return parsed
 
 
-def _daily_questions(memory_topics: list[dict[str, Any]], evidence: dict[str, Any], vault_notes: list[dict[str, Any]] | None = None) -> list[str]:
+def _daily_questions(
+    memory_topics: list[dict[str, Any]],
+    evidence: dict[str, Any],
+    vault_notes: list[dict[str, Any]] | None = None,
+    scout_recommendations: list[dict[str, Any]] | None = None,
+) -> list[str]:
     questions = []
+    for recommendation in (scout_recommendations or [])[:2]:
+        question = recommendation.get("next_question", "")
+        if question:
+            questions.append(question)
     for topic in memory_topics[:3]:
         daily = topic.get("daily_questions", [])
         if daily:
@@ -1541,7 +1572,11 @@ def _daily_questions(memory_topics: list[dict[str, Any]], evidence: dict[str, An
     if evidence.get("collection_gaps"):
         questions.append("오늘 부족한 근거가 결론의 강도를 얼마나 낮추나요?")
     questions.append("이 브리프가 틀렸다고 판단할 가장 빠른 반대 신호는 무엇인가요?")
-    return questions[:5]
+    deduped = []
+    for question in questions:
+        if question not in deduped:
+            deduped.append(question)
+    return deduped[:5]
 
 
 def _today_vault_notes(*, vault_notes: list[dict[str, Any]], memory_topics: list[dict[str, Any]]) -> list[dict[str, Any]]:

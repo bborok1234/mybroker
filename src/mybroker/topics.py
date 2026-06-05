@@ -21,9 +21,11 @@ from mybroker.scenario import TOPIC_DEFINITIONS, detect_topics
 TOPIC_CONFIG_SCHEMA_VERSION = "topic_config.v1"
 RESEARCH_PLAN_SCHEMA_VERSION = "daily_research_plan.v1"
 TOPIC_MEMORY_SCHEMA_VERSION = "topic_memory.v1"
+DAILY_SCOUT_SCHEMA_VERSION = "daily_scout.v1"
 
 DEFAULT_TOPICS_PATH = Path("config/topics.json")
 DEFAULT_RESEARCH_PLAN_OUTPUT = Path("reports/daily/research-plan.json")
+DEFAULT_DAILY_SCOUT_OUTPUT = Path("reports/daily/scout.json")
 DEFAULT_TOPIC_MEMORY_OUTPUT = Path("reports/memory/topic-memory.json")
 DEFAULT_DAILY_EVIDENCE_OUTPUT = Path("reports/evidence/daily-evidence-catalog.json")
 
@@ -174,6 +176,109 @@ def validate_research_plan_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_research_plan_file(path: str | Path) -> list[str]:
     return validate_research_plan_payload(load_json(path))
+
+
+def build_daily_scout(
+    *,
+    topics_path: str | Path = DEFAULT_TOPICS_PATH,
+    plan_path: str | Path = DEFAULT_RESEARCH_PLAN_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    vault_path: str | Path | None = None,
+    output_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    run_id: str = "daily-research",
+) -> dict[str, Any]:
+    config = load_topic_config(topics_path)
+    plan = load_json(plan_path)
+    evidence = load_json(evidence_path)
+    memory = load_json(memory_path)
+    vault = load_json(vault_path) if vault_path and Path(vault_path).exists() else {}
+    plan_by_id = {item.get("topic_id"): item for item in plan.get("plan_items", [])}
+    memory_by_id = {item.get("topic_id"): item for item in memory.get("topics", [])}
+    vault_by_topic = _vault_notes_by_topic(vault)
+    recommendations = []
+    for interest in config.get("interests", []):
+        topic_id = interest.get("topic_id", "")
+        memory_topic = memory_by_id.get(topic_id, {})
+        plan_item = plan_by_id.get(topic_id, {})
+        linked_notes = vault_by_topic.get(topic_id, [])
+        score, factors = _scout_score(memory_topic=memory_topic, plan_item=plan_item, linked_notes=linked_notes)
+        source_names = memory_topic.get("source_names", [])
+        recommendation = {
+            "topic_id": topic_id,
+            "name": interest.get("name", ""),
+            "score": round(score, 2),
+            "priority_rank": 0,
+            "action": _scout_action(score, memory_topic),
+            "confidence": _scout_confidence(memory_topic),
+            "why": _scout_why(interest, memory_topic, linked_notes, factors),
+            "beginner_focus": interest.get("beginner_focus", ""),
+            "next_question": _scout_next_question(plan_item, memory_topic, linked_notes),
+            "source_names": source_names,
+            "latest_titles": memory_topic.get("latest_titles", [])[:5],
+            "linked_vault_notes": [
+                {
+                    "title": note.get("title", ""),
+                    "source_path": note.get("source_path", ""),
+                    "wiki_path": note.get("wiki_path", ""),
+                }
+                for note in linked_notes[:3]
+            ],
+            "missing_evidence": memory_topic.get("collection_gaps", []),
+            "score_factors": factors,
+        }
+        recommendations.append(recommendation)
+    recommendations.sort(key=lambda row: (-float(row["score"]), row["name"]))
+    for index, recommendation in enumerate(recommendations, start=1):
+        recommendation["priority_rank"] = index
+    top = recommendations[0] if recommendations else {}
+    payload = {
+        "schema_version": DAILY_SCOUT_SCHEMA_VERSION,
+        "run_id": run_id,
+        "generated_at": _now(),
+        "inputs": {
+            "topics_path": Path(topics_path).as_posix(),
+            "plan_path": Path(plan_path).as_posix(),
+            "evidence_path": Path(evidence_path).as_posix(),
+            "memory_path": Path(memory_path).as_posix(),
+            "vault_path": Path(vault_path).as_posix() if vault_path else "",
+        },
+        "recommendation_count": len(recommendations),
+        "recommended_topic": top,
+        "recommendations": recommendations,
+        "source_context": {
+            "source_count": len(evidence.get("source_status", [])),
+            "collection_gaps": evidence.get("collection_gaps", []),
+            "mode": evidence.get("mode", ""),
+        },
+        "policy": _research_only_policy(),
+        "next_step": "inspect_recommended_topic_first",
+    }
+    return write_json(payload, output_path)
+
+
+def validate_daily_scout_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != DAILY_SCOUT_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if not payload.get("recommendations"):
+        errors.append("recommendations must not be empty")
+    if not payload.get("recommended_topic"):
+        errors.append("recommended_topic must not be empty")
+    for index, item in enumerate(payload.get("recommendations", [])):
+        for field in ["topic_id", "name", "score", "priority_rank", "action", "confidence", "why", "next_question"]:
+            if field not in item:
+                errors.append(f"recommendations[{index}] missing {field}")
+        if item.get("action") not in {"inspect_first", "monitor", "defer"}:
+            errors.append(f"recommendations[{index}] invalid action")
+    policy = payload.get("policy", {})
+    if policy.get("output_boundary") != "research_only":
+        errors.append("policy.output_boundary must be research_only")
+    return errors
+
+
+def validate_daily_scout_file(path: str | Path) -> list[str]:
+    return validate_daily_scout_payload(load_json(path))
 
 
 def collect_topic_evidence(
@@ -454,6 +559,95 @@ def _topic_memory_summary(interest: dict[str, Any], titles: list[str], source_na
         return f"{interest['name']} 주제는 아직 연결된 공개 근거가 부족합니다."
     change_text = f"새 근거 {len(new_ids)}개" if new_ids else "새 근거 없음"
     return f"{interest['name']} 주제는 {', '.join(source_names) or 'sample cache'}에서 {len(titles)}개 근거를 확인했습니다. {change_text}."
+
+
+def _vault_notes_by_topic(vault: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    if vault.get("schema_version") != "knowledge_vault_compile.v1":
+        return {}
+    rows: dict[str, list[dict[str, Any]]] = {}
+    for note in vault.get("compiled_notes", []):
+        topic_id = note.get("topic_id", "")
+        if topic_id:
+            rows.setdefault(topic_id, []).append(note)
+    return rows
+
+
+def _scout_score(*, memory_topic: dict[str, Any], plan_item: dict[str, Any], linked_notes: list[dict[str, Any]]) -> tuple[float, list[dict[str, Any]]]:
+    score = 1.0
+    factors = [{"name": "base_interest", "delta": 1.0, "reason": "configured local interest"}]
+    new_count = int(memory_topic.get("new_evidence_count", 0) or 0)
+    if new_count:
+        delta = min(3.0, new_count * 0.8)
+        score += delta
+        factors.append({"name": "new_evidence", "delta": round(delta, 2), "reason": f"새 근거 {new_count}개"})
+    if memory_topic.get("changed_since_previous"):
+        score += 1.5
+        factors.append({"name": "changed_since_previous", "delta": 1.5, "reason": "이전 실행 대비 변화 있음"})
+    source_count = len(memory_topic.get("source_names", []))
+    if source_count >= 3:
+        score += 1.2
+        factors.append({"name": "source_breadth", "delta": 1.2, "reason": "세 개 이상 source family"})
+    elif source_count >= 2:
+        score += 0.7
+        factors.append({"name": "source_breadth", "delta": 0.7, "reason": "두 개 source family"})
+    if linked_notes:
+        delta = min(1.2, len(linked_notes) * 0.6)
+        score += delta
+        factors.append({"name": "vault_link", "delta": round(delta, 2), "reason": "컴파일된 원천 노트 연결"})
+    gaps = memory_topic.get("collection_gaps", [])
+    if gaps:
+        score += 0.4
+        factors.append({"name": "needs_inspection", "delta": 0.4, "reason": "부족한 근거를 점검해야 함"})
+    if not memory_topic.get("latest_titles"):
+        score -= 1.0
+        factors.append({"name": "thin_evidence", "delta": -1.0, "reason": "연결된 공개 근거 부족"})
+    if not plan_item.get("daily_questions"):
+        score -= 0.5
+        factors.append({"name": "weak_plan", "delta": -0.5, "reason": "daily question 없음"})
+    return max(0.0, score), factors
+
+
+def _scout_action(score: float, memory_topic: dict[str, Any]) -> str:
+    if score >= 3.0 or memory_topic.get("changed_since_previous"):
+        return "inspect_first"
+    if score >= 1.5:
+        return "monitor"
+    return "defer"
+
+
+def _scout_confidence(memory_topic: dict[str, Any]) -> str:
+    source_count = len(memory_topic.get("source_names", []))
+    if source_count >= 3:
+        return "medium"
+    if source_count >= 2:
+        return "low-medium"
+    return "low"
+
+
+def _scout_why(interest: dict[str, Any], memory_topic: dict[str, Any], linked_notes: list[dict[str, Any]], factors: list[dict[str, Any]]) -> str:
+    del factors
+    parts = []
+    if memory_topic.get("latest_titles"):
+        parts.append(f"근거 {len(memory_topic.get('latest_titles', []))}개")
+    else:
+        parts.append("근거 얇음")
+    if memory_topic.get("source_names"):
+        parts.append(f"출처군 {len(memory_topic.get('source_names', []))}개")
+    if linked_notes:
+        parts.append(f"vault {len(linked_notes)}개")
+    if memory_topic.get("collection_gaps"):
+        parts.append("부족한 근거 점검 필요")
+    return " · ".join(part for part in parts if part) + ". 결론보다 먼저 확인할 주제입니다."
+
+
+def _scout_next_question(plan_item: dict[str, Any], memory_topic: dict[str, Any], linked_notes: list[dict[str, Any]]) -> str:
+    if linked_notes:
+        return f"Vault 노트 '{linked_notes[0].get('title', '')}'가 오늘 근거와 같은 방향을 가리키나요?"
+    questions = plan_item.get("daily_questions", [])
+    if questions:
+        return questions[0]
+    name = memory_topic.get("name", "이 주제")
+    return f"오늘 {name}를 먼저 볼 만큼 근거가 충분한가요?"
 
 
 def _questions_for_topics(topics: list[str], name: str) -> list[str]:

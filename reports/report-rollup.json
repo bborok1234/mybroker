@@ -1,6 +1,6 @@
 {
   "schema_version": "report_rollup.v1",
-  "generated_at": "2026-06-05T07:15:47.040257+00:00",
+  "generated_at": "2026-06-05T09:15:55.740991+00:00",
   "reports_dir": "reports/runs",
   "report_count": 2,
   "latest_report": {
@@ -129,7 +129,7 @@
   "latest_scenario": {
     "path": "reports/scenarios/daily-research-sim.json",
     "run_id": "daily-research",
-    "generated_at": "2026-06-05T07:15:47.038436+00:00",
+    "generated_at": "2026-06-05T09:15:55.738839+00:00",
     "product_mode": "beginner_market_understanding_simulation",
     "seed_sources": [
       {
@@ -340,13 +340,13 @@
       ],
       "research_plan": {
         "run_id": "daily-research",
-        "generated_at": "2026-06-05T07:15:47.036712+00:00",
+        "generated_at": "2026-06-05T09:15:55.736801+00:00",
         "topic_count": 5,
         "next_step": "collect_free_public_evidence"
       },
       "topic_memory_snapshot": {
         "memory_path": "reports/memory/topic-memory.json",
-        "run_count": 10,
+        "run_count": 12,
         "topics": [
           {
             "topic_id": "ai-infrastructure",
@@ -741,7 +741,7 @@
     {
       "path": "reports/scenarios/daily-research-sim.json",
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T07:15:47.038436+00:00",
+      "generated_at": "2026-06-05T09:15:55.738839+00:00",
       "product_mode": "beginner_market_understanding_simulation",
       "seed_sources": [
         {
@@ -952,13 +952,13 @@
         ],
         "research_plan": {
           "run_id": "daily-research",
-          "generated_at": "2026-06-05T07:15:47.036712+00:00",
+          "generated_at": "2026-06-05T09:15:55.736801+00:00",
           "topic_count": 5,
           "next_step": "collect_free_public_evidence"
         },
         "topic_memory_snapshot": {
           "memory_path": "reports/memory/topic-memory.json",
-          "run_count": 10,
+          "run_count": 12,
           "topics": [
             {
               "topic_id": "ai-infrastructure",
@@ -2562,7 +2562,7 @@
     "plan": {
       "schema_version": "daily_research_plan.v1",
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T07:15:47.036712+00:00",
+      "generated_at": "2026-06-05T09:15:55.736801+00:00",
       "topics_path": "config/topics.json",
       "policy": {
         "output_boundary": "research_only",
@@ -2710,8 +2710,8 @@
     },
     "memory": {
       "schema_version": "topic_memory.v1",
-      "generated_at": "2026-06-05T07:15:47.037602+00:00",
-      "run_count": 10,
+      "generated_at": "2026-06-05T09:15:55.737614+00:00",
+      "run_count": 12,
       "topics": [
         {
           "topic_id": "ai-infrastructure",
@@ -2976,6 +2976,20 @@
           "evidence_catalog": "2026-06-05T07:15:47.037470+00:00",
           "topic_count": 5,
           "changed_topics": []
+        },
+        {
+          "run_id": "daily-research",
+          "generated_at": "2026-06-05T09:15:38.762737+00:00",
+          "evidence_catalog": "2026-06-05T09:15:38.762587+00:00",
+          "topic_count": 5,
+          "changed_topics": []
+        },
+        {
+          "run_id": "daily-research",
+          "generated_at": "2026-06-05T09:15:55.737611+00:00",
+          "evidence_catalog": "2026-06-05T09:15:55.737454+00:00",
+          "topic_count": 5,
+          "changed_topics": []
         }
       ],
       "policy": {
@@ -2991,7 +3005,7 @@
     },
     "evidence": {
       "schema_version": "public_evidence_catalog.v1",
-      "generated_at": "2026-06-05T07:15:47.037470+00:00",
+      "generated_at": "2026-06-05T09:15:55.737454+00:00",
       "mode": "sample_cache_topic_research",
       "source_status": [
         {
@@ -3652,7 +3666,7 @@
       ],
       "research_plan": {
         "run_id": "daily-research",
-        "generated_at": "2026-06-05T07:15:47.036712+00:00",
+        "generated_at": "2026-06-05T09:15:55.736801+00:00",
         "topic_count": 5,
         "next_step": "collect_free_public_evidence"
       },
@@ -3662,7 +3676,7 @@
       ],
       "topic_memory_snapshot": {
         "memory_path": "reports/memory/topic-memory.json",
-        "run_count": 10,
+        "run_count": 12,
         "topics": [
           {
             "topic_id": "ai-infrastructure",
