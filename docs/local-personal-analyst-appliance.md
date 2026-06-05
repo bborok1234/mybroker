@@ -41,6 +41,7 @@ launchd
   -> /memory accumulated research surface
   -> /memory-query local recall surface
   -> local_runtime_doctor.v1
+  -> local_scheduler_status.v1
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -96,6 +97,7 @@ PYTHONPATH=src python3 -m mybroker appliance playbook
 PYTHONPATH=src python3 -m mybroker appliance init --project-root .
 PYTHONPATH=src python3 -m mybroker appliance access
 PYTHONPATH=src python3 -m mybroker appliance doctor
+PYTHONPATH=src python3 -m mybroker appliance scheduler status
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
@@ -130,6 +132,11 @@ topic config, artifact freshness, notification payload state, private phone acce
 whether the `com.mybroker.daily-analyst` LaunchAgent is loaded for the current user. By default,
 an unloaded LaunchAgent is a warning rather than a failure. Use `--require-launchd-loaded` only
 when validating an installed daily setup.
+
+`appliance scheduler status` writes `reports/runtime/scheduler-status.json`. It does not install
+or load anything. It records whether the source runner assets exist, whether a plist is installed
+under `~/Library/LaunchAgents`, whether launchd reports the job as loaded, where logs will land,
+and the exact install/load/start/status/unload/uninstall commands for review.
 
 ## Safety Boundary
 
