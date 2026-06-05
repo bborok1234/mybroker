@@ -1,8 +1,15 @@
 {
   "schema_version": "personal_memory_query.v1",
-  "generated_at": "2026-06-05T08:39:23.721226+00:00",
+  "generated_at": "2026-06-05T17:27:32.576495+00:00",
   "query": "semiconductor cycle",
   "status": "matched",
+  "recall_quality": {
+    "level": "strong",
+    "confidence": "medium",
+    "coverage_score": 1.0,
+    "coverage_label": "주제, 아카이브, vault가 함께 연결됨",
+    "summary": "누적 주제 기억, 과거 실행, 원천 노트가 함께 잡혔습니다. 그래도 원문과 최신성은 확인해야 합니다."
+  },
   "matched_topic_count": 2,
   "matched_archive_count": 1,
   "matched_vault_note_count": 1,
@@ -62,7 +69,7 @@
   "matched_archives": [
     {
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T07:15:47.041653+00:00",
+      "generated_at": "2026-06-05T17:18:58.074913+00:00",
       "score": 0.0,
       "archive_dir": "reports/archive/2026-06-05",
       "artifacts": {
@@ -70,8 +77,30 @@
         "verdict": "reports/archive/2026-06-05/daily-research-verdict.json",
         "evidence": "reports/archive/2026-06-05/daily-evidence-catalog.json",
         "memory": "reports/archive/2026-06-05/topic-memory.json",
+        "source_refresh_plan": "reports/archive/2026-06-05/source-refresh-plan.json",
+        "source_refresh_apply": "reports/archive/2026-06-05/source-refresh-apply.json",
+        "source_refresh_live_gate": "reports/archive/2026-06-05/source-refresh-live-gate.json",
+        "source_refresh_live_run": "reports/archive/2026-06-05/source-refresh-live-run.json",
+        "source_refresh_live_preflight": "reports/archive/2026-06-05/source-refresh-live-preflight.json",
+        "journal": "reports/archive/2026-06-05/journal.html",
+        "tasks": "reports/archive/2026-06-05/tasks.html",
+        "task_ledger": "reports/archive/2026-06-05/task-ledger.html",
+        "daily_review": "reports/archive/2026-06-05/daily-review.json",
+        "daily_review_surface": "reports/archive/2026-06-05/review.html",
+        "agent_pattern_radar": "reports/archive/2026-06-05/agent-pattern-radar.json",
+        "agent_pattern_radar_surface": "reports/archive/2026-06-05/pattern-radar.html",
+        "vault_compile": "reports/archive/2026-06-05/compile.json",
+        "vault": "reports/archive/2026-06-05/vault.html",
+        "daily_agenda": "reports/archive/2026-06-05/brief-agenda.json",
+        "daily_agenda_surface": "reports/archive/2026-06-05/daily-agenda.html",
         "brief": "reports/archive/2026-06-05/market-brief.html",
-        "today": "reports/archive/2026-06-05/today.html"
+        "today": "reports/archive/2026-06-05/today.html",
+        "source_refresh_brief": "reports/archive/2026-06-05/source-refresh-brief.json",
+        "source_refresh_brief_surface": "reports/archive/2026-06-05/source-refresh.html",
+        "scheduler_operations": "reports/archive/2026-06-05/scheduler-operations.json",
+        "scheduler_operations_surface": "reports/archive/2026-06-05/scheduler.html",
+        "daily_readiness": "reports/archive/2026-06-05/daily-readiness.json",
+        "daily_readiness_surface": "reports/archive/2026-06-05/readiness.html"
       }
     }
   ],
@@ -91,6 +120,102 @@
         "'semiconductor' 포함",
         "'cycle' 포함"
       ]
+    }
+  ],
+  "evidence_bundles": [
+    {
+      "bundle_type": "topic_memory",
+      "title": "Korea semiconductors",
+      "strength": "usable",
+      "why_it_matters": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.",
+      "source_names": [
+        "GDELT",
+        "SEC EDGAR",
+        "Stooq"
+      ],
+      "artifact_path": "reports/memory/topic-memory.json"
+    },
+    {
+      "bundle_type": "topic_memory",
+      "title": "Semiconductors",
+      "strength": "usable",
+      "why_it_matters": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.",
+      "source_names": [
+        "GDELT",
+        "SEC EDGAR"
+      ],
+      "artifact_path": "reports/memory/topic-memory.json"
+    },
+    {
+      "bundle_type": "vault_note",
+      "title": "Semiconductor cycle learning note",
+      "strength": "usable",
+      "why_it_matters": "AI data center demand can lift chip suppliers before the effect is visible in every company's reported revenue. · Memory pricing remains cyclical, so a beginner should separate structural AI demand from short-term inventory swings.",
+      "source_names": [
+        "Semiconductors"
+      ],
+      "artifact_path": "reports/vault/wiki/semiconductors/semiconductor-cycle-learning-note.md"
+    },
+    {
+      "bundle_type": "archive",
+      "title": "최근 실행 2026-06-05",
+      "strength": "context",
+      "why_it_matters": "과거 daily loop 산출물과 연결해 오늘 질문이 반복되는지 확인합니다.",
+      "source_names": [
+        "scenario",
+        "verdict",
+        "evidence",
+        "memory",
+        "source_refresh_plan"
+      ],
+      "artifact_path": "reports/archive/2026-06-05"
+    },
+    {
+      "bundle_type": "source_posture",
+      "title": "상대적으로 쓸 수 있는 source",
+      "strength": "supporting",
+      "why_it_matters": "신선도와 관련도 기준에서 먼저 확인할 source 후보입니다.",
+      "source_names": [
+        "GDELT",
+        "SEC EDGAR",
+        "Stooq"
+      ],
+      "artifact_path": "reports/evidence/daily-evidence-catalog.json"
+    }
+  ],
+  "weak_spots": [
+    {
+      "severity": "medium",
+      "title": "낮은 topic match",
+      "why": "매칭된 주제는 있지만 점수가 낮아 우연한 단어 겹침일 수 있습니다.",
+      "next_check": "topic 이름, 관련 기업/섹터, 쉬운 키워드를 섞어 다시 질문하세요."
+    }
+  ],
+  "reading_order": [
+    {
+      "label": "1. Korea semiconductors",
+      "why": "먼저 누적 주제 기억의 요약과 질문을 읽어 현재 맥락을 잡습니다.",
+      "path": "reports/memory/topic-memory.json"
+    },
+    {
+      "label": "2. Semiconductor cycle learning note",
+      "why": "사용자가 직접 쌓은 원천 노트에서 왜 이 주제가 남았는지 확인합니다.",
+      "path": "reports/vault/wiki/semiconductors/semiconductor-cycle-learning-note.md"
+    },
+    {
+      "label": "3. 최근 archive today/brief",
+      "why": "과거 daily loop의 설명과 오늘 질문이 이어지는지 비교합니다.",
+      "path": "reports/archive/2026-06-05"
+    },
+    {
+      "label": "4. 근거 묶음",
+      "why": "topic, vault, archive, source posture를 한 번에 비교합니다.",
+      "path": "reports/memory/topic-memory.json"
+    },
+    {
+      "label": "5. 약점 먼저 확인",
+      "why": "매칭된 주제는 있지만 점수가 낮아 우연한 단어 겹침일 수 있습니다.",
+      "path": "reports/product/source-refresh.html"
     }
   ],
   "source_relevance": [

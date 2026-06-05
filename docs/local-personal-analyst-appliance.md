@@ -167,7 +167,9 @@ but the daily user surface can link back to what MyBroker has learned over time.
 is the daily analyst work log: it separates what changed, what stayed stable, what each analyst
 role noticed, and which questions should carry into tomorrow. `appliance query` is intentionally
 deterministic local retrieval first; a later LLM summary can sit on top of the same artifact
-without hiding source context.
+without hiding source context. The query artifact includes recall quality, evidence bundles, weak
+spots, and a suggested reading order so the operator can inspect source context before relying on
+the recall.
 `tasks.html` translates that journal into queued work for source_scout, market_mapper, skeptic,
 beginner_tutor, memory_librarian, and publisher roles. It does not execute commands; live network,
 host writes, notification send, credentials, and trading remain behind separate approval gates.

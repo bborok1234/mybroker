@@ -18,12 +18,17 @@ h3 { margin:0 0 8px; font-size:17px; }
 p,small,li { color:var(--muted); }
 .section,.card,.archive { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
 .section { margin:14px 0; padding:16px; }
+.metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.metric { border:1px solid var(--line); border-radius:8px; background:white; padding:14px; }
+.metric strong { display:block; font-size:24px; }
 .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .card,.archive { padding:14px; background:white; }
 .card span,.archive span { display:block; color:var(--blue); font-size:12px; font-weight:900; }
+.warn { border-color:#d7b36a; }
 table { width:100%; border-collapse:collapse; }
 td,th { padding:10px; border-bottom:1px solid var(--line); text-align:left; }
-@media (max-width:640px) { main { padding:12px; } h1 { font-size:28px; } .grid { grid-template-columns:1fr; } }
+li small,li span { display:block; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:28px; } .grid,.metrics { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -34,8 +39,25 @@ td,th { padding:10px; border-bottom:1px solid var(--line); text-align:left; }
 <p>누적 메모리와 아카이브에서 다시 꺼내본 맥락입니다. 결론이 아니라 다음 탐색의 출발점입니다.</p>
 </header>
 <section class="section">
+<h2>Recall 품질</h2>
+<div class="metrics"><article class='metric'><span>Quality</span><strong>strong</strong></article><article class='metric'><span>Coverage</span><strong>주제, 아카이브, vault가 함께 연결됨</strong></article><article class='metric'><span>Confidence</span><strong>medium</strong></article></div>
+<p>누적 주제 기억, 과거 실행, 원천 노트가 함께 잡혔습니다. 그래도 원문과 최신성은 확인해야 합니다.</p>
+</section>
+<section class="section">
+<h2>먼저 읽을 순서</h2>
+<ul><li><strong>1. Korea semiconductors</strong><span>먼저 누적 주제 기억의 요약과 질문을 읽어 현재 맥락을 잡습니다.</span><small>reports/memory/topic-memory.json</small></li><li><strong>2. Semiconductor cycle learning note</strong><span>사용자가 직접 쌓은 원천 노트에서 왜 이 주제가 남았는지 확인합니다.</span><small>reports/vault/wiki/semiconductors/semiconductor-cycle-learning-note.md</small></li><li><strong>3. 최근 archive today/brief</strong><span>과거 daily loop의 설명과 오늘 질문이 이어지는지 비교합니다.</span><small>reports/archive/2026-06-05</small></li><li><strong>4. 근거 묶음</strong><span>topic, vault, archive, source posture를 한 번에 비교합니다.</span><small>reports/memory/topic-memory.json</small></li><li><strong>5. 약점 먼저 확인</strong><span>매칭된 주제는 있지만 점수가 낮아 우연한 단어 겹침일 수 있습니다.</span><small>reports/product/source-refresh.html</small></li></ul>
+</section>
+<section class="section">
 <h2>연결된 주제 기억</h2>
 <div class="grid"><article class='card'><span>관련도 0.333</span><h3>Korea semiconductors</h3><p>Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.</p><small>&#x27;semiconductor&#x27; 포함</small></article><article class='card'><span>관련도 0.333</span><h3>Semiconductors</h3><p>Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.</p><small>&#x27;semiconductor&#x27; 포함</small></article></div>
+</section>
+<section class="section">
+<h2>근거 묶음</h2>
+<div class="grid"><article class='card'><span>topic_memory · usable</span><h3>Korea semiconductors</h3><p>Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.</p><small>GDELT · SEC EDGAR · Stooq</small></article><article class='card'><span>topic_memory · usable</span><h3>Semiconductors</h3><p>Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.</p><small>GDELT · SEC EDGAR</small></article><article class='card'><span>vault_note · usable</span><h3>Semiconductor cycle learning note</h3><p>AI data center demand can lift chip suppliers before the effect is visible in every company&#x27;s reported revenue. · Memory pricing remains cyclical, so a beginner should separate structural AI demand from short-term inventory swings.</p><small>Semiconductors</small></article><article class='card'><span>archive · context</span><h3>최근 실행 2026-06-05</h3><p>과거 daily loop 산출물과 연결해 오늘 질문이 반복되는지 확인합니다.</p><small>scenario · verdict · evidence · memory · source_refresh_plan</small></article><article class='card'><span>source_posture · supporting</span><h3>상대적으로 쓸 수 있는 source</h3><p>신선도와 관련도 기준에서 먼저 확인할 source 후보입니다.</p><small>GDELT · SEC EDGAR · Stooq</small></article></div>
+</section>
+<section class="section">
+<h2>아직 약한 부분</h2>
+<div class="grid"><article class='card warn'><span>medium</span><h3>낮은 topic match</h3><p>매칭된 주제는 있지만 점수가 낮아 우연한 단어 겹침일 수 있습니다.</p><small>topic 이름, 관련 기업/섹터, 쉬운 키워드를 섞어 다시 질문하세요.</small></article></div>
 </section>
 <section class="section">
 <h2>다음에 확인할 질문</h2>

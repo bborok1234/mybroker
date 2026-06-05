@@ -264,7 +264,8 @@ local responses so the operator can decide the next step from a phone.
 `memory.html` gives the phone-readable view of what has accumulated across runs. `appliance
 query` is the librarian step: it searches accumulated topic memory and archive manifests,
 writes a reproducible query artifact, and renders a phone-readable recall page for the next
-question to inspect.
+question to inspect. The artifact also records recall quality, evidence bundles, weak spots, and
+a suggested reading order so the operator can inspect local context before trusting a conclusion.
 
 `appliance vault init` creates a local `research-vault/raw`, `research-vault/wiki`, and
 `research-vault/output` structure. `appliance vault compile` files local markdown/text notes from
