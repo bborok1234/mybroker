@@ -239,6 +239,13 @@ an actual live network refresh still requires explicit execution and live-networ
 flags. `appliance run` creates the proof automatically, and `appliance today` renders it as
 "라이브 실행 증거".
 
+`appliance source-refresh-response "approve live_network_refresh live_network_refresh"` is the
+phone-to-local handoff step. It takes the copied approval response, rewrites the live-run proof,
+rewrites the preflight proof, and refreshes `reports/product/source-refresh.html` in one local
+command. It never calls the live network. Passing `--intend-execute --confirm-live-network` can make
+the preflight proof pass, but the actual fetch still requires the separate
+`source-refresh-live-run --execute --confirm-live-network` path.
+
 `source-refresh-live-preflight` is the final no-network proof before approved source execution. It
 reads `reports/daily/source-refresh-live-run.json` and checks the exact approval state, live-run
 readiness, explicit execution intent, live-network confirmation, source ids, evidence output path,

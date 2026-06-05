@@ -45,6 +45,7 @@ PYTHONPATH=src python3 -m mybroker source-refresh-live-run --live-gate reports/d
 PYTHONPATH=src python3 -m mybroker source-refresh-live-preflight --live-run reports/daily/source-refresh-live-run.json --output reports/daily/source-refresh-live-preflight.json
 PYTHONPATH=src python3 -m mybroker appliance agenda --scout reports/daily/scout.json --evidence reports/evidence/daily-evidence-catalog.json --memory reports/memory/topic-memory.json --vault reports/vault/compile.json --refresh-plan reports/daily/source-refresh-plan.json
 PYTHONPATH=src python3 -m mybroker appliance source-refresh
+PYTHONPATH=src python3 -m mybroker appliance source-refresh-response "approve live_network_refresh live_network_refresh" --intend-execute --confirm-live-network
 PYTHONPATH=src python3 -m mybroker appliance readiness --freshness-hours 24
 PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --profile examples/profiles/beginner-conservative.json --evidence-catalog reports/evidence/public-evidence-catalog.json --run-id public-evidence-sim --output reports/scenarios/public-evidence-sim.json --verdict-output reports/scenarios/public-evidence-verdict.json
 PYTHONPATH=src python3 -m mybroker daily-research --topics config/topics.json --profile examples/profiles/beginner-conservative.json --run-id daily-research
@@ -223,6 +224,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/daily/source-refresh-live-run.json`: approval/execute proof for the live-network gate, with no network call unless explicitly approved and confirmed;
 - `reports/daily/source-refresh-live-preflight.json`: no-network preflight proof before any approved live source execution;
 - `reports/runtime/source-refresh-brief.json` and `reports/product/source-refresh.html`: phone-readable source refresh judgment that explains weak evidence, proposed free/no-key sources, approval status, preflight status, and the next safe action without calling the network;
+- `appliance source-refresh-response`: a one-command local handoff from the phone's copied approval response into refreshed live-run proof, preflight proof, and source refresh briefing. It does not execute live network calls;
 - `reports/product/journal.html` and `reports/memory/analyst-journal.json`: the daily analyst work log with today's focus, role notes, weak evidence, and follow-up questions;
 - `reports/product/tasks.html` and `reports/memory/analyst-task-queue.json`: role-based analyst task queue for source scout, market mapper, skeptic, tutor, librarian, and publisher work;
 - `reports/product/task-ledger.html` and `reports/memory/analyst-task-ledger.json`: task status history for ready, carried, blocked, and retired analyst work;
@@ -283,6 +285,10 @@ separate live-network or host-effect gate.
 When `reports/daily/source-refresh-live-gate.json` exists, `/today` also shows "라이브 새로고침
 게이트" with copy-ready approval text. This does not run live network calls; it only defines the
 approval scope and stale-context guard for a later explicit decision.
+Run `appliance source-refresh-response "approve live_network_refresh live_network_refresh"` after
+copying that exact response from the phone. It updates the live-run proof, preflight proof, and
+`source-refresh.html` in one local step. Even with `--intend-execute --confirm-live-network`, this
+handoff records readiness only; it does not fetch live data.
 When `reports/daily/source-refresh-live-run.json` exists, `/today` also shows "라이브 실행 증거" so
 the operator can see whether the gate is missing approval, ready after an exact approval response,
 blocked, or executed. The default daily loop writes this proof with `external_effect_performed:
