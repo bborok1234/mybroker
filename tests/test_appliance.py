@@ -27,6 +27,7 @@ from mybroker.appliance import (
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
 from mybroker.scenario import run_market_simulation, write_scenario_report, write_verdict
 from mybroker.topics import build_research_plan, collect_topic_evidence, init_topic_config
+from mybroker.vault import compile_knowledge_vault, init_knowledge_vault, validate_knowledge_vault_compile_file
 
 
 class LocalApplianceTests(unittest.TestCase):
@@ -495,6 +496,48 @@ class LocalApplianceTests(unittest.TestCase):
 
             with self.assertRaises(RuntimeError):
                 send_notification_payload(payload)
+
+    def test_knowledge_vault_compiles_raw_notes_into_wiki_and_surface(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            vault_root = root / "research-vault"
+            init_payload = init_knowledge_vault(root=vault_root)
+            raw_note = vault_root / "raw" / "semiconductor-cycle.md"
+            raw_note.write_text(
+                "# Semiconductor cycle note\n\n"
+                "AI demand is lifting chip suppliers.\n"
+                "Memory pricing remains cyclical.\n"
+                "Check source freshness before trusting the trend.\n",
+                encoding="utf-8",
+            )
+            topics = init_topic_config(root / "topics.json")
+            output = root / "reports" / "vault" / "compile.json"
+            surface = root / "reports" / "product" / "vault.html"
+            payload = compile_knowledge_vault(
+                raw_dir=vault_root / "raw",
+                wiki_dir=vault_root / "wiki",
+                output_path=output,
+                surface_path=surface,
+                topics_path=root / "topics.json",
+            )
+            errors = validate_knowledge_vault_compile_file(output)
+            note = payload["compiled_notes"][0]
+            wiki_note_exists = Path(note["wiki_path"]).exists()
+            surface_exists = surface.exists()
+            surface_html = surface.read_text(encoding="utf-8")
+
+        self.assertEqual(init_payload["schema_version"], "knowledge_vault_init.v1")
+        self.assertEqual(topics["schema_version"], "topic_config.v1")
+        self.assertEqual(errors, [])
+        self.assertEqual(payload["schema_version"], "knowledge_vault_compile.v1")
+        self.assertEqual(payload["compiled_count"], 1)
+        self.assertEqual(payload["topic_count"], 1)
+        self.assertEqual(payload["policy"], "research_only")
+        self.assertEqual(note["title"], "Semiconductor cycle note")
+        self.assertIn("AI demand is lifting chip suppliers.", note["key_takeaways"])
+        self.assertTrue(wiki_note_exists)
+        self.assertTrue(surface_exists)
+        self.assertIn("컴파일된 리서치 노트", surface_html)
 
 
 if __name__ == "__main__":

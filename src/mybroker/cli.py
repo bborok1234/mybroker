@@ -80,6 +80,16 @@ from mybroker.topics import (
     validate_topic_config_file,
     validate_topic_memory_file,
 )
+from mybroker.vault import (
+    DEFAULT_VAULT_COMPILE_OUTPUT,
+    DEFAULT_VAULT_RAW_DIR,
+    DEFAULT_VAULT_ROOT,
+    DEFAULT_VAULT_SURFACE_OUTPUT,
+    DEFAULT_VAULT_WIKI_DIR,
+    compile_knowledge_vault,
+    init_knowledge_vault,
+    validate_knowledge_vault_compile_file,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -122,6 +132,8 @@ def main(argv: list[str] | None = None) -> int:
 
     validate_verdict_parser = subcommands.add_parser("validate-verdict", help="Validate a market_verdict.v1 artifact.")
     validate_verdict_parser.add_argument("verdict_path")
+    validate_vault_parser = subcommands.add_parser("validate-vault", help="Validate a knowledge_vault_compile.v1 artifact.")
+    validate_vault_parser.add_argument("vault_path")
 
     validate_profile_parser = subcommands.add_parser("validate-profile", help="Validate a beginner profile JSON artifact.")
     validate_profile_parser.add_argument("profile_path")
@@ -272,6 +284,16 @@ def main(argv: list[str] | None = None) -> int:
     appliance_notify_parser.add_argument("--output", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
     appliance_notify_parser.add_argument("--dry-run", action="store_true", default=True)
     appliance_notify_parser.add_argument("--send", action="store_true", help="Send using provider environment variables instead of dry-run.")
+    appliance_vault_parser = appliance_subcommands.add_parser("vault", help="Manage the local research vault inbox and wiki.")
+    appliance_vault_subcommands = appliance_vault_parser.add_subparsers(dest="vault_command", required=True)
+    appliance_vault_init_parser = appliance_vault_subcommands.add_parser("init", help="Create raw/wiki/output folders for the local research vault.")
+    appliance_vault_init_parser.add_argument("--root", default=DEFAULT_VAULT_ROOT.as_posix())
+    appliance_vault_compile_parser = appliance_vault_subcommands.add_parser("compile", help="Compile raw markdown/text notes into wiki notes and an index artifact.")
+    appliance_vault_compile_parser.add_argument("--raw-dir", default=DEFAULT_VAULT_RAW_DIR.as_posix())
+    appliance_vault_compile_parser.add_argument("--wiki-dir", default=DEFAULT_VAULT_WIKI_DIR.as_posix())
+    appliance_vault_compile_parser.add_argument("--output", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    appliance_vault_compile_parser.add_argument("--surface-output", default=DEFAULT_VAULT_SURFACE_OUTPUT.as_posix())
+    appliance_vault_compile_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
     appliance_run_parser = appliance_subcommands.add_parser("run", help="Run the daily analyst loop, archive it, render /today, and prepare notification.")
     appliance_run_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
     appliance_run_parser.add_argument("--profile", help="Optional beginner profile JSON.")
@@ -457,6 +479,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-topic-memory":
         errors = validate_topic_memory_file(args.memory_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-vault":
+        errors = validate_knowledge_vault_compile_file(args.vault_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -699,6 +728,27 @@ def main(argv: list[str] | None = None) -> int:
                 result["send_result"] = send_notification_payload(path).get("send_result", {})
             print(json.dumps(result, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "vault":
+            if args.vault_command == "init":
+                payload = init_knowledge_vault(root=args.root)
+                print(json.dumps(payload, indent=2, ensure_ascii=False))
+                return 0
+            if args.vault_command == "compile":
+                payload = compile_knowledge_vault(
+                    raw_dir=args.raw_dir,
+                    wiki_dir=args.wiki_dir,
+                    output_path=args.output,
+                    surface_path=args.surface_output,
+                    topics_path=args.topics,
+                )
+                print(json.dumps({
+                    "vault_compile": args.output,
+                    "surface": args.surface_output,
+                    "compiled_count": payload["compiled_count"],
+                    "topic_count": payload["topic_count"],
+                    "policy": payload["policy"],
+                }, indent=2, ensure_ascii=False))
+                return 0
         if args.appliance_command == "run":
             topics_path = args.topics
             if not Path(topics_path).exists():
