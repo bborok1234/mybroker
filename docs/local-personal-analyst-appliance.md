@@ -115,6 +115,7 @@ PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --p
 PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
+PYTHONPATH=src python3 -m mybroker appliance tasks
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
@@ -129,6 +130,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/memory.html`: phone-readable accumulated research notebook.
 - `reports/memory/analyst-journal.json`: machine-readable daily analyst work log.
 - `reports/product/journal.html`: phone-readable daily analyst journal with today's focus, role notes, evidence gaps, and tomorrow's questions.
+- `reports/memory/analyst-task-queue.json`: machine-readable role-based task queue.
+- `reports/product/tasks.html`: phone-readable analyst task board for the next local work loop.
 - `reports/memory/latest-query.json`: machine-readable recall result for one operator question.
 - `reports/product/memory-query.html`: phone-readable recall page that links the question to matching topics, archives, and next inspection questions.
 
@@ -138,6 +141,9 @@ is the daily analyst work log: it separates what changed, what stayed stable, wh
 role noticed, and which questions should carry into tomorrow. `appliance query` is intentionally
 deterministic local retrieval first; a later LLM summary can sit on top of the same artifact
 without hiding source context.
+`tasks.html` translates that journal into queued work for source_scout, market_mapper, skeptic,
+beginner_tutor, memory_librarian, and publisher roles. It does not execute commands; live network,
+host writes, notification send, credentials, and trading remain behind separate approval gates.
 
 The local vault is the raw inbox side of the same pattern:
 
