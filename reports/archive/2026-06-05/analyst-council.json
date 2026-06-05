@@ -1,6 +1,6 @@
 {
   "schema_version": "analyst_council.v1",
-  "generated_at": "2026-06-05T22:08:54.470841+00:00",
+  "generated_at": "2026-06-05T22:38:50.258547+00:00",
   "run_id": "daily-research",
   "status": "read_with_caution",
   "council_mode": "local_role_review_before_daily_reading",
@@ -91,7 +91,7 @@
     {
       "role": "memory_librarian",
       "stance": "caution",
-      "finding": "누적 실행 51회, vault note 1개, changed topic 0개입니다.",
+      "finding": "누적 실행 52회, vault note 1개, changed topic 0개입니다.",
       "confidence": 0.95,
       "evidence": [
         "AI infrastructure",

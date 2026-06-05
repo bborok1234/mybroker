@@ -279,6 +279,12 @@ their validators, confirms their phone surfaces exist, and marks only local-only
 `adopted_proof_ready`. Live network, browser/scraper, host-write, credential, account, or order
 patterns remain `approval_required` or `blocked`.
 
+The first adopted local proof is `memory_recall_quality`. After the scout chooses the day's topic,
+`appliance run` automatically writes `personal_memory_query.v1` for that topic and links
+`reports/product/memory-query.html` from daily home, readiness, morning control, run trace, and the
+archive manifest. This is the Obsidian-style compounding-memory loop: the operator sees what local
+memory, vault notes, and prior archives already know before reading today's brief.
+
 `source-refresh` writes `source_refresh_brief.v1` and `reports/product/source-refresh.html`. It
 shows source actions, weak evidence, and a source freshness scorecard. The scorecard separates
 fresh-enough sources from sample/cache/fallback sources so the operator can study the brief without
