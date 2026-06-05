@@ -1,7 +1,7 @@
 {
   "schema_version": "scenario_report.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T18:01:00.239752+00:00",
+  "generated_at": "2026-06-05T18:14:03.486383+00:00",
   "product_mode": "beginner_market_understanding_simulation",
   "seed_sources": [
     {
@@ -96,8 +96,8 @@
         "source_name": "GDELT",
         "adapter_id": "sample_cache_topic_research",
         "item_count": "2",
-        "freshness_status": "sample_cache",
-        "relevance_score": "0.97",
+        "freshness_status": "live_error_fallback_sample",
+        "relevance_score": "0.98",
         "relevance_label": "strong"
       },
       {
@@ -114,8 +114,8 @@
         "source_name": "Stooq",
         "adapter_id": "sample_cache_topic_research",
         "item_count": "1",
-        "freshness_status": "sample_cache",
-        "relevance_score": "0.78",
+        "freshness_status": "live_error_fallback_sample",
+        "relevance_score": "0.81",
         "relevance_label": "strong"
       }
     ],
@@ -212,13 +212,13 @@
     ],
     "research_plan": {
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T18:01:00.233883+00:00",
+      "generated_at": "2026-06-05T18:13:55.379651+00:00",
       "topic_count": 5,
       "next_step": "collect_free_public_evidence"
     },
     "topic_memory_snapshot": {
       "memory_path": "reports/memory/topic-memory.json",
-      "run_count": 38,
+      "run_count": 39,
       "topics": [
         {
           "topic_id": "ai-infrastructure",

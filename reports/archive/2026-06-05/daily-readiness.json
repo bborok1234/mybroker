@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-05T18:01:00.267100+00:00",
+  "generated_at": "2026-06-05T18:14:03.523294+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.238356+00:00",
+      "generated_at": "2026-06-05T18:14:03.484803+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -52,7 +52,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.237764+00:00",
+      "generated_at": "2026-06-05T18:14:03.483949+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -74,7 +74,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.266646+00:00",
+      "generated_at": "2026-06-05T18:14:03.522878+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -96,7 +96,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.262893+00:00",
+      "generated_at": "2026-06-05T18:14:03.518390+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
@@ -118,12 +118,34 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.265544+00:00",
+      "generated_at": "2026-06-05T18:14:03.521257+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
       "name": "drift_review_surface",
       "path": "reports/product/drift-review.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "review_prompt",
+      "path": "reports/runtime/review-prompt.json",
+      "kind": "control_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T18:14:03.507212+00:00",
+      "schema_version": "operator_review_prompt.v1"
+    },
+    {
+      "name": "review_prompt_surface",
+      "path": "reports/product/review-prompt.html",
       "kind": "phone_surface",
       "required": false,
       "exists": true,
@@ -140,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.236463+00:00",
+      "generated_at": "2026-06-05T18:14:03.481289+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -151,7 +173,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.235452+00:00",
+      "generated_at": "2026-06-05T18:14:03.479003+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -162,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.235784+00:00",
+      "generated_at": "2026-06-05T18:14:03.479425+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -173,7 +195,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.239752+00:00",
+      "generated_at": "2026-06-05T18:14:03.486383+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -184,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.239752+00:00",
+      "generated_at": "2026-06-05T18:14:03.486383+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -195,7 +217,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.247418+00:00",
+      "generated_at": "2026-06-05T18:14:03.497150+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -205,7 +227,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 10.52,
+      "age_hours": 10.74,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -217,7 +239,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.260839+00:00",
+      "generated_at": "2026-06-05T18:14:03.516250+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -228,7 +250,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T18:01:00.261239+00:00",
+      "generated_at": "2026-06-05T18:14:03.516624+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -249,7 +271,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 0.0,
+      "age_hours": 0.22,
       "generated_at": "",
       "schema_version": ""
     },
@@ -279,6 +301,7 @@
     "source_refresh": "reports/product/source-refresh.html",
     "trace": "reports/product/run-trace.html",
     "drift_review": "reports/product/drift-review.html",
+    "review_prompt": "reports/product/review-prompt.html",
     "today": "reports/product/today.html",
     "agenda": "reports/product/daily-agenda.html",
     "memory": "reports/product/memory.html",

@@ -30,6 +30,7 @@ from mybroker.appliance import (
     write_run_trace,
     write_daily_review,
     write_drift_review,
+    write_operator_review_prompt,
     write_scheduler_activation_verify,
     write_scheduler_activation_preflight,
     write_scheduler_status,
@@ -48,6 +49,7 @@ from mybroker.appliance import (
     validate_daily_review_file,
     validate_daily_review_payload,
     validate_drift_review_file,
+    validate_operator_review_prompt_file,
     validate_scheduler_operations_file,
     validate_scheduler_operations_payload,
     validate_source_refresh_brief_file,
@@ -944,6 +946,8 @@ class LocalApplianceTests(unittest.TestCase):
             drift_review_errors = validate_drift_review_file(root / "reports" / "runtime" / "drift-review.json")
             review_payload = json.loads((root / "reports" / "memory" / "daily-review.json").read_text(encoding="utf-8"))
             review_errors = validate_daily_review_file(root / "reports" / "memory" / "daily-review.json")
+            review_prompt_payload = json.loads((root / "reports" / "runtime" / "review-prompt.json").read_text(encoding="utf-8"))
+            review_prompt_errors = validate_operator_review_prompt_file(root / "reports" / "runtime" / "review-prompt.json")
             scheduler_operations_payload = json.loads((root / "reports" / "runtime" / "scheduler-operations.json").read_text(encoding="utf-8"))
             scheduler_operations_errors = validate_scheduler_operations_file(root / "reports" / "runtime" / "scheduler-operations.json")
             manifest_payload = json.loads((root / "reports" / "archive" / "2026-06-05" / "manifest.json").read_text(encoding="utf-8"))
@@ -956,6 +960,7 @@ class LocalApplianceTests(unittest.TestCase):
             run_trace_html = (root / "reports" / "product" / "run-trace.html").read_text(encoding="utf-8")
             drift_review_html = (root / "reports" / "product" / "drift-review.html").read_text(encoding="utf-8")
             review_html = (root / "reports" / "product" / "review.html").read_text(encoding="utf-8")
+            review_prompt_html = (root / "reports" / "product" / "review-prompt.html").read_text(encoding="utf-8")
             scheduler_html = (root / "reports" / "product" / "scheduler.html").read_text(encoding="utf-8")
             vault_html = (root / "reports" / "product" / "vault.html").read_text(encoding="utf-8")
 
@@ -975,6 +980,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("trace", morning_payload["phone_links"])
         self.assertIn("drift_review", morning_payload["phone_links"])
         self.assertIn("review", morning_payload["phone_links"])
+        self.assertIn("review_prompt", morning_payload["phone_links"])
         self.assertEqual(agenda_payload["schema_version"], "daily_brief_agenda.v1")
         self.assertEqual(agenda_errors, [])
         self.assertEqual(validate_daily_brief_agenda_payload(agenda_payload), [])
@@ -993,8 +999,10 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("scheduler", readiness_payload["phone_links"])
         self.assertIn("trace", readiness_payload["phone_links"])
         self.assertIn("drift_review", readiness_payload["phone_links"])
+        self.assertIn("review_prompt", readiness_payload["phone_links"])
         self.assertTrue(any(item["name"] == "run_trace" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "drift_review" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "review_prompt" for item in readiness_payload["artifacts"]))
         self.assertEqual(source_refresh_brief_payload["schema_version"], "source_refresh_brief.v1")
         self.assertEqual(source_refresh_brief_errors, [])
         self.assertFalse(source_refresh_brief_payload["external_effect_performed"])
@@ -1028,6 +1036,12 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(review_errors, [])
         self.assertEqual(validate_daily_review_payload(review_payload), [])
         self.assertFalse(review_payload["external_effect_performed"])
+        self.assertEqual(review_prompt_payload["schema_version"], "operator_review_prompt.v1")
+        self.assertEqual(review_prompt_errors, [])
+        self.assertFalse(review_prompt_payload["external_effect_performed"])
+        self.assertFalse(review_prompt_payload["host_write_performed"])
+        self.assertGreaterEqual(review_prompt_payload["summary"]["prompt_count"], 1)
+        self.assertTrue(any("review-response" in command["command"] for card in review_prompt_payload["prompt_cards"] for command in card["copy_ready_commands"]))
         self.assertEqual(scheduler_operations_payload["schema_version"], "local_scheduler_operations.v1")
         self.assertEqual(scheduler_operations_errors, [])
         self.assertFalse(scheduler_operations_payload["external_effect_performed"])
@@ -1041,6 +1055,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("daily_readiness_surface", manifest_payload["artifacts"])
         self.assertIn("daily_review", manifest_payload["artifacts"])
         self.assertIn("daily_review_surface", manifest_payload["artifacts"])
+        self.assertIn("review_prompt", manifest_payload["artifacts"])
+        self.assertIn("review_prompt_surface", manifest_payload["artifacts"])
         self.assertIn("agent_pattern_radar", manifest_payload["artifacts"])
         self.assertIn("agent_pattern_radar_surface", manifest_payload["artifacts"])
         self.assertIn("run_trace", manifest_payload["artifacts"])
@@ -1053,6 +1069,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("scheduler_operations_surface", manifest_payload["artifacts"])
         self.assertIn("오늘 20분 agenda", today_html)
         self.assertIn("오늘 review 기록", today_html)
+        self.assertIn("오늘 피드백 가이드", today_html)
         self.assertIn("방식 업데이트 레이더", today_html)
         self.assertIn("오늘 실행 trace", today_html)
         self.assertIn("방향 이탈 점검", today_html)
@@ -1074,6 +1091,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("판단 신호", drift_review_html)
         self.assertNotIn("schema_version", drift_review_html)
         self.assertIn("오늘 읽은 것과 내일 더 볼 것", review_html)
+        self.assertIn("오늘 남길 피드백", review_prompt_html)
+        self.assertIn("review-response", review_prompt_html)
         self.assertIn("자동 실행 준비 상태", scheduler_html)
         self.assertIn("운영 증거", scheduler_html)
         self.assertIn("vault", morning_html)
@@ -1081,6 +1100,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("source_refresh", morning_html)
         self.assertIn("trace", morning_html)
         self.assertIn("drift_review", morning_html)
+        self.assertIn("review_prompt", morning_html)
         self.assertIn("pattern_radar", morning_html)
         self.assertIn("scheduler", morning_html)
         self.assertIn("컴파일된 리서치 노트", vault_html)
@@ -1268,6 +1288,8 @@ class LocalApplianceTests(unittest.TestCase):
             responses_path = root / "daily-review-responses.jsonl"
             review_path = root / "daily-review.json"
             review_surface_path = root / "review.html"
+            review_prompt_path = root / "review-prompt.json"
+            review_prompt_surface_path = root / "review-prompt.html"
 
             init_topic_config(topics_path)
             build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="review-loop")
@@ -1299,6 +1321,14 @@ class LocalApplianceTests(unittest.TestCase):
                 artifact_output_path=review_path,
                 surface_output_path=review_surface_path,
             )
+            review_prompt_surface = write_operator_review_prompt(
+                scout_path=scout_before_path,
+                daily_review_path=review_path,
+                drift_review_path=root / "missing-drift-review.json",
+                task_ledger_path=root / "missing-task-ledger.json",
+                artifact_output_path=review_prompt_path,
+                surface_output_path=review_prompt_surface_path,
+            )
             scout_after = build_daily_scout(
                 topics_path=topics_path,
                 plan_path=plan_path,
@@ -1311,19 +1341,28 @@ class LocalApplianceTests(unittest.TestCase):
             )
             review_payload = json.loads(review_path.read_text(encoding="utf-8"))
             review_html = review_surface.read_text(encoding="utf-8")
+            review_prompt_payload = json.loads(review_prompt_path.read_text(encoding="utf-8"))
+            review_prompt_html = review_prompt_surface.read_text(encoding="utf-8")
             after_topic = next(row for row in scout_after["recommendations"] if row["name"] == topic_name)
             review_file_errors = validate_daily_review_file(review_path)
             review_payload_errors = validate_daily_review_payload(review_payload)
+            review_prompt_errors = validate_operator_review_prompt_file(review_prompt_path)
 
         self.assertEqual(review_file_errors, [])
         self.assertEqual(review_payload_errors, [])
+        self.assertEqual(review_prompt_errors, [])
         self.assertFalse(review_payload["external_effect_performed"])
+        self.assertFalse(review_prompt_payload["external_effect_performed"])
+        self.assertEqual(review_prompt_payload["schema_version"], "operator_review_prompt.v1")
         self.assertEqual(review_payload["summary"]["signal_count"], 1)
         self.assertEqual(review_payload["topic_signals"][0]["latest_status"], "want_more")
         self.assertGreater(after_topic["review_signal"]["score_delta"], 0)
         self.assertTrue(any(factor["name"] == "operator_review" for factor in after_topic["score_factors"]))
         self.assertIn("오늘 읽은 것과 내일 더 볼 것", review_html)
+        self.assertIn("오늘 남길 피드백", review_prompt_html)
+        self.assertIn("review-response", review_prompt_html)
         self.assertIn(topic_name, review_html)
+        self.assertIn(topic_name, review_prompt_html)
 
 
 if __name__ == "__main__":
