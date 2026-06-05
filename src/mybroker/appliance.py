@@ -36,6 +36,7 @@ MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 ANALYST_JOURNAL_SCHEMA_VERSION = "personal_analyst_journal.v1"
 ANALYST_TASK_QUEUE_SCHEMA_VERSION = "personal_analyst_task_queue.v1"
 ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
+ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION = "personal_analyst_task_status_apply.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
@@ -61,6 +62,8 @@ DEFAULT_ANALYST_TASK_QUEUE_OUTPUT = Path("reports/product/tasks.html")
 DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT = Path("reports/memory/analyst-task-queue.json")
 DEFAULT_ANALYST_TASK_LEDGER_OUTPUT = Path("reports/product/task-ledger.html")
 DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT = Path("reports/memory/analyst-task-ledger.json")
+DEFAULT_ANALYST_TASK_RESPONSES = Path("reports/memory/analyst-task-responses.jsonl")
+DEFAULT_ANALYST_TASK_STATUS_APPLY = Path("reports/memory/analyst-task-status-apply.json")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_RUNTIME_DOCTOR_ACTIVATION_OUTPUT = Path("reports/runtime/local-runtime-doctor-activation.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
@@ -1674,10 +1677,13 @@ def build_analyst_task_ledger(
     *,
     task_queue_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
     previous_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    status_apply_path: str | Path | None = DEFAULT_ANALYST_TASK_STATUS_APPLY,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     queue = load_json(task_queue_path)
     previous = load_json(previous_ledger_path) if Path(previous_ledger_path).exists() else {}
+    status_apply = load_json(status_apply_path) if status_apply_path and Path(status_apply_path).exists() else {}
+    overrides = _task_status_overrides(status_apply)
     generated = (generated_at or datetime.now(timezone.utc)).isoformat()
     previous_entries = previous.get("entries", []) if previous.get("schema_version") == ANALYST_TASK_LEDGER_SCHEMA_VERSION else []
     previous_by_fingerprint = {
@@ -1689,7 +1695,8 @@ def build_analyst_task_ledger(
     for task in queue.get("tasks", []):
         fingerprint = _task_fingerprint(task)
         prior = previous_by_fingerprint.get(fingerprint, {})
-        status = _ledger_status_for_task(task=task, prior=prior)
+        override = overrides.get(task.get("task_id", ""))
+        status = override.get("status") if override else _ledger_status_for_task(task=task, prior=prior)
         current_entries.append({
             "ledger_id": f"{queue.get('run_id', 'daily')}-{task.get('task_id', '')}",
             "task_id": task.get("task_id", ""),
@@ -1707,7 +1714,8 @@ def build_analyst_task_ledger(
             "requires_operator_approval": bool(task.get("requires_operator_approval")),
             "suggested_command": task.get("suggested_command", ""),
             "stop_condition": task.get("stop_condition", ""),
-            "operator_note": _ledger_note_for_task(task=task, status=status),
+            "operator_note": override.get("note") if override and override.get("note") else _ledger_note_for_task(task=task, status=status),
+            "operator_override": override or {},
         })
     current_fingerprints = {entry["fingerprint"] for entry in current_entries}
     retired_entries = []
@@ -1745,18 +1753,130 @@ def write_analyst_task_ledger(
     *,
     task_queue_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
     previous_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    status_apply_path: str | Path | None = DEFAULT_ANALYST_TASK_STATUS_APPLY,
     artifact_output_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
     surface_output_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_OUTPUT,
 ) -> Path:
     payload = build_analyst_task_ledger(
         task_queue_path=task_queue_path,
         previous_ledger_path=previous_ledger_path,
+        status_apply_path=status_apply_path,
     )
     write_json(payload, artifact_output_path)
     target = Path(surface_output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render_analyst_task_ledger(payload), encoding="utf-8")
     return target
+
+
+def parse_task_status_response(response: str) -> dict[str, Any]:
+    parts = response.strip().split(maxsplit=2)
+    if len(parts) < 2:
+        raise ValueError("response must look like: AT-001 complete [note]")
+    task_id = parts[0].strip()
+    action = parts[1].strip().lower()
+    note = parts[2].strip().strip('"') if len(parts) > 2 else ""
+    status_map = {
+        "complete": "completed",
+        "completed": "completed",
+        "carry": "carried",
+        "carried": "carried",
+        "defer": "deferred",
+        "deferred": "deferred",
+        "block": "blocked_by_operator",
+        "blocked": "blocked_by_operator",
+    }
+    if not task_id.startswith("AT-"):
+        raise ValueError("task id must start with AT-")
+    if action not in status_map:
+        raise ValueError("action must be complete, carry, defer, or block")
+    return {
+        "schema_version": "personal_analyst_task_response.v1",
+        "recorded_at": _now(),
+        "task_id": task_id,
+        "action": action,
+        "status": status_map[action],
+        "note": note,
+        "external_effect_performed": False,
+    }
+
+
+def record_task_status_response(
+    *,
+    response: str,
+    responses_path: str | Path = DEFAULT_ANALYST_TASK_RESPONSES,
+) -> Path:
+    payload = parse_task_status_response(response)
+    target = Path(responses_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    return target
+
+
+def build_task_status_apply(
+    *,
+    ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    responses_path: str | Path = DEFAULT_ANALYST_TASK_RESPONSES,
+    output_path: str | Path = DEFAULT_ANALYST_TASK_STATUS_APPLY,
+) -> dict[str, Any]:
+    ledger = load_json(ledger_path)
+    responses = _load_task_responses(responses_path)
+    valid_task_ids = {entry.get("task_id") for entry in ledger.get("entries", [])}
+    applied = []
+    ignored = []
+    for response in responses:
+        task_id = response.get("task_id", "")
+        if task_id in valid_task_ids:
+            applied.append(response)
+        else:
+            ignored.append({**response, "reason": "task_id_not_in_current_ledger"})
+    latest_by_task: dict[str, dict[str, Any]] = {}
+    for response in applied:
+        latest_by_task[response["task_id"]] = response
+    payload = {
+        "schema_version": ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "ledger_path": Path(ledger_path).as_posix(),
+        "responses_path": Path(responses_path).as_posix(),
+        "applied_count": len(latest_by_task),
+        "ignored_count": len(ignored),
+        "applied": list(latest_by_task.values()),
+        "ignored": ignored,
+        "external_effect_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "local_status_update_only",
+            "does_not_execute_tasks",
+            "no_live_trading",
+            "no_account_access",
+        ],
+    }
+    write_json(payload, output_path)
+    return payload
+
+
+def validate_task_status_apply_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    allowed = {"completed", "carried", "deferred", "blocked_by_operator"}
+    for index, response in enumerate(payload.get("applied", [])):
+        if response.get("status") not in allowed:
+            errors.append(f"applied[{index}] invalid status {response.get('status')}")
+        if not response.get("task_id", "").startswith("AT-"):
+            errors.append(f"applied[{index}] invalid task_id")
+    if "does_not_execute_tasks" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include does_not_execute_tasks")
+    return errors
+
+
+def validate_task_status_apply_file(path: str | Path) -> list[str]:
+    return validate_task_status_apply_payload(load_json(path))
 
 
 def validate_analyst_task_ledger_payload(payload: dict[str, Any]) -> list[str]:
@@ -1770,7 +1890,7 @@ def validate_analyst_task_ledger_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("entry_count must match entries length")
     if not entries:
         errors.append("entries must not be empty")
-    allowed_statuses = {"ready_for_local_work", "carried", "blocked_requires_approval", "retired_not_in_current_queue"}
+    allowed_statuses = {"ready_for_local_work", "carried", "blocked_requires_approval", "retired_not_in_current_queue", "completed", "deferred", "blocked_by_operator"}
     for index, entry in enumerate(entries):
         for field in ["ledger_id", "task_id", "fingerprint", "role", "title", "priority", "status", "first_seen_at", "last_seen_at", "operator_note"]:
             if field not in entry:
@@ -1835,7 +1955,8 @@ p,small {{ color:var(--muted); }}
 <article class="metric"><span>Total</span><strong>{esc(payload.get('entry_count', 0))}</strong></article>
 <article class="metric"><span>Ready</span><strong>{esc(summary.get('ready_for_local_work', 0))}</strong></article>
 <article class="metric"><span>Carried</span><strong>{esc(summary.get('carried', 0))}</strong></article>
-<article class="metric"><span>Blocked</span><strong>{esc(summary.get('blocked_requires_approval', 0))}</strong></article>
+<article class="metric"><span>Done</span><strong>{esc(summary.get('completed', 0))}</strong></article>
+<article class="metric"><span>Blocked</span><strong>{esc(summary.get('blocked_requires_approval', 0) + summary.get('blocked_by_operator', 0))}</strong></article>
 </div>
 </section>
 <section class="section">
@@ -2577,12 +2698,33 @@ def _ledger_summary(entries: list[dict[str, Any]]) -> dict[str, int]:
         "carried": 0,
         "blocked_requires_approval": 0,
         "retired_not_in_current_queue": 0,
+        "completed": 0,
+        "deferred": 0,
+        "blocked_by_operator": 0,
     }
     for entry in entries:
         status = entry.get("status", "")
         if status in summary:
             summary[status] += 1
     return summary
+
+
+def _load_task_responses(path: str | Path) -> list[dict[str, Any]]:
+    target = Path(path)
+    if not target.exists():
+        return []
+    responses = []
+    for line in target.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        responses.append(json.loads(line))
+    return responses
+
+
+def _task_status_overrides(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    if payload.get("schema_version") != ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION:
+        return {}
+    return {item.get("task_id", ""): item for item in payload.get("applied", []) if item.get("task_id")}
 
 
 def _today_vault_notes(*, vault_notes: list[dict[str, Any]], memory_topics: list[dict[str, Any]]) -> list[dict[str, Any]]:
