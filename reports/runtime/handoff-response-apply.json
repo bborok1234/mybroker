@@ -1,0 +1,67 @@
+{
+  "schema_version": "operator_handoff_response_apply.v1",
+  "generated_at": "2026-06-05T20:38:09.499318+00:00",
+  "status": "applied",
+  "route": "daily_review",
+  "operator_response": "more \"Semiconductors\" \"내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다\"",
+  "handoff_response": {
+    "schema_version": "daily_handoff_response.v1",
+    "recorded_at": "2026-06-05T20:38:09.495564+00:00",
+    "route": "daily_review",
+    "raw_response": "more \"Semiconductors\" \"내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다\"",
+    "parsed_response": {
+      "schema_version": "daily_review_response.v1",
+      "recorded_at": "2026-06-05T20:38:09.495339+00:00",
+      "action": "more",
+      "status": "want_more",
+      "topic": "Semiconductors",
+      "note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다",
+      "external_effect_performed": false
+    },
+    "external_effect_performed": false
+  },
+  "responses_path": "reports/memory/daily-handoff-responses.jsonl",
+  "daily_handoff": {
+    "path": "reports/runtime/daily-handoff.json",
+    "surface": "reports/product/handoff.html",
+    "status": "review",
+    "unresolved_count": 9,
+    "copy_ready_command_count": 4
+  },
+  "next_action": "handoff 응답이 review/scout/effect에 반영됐습니다. handoff와 review-effect 화면에서 확인하세요.",
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "local_handoff_response_apply_only",
+    "does_not_execute_tasks",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_order_execution"
+  ],
+  "daily_review": {
+    "path": "reports/memory/daily-review.json",
+    "surface": "reports/product/review.html",
+    "response_count": 1,
+    "signal_count": 1
+  },
+  "daily_scout": {
+    "path": "reports/daily/scout.json",
+    "recommended_topic": "Semiconductors",
+    "review_response_count": 1,
+    "review_signal_count": 1
+  },
+  "review_prompt": {
+    "path": "reports/runtime/review-prompt.json",
+    "surface": "reports/product/review-prompt.html"
+  },
+  "review_effect": {
+    "path": "reports/runtime/review-effect.json",
+    "surface": "reports/product/review-effect.html",
+    "status": "applied",
+    "applied_topic_count": 1
+  }
+}
