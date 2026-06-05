@@ -12,12 +12,14 @@ from pathlib import Path
 from typing import Any
 
 from mybroker.topics import (
+    DEFAULT_DAILY_EVIDENCE_OUTPUT,
     DEFAULT_DAILY_SCOUT_OUTPUT,
     DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
     DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
     DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
     DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
     DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
+    DEFAULT_TOPIC_MEMORY_OUTPUT,
 )
 from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT
 
@@ -31,6 +33,7 @@ OPERATOR_DECISION_PACKET_SCHEMA_VERSION = "operator_decision_packet.v1"
 OPERATOR_DECISION_APPLY_SCHEMA_VERSION = "operator_decision_apply.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
+ANALYST_JOURNAL_SCHEMA_VERSION = "personal_analyst_journal.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
@@ -50,6 +53,8 @@ DEFAULT_MEMORY_INDEX_OUTPUT = Path("reports/memory/index.json")
 DEFAULT_MEMORY_OUTPUT = Path("reports/product/memory.html")
 DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
 DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
+DEFAULT_ANALYST_JOURNAL_OUTPUT = Path("reports/product/journal.html")
+DEFAULT_ANALYST_JOURNAL_ARTIFACT = Path("reports/memory/analyst-journal.json")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_RUNTIME_DOCTOR_ACTIVATION_OUTPUT = Path("reports/runtime/local-runtime-doctor-activation.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
@@ -751,6 +756,7 @@ def write_today_surface(
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
+    journal_surface_path: str | Path | None = None,
 ) -> Path:
     scenario = load_json(scenario_path)
     verdict = load_json(verdict_path)
@@ -781,6 +787,7 @@ def write_today_surface(
             brief_path=Path(brief_path),
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
+            journal_surface_path=Path(journal_surface_path) if journal_surface_path else None,
         ),
         encoding="utf-8",
     )
@@ -803,6 +810,7 @@ def render_today_surface(
     brief_path: Path,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
+    journal_surface_path: Path | None = None,
 ) -> str:
     market_map = scenario.get("market_map", {})
     primary = verdict.get("primary_next_step") or {}
@@ -921,6 +929,11 @@ def render_today_surface(
         if memory_surface_path
         else "<span>누적 기억 없음</span>"
     )
+    journal_link = (
+        f"<a href='{esc(_relative_href(journal_surface_path))}'>오늘의 analyst journal</a>"
+        if journal_surface_path
+        else "<span>Analyst journal 없음</span>"
+    )
     questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
@@ -1028,6 +1041,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <h2>연결된 산출물</h2>
 <div class="links">
 <a href="{esc(_relative_href(brief_path))}">상세 시장 브리프</a>
+{journal_link}
 {memory_link}
 {archive_link}
 </div>
@@ -1056,6 +1070,7 @@ def archive_daily_run(
     refresh_live_gate_path: str | Path | None = None,
     refresh_live_run_path: str | Path | None = None,
     refresh_live_preflight_path: str | Path | None = None,
+    journal_path: str | Path | None = None,
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
 ) -> Path:
     timestamp = datetime.now(timezone.utc)
@@ -1072,6 +1087,7 @@ def archive_daily_run(
         "source_refresh_live_gate": refresh_live_gate_path,
         "source_refresh_live_run": refresh_live_run_path,
         "source_refresh_live_preflight": refresh_live_preflight_path,
+        "journal": journal_path,
         "brief": brief_path,
         "today": today_path,
     }.items():
@@ -1091,6 +1107,304 @@ def archive_daily_run(
         "policy": "research_only",
     }
     return write_json(manifest, archive_dir / "manifest.json")
+
+
+def build_analyst_journal(
+    *,
+    scenario_path: str | Path,
+    verdict_path: str | Path,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    archive_manifest_path: str | Path | None = None,
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    scenario = load_json(scenario_path)
+    verdict = load_json(verdict_path)
+    memory = load_json(memory_path)
+    evidence = load_json(evidence_path) if Path(evidence_path).exists() else {}
+    scout = load_json(scout_path) if Path(scout_path).exists() else {}
+    vault = load_json(vault_path) if Path(vault_path).exists() else {}
+    archive_manifest = load_json(archive_manifest_path) if archive_manifest_path and Path(archive_manifest_path).exists() else {}
+    source_rows = evidence.get("source_status", [])
+    memory_topics = memory.get("topics", [])
+    changed_topics = [topic for topic in memory_topics if topic.get("changed_since_previous")]
+    recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    primary = verdict.get("primary_next_step") or {}
+    weak_sources = [
+        row for row in source_rows
+        if row.get("freshness_status") in {"stale", "unknown"} or row.get("relevance_label") in {"weak", "unscored"}
+    ]
+    coverage_sources = sorted({source for topic in memory_topics for source in topic.get("source_names", [])})
+    follow_up_questions = _journal_follow_up_questions(
+        recommended=recommended,
+        memory_topics=memory_topics,
+        scenario=scenario,
+    )
+    role_notes = [
+        {
+            "role": "source_scout",
+            "finding": f"{len(source_rows)}개 source 상태를 확인했고 {len(weak_sources)}개는 약하거나 오래된 근거입니다.",
+            "next_check": "live refresh 승인 전에는 cached/sample 근거와 freshness를 분리해서 읽습니다.",
+        },
+        {
+            "role": "market_mapper",
+            "finding": scenario.get("market_map", {}).get("beginner_summary", "시장 지도 요약이 아직 약합니다."),
+            "next_check": "주제, 기업, 이벤트가 같은 방향인지와 충돌하는지 분리합니다.",
+        },
+        {
+            "role": "skeptic",
+            "finding": _journal_skeptic_note(evidence=evidence, memory_topics=memory_topics),
+            "next_check": "자료 부족을 매수/매도 결론으로 바꾸지 않습니다.",
+        },
+        {
+            "role": "beginner_tutor",
+            "finding": primary.get("rationale", "오늘은 결론보다 시장 흐름 이해를 우선합니다."),
+            "next_check": "초보자가 먼저 이해할 단어와 원인-결과 연결을 매일 하나씩 남깁니다.",
+        },
+        {
+            "role": "memory_librarian",
+            "finding": f"누적 실행 {memory.get('run_count', 0)}회, vault note {len(_vault_notes_for_memory(vault))}개를 연결했습니다.",
+            "next_check": "오늘 질문이 내일 다시 검색 가능한 표현인지 확인합니다.",
+        },
+    ]
+    payload = {
+        "schema_version": ANALYST_JOURNAL_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "run_id": scenario.get("run_id", ""),
+        "status": _journal_status(source_rows=source_rows, memory_topics=memory_topics),
+        "today_focus": {
+            "title": primary.get("title", recommended.get("name", "오늘 먼저 볼 주제")),
+            "rationale": primary.get("rationale", recommended.get("why", "")),
+            "recommended_topic": recommended.get("name", ""),
+            "recommended_action": recommended.get("action", ""),
+            "confidence": recommended.get("confidence", ""),
+        },
+        "what_changed": [
+            {
+                "topic_id": topic.get("topic_id", ""),
+                "name": topic.get("name", ""),
+                "summary": topic.get("latest_summary", ""),
+                "latest_titles": topic.get("latest_titles", [])[:5],
+            }
+            for topic in changed_topics
+        ],
+        "stable_observations": [
+            {
+                "topic_id": topic.get("topic_id", ""),
+                "name": topic.get("name", ""),
+                "summary": topic.get("latest_summary", ""),
+            }
+            for topic in memory_topics
+            if not topic.get("changed_since_previous")
+        ][:5],
+        "role_notes": role_notes,
+        "source_posture": {
+            "source_count": len(source_rows),
+            "coverage_sources": coverage_sources,
+            "weak_or_stale_count": len(weak_sources),
+            "collection_gaps": evidence.get("collection_gaps", []),
+        },
+        "follow_up_questions": follow_up_questions,
+        "linked_artifacts": {
+            "scenario": Path(scenario_path).as_posix(),
+            "verdict": Path(verdict_path).as_posix(),
+            "memory": Path(memory_path).as_posix(),
+            "evidence": Path(evidence_path).as_posix(),
+            "scout": Path(scout_path).as_posix(),
+            "archive_manifest": Path(archive_manifest_path).as_posix() if archive_manifest_path else "",
+            "archive_dir": archive_manifest.get("archive_dir", ""),
+        },
+        "operator_reading_order": [
+            "today_focus",
+            "what_changed",
+            "role_notes",
+            "follow_up_questions",
+            "linked_artifacts",
+        ],
+        "policy": "research_only",
+        "safety_boundary": [
+            "education_and_research_only",
+            "no_account_access",
+            "no_live_trading",
+            "no_discretionary_management",
+            "no_unsupported_personalized_recommendation",
+        ],
+    }
+    return payload
+
+
+def write_analyst_journal(
+    *,
+    scenario_path: str | Path,
+    verdict_path: str | Path,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    archive_manifest_path: str | Path | None = None,
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    surface_output_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
+) -> Path:
+    payload = build_analyst_journal(
+        scenario_path=scenario_path,
+        verdict_path=verdict_path,
+        memory_path=memory_path,
+        evidence_path=evidence_path,
+        scout_path=scout_path,
+        archive_manifest_path=archive_manifest_path,
+        vault_path=vault_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_analyst_journal(payload), encoding="utf-8")
+    return target
+
+
+def validate_analyst_journal_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != ANALYST_JOURNAL_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if not payload.get("today_focus"):
+        errors.append("today_focus must not be empty")
+    if not payload.get("role_notes"):
+        errors.append("role_notes must not be empty")
+    if not payload.get("follow_up_questions"):
+        errors.append("follow_up_questions must not be empty")
+    linked = payload.get("linked_artifacts", {})
+    for field in ["scenario", "verdict", "memory", "evidence", "scout"]:
+        if not linked.get(field):
+            errors.append(f"linked_artifacts.{field} must not be empty")
+    if "no_live_trading" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include no_live_trading")
+    return errors
+
+
+def validate_analyst_journal_file(path: str | Path) -> list[str]:
+    return validate_analyst_journal_payload(load_json(path))
+
+
+def render_analyst_journal(payload: dict[str, Any]) -> str:
+    focus = payload.get("today_focus", {})
+    changed_cards = "".join(
+        "<article class='card'>"
+        f"<span>변화 감지</span>"
+        f"<h3>{esc(item.get('name', ''))}</h3>"
+        f"<p>{esc(item.get('summary', ''))}</p>"
+        f"<small>{esc(' · '.join(item.get('latest_titles', [])[:3]))}</small>"
+        "</article>"
+        for item in payload.get("what_changed", [])
+    ) or "<p>오늘 새 변화로 판정된 주제는 없습니다. 그래서 결론보다 source freshness와 반복 관찰을 우선합니다.</p>"
+    stable_cards = "".join(
+        "<article class='card'>"
+        f"<span>반복 관찰</span>"
+        f"<h3>{esc(item.get('name', ''))}</h3>"
+        f"<p>{esc(item.get('summary', ''))}</p>"
+        "</article>"
+        for item in payload.get("stable_observations", [])[:4]
+    ) or "<p>아직 반복 관찰이 충분하지 않습니다.</p>"
+    role_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(note.get('role', 'analyst'))}</span>"
+        f"<h3>{esc(note.get('finding', ''))}</h3>"
+        f"<p>{esc(note.get('next_check', ''))}</p>"
+        "</article>"
+        for note in payload.get("role_notes", [])
+    )
+    questions = "".join(f"<li>{esc(question)}</li>" for question in payload.get("follow_up_questions", []))
+    artifacts = payload.get("linked_artifacts", {})
+    artifact_links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in artifacts.items()
+        if path and label != "archive_dir"
+    )
+    source = payload.get("source_posture", {})
+    gaps = "".join(f"<li>{esc(_gap_label(gap))}</li>" for gap in source.get("collection_gaps", [])) or "<li>기록된 자료 수집 gap 없음</li>"
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Analyst Journal</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:18px; }}
+a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
+header {{ padding:28px 0 16px; }}
+.eyebrow,.card span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 12px; font-size:20px; }}
+h3 {{ margin:0 0 8px; font-size:17px; }}
+p,small,li {{ color:var(--muted); }}
+.hero,.section,.card {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero {{ padding:18px; }}
+.section {{ margin:14px 0; padding:16px; }}
+.grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.card {{ background:white; padding:14px; min-width:0; }}
+.card h3,.card p,.card small {{ overflow-wrap:anywhere; }}
+.metrics {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:12px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
+.metric strong {{ display:block; font-size:24px; }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .grid,.metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Analyst Journal · {esc(_short_date(payload.get('generated_at', '')))}</span>
+<h1>오늘의 개인 애널리스트 작업일지</h1>
+<p>브리프의 결론보다, 무엇을 봤고 무엇이 아직 약한지 매일 누적하는 로컬 기록입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">오늘의 초점</span>
+<h2>{esc(focus.get('title', '오늘 먼저 볼 주제'))}</h2>
+<p>{esc(focus.get('rationale', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Status</span><strong>{esc(payload.get('status', 'review'))}</strong></article>
+<article class="metric"><span>Sources</span><strong>{esc(source.get('source_count', 0))}</strong></article>
+<article class="metric"><span>Weak</span><strong>{esc(source.get('weak_or_stale_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>오늘 바뀐 것</h2>
+<div class="grid">{changed_cards}</div>
+</section>
+<section class="section">
+<h2>계속 관찰 중인 것</h2>
+<div class="grid">{stable_cards}</div>
+</section>
+<section class="section">
+<h2>역할별 메모</h2>
+<div class="grid">{role_cards}</div>
+</section>
+<section class="section">
+<h2>내일 이어서 물어볼 질문</h2>
+<ul>{questions}</ul>
+</section>
+<section class="section">
+<h2>자료 gap</h2>
+<ul>{gaps}</ul>
+</section>
+<section class="section">
+<h2>연결된 산출물</h2>
+<div class="links">{artifact_links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>교육과 리서치, 시뮬레이션용 기록입니다. 계좌 접근, 주문 실행, 일임 운용, 근거 없는 개인화 추천을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def build_memory_index(
@@ -1688,6 +2002,58 @@ def _daily_questions(
         if question not in deduped:
             deduped.append(question)
     return deduped[:5]
+
+
+def _journal_status(*, source_rows: list[dict[str, Any]], memory_topics: list[dict[str, Any]]) -> str:
+    if not source_rows:
+        return "blocked_no_sources"
+    weak_count = sum(
+        1 for row in source_rows
+        if row.get("freshness_status") in {"stale", "unknown"} or row.get("relevance_label") in {"weak", "unscored"}
+    )
+    changed_count = sum(1 for topic in memory_topics if topic.get("changed_since_previous"))
+    if weak_count >= len(source_rows):
+        return "weak_needs_refresh"
+    if changed_count:
+        return "changed_review_first"
+    return "stable_monitor"
+
+
+def _journal_skeptic_note(*, evidence: dict[str, Any], memory_topics: list[dict[str, Any]]) -> str:
+    gaps = evidence.get("collection_gaps", [])
+    if gaps:
+        return f"아직 {', '.join(_gap_label(gap) for gap in gaps[:3])} 문제가 있어 확신을 낮춰야 합니다."
+    stale_topics = [topic.get("name", "") for topic in memory_topics if topic.get("collection_gaps")]
+    if stale_topics:
+        return f"{', '.join(stale_topics[:3])} 주제는 추가 근거 없이는 방향 판단이 약합니다."
+    return "현재 근거는 학습용 시뮬레이션에는 충분하지만 투자 행동 결론에는 부족합니다."
+
+
+def _journal_follow_up_questions(
+    *,
+    recommended: dict[str, Any],
+    memory_topics: list[dict[str, Any]],
+    scenario: dict[str, Any],
+) -> list[str]:
+    questions = []
+    next_question = recommended.get("next_question", "")
+    if next_question:
+        questions.append(next_question)
+    for topic in memory_topics:
+        for question in topic.get("daily_questions", []):
+            if question not in questions:
+                questions.append(question)
+            if len(questions) >= 5:
+                break
+        if len(questions) >= 5:
+            break
+    for candidate in scenario.get("action_candidates", [])[:2]:
+        title = candidate.get("title", "")
+        if title:
+            questions.append(f"{title} 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?")
+    if not questions:
+        questions.append("오늘 시장을 이해하기 전에 먼저 확인해야 할 원천 자료는 무엇인가요?")
+    return questions[:6]
 
 
 def _today_vault_notes(*, vault_notes: list[dict[str, Any]], memory_topics: list[dict[str, Any]]) -> list[dict[str, Any]]:

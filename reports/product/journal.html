@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Analyst Journal</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:760px; margin:0 auto; padding:18px; }
+a { color:var(--blue); font-weight:800; text-decoration:none; }
+header { padding:28px 0 16px; }
+.eyebrow,.card span { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 12px; font-size:20px; }
+h3 { margin:0 0 8px; font-size:17px; }
+p,small,li { color:var(--muted); }
+.hero,.section,.card { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero { padding:18px; }
+.section { margin:14px 0; padding:16px; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.card { background:white; padding:14px; min-width:0; }
+.card h3,.card p,.card small { overflow-wrap:anywhere; }
+.metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.metric { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }
+.metric strong { display:block; font-size:24px; }
+.links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:29px; } .grid,.metrics,.links { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Analyst Journal · 2026-06-05</span>
+<h1>오늘의 개인 애널리스트 작업일지</h1>
+<p>브리프의 결론보다, 무엇을 봤고 무엇이 아직 약한지 매일 누적하는 로컬 기록입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">오늘의 초점</span>
+<h2>먼저 시장 흐름을 학습</h2>
+<p>리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.</p>
+<div class="metrics">
+<article class="metric"><span>Status</span><strong>stable_monitor</strong></article>
+<article class="metric"><span>Sources</span><strong>3</strong></article>
+<article class="metric"><span>Weak</span><strong>0</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>오늘 바뀐 것</h2>
+<div class="grid"><p>오늘 새 변화로 판정된 주제는 없습니다. 그래서 결론보다 source freshness와 반복 관찰을 우선합니다.</p></div>
+</section>
+<section class="section">
+<h2>계속 관찰 중인 것</h2>
+<div class="grid"><article class='card'><span>반복 관찰</span><h3>AI infrastructure</h3><p>AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.</p></article><article class='card'><span>반복 관찰</span><h3>Semiconductors</h3><p>Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.</p></article><article class='card'><span>반복 관찰</span><h3>US rates</h3><p>US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음.</p></article><article class='card'><span>반복 관찰</span><h3>Consumer weakness</h3><p>Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.</p></article></div>
+</section>
+<section class="section">
+<h2>역할별 메모</h2>
+<div class="grid"><article class='card'><span>source_scout</span><h3>3개 source 상태를 확인했고 0개는 약하거나 오래된 근거입니다.</h3><p>live refresh 승인 전에는 cached/sample 근거와 freshness를 분리해서 읽습니다.</p></article><article class='card'><span>market_mapper</span><h3>이번 seed에서 먼저 볼 흐름은 리스크, AI 인프라, 소비입니다. 초보자는 가격보다 &#x27;왜 이 흐름이 생겼는지&#x27;와 &#x27;무엇이 바뀌면 틀리는지&#x27;를 먼저 확인해야 합니다.</h3><p>주제, 기업, 이벤트가 같은 방향인지와 충돌하는지 분리합니다.</p></article><article class='card'><span>skeptic</span><h3>아직 실시간 새로고침은 아직 연결되지 않았습니다., 소스 이용조건 검토가 남아 있습니다. 문제가 있어 확신을 낮춰야 합니다.</h3><p>자료 부족을 매수/매도 결론으로 바꾸지 않습니다.</p></article><article class='card'><span>beginner_tutor</span><h3>리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.</h3><p>초보자가 먼저 이해할 단어와 원인-결과 연결을 매일 하나씩 남깁니다.</p></article><article class='card'><span>memory_librarian</span><h3>누적 실행 21회, vault note 1개를 연결했습니다.</h3><p>오늘 질문이 내일 다시 검색 가능한 표현인지 확인합니다.</p></article></div>
+</section>
+<section class="section">
+<h2>내일 이어서 물어볼 질문</h2>
+<ul><li>Vault 노트 &#x27;Semiconductor cycle learning note&#x27;가 오늘 근거와 같은 방향을 가리키나요?</li><li>오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</li><li>AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?</li><li>다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?</li><li>오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</li><li>먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?</li></ul>
+</section>
+<section class="section">
+<h2>자료 gap</h2>
+<ul><li>실시간 새로고침은 아직 연결되지 않았습니다.</li><li>소스 이용조건 검토가 남아 있습니다.</li></ul>
+</section>
+<section class="section">
+<h2>연결된 산출물</h2>
+<div class="links"><a href='reports/scenarios/daily-research-sim.json'>scenario</a><a href='reports/scenarios/daily-research-verdict.json'>verdict</a><a href='reports/memory/topic-memory.json'>memory</a><a href='reports/evidence/daily-evidence-catalog.json'>evidence</a><a href='reports/daily/scout.json'>scout</a><a href='reports/archive/2026-06-05/manifest.json'>archive_manifest</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>교육과 리서치, 시뮬레이션용 기록입니다. 계좌 접근, 주문 실행, 일임 운용, 근거 없는 개인화 추천을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

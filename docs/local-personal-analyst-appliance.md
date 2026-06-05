@@ -114,6 +114,7 @@ PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
 PYTHONPATH=src python3 -m mybroker appliance memory
+PYTHONPATH=src python3 -m mybroker appliance journal
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
@@ -122,17 +123,21 @@ PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-ru
 
 ## Compounding Memory
 
-The local loop now writes two memory surfaces:
+The local loop now writes three memory-facing surfaces:
 
 - `reports/memory/index.json`: machine-readable topic memory, source relevance, run history, and archive links.
 - `reports/product/memory.html`: phone-readable accumulated research notebook.
+- `reports/memory/analyst-journal.json`: machine-readable daily analyst work log.
+- `reports/product/journal.html`: phone-readable daily analyst journal with today's focus, role notes, evidence gaps, and tomorrow's questions.
 - `reports/memory/latest-query.json`: machine-readable recall result for one operator question.
 - `reports/product/memory-query.html`: phone-readable recall page that links the question to matching topics, archives, and next inspection questions.
 
 This is the Obsidian vault pattern in product form: every run is still a plain local artifact,
-but the daily user surface can link back to what MyBroker has learned over time. `appliance
-query` is intentionally deterministic local retrieval first; a later LLM summary can sit on
-top of the same artifact without hiding source context.
+but the daily user surface can link back to what MyBroker has learned over time. `journal.html`
+is the daily analyst work log: it separates what changed, what stayed stable, what each analyst
+role noticed, and which questions should carry into tomorrow. `appliance query` is intentionally
+deterministic local retrieval first; a later LLM summary can sit on top of the same artifact
+without hiding source context.
 
 The local vault is the raw inbox side of the same pattern:
 

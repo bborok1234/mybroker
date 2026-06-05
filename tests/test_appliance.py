@@ -8,6 +8,7 @@ from pathlib import Path
 from mybroker.appliance import (
     archive_daily_run,
     send_notification_payload,
+    write_analyst_journal,
     write_launchd_assets,
     write_memory_query,
     write_memory_surface,
@@ -52,6 +53,8 @@ class LocalApplianceTests(unittest.TestCase):
             scenario_path = root / "scenario.json"
             verdict_path = root / "verdict.json"
             brief_path = root / "market-brief.html"
+            journal_path = root / "journal.html"
+            journal_artifact_path = root / "journal.json"
             today_path = root / "today.html"
             init_topic_config(topics_path)
             init_topic_config(runtime_topics_path)
@@ -70,6 +73,15 @@ class LocalApplianceTests(unittest.TestCase):
             write_scenario_report(report, scenario_path)
             write_verdict(report, verdict_path)
             brief_path.write_text("<html>brief</html>", encoding="utf-8")
+            journal = write_analyst_journal(
+                scenario_path=scenario_path,
+                verdict_path=verdict_path,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                scout_path=root / "missing-scout.json",
+                artifact_output_path=journal_artifact_path,
+                surface_output_path=journal_path,
+            )
 
             today = write_today_surface(
                 scenario_path=scenario_path,
@@ -80,6 +92,7 @@ class LocalApplianceTests(unittest.TestCase):
                 vault_path=root / "missing-vault.json",
                 scout_path=root / "missing-scout.json",
                 refresh_plan_path=root / "missing-refresh-plan.json",
+                journal_surface_path=journal,
                 output_path=today_path,
             )
             refresh_plan_path = root / "source-refresh-plan.json"
@@ -117,6 +130,7 @@ class LocalApplianceTests(unittest.TestCase):
                 refresh_live_gate_path=refresh_live_gate_path,
                 refresh_live_run_path=refresh_live_run_path,
                 refresh_live_preflight_path=refresh_live_preflight_path,
+                journal_path=journal,
                 archive_root=root / "archive",
             )
             today = write_today_surface(
@@ -134,6 +148,7 @@ class LocalApplianceTests(unittest.TestCase):
                 refresh_live_preflight_path=root / "missing-refresh-live-preflight.json",
                 output_path=today_path,
                 archive_manifest_path=manifest,
+                journal_surface_path=journal,
             )
             notification = write_notification_payload(
                 provider="telegram",
@@ -179,6 +194,8 @@ class LocalApplianceTests(unittest.TestCase):
             )
 
             html = today.read_text(encoding="utf-8")
+            journal_html = journal.read_text(encoding="utf-8")
+            journal_payload = json.loads(journal_artifact_path.read_text(encoding="utf-8"))
             memory_html = memory_surface.read_text(encoding="utf-8")
             query_payload = json.loads((root / "memory-query.json").read_text(encoding="utf-8"))
             query_html = query_surface.read_text(encoding="utf-8")
@@ -194,8 +211,13 @@ class LocalApplianceTests(unittest.TestCase):
 
         self.assertIn("MyBroker Today", html)
         self.assertIn("오늘 시장 5분 브리프", html)
+        self.assertIn("오늘의 analyst journal", html)
         self.assertIn("근거 품질", html)
         self.assertIn("아카이브 manifest", html)
+        self.assertIn("MyBroker Analyst Journal", journal_html)
+        self.assertIn("역할별 메모", journal_html)
+        self.assertEqual(journal_payload["schema_version"], "personal_analyst_journal.v1")
+        self.assertEqual(journal_payload["policy"], "research_only")
         self.assertIn("MyBroker Memory", memory_html)
         self.assertIn("주제별 누적 기억", memory_html)
         self.assertIn("근거 품질 추적", memory_html)
@@ -219,6 +241,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("source_refresh_live_gate", manifest_payload["artifacts"])
         self.assertIn("source_refresh_live_run", manifest_payload["artifacts"])
         self.assertIn("source_refresh_live_preflight", manifest_payload["artifacts"])
+        self.assertIn("journal", manifest_payload["artifacts"])
         self.assertIn("Hermes Agent", {item["source"] for item in playbook_payload["absorbed_patterns"]})
         self.assertEqual(doctor_payload["schema_version"], "local_runtime_doctor.v1")
         self.assertEqual(doctor_payload["status"], "ready")

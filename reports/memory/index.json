@@ -1,9 +1,9 @@
 {
   "schema_version": "personal_memory_index.v1",
-  "generated_at": "2026-06-05T13:04:32.875663+00:00",
+  "generated_at": "2026-06-05T13:21:46.617638+00:00",
   "memory_path": "reports/memory/topic-memory.json",
   "archive_root": "reports/archive",
-  "run_count": 20,
+  "run_count": 21,
   "topic_count": 5,
   "topics": [
     {
@@ -140,6 +140,13 @@
   "recent_runs": [
     {
       "run_id": "daily-research",
+      "generated_at": "2026-06-05T13:21:46.608925+00:00",
+      "evidence_catalog": "2026-06-05T13:21:46.608772+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
       "generated_at": "2026-06-05T13:04:32.865565+00:00",
       "evidence_catalog": "2026-06-05T13:04:32.865405+00:00",
       "topic_count": 5,
@@ -200,20 +207,13 @@
       "evidence_catalog": "2026-06-05T09:15:55.737454+00:00",
       "topic_count": 5,
       "changed_topics": []
-    },
-    {
-      "run_id": "daily-research",
-      "generated_at": "2026-06-05T09:15:38.762737+00:00",
-      "evidence_catalog": "2026-06-05T09:15:38.762587+00:00",
-      "topic_count": 5,
-      "changed_topics": []
     }
   ],
   "archives": [
     {
       "schema_version": "daily_archive.v1",
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T13:04:32.873372+00:00",
+      "generated_at": "2026-06-05T13:21:46.615404+00:00",
       "archive_dir": "reports/archive/2026-06-05",
       "artifacts": {
         "scenario": "reports/archive/2026-06-05/daily-research-sim.json",
@@ -225,6 +225,7 @@
         "source_refresh_live_gate": "reports/archive/2026-06-05/source-refresh-live-gate.json",
         "source_refresh_live_run": "reports/archive/2026-06-05/source-refresh-live-run.json",
         "source_refresh_live_preflight": "reports/archive/2026-06-05/source-refresh-live-preflight.json",
+        "journal": "reports/archive/2026-06-05/journal.html",
         "brief": "reports/archive/2026-06-05/market-brief.html",
         "today": "reports/archive/2026-06-05/today.html"
       },
