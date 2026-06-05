@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-05T19:56:15.904703+00:00",
+  "generated_at": "2026-06-05T20:15:30.011444+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.857407+00:00",
+      "generated_at": "2026-06-05T20:15:29.965731+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -52,7 +52,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.856124+00:00",
+      "generated_at": "2026-06-05T20:15:29.965067+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -74,7 +74,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.900247+00:00",
+      "generated_at": "2026-06-05T20:15:30.005021+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -96,7 +96,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.895585+00:00",
+      "generated_at": "2026-06-05T20:15:30.000914+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
@@ -118,12 +118,34 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.904117+00:00",
+      "generated_at": "2026-06-05T20:15:30.009678+00:00",
       "schema_version": "daily_run_ledger.v1"
     },
     {
       "name": "daily_run_ledger_surface",
       "path": "reports/product/run-ledger.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "daily_handoff",
+      "path": "reports/runtime/daily-handoff.json",
+      "kind": "control_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T20:15:30.010255+00:00",
+      "schema_version": "daily_handoff.v1"
+    },
+    {
+      "name": "daily_handoff_surface",
+      "path": "reports/product/handoff.html",
       "kind": "phone_surface",
       "required": false,
       "exists": true,
@@ -140,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.902792+00:00",
+      "generated_at": "2026-06-05T20:15:30.008205+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
@@ -162,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.903574+00:00",
+      "generated_at": "2026-06-05T20:15:30.009028+00:00",
       "schema_version": "operator_review_prompt.v1"
     },
     {
@@ -184,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.903934+00:00",
+      "generated_at": "2026-06-05T20:15:30.009418+00:00",
       "schema_version": "operator_review_effect.v1"
     },
     {
@@ -206,7 +228,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.883395+00:00",
+      "generated_at": "2026-06-05T20:15:29.984292+00:00",
       "schema_version": "analyst_council.v1"
     },
     {
@@ -228,7 +250,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.853538+00:00",
+      "generated_at": "2026-06-05T20:15:29.963067+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -239,7 +261,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.849882+00:00",
+      "generated_at": "2026-06-05T20:15:29.961054+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -250,7 +272,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.851439+00:00",
+      "generated_at": "2026-06-05T20:15:29.962091+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -261,7 +283,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.859262+00:00",
+      "generated_at": "2026-06-05T20:15:29.966829+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -272,7 +294,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.859262+00:00",
+      "generated_at": "2026-06-05T20:15:29.966829+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -283,7 +305,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.872251+00:00",
+      "generated_at": "2026-06-05T20:15:29.975798+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -293,7 +315,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 12.44,
+      "age_hours": 12.76,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -305,7 +327,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.893243+00:00",
+      "generated_at": "2026-06-05T20:15:29.999148+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -316,7 +338,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.893753+00:00",
+      "generated_at": "2026-06-05T20:15:29.999561+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -337,7 +359,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 1.92,
+      "age_hours": 2.24,
       "generated_at": "",
       "schema_version": ""
     },
@@ -360,7 +382,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:56:15.881626+00:00",
+      "generated_at": "2026-06-05T20:15:29.982790+00:00",
       "schema_version": "personal_memory_audit.v1"
     },
     {
@@ -389,6 +411,7 @@
     "source_refresh": "reports/product/source-refresh.html",
     "trace": "reports/product/run-trace.html",
     "run_ledger": "reports/product/run-ledger.html",
+    "handoff": "reports/product/handoff.html",
     "drift_review": "reports/product/drift-review.html",
     "review_prompt": "reports/product/review-prompt.html",
     "review_effect": "reports/product/review-effect.html",

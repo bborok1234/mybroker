@@ -22,6 +22,8 @@ from mybroker.appliance import (
     DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     DEFAULT_DAILY_READINESS_OUTPUT,
     DEFAULT_DAILY_READINESS_SURFACE,
+    DEFAULT_DAILY_HANDOFF_OUTPUT,
+    DEFAULT_DAILY_HANDOFF_SURFACE,
     DEFAULT_DAILY_REVIEW_RESPONSES,
     DEFAULT_DAILY_REVIEW_SURFACE,
     DEFAULT_DRIFT_REVIEW_OUTPUT,
@@ -79,6 +81,7 @@ from mybroker.appliance import (
     write_analyst_task_ledger,
     write_daily_brief_agenda,
     write_daily_readiness,
+    write_daily_handoff,
     write_daily_review,
     write_drift_review,
     write_operator_review_prompt,
@@ -115,6 +118,7 @@ from mybroker.appliance import (
     validate_agent_pattern_radar_file,
     validate_daily_brief_agenda_file,
     validate_daily_readiness_file,
+    validate_daily_handoff_file,
     validate_daily_review_file,
     validate_drift_review_file,
     validate_operator_review_prompt_file,
@@ -369,6 +373,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_run_trace_parser.add_argument("run_trace_path")
     validate_run_ledger_parser = subcommands.add_parser("validate-daily-run-ledger", help="Validate a daily_run_ledger.v1 artifact.")
     validate_run_ledger_parser.add_argument("run_ledger_path")
+    validate_handoff_parser = subcommands.add_parser("validate-daily-handoff", help="Validate a daily_handoff.v1 artifact.")
+    validate_handoff_parser.add_argument("handoff_path")
     validate_drift_review_parser = subcommands.add_parser("validate-drift-review", help="Validate a local_drift_review.v1 artifact.")
     validate_drift_review_parser.add_argument("drift_review_path")
     validate_scheduler_operations_parser = subcommands.add_parser("validate-scheduler-operations", help="Validate a local_scheduler_operations.v1 artifact.")
@@ -637,6 +643,9 @@ def main(argv: list[str] | None = None) -> int:
     appliance_run_ledger_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_RUN_LEDGER_OUTPUT.as_posix())
     appliance_run_ledger_parser.add_argument("--output", default=DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix())
     appliance_run_ledger_parser.add_argument("--archive-manifest")
+    appliance_handoff_parser = appliance_subcommands.add_parser("handoff", help="Render the cross-day handoff proof from existing local artifacts.")
+    appliance_handoff_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_HANDOFF_OUTPUT.as_posix())
+    appliance_handoff_parser.add_argument("--output", default=DEFAULT_DAILY_HANDOFF_SURFACE.as_posix())
     appliance_drift_parser = appliance_subcommands.add_parser("drift-review", help="Render a trace-backed local direction drift review.")
     appliance_drift_parser.add_argument("--artifact-output", default=DEFAULT_DRIFT_REVIEW_OUTPUT.as_posix())
     appliance_drift_parser.add_argument("--output", default=DEFAULT_DRIFT_REVIEW_SURFACE.as_posix())
@@ -655,6 +664,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_morning_parser.add_argument("--pattern-radar-surface", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--run-trace-surface", default=DEFAULT_RUN_TRACE_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--run-ledger-surface", default=DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix())
+    appliance_morning_parser.add_argument("--handoff-surface", default=DEFAULT_DAILY_HANDOFF_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--drift-review-surface", default=DEFAULT_DRIFT_REVIEW_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--analyst-council-surface", default=DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--artifact-output", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
@@ -1164,6 +1174,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-daily-run-ledger":
         errors = validate_daily_run_ledger_file(args.run_ledger_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-daily-handoff":
+        errors = validate_daily_handoff_file(args.handoff_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1955,6 +1972,21 @@ def main(argv: list[str] | None = None) -> int:
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "handoff":
+            path = write_daily_handoff(
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "daily_handoff": args.artifact_output,
+                "daily_handoff_surface": path.as_posix(),
+                "status": payload["status"],
+                "carried_item_count": payload["summary"]["carried_item_count"],
+                "unresolved_count": payload["summary"]["unresolved_count"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "drift-review":
             path = write_drift_review(
                 artifact_output_path=args.artifact_output,
@@ -1985,6 +2017,7 @@ def main(argv: list[str] | None = None) -> int:
                 pattern_radar_surface_path=args.pattern_radar_surface,
                 run_trace_surface_path=args.run_trace_surface,
                 run_ledger_surface_path=args.run_ledger_surface,
+                handoff_surface_path=args.handoff_surface,
                 drift_review_surface_path=args.drift_review_surface,
                 analyst_council_surface_path=args.analyst_council_surface,
                 artifact_output_path=args.artifact_output,
@@ -2136,6 +2169,8 @@ def main(argv: list[str] | None = None) -> int:
             run_trace_surface_path = DEFAULT_RUN_TRACE_SURFACE
             run_ledger_artifact_path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT
             run_ledger_surface_path = DEFAULT_DAILY_RUN_LEDGER_SURFACE
+            handoff_artifact_path = DEFAULT_DAILY_HANDOFF_OUTPUT
+            handoff_surface_path = DEFAULT_DAILY_HANDOFF_SURFACE
             drift_review_artifact_path = DEFAULT_DRIFT_REVIEW_OUTPUT
             drift_review_surface_path = DEFAULT_DRIFT_REVIEW_SURFACE
             readiness_artifact_path = DEFAULT_DAILY_READINESS_OUTPUT
@@ -2509,6 +2544,7 @@ def main(argv: list[str] | None = None) -> int:
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=written_run_trace,
                 run_ledger_surface_path=run_ledger_surface_path,
+                handoff_surface_path=handoff_surface_path,
                 drift_review_surface_path=written_drift_review,
                 artifact_output_path=morning_artifact_path,
                 surface_output_path=morning_path,
@@ -2552,6 +2588,18 @@ def main(argv: list[str] | None = None) -> int:
                 scheduler_operations_path=scheduler_operations_artifact_path,
                 archive_manifest_path=archive_manifest,
             )
+            written_handoff = write_daily_handoff(
+                artifact_output_path=handoff_artifact_path,
+                surface_output_path=handoff_surface_path,
+                run_ledger_path=run_ledger_artifact_path,
+                journal_path=journal_artifact_path,
+                task_ledger_path=task_ledger_artifact_path,
+                daily_review_path=review_artifact_path,
+                review_effect_path=review_effect_artifact_path,
+                analyst_council_path=analyst_council_artifact_path,
+                memory_audit_path=memory_audit_artifact_path,
+                scout_path=scout_path,
+            )
             written_readiness = write_daily_readiness(
                 project_root=".",
                 artifact_output_path=readiness_artifact_path,
@@ -2580,6 +2628,8 @@ def main(argv: list[str] | None = None) -> int:
                     "run_trace_surface": written_run_trace,
                     "daily_run_ledger": run_ledger_artifact_path,
                     "daily_run_ledger_surface": written_run_ledger,
+                    "daily_handoff": handoff_artifact_path,
+                    "daily_handoff_surface": written_handoff,
                     "drift_review": drift_review_artifact_path,
                     "drift_review_surface": written_drift_review,
                     "today": written_today,
@@ -2611,6 +2661,8 @@ def main(argv: list[str] | None = None) -> int:
                     "run_trace_surface": written_run_trace.as_posix(),
                     "daily_run_ledger": run_ledger_artifact_path.as_posix(),
                     "daily_run_ledger_surface": written_run_ledger.as_posix(),
+                    "daily_handoff": handoff_artifact_path.as_posix(),
+                    "daily_handoff_surface": written_handoff.as_posix(),
                     "drift_review": drift_review_artifact_path.as_posix(),
                     "drift_review_surface": written_drift_review.as_posix(),
                     "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),

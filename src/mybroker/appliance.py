@@ -53,6 +53,7 @@ OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION = "operator_council_response_appl
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUN_TRACE_SCHEMA_VERSION = "local_run_trace.v1"
 DAILY_RUN_LEDGER_SCHEMA_VERSION = "daily_run_ledger.v1"
+DAILY_HANDOFF_SCHEMA_VERSION = "daily_handoff.v1"
 DRIFT_REVIEW_SCHEMA_VERSION = "local_drift_review.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
@@ -110,6 +111,8 @@ DEFAULT_RUN_TRACE_OUTPUT = Path("reports/runtime/run-trace.json")
 DEFAULT_RUN_TRACE_SURFACE = Path("reports/product/run-trace.html")
 DEFAULT_DAILY_RUN_LEDGER_OUTPUT = Path("reports/runtime/daily-run-ledger.json")
 DEFAULT_DAILY_RUN_LEDGER_SURFACE = Path("reports/product/run-ledger.html")
+DEFAULT_DAILY_HANDOFF_OUTPUT = Path("reports/runtime/daily-handoff.json")
+DEFAULT_DAILY_HANDOFF_SURFACE = Path("reports/product/handoff.html")
 DEFAULT_DRIFT_REVIEW_OUTPUT = Path("reports/runtime/drift-review.json")
 DEFAULT_DRIFT_REVIEW_SURFACE = Path("reports/product/drift-review.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
@@ -1664,6 +1667,8 @@ def build_daily_readiness(
         ("run_trace_surface", DEFAULT_RUN_TRACE_SURFACE, "phone_surface", False),
         ("daily_run_ledger", DEFAULT_DAILY_RUN_LEDGER_OUTPUT, "control_artifact", False),
         ("daily_run_ledger_surface", DEFAULT_DAILY_RUN_LEDGER_SURFACE, "phone_surface", False),
+        ("daily_handoff", DEFAULT_DAILY_HANDOFF_OUTPUT, "control_artifact", False),
+        ("daily_handoff_surface", DEFAULT_DAILY_HANDOFF_SURFACE, "phone_surface", False),
         ("drift_review", DEFAULT_DRIFT_REVIEW_OUTPUT, "control_artifact", False),
         ("drift_review_surface", DEFAULT_DRIFT_REVIEW_SURFACE, "phone_surface", False),
         ("review_prompt", DEFAULT_REVIEW_PROMPT_OUTPUT, "control_artifact", False),
@@ -1732,6 +1737,7 @@ def build_daily_readiness(
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
+            "handoff": DEFAULT_DAILY_HANDOFF_SURFACE.as_posix(),
             "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
@@ -2187,6 +2193,263 @@ td strong,td span {{ display:block; }}
 <section class="section">
 <h2>안전 경계</h2>
 <p>이 ledger는 기존 로컬 artifact만 읽고 오늘의 canonical run을 표시합니다. live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def build_daily_handoff(
+    *,
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    review_effect_path: str | Path = DEFAULT_REVIEW_EFFECT_OUTPUT,
+    analyst_council_path: str | Path = DEFAULT_ANALYST_COUNCIL_OUTPUT,
+    memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    run_ledger_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    journal = _load_optional_json(journal_path)
+    task_ledger = _load_optional_json(task_ledger_path)
+    daily_review = _load_optional_json(daily_review_path)
+    review_effect = _load_optional_json(review_effect_path)
+    council = _load_optional_json(analyst_council_path)
+    memory_audit = _load_optional_json(memory_audit_path)
+    scout = _load_optional_json(scout_path)
+    run_ledger = _load_optional_json(run_ledger_path)
+    canonical_run = _daily_handoff_canonical_run(run_ledger)
+    carried_forward = _daily_handoff_carried_items(
+        journal=journal,
+        task_ledger=task_ledger,
+        daily_review=daily_review,
+        review_effect=review_effect,
+        council=council,
+        memory_audit=memory_audit,
+        scout=scout,
+    )
+    reflected = [item for item in carried_forward if item.get("reflected_today")]
+    unresolved = [item for item in carried_forward if not item.get("reflected_today")]
+    duplicate_count = int(run_ledger.get("summary", {}).get("duplicate_today_count", 0) or 0)
+    status = "blocked" if not canonical_run else ("review" if unresolved or duplicate_count else "ready")
+    payload = {
+        "schema_version": DAILY_HANDOFF_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": status,
+        "run_id": canonical_run.get("run_id", journal.get("run_id", scout.get("run_id", ""))),
+        "summary": {
+            "carried_item_count": len(carried_forward),
+            "reflected_today_count": len(reflected),
+            "unresolved_count": len(unresolved),
+            "duplicate_today_count": duplicate_count,
+            "review_effect_status": review_effect.get("status", "missing"),
+            "council_status": council.get("status", "missing"),
+            "memory_risk_count": int(memory_audit.get("summary", {}).get("risk_count", 0) or 0),
+        },
+        "canonical_run": canonical_run,
+        "carried_forward": carried_forward,
+        "reflected_today": reflected,
+        "unresolved": unresolved,
+        "copy_ready_commands": _daily_handoff_commands(unresolved=unresolved, scout=scout),
+        "artifact_inputs": {
+            "journal": Path(journal_path).as_posix(),
+            "task_ledger": Path(task_ledger_path).as_posix(),
+            "daily_review": Path(daily_review_path).as_posix(),
+            "review_effect": Path(review_effect_path).as_posix(),
+            "analyst_council": Path(analyst_council_path).as_posix(),
+            "memory_audit": Path(memory_audit_path).as_posix(),
+            "daily_scout": Path(scout_path).as_posix(),
+            "daily_run_ledger": Path(run_ledger_path).as_posix(),
+        },
+        "phone_links": {
+            "handoff": DEFAULT_DAILY_HANDOFF_SURFACE.as_posix(),
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+            "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
+            "council": DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix(),
+            "tasks": DEFAULT_ANALYST_TASK_LEDGER_OUTPUT.as_posix(),
+            "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
+            "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "handoff_reads_existing_artifacts_only",
+            "does_not_execute_tasks",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_live_trading",
+            "external_effects_require_separate_gate",
+        ],
+    }
+    return payload
+
+
+def write_daily_handoff(
+    *,
+    artifact_output_path: str | Path = DEFAULT_DAILY_HANDOFF_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_DAILY_HANDOFF_SURFACE,
+    **paths: Any,
+) -> Path:
+    payload = build_daily_handoff(**paths)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_daily_handoff(payload), encoding="utf-8")
+    return target
+
+
+def validate_daily_handoff_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != DAILY_HANDOFF_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"ready", "review", "blocked"}:
+        errors.append(f"invalid status {payload.get('status')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    summary = payload.get("summary", {})
+    for field in ["carried_item_count", "reflected_today_count", "unresolved_count", "duplicate_today_count"]:
+        if field not in summary:
+            errors.append(f"summary missing {field}")
+    if payload.get("status") != "blocked" and not payload.get("canonical_run", {}).get("entry_id"):
+        errors.append("canonical_run.entry_id must not be empty unless blocked")
+    for index, item in enumerate(payload.get("carried_forward", [])):
+        for field in ["id", "kind", "title", "source", "reflected_today", "evidence", "next_action"]:
+            if field not in item:
+                errors.append(f"carried_forward[{index}] missing {field}")
+    for index, command in enumerate(payload.get("copy_ready_commands", [])):
+        if not command.get("command"):
+            errors.append(f"copy_ready_commands[{index}] missing command")
+        if command.get("external_effect_performed") is not False:
+            errors.append(f"copy_ready_commands[{index}] external_effect_performed must be false")
+    if not payload.get("phone_links", {}).get("handoff"):
+        errors.append("phone_links.handoff must not be empty")
+    boundary = payload.get("safety_boundary", [])
+    if "handoff_reads_existing_artifacts_only" not in boundary:
+        errors.append("safety_boundary must include handoff_reads_existing_artifacts_only")
+    if "does_not_execute_tasks" not in boundary:
+        errors.append("safety_boundary must include does_not_execute_tasks")
+    return errors
+
+
+def validate_daily_handoff_file(path: str | Path) -> list[str]:
+    return validate_daily_handoff_payload(load_json(path))
+
+
+def render_daily_handoff(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    canonical = payload.get("canonical_run", {})
+    carried_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(item.get('kind', 'item'))} · {esc('반영됨' if item.get('reflected_today') else '남아있음')}</span>"
+        f"<h2>{esc(item.get('title', ''))}</h2>"
+        f"<p>{esc(item.get('evidence', ''))}</p>"
+        f"<small>{esc(item.get('next_action', ''))}</small>"
+        "</article>"
+        for item in payload.get("carried_forward", [])
+    ) or "<p>이월된 질문이나 작업이 아직 없습니다. 오늘 실행부터 기억이 쌓입니다.</p>"
+    unresolved_cards = "".join(
+        "<article class='card warn'>"
+        f"<span>{esc(item.get('source', ''))}</span>"
+        f"<h2>{esc(item.get('title', ''))}</h2>"
+        f"<p>{esc(item.get('evidence', ''))}</p>"
+        f"<small>{esc(item.get('next_action', ''))}</small>"
+        "</article>"
+        for item in payload.get("unresolved", [])
+    ) or "<p>오늘 handoff에서 즉시 처리할 unresolved 항목은 없습니다.</p>"
+    command_cards = "".join(
+        "<article class='command'>"
+        f"<span>{esc(command.get('label', 'local command'))}</span>"
+        f"<code>{esc(command.get('command', ''))}</code>"
+        f"<small>{esc(command.get('why', ''))}</small>"
+        "</article>"
+        for command in payload.get("copy_ready_commands", [])
+    )
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if path and label != "handoff"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Handoff</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:860px; margin:0 auto; padding:16px; }}
+a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
+.eyebrow,.card span,.command span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:18px; }}
+p,small {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.card,.command {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:12px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
+.metric strong {{ display:block; font-size:24px; }}
+.grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.card,.command {{ background:white; padding:14px; min-width:0; }}
+.warn {{ border-color:#d7b36a; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }}
+@media (max-width:680px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Handoff · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>어제가 오늘에 반영됐나</h1>
+<p>전날 남은 질문, 피드백, task, council/memory 경고가 오늘 실행에 실제로 반영됐는지 확인하는 로컬 proof입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<h2>{esc(payload.get('status', 'review'))}</h2>
+<p>canonical run: {esc(canonical.get('run_id', 'missing'))} · {esc(canonical.get('local_day', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Carried</span><strong>{esc(summary.get('carried_item_count', 0))}</strong></article>
+<article class="metric"><span>Reflected</span><strong>{esc(summary.get('reflected_today_count', 0))}</strong></article>
+<article class="metric"><span>Unresolved</span><strong>{esc(summary.get('unresolved_count', 0))}</strong></article>
+<article class="metric"><span>Duplicates</span><strong>{esc(summary.get('duplicate_today_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>이월 항목 전체</h2>
+<div class="grid">{carried_cards}</div>
+</section>
+<section class="section">
+<h2>아직 남은 것</h2>
+<div class="grid">{unresolved_cards}</div>
+</section>
+<section class="section">
+<h2>다음 로컬 응답</h2>
+<div class="grid">{command_cards}</div>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 handoff는 기존 로컬 artifact만 읽습니다. task 실행, live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
 </section>
 </main>
 </body>
@@ -5932,6 +6195,7 @@ def build_morning_control_packet(
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
+    handoff_surface_path: str | Path = DEFAULT_DAILY_HANDOFF_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
@@ -5998,6 +6262,7 @@ def build_morning_control_packet(
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
             "trace": Path(run_trace_surface_path).as_posix(),
             "run_ledger": Path(run_ledger_surface_path).as_posix(),
+            "handoff": Path(handoff_surface_path).as_posix(),
             "drift_review": Path(drift_review_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
             "journal": Path(journal_surface_path).as_posix(),
@@ -6064,6 +6329,7 @@ def write_morning_control_packet(
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
+    handoff_surface_path: str | Path = DEFAULT_DAILY_HANDOFF_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
@@ -6091,6 +6357,7 @@ def write_morning_control_packet(
         pattern_radar_surface_path=pattern_radar_surface_path,
         run_trace_surface_path=run_trace_surface_path,
         run_ledger_surface_path=run_ledger_surface_path,
+        handoff_surface_path=handoff_surface_path,
         drift_review_surface_path=drift_review_surface_path,
     )
     write_json(payload, artifact_output_path)
@@ -7671,6 +7938,159 @@ def _run_trace_weak_spots(
     if external_flags:
         weak.append(f"외부효과 flag 확인 필요: {', '.join(external_flags)}")
     return weak
+
+
+def _daily_handoff_canonical_run(run_ledger: dict[str, Any]) -> dict[str, Any]:
+    if run_ledger.get("schema_version") != DAILY_RUN_LEDGER_SCHEMA_VERSION:
+        return {}
+    canonical_id = run_ledger.get("canonical_entry_id", "")
+    for entry in run_ledger.get("entries", []):
+        if entry.get("entry_id") == canonical_id or entry.get("canonical_status") == "canonical":
+            return {
+                "entry_id": entry.get("entry_id", ""),
+                "run_id": entry.get("run_id", ""),
+                "local_day": entry.get("local_day", ""),
+                "run_status": entry.get("run_status", ""),
+                "today_path": entry.get("today_path", ""),
+                "archive_manifest": entry.get("archive_manifest", ""),
+                "recorded_at": entry.get("recorded_at", ""),
+            }
+    return {}
+
+
+def _daily_handoff_carried_items(
+    *,
+    journal: dict[str, Any],
+    task_ledger: dict[str, Any],
+    daily_review: dict[str, Any],
+    review_effect: dict[str, Any],
+    council: dict[str, Any],
+    memory_audit: dict[str, Any],
+    scout: dict[str, Any],
+) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    match_text = _daily_handoff_match_text(scout=scout, review_effect=review_effect, daily_review=daily_review)
+    for index, question in enumerate(journal.get("follow_up_questions", [])[:6], start=1):
+        reflected = _text_overlaps(question, match_text)
+        items.append({
+            "id": f"DH-Q{index:02d}",
+            "kind": "follow_up_question",
+            "title": question,
+            "source": "analyst_journal",
+            "reflected_today": reflected,
+            "evidence": "오늘 scout/review 문맥과 연결됩니다." if reflected else "오늘 scout/review 문맥에서 직접 연결을 찾지 못했습니다.",
+            "next_action": "오늘 브리프를 읽을 때 이 질문이 해소됐는지 확인하세요." if reflected else "review-prompt에서 이 질문을 tomorrow focus로 남기세요.",
+        })
+    for entry in task_ledger.get("entries", [])[:8]:
+        status = entry.get("status", "")
+        if status in {"completed", "retired_not_in_current_queue"}:
+            continue
+        reflected = status in {"ready_for_local_work", "carried"} and _text_overlaps(entry.get("title", ""), match_text)
+        items.append({
+            "id": f"DH-{entry.get('task_id', 'TASK')}",
+            "kind": "task",
+            "title": entry.get("title", "local analyst task"),
+            "source": "analyst_task_ledger",
+            "reflected_today": reflected,
+            "evidence": f"task status: {status or 'missing'}",
+            "next_action": entry.get("operator_note") or entry.get("suggested_command") or "완료, 이월, 보류 중 하나로 task status response를 남기세요.",
+        })
+    if review_effect.get("schema_version") == OPERATOR_REVIEW_EFFECT_SCHEMA_VERSION:
+        reflected = review_effect.get("status") == "applied"
+        items.append({
+            "id": "DH-REVIEW",
+            "kind": "operator_feedback",
+            "title": "어제/이전 review feedback이 오늘 scout scoring에 반영됐는지",
+            "source": "review_effect",
+            "reflected_today": reflected,
+            "evidence": review_effect.get("interpretation", f"review effect status: {review_effect.get('status', 'missing')}"),
+            "next_action": "반영됐으면 오늘 결과를 읽고, 아니면 review-response-apply 명령으로 선호를 다시 남기세요.",
+        })
+    if council.get("schema_version") == ANALYST_COUNCIL_SCHEMA_VERSION and council.get("status") != "ready_to_read":
+        items.append({
+            "id": "DH-COUNCIL",
+            "kind": "council_warning",
+            "title": "analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.",
+            "source": "analyst_council",
+            "reflected_today": False,
+            "evidence": council.get("decision", {}).get("rationale", f"council status: {council.get('status', 'missing')}"),
+            "next_action": "council.html에서 역할별 caution/blocker를 먼저 읽고 오늘 결론 강도를 낮추세요.",
+        })
+    risk_count = int(memory_audit.get("summary", {}).get("risk_count", 0) or 0)
+    if risk_count:
+        items.append({
+            "id": "DH-MEMORY",
+            "kind": "memory_warning",
+            "title": "누적 기억 품질 경고가 남아 있습니다.",
+            "source": "memory_audit",
+            "reflected_today": False,
+            "evidence": f"memory audit risk {risk_count}개",
+            "next_action": "memory-audit.html에서 약한 source, vault gap, coverage gap을 먼저 확인하세요.",
+        })
+    if not items:
+        items.append({
+            "id": "DH-START",
+            "kind": "startup",
+            "title": "아직 이월 항목이 없습니다.",
+            "source": "daily_handoff",
+            "reflected_today": True,
+            "evidence": "journal/task/review/council/memory artifact에서 남은 항목을 찾지 못했습니다.",
+            "next_action": "오늘 브리프를 읽은 뒤 review-prompt의 짧은 응답을 남기면 내일 handoff가 생깁니다.",
+        })
+    return items
+
+
+def _daily_handoff_match_text(*, scout: dict[str, Any], review_effect: dict[str, Any], daily_review: dict[str, Any]) -> str:
+    parts: list[str] = []
+    recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    parts.extend([recommended.get("name", ""), recommended.get("why", ""), recommended.get("next_question", "")])
+    for recommendation in scout.get("recommendations", [])[:5]:
+        parts.extend([recommendation.get("name", ""), recommendation.get("why", ""), recommendation.get("next_question", "")])
+    for effect in review_effect.get("topic_effects", [])[:8]:
+        parts.extend([effect.get("topic", ""), effect.get("effect", ""), effect.get("evidence", "")])
+    for signal in daily_review.get("signals", [])[:8]:
+        parts.extend([signal.get("topic", ""), signal.get("operator_note", ""), signal.get("reason", "")])
+    return " ".join(str(part) for part in parts if part)
+
+
+def _daily_handoff_commands(*, unresolved: list[dict[str, Any]], scout: dict[str, Any]) -> list[dict[str, Any]]:
+    recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    topic = recommended.get("name", "오늘 브리프")
+    question_items = [item for item in unresolved if item.get("kind") == "follow_up_question"]
+    commands = [
+        {
+            "label": "오늘 읽음 기록",
+            "command": f'more "{topic}" "오늘 읽고 더 보고 싶은 부분을 기록"',
+            "why": "review-response-apply에 넣으면 내일 scout scoring과 handoff에 반영됩니다.",
+            "external_effect_performed": False,
+        }
+    ]
+    if question_items:
+        commands.append({
+            "label": "남은 질문 강조",
+            "command": f'more "{topic}" "{question_items[0].get("title", "남은 질문")}"',
+            "why": "가장 중요한 unresolved 질문을 내일 우선순위로 넘깁니다.",
+            "external_effect_performed": False,
+        })
+    commands.append({
+        "label": "먼저 볼 화면",
+        "command": "open reports/product/handoff.html reports/product/morning.html reports/product/today.html",
+        "why": "로컬 파일 열기만 수행합니다. 외부 효과는 없습니다.",
+        "external_effect_performed": False,
+    })
+    return commands
+
+
+def _text_overlaps(value: str, haystack: str) -> bool:
+    tokens = [
+        token.strip(".,:;!?()[]{}\"'").lower()
+        for token in value.split()
+        if len(token.strip(".,:;!?()[]{}\"'")) >= 4
+    ]
+    if not tokens or not haystack:
+        return False
+    haystack_lower = haystack.lower()
+    return any(token in haystack_lower for token in tokens[:12])
 
 
 def _daily_run_ledger_entry(

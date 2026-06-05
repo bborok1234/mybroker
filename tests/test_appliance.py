@@ -33,6 +33,7 @@ from mybroker.appliance import (
     write_run_trace,
     write_daily_review,
     write_daily_run_ledger,
+    write_daily_handoff,
     write_drift_review,
     write_operator_review_prompt,
     write_operator_review_effect,
@@ -56,6 +57,7 @@ from mybroker.appliance import (
     validate_daily_review_file,
     validate_daily_review_payload,
     validate_daily_run_ledger_file,
+    validate_daily_handoff_file,
     validate_drift_review_file,
     validate_operator_review_prompt_file,
     validate_operator_review_effect_file,
@@ -1012,6 +1014,8 @@ class LocalApplianceTests(unittest.TestCase):
             run_trace_errors = validate_run_trace_file(root / "reports" / "runtime" / "run-trace.json")
             run_ledger_payload = json.loads((root / "reports" / "runtime" / "daily-run-ledger.json").read_text(encoding="utf-8"))
             run_ledger_errors = validate_daily_run_ledger_file(root / "reports" / "runtime" / "daily-run-ledger.json")
+            handoff_payload = json.loads((root / "reports" / "runtime" / "daily-handoff.json").read_text(encoding="utf-8"))
+            handoff_errors = validate_daily_handoff_file(root / "reports" / "runtime" / "daily-handoff.json")
             drift_review_payload = json.loads((root / "reports" / "runtime" / "drift-review.json").read_text(encoding="utf-8"))
             drift_review_errors = validate_drift_review_file(root / "reports" / "runtime" / "drift-review.json")
             review_payload = json.loads((root / "reports" / "memory" / "daily-review.json").read_text(encoding="utf-8"))
@@ -1031,6 +1035,7 @@ class LocalApplianceTests(unittest.TestCase):
             pattern_radar_html = (root / "reports" / "product" / "pattern-radar.html").read_text(encoding="utf-8")
             run_trace_html = (root / "reports" / "product" / "run-trace.html").read_text(encoding="utf-8")
             run_ledger_html = (root / "reports" / "product" / "run-ledger.html").read_text(encoding="utf-8")
+            handoff_html = (root / "reports" / "product" / "handoff.html").read_text(encoding="utf-8")
             drift_review_html = (root / "reports" / "product" / "drift-review.html").read_text(encoding="utf-8")
             review_html = (root / "reports" / "product" / "review.html").read_text(encoding="utf-8")
             review_prompt_html = (root / "reports" / "product" / "review-prompt.html").read_text(encoding="utf-8")
@@ -1055,6 +1060,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("pattern_radar", morning_payload["phone_links"])
         self.assertIn("trace", morning_payload["phone_links"])
         self.assertIn("run_ledger", morning_payload["phone_links"])
+        self.assertIn("handoff", morning_payload["phone_links"])
         self.assertIn("drift_review", morning_payload["phone_links"])
         self.assertIn("review", morning_payload["phone_links"])
         self.assertIn("review_prompt", morning_payload["phone_links"])
@@ -1092,6 +1098,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("scheduler", readiness_payload["phone_links"])
         self.assertIn("trace", readiness_payload["phone_links"])
         self.assertIn("run_ledger", readiness_payload["phone_links"])
+        self.assertIn("handoff", readiness_payload["phone_links"])
         self.assertIn("drift_review", readiness_payload["phone_links"])
         self.assertIn("review_prompt", readiness_payload["phone_links"])
         self.assertIn("review_effect", readiness_payload["phone_links"])
@@ -1101,6 +1108,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(item["name"] == "analyst_council" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "analyst_council_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "run_trace" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "daily_handoff" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "daily_handoff_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "drift_review" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "review_prompt" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "review_effect" for item in readiness_payload["artifacts"]))
@@ -1136,6 +1145,14 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(run_ledger_payload["summary"]["today_run_count"], 1)
         self.assertEqual(run_ledger_payload["summary"]["duplicate_today_count"], 0)
         self.assertEqual(run_ledger_payload["entries"][0]["canonical_status"], "canonical")
+        self.assertEqual(handoff_payload["schema_version"], "daily_handoff.v1")
+        self.assertEqual(handoff_errors, [])
+        self.assertFalse(handoff_payload["external_effect_performed"])
+        self.assertFalse(handoff_payload["host_write_performed"])
+        self.assertIn(handoff_payload["status"], {"ready", "review", "blocked"})
+        self.assertGreaterEqual(handoff_payload["summary"]["carried_item_count"], 1)
+        self.assertTrue(handoff_payload["copy_ready_commands"])
+        self.assertIn("canonical_run", handoff_payload)
         self.assertEqual(drift_review_payload["schema_version"], "local_drift_review.v1")
         self.assertEqual(drift_review_errors, [])
         self.assertFalse(drift_review_payload["external_effect_performed"])
@@ -1184,6 +1201,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("run_trace_surface", manifest_payload["artifacts"])
         self.assertIn("daily_run_ledger", manifest_payload["artifacts"])
         self.assertIn("daily_run_ledger_surface", manifest_payload["artifacts"])
+        self.assertIn("daily_handoff", manifest_payload["artifacts"])
+        self.assertIn("daily_handoff_surface", manifest_payload["artifacts"])
         self.assertIn("drift_review", manifest_payload["artifacts"])
         self.assertIn("drift_review_surface", manifest_payload["artifacts"])
         self.assertIn("source_refresh_brief", manifest_payload["artifacts"])
@@ -1214,6 +1233,9 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("오늘 어떤 run을 믿을지", run_ledger_html)
         self.assertIn("Run history", run_ledger_html)
         self.assertNotIn("schema_version", run_ledger_html)
+        self.assertIn("어제가 오늘에 반영됐나", handoff_html)
+        self.assertIn("아직 남은 것", handoff_html)
+        self.assertNotIn("schema_version", handoff_html)
         self.assertIn("오늘 방향 이탈 점검", drift_review_html)
         self.assertIn("판단 신호", drift_review_html)
         self.assertNotIn("schema_version", drift_review_html)
@@ -1228,6 +1250,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("source_refresh", morning_html)
         self.assertIn("trace", morning_html)
         self.assertIn("run_ledger", morning_html)
+        self.assertIn("handoff", morning_html)
         self.assertIn("drift_review", morning_html)
         self.assertIn("review_prompt", morning_html)
         self.assertIn("review_effect", morning_html)
@@ -1328,6 +1351,117 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(payload["entries"][1]["canonical_status"], "duplicate_same_day")
         self.assertIn("canonical run", html)
         self.assertIn("Duplicates", html)
+
+    def test_daily_handoff_summarizes_reflected_and_unresolved_carryover(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            journal_path = root / "journal.json"
+            ledger_path = root / "task-ledger.json"
+            review_path = root / "daily-review.json"
+            effect_path = root / "review-effect.json"
+            council_path = root / "council.json"
+            audit_path = root / "memory-audit.json"
+            scout_path = root / "scout.json"
+            run_ledger_path = root / "daily-run-ledger.json"
+            handoff_path = root / "daily-handoff.json"
+            handoff_surface = root / "handoff.html"
+            journal_path.write_text(json.dumps({
+                "schema_version": "personal_analyst_journal.v1",
+                "run_id": "daily-research",
+                "follow_up_questions": [
+                    "Semiconductors cycle에서 반대 근거는 무엇인가요?",
+                    "Energy prices는 오늘 왜 약한가요?",
+                ],
+            }), encoding="utf-8")
+            ledger_path.write_text(json.dumps({
+                "schema_version": "personal_analyst_task_ledger.v1",
+                "entries": [
+                    {
+                        "task_id": "AT-001",
+                        "title": "Check Semiconductors source freshness",
+                        "status": "carried",
+                        "operator_note": "오늘 source freshness를 다시 확인하세요.",
+                    },
+                    {
+                        "task_id": "AT-002",
+                        "title": "Blocked live source execution",
+                        "status": "blocked_requires_approval",
+                    },
+                ],
+            }), encoding="utf-8")
+            review_path.write_text(json.dumps({
+                "schema_version": "daily_review.v1",
+                "signals": [{"topic": "Semiconductors", "operator_note": "cycle이 중요"}],
+                "summary": {"response_count": 1},
+            }), encoding="utf-8")
+            effect_path.write_text(json.dumps({
+                "schema_version": "operator_review_effect.v1",
+                "status": "applied",
+                "interpretation": "review feedback shaped today's scout scoring",
+                "topic_effects": [{"topic": "Semiconductors", "effect": "boosted"}],
+            }), encoding="utf-8")
+            council_path.write_text(json.dumps({
+                "schema_version": "analyst_council.v1",
+                "status": "read_with_caution",
+                "decision": {"rationale": "source freshness remains weak"},
+            }), encoding="utf-8")
+            audit_path.write_text(json.dumps({
+                "schema_version": "personal_memory_audit.v1",
+                "summary": {"risk_count": 1},
+            }), encoding="utf-8")
+            scout_path.write_text(json.dumps({
+                "schema_version": "daily_scout.v1",
+                "run_id": "daily-research",
+                "recommended_topic": {
+                    "name": "Semiconductors",
+                    "why": "cycle and source freshness are today's focus",
+                    "next_question": "Semiconductors cycle에서 반대 근거는 무엇인가요?",
+                },
+                "recommendations": [],
+            }), encoding="utf-8")
+            run_ledger_path.write_text(json.dumps({
+                "schema_version": "daily_run_ledger.v1",
+                "canonical_entry_id": "entry-1",
+                "summary": {"duplicate_today_count": 0},
+                "entries": [
+                    {
+                        "entry_id": "entry-1",
+                        "run_id": "daily-research",
+                        "local_day": "2026-06-05",
+                        "run_status": "ready",
+                        "today_path": "reports/product/today.html",
+                        "archive_manifest": "reports/archive/2026-06-05/manifest.json",
+                        "recorded_at": "2026-06-05T07:40:00+00:00",
+                        "canonical_status": "canonical",
+                    }
+                ],
+            }), encoding="utf-8")
+
+            write_daily_handoff(
+                artifact_output_path=handoff_path,
+                surface_output_path=handoff_surface,
+                journal_path=journal_path,
+                task_ledger_path=ledger_path,
+                daily_review_path=review_path,
+                review_effect_path=effect_path,
+                analyst_council_path=council_path,
+                memory_audit_path=audit_path,
+                scout_path=scout_path,
+                run_ledger_path=run_ledger_path,
+            )
+            payload = json.loads(handoff_path.read_text(encoding="utf-8"))
+            html = handoff_surface.read_text(encoding="utf-8")
+            errors = validate_daily_handoff_file(handoff_path)
+
+        self.assertEqual(errors, [])
+        self.assertEqual(payload["schema_version"], "daily_handoff.v1")
+        self.assertEqual(payload["status"], "review")
+        self.assertGreater(payload["summary"]["reflected_today_count"], 0)
+        self.assertGreater(payload["summary"]["unresolved_count"], 0)
+        self.assertTrue(any(item["kind"] == "operator_feedback" and item["reflected_today"] for item in payload["carried_forward"]))
+        self.assertTrue(any(item["kind"] == "council_warning" for item in payload["unresolved"]))
+        self.assertIn("어제가 오늘에 반영됐나", html)
+        self.assertNotIn("schema_version", html)
 
     def test_task_status_response_apply_updates_ledger_locally(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
