@@ -39,6 +39,8 @@ from mybroker.appliance import (
     DEFAULT_MEMORY_QUERY_SURFACE,
     DEFAULT_MEMORY_AUDIT_OUTPUT,
     DEFAULT_MEMORY_AUDIT_SURFACE,
+    DEFAULT_ANALYST_COUNCIL_OUTPUT,
+    DEFAULT_ANALYST_COUNCIL_SURFACE,
     DEFAULT_MEMORY_OUTPUT,
     DEFAULT_NOTIFICATION_OUTPUT,
     DEFAULT_OPERATOR_DECISION_APPLY_OUTPUT,
@@ -66,6 +68,7 @@ from mybroker.appliance import (
     send_notification_payload,
     write_agent_pattern_radar,
     write_launchd_assets,
+    write_analyst_council,
     write_analyst_journal,
     write_analyst_task_queue,
     write_analyst_task_ledger,
@@ -99,6 +102,7 @@ from mybroker.appliance import (
     write_source_refresh_brief,
     write_today_surface,
     validate_analyst_journal_file,
+    validate_analyst_council_file,
     validate_analyst_task_queue_file,
     validate_analyst_task_ledger_file,
     validate_agent_pattern_radar_file,
@@ -336,6 +340,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_review_response_apply_parser.add_argument("review_response_apply_path")
     validate_memory_audit_parser = subcommands.add_parser("validate-memory-audit", help="Validate a personal_memory_audit.v1 artifact.")
     validate_memory_audit_parser.add_argument("memory_audit_path")
+    validate_council_parser = subcommands.add_parser("validate-analyst-council", help="Validate an analyst_council.v1 artifact.")
+    validate_council_parser.add_argument("council_path")
     validate_pattern_radar_parser = subcommands.add_parser("validate-agent-pattern-radar", help="Validate an agent_pattern_radar.v1 artifact.")
     validate_pattern_radar_parser.add_argument("pattern_radar_path")
     validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
@@ -607,6 +613,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_morning_parser.add_argument("--pattern-radar-surface", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--run-trace-surface", default=DEFAULT_RUN_TRACE_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--drift-review-surface", default=DEFAULT_DRIFT_REVIEW_SURFACE.as_posix())
+    appliance_morning_parser.add_argument("--analyst-council-surface", default=DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--artifact-output", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--output", default=DEFAULT_MORNING_CONTROL_SURFACE.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
@@ -626,6 +633,16 @@ def main(argv: list[str] | None = None) -> int:
     appliance_audit_parser.add_argument("--daily-review", default=DEFAULT_DAILY_REVIEW_OUTPUT.as_posix())
     appliance_audit_parser.add_argument("--output", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
     appliance_audit_parser.add_argument("--surface-output", default=DEFAULT_MEMORY_AUDIT_SURFACE.as_posix())
+    appliance_council_parser = appliance_subcommands.add_parser("council", help="Render role-specific analyst council review before reading today's brief.")
+    appliance_council_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
+    appliance_council_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
+    appliance_council_parser.add_argument("--journal", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
+    appliance_council_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_council_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_council_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
+    appliance_council_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_council_parser.add_argument("--artifact-output", default=DEFAULT_ANALYST_COUNCIL_OUTPUT.as_posix())
+    appliance_council_parser.add_argument("--output", default=DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix())
     appliance_notify_parser = appliance_subcommands.add_parser("notify", help="Prepare a phone notification payload. Dry-run by default.")
     appliance_notify_parser.add_argument("--provider", choices=["telegram", "pushover"], default="telegram")
     appliance_notify_parser.add_argument("--today-url", default="http://localhost:8787/reports/product/today.html")
@@ -1034,6 +1051,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-memory-audit":
         errors = validate_memory_audit_file(args.memory_audit_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-analyst-council":
+        errors = validate_analyst_council_file(args.council_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1772,6 +1796,7 @@ def main(argv: list[str] | None = None) -> int:
                 pattern_radar_surface_path=args.pattern_radar_surface,
                 run_trace_surface_path=args.run_trace_surface,
                 drift_review_surface_path=args.drift_review_surface,
+                analyst_council_surface_path=args.analyst_council_surface,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
@@ -1817,6 +1842,28 @@ def main(argv: list[str] | None = None) -> int:
                 "memory_audit_surface": path.as_posix(),
                 "status": artifact.get("status", ""),
                 "risk_count": artifact.get("summary", {}).get("risk_count", 0),
+                "external_effect_performed": artifact.get("external_effect_performed", False),
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "council":
+            path = write_analyst_council(
+                scenario_path=args.scenario,
+                verdict_path=args.verdict,
+                journal_path=args.journal,
+                memory_path=args.memory,
+                evidence_path=args.evidence,
+                memory_audit_path=args.memory_audit,
+                scout_path=args.scout,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            artifact = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "analyst_council": args.artifact_output,
+                "analyst_council_surface": path.as_posix(),
+                "status": artifact.get("status", ""),
+                "role_count": artifact.get("summary", {}).get("role_count", 0),
+                "blocker_count": artifact.get("summary", {}).get("blocker_count", 0),
                 "external_effect_performed": artifact.get("external_effect_performed", False),
             }, indent=2, ensure_ascii=False))
             return 0
@@ -1907,6 +1954,8 @@ def main(argv: list[str] | None = None) -> int:
             scheduler_operations_surface_path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE
             memory_audit_artifact_path = DEFAULT_MEMORY_AUDIT_OUTPUT
             memory_audit_surface_path = DEFAULT_MEMORY_AUDIT_SURFACE
+            analyst_council_artifact_path = DEFAULT_ANALYST_COUNCIL_OUTPUT
+            analyst_council_surface_path = DEFAULT_ANALYST_COUNCIL_SURFACE
             vault_compile_path = Path(args.vault_output)
             vault_surface_path = Path(args.vault_surface_output)
             playbook_path = write_runtime_playbook(args.playbook_output)
@@ -2133,6 +2182,17 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=journal_artifact_path,
                 surface_output_path=journal_path,
             )
+            written_analyst_council = write_analyst_council(
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                journal_path=journal_artifact_path,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                memory_audit_path=memory_audit_artifact_path,
+                scout_path=scout_path,
+                artifact_output_path=analyst_council_artifact_path,
+                surface_output_path=analyst_council_surface_path,
+            )
             written_task_queue = write_analyst_task_queue(
                 journal_path=journal_artifact_path,
                 memory_path=memory_path,
@@ -2221,6 +2281,7 @@ def main(argv: list[str] | None = None) -> int:
                 today_path=written_today,
                 review_prompt_path=review_prompt_artifact_path,
                 review_effect_path=review_effect_artifact_path,
+                analyst_council_path=analyst_council_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
                 scheduler_operations_path=scheduler_operations_artifact_path,
             )
@@ -2251,6 +2312,7 @@ def main(argv: list[str] | None = None) -> int:
                 review_surface_path=written_review,
                 review_prompt_surface_path=written_review_prompt,
                 review_effect_surface_path=written_review_effect,
+                analyst_council_surface_path=written_analyst_council,
                 memory_audit_surface_path=written_memory_audit,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=written_run_trace,
@@ -2303,6 +2365,8 @@ def main(argv: list[str] | None = None) -> int:
                     "review_prompt_surface": written_review_prompt,
                     "review_effect": review_effect_artifact_path,
                     "review_effect_surface": written_review_effect,
+                    "analyst_council": analyst_council_artifact_path,
+                    "analyst_council_surface": written_analyst_council,
                     "memory_audit": memory_audit_artifact_path,
                     "memory_audit_surface": written_memory_audit,
                     "run_trace": run_trace_artifact_path,
@@ -2351,6 +2415,8 @@ def main(argv: list[str] | None = None) -> int:
                 "product_brief": written_brief.as_posix(),
                 "analyst_journal": written_journal.as_posix(),
                 "analyst_journal_artifact": journal_artifact_path.as_posix(),
+                "analyst_council": analyst_council_artifact_path.as_posix(),
+                "analyst_council_surface": written_analyst_council.as_posix(),
                 "analyst_tasks": written_task_queue.as_posix(),
                 "analyst_tasks_artifact": task_queue_artifact_path.as_posix(),
                 "analyst_task_ledger": written_task_ledger.as_posix(),

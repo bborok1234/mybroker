@@ -40,6 +40,7 @@ OPERATOR_DECISION_APPLY_SCHEMA_VERSION = "operator_decision_apply.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 MEMORY_AUDIT_SCHEMA_VERSION = "personal_memory_audit.v1"
+ANALYST_COUNCIL_SCHEMA_VERSION = "analyst_council.v1"
 ANALYST_JOURNAL_SCHEMA_VERSION = "personal_analyst_journal.v1"
 ANALYST_TASK_QUEUE_SCHEMA_VERSION = "personal_analyst_task_queue.v1"
 ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
@@ -81,6 +82,8 @@ DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
 DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
 DEFAULT_MEMORY_AUDIT_OUTPUT = Path("reports/memory/audit.json")
 DEFAULT_MEMORY_AUDIT_SURFACE = Path("reports/product/memory-audit.html")
+DEFAULT_ANALYST_COUNCIL_OUTPUT = Path("reports/runtime/analyst-council.json")
+DEFAULT_ANALYST_COUNCIL_SURFACE = Path("reports/product/council.html")
 DEFAULT_ANALYST_JOURNAL_OUTPUT = Path("reports/product/journal.html")
 DEFAULT_ANALYST_JOURNAL_ARTIFACT = Path("reports/memory/analyst-journal.json")
 DEFAULT_ANALYST_TASK_QUEUE_OUTPUT = Path("reports/product/tasks.html")
@@ -1647,6 +1650,8 @@ def build_daily_readiness(
         ("review_prompt_surface", DEFAULT_REVIEW_PROMPT_SURFACE, "phone_surface", False),
         ("review_effect", DEFAULT_REVIEW_EFFECT_OUTPUT, "control_artifact", False),
         ("review_effect_surface", DEFAULT_REVIEW_EFFECT_SURFACE, "phone_surface", False),
+        ("analyst_council", DEFAULT_ANALYST_COUNCIL_OUTPUT, "control_artifact", False),
+        ("analyst_council_surface", DEFAULT_ANALYST_COUNCIL_SURFACE, "phone_surface", False),
         ("daily_scout", DEFAULT_DAILY_SCOUT_OUTPUT, "machine_artifact", True),
         ("daily_evidence", DEFAULT_DAILY_EVIDENCE_OUTPUT, "machine_artifact", True),
         ("topic_memory", DEFAULT_TOPIC_MEMORY_OUTPUT, "memory_artifact", True),
@@ -1709,6 +1714,7 @@ def build_daily_readiness(
             "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
+            "council": DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix(),
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
@@ -1798,6 +1804,7 @@ def build_run_trace(
     daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
     review_prompt_path: str | Path = DEFAULT_REVIEW_PROMPT_OUTPUT,
     review_effect_path: str | Path = DEFAULT_REVIEW_EFFECT_OUTPUT,
+    analyst_council_path: str | Path = DEFAULT_ANALYST_COUNCIL_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
     scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
@@ -1821,6 +1828,7 @@ def build_run_trace(
         ("daily_review", daily_review_path, "feedback", "Records what the operator read, skipped, or wants more of.", False),
         ("review_prompt", review_prompt_path, "feedback", "Suggests copy-ready responses so operator feedback can shape the next run.", False),
         ("review_effect", review_effect_path, "feedback", "Proves whether recorded review feedback actually shaped scout scoring.", False),
+        ("analyst_council", analyst_council_path, "review", "Checks today's brief through role-specific agreement, disagreement, and beginner-readiness.", False),
         ("memory_audit", memory_audit_path, "memory", "Audits accumulated memory, vault notes, archives, source posture, and review feedback.", False),
         ("scheduler_operations", scheduler_operations_path, "ops", "Shows automation readiness without host writes.", False),
         ("today_surface", today_path, "publish", "Renders the phone-readable daily entry point.", True),
@@ -1859,6 +1867,7 @@ def build_run_trace(
             "daily_review",
             "review_prompt",
             "review_effect",
+            "analyst_council",
             "memory_audit",
         ],
         "phone_links": {
@@ -1868,6 +1877,7 @@ def build_run_trace(
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
+            "council": DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix(),
             "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
             "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
@@ -3451,6 +3461,482 @@ def validate_analyst_journal_file(path: str | Path) -> list[str]:
     return validate_analyst_journal_payload(load_json(path))
 
 
+def build_analyst_council(
+    *,
+    scenario_path: str | Path = Path("reports/scenarios/daily-research-sim.json"),
+    verdict_path: str | Path = Path("reports/scenarios/daily-research-verdict.json"),
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    scenario = _load_optional_json(scenario_path)
+    verdict = _load_optional_json(verdict_path)
+    journal = _load_optional_json(journal_path)
+    memory = _load_optional_json(memory_path)
+    evidence = _load_optional_json(evidence_path)
+    memory_audit = _load_optional_json(memory_audit_path)
+    scout = _load_optional_json(scout_path)
+    roles = _analyst_council_roles(
+        scenario=scenario,
+        verdict=verdict,
+        journal=journal,
+        memory=memory,
+        evidence=evidence,
+        memory_audit=memory_audit,
+        scout=scout,
+    )
+    blockers = _analyst_council_blockers(roles=roles, memory_audit=memory_audit, evidence=evidence)
+    disagreement = _analyst_council_disagreement(roles=roles)
+    decision = _analyst_council_decision(roles=roles, blockers=blockers, disagreement=disagreement)
+    return {
+        "schema_version": ANALYST_COUNCIL_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "run_id": scenario.get("run_id", journal.get("run_id", scout.get("run_id", ""))),
+        "status": decision["status"],
+        "council_mode": "local_role_review_before_daily_reading",
+        "decision": decision,
+        "summary": {
+            "role_count": len(roles),
+            "agreement_count": sum(1 for role in roles if role.get("stance") == "agree"),
+            "caution_count": sum(1 for role in roles if role.get("stance") == "caution"),
+            "blocker_count": len(blockers),
+            "disagreement_count": len(disagreement),
+            "average_confidence": round(sum(float(role.get("confidence", 0.0)) for role in roles) / max(len(roles), 1), 2),
+        },
+        "roles": roles,
+        "disagreement": disagreement,
+        "blockers": blockers,
+        "beginner_reading_order": _analyst_council_reading_order(decision=decision, roles=roles),
+        "next_questions": _analyst_council_next_questions(roles=roles, blockers=blockers, journal=journal, memory_audit=memory_audit),
+        "linked_surfaces": {
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "brief": "reports/product/market-brief.html",
+            "journal": DEFAULT_ANALYST_JOURNAL_OUTPUT.as_posix(),
+            "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
+            "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+        },
+        "linked_artifacts": {
+            "scenario": Path(scenario_path).as_posix(),
+            "verdict": Path(verdict_path).as_posix(),
+            "journal": Path(journal_path).as_posix(),
+            "memory": Path(memory_path).as_posix(),
+            "evidence": Path(evidence_path).as_posix(),
+            "memory_audit": Path(memory_audit_path).as_posix(),
+            "scout": Path(scout_path).as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_order_execution",
+            "no_discretionary_management",
+            "no_unsupported_personalized_recommendation",
+        ],
+    }
+
+
+def write_analyst_council(
+    *,
+    scenario_path: str | Path = Path("reports/scenarios/daily-research-sim.json"),
+    verdict_path: str | Path = Path("reports/scenarios/daily-research-verdict.json"),
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_ANALYST_COUNCIL_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_ANALYST_COUNCIL_SURFACE,
+) -> Path:
+    payload = build_analyst_council(
+        scenario_path=scenario_path,
+        verdict_path=verdict_path,
+        journal_path=journal_path,
+        memory_path=memory_path,
+        evidence_path=evidence_path,
+        memory_audit_path=memory_audit_path,
+        scout_path=scout_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_analyst_council(payload), encoding="utf-8")
+    return target
+
+
+def validate_analyst_council_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != ANALYST_COUNCIL_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"ready_to_read", "read_with_caution", "blocked"}:
+        errors.append("status must be ready_to_read, read_with_caution, or blocked")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if not payload.get("roles"):
+        errors.append("roles must not be empty")
+    required_roles = {"source_scout", "evidence_curator", "market_mapper", "scenario_analyst", "skeptic", "beginner_tutor"}
+    observed_roles = {role.get("role") for role in payload.get("roles", [])}
+    for role in sorted(required_roles - observed_roles):
+        errors.append(f"missing council role: {role}")
+    for index, role in enumerate(payload.get("roles", [])):
+        for field in ["role", "stance", "finding", "confidence", "evidence", "beginner_translation", "next_check"]:
+            if field not in role:
+                errors.append(f"roles[{index}] missing {field}")
+        if role.get("stance") not in {"agree", "caution", "block"}:
+            errors.append(f"roles[{index}] invalid stance")
+    if not payload.get("beginner_reading_order"):
+        errors.append("beginner_reading_order must not be empty")
+    if not payload.get("next_questions"):
+        errors.append("next_questions must not be empty")
+    if "reads_local_artifacts_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include reads_local_artifacts_only")
+    if "no_order_execution" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include no_order_execution")
+    return errors
+
+
+def validate_analyst_council_file(path: str | Path) -> list[str]:
+    return validate_analyst_council_payload(load_json(path))
+
+
+def render_analyst_council(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    decision = payload.get("decision", {})
+    role_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(role.get('role', 'analyst'))} · {esc(role.get('stance', 'caution'))}</span>"
+        f"<h2>{esc(role.get('finding', ''))}</h2>"
+        f"<p>{esc(role.get('beginner_translation', ''))}</p>"
+        f"<small>{esc(role.get('next_check', ''))}</small>"
+        "</article>"
+        for role in payload.get("roles", [])
+    )
+    disagreements = "".join(
+        "<article class='card warn'>"
+        f"<span>{esc(item.get('type', 'disagreement'))}</span>"
+        f"<h2>{esc(item.get('title', ''))}</h2>"
+        f"<p>{esc(item.get('why_it_matters', ''))}</p>"
+        "</article>"
+        for item in payload.get("disagreement", [])
+    ) or "<p>큰 관점 충돌은 없습니다. 그래도 초보자는 결론보다 조건을 먼저 읽습니다.</p>"
+    blockers = "".join(
+        "<article class='card block'>"
+        f"<span>{esc(item.get('severity', 'medium'))}</span>"
+        f"<h2>{esc(item.get('title', ''))}</h2>"
+        f"<p>{esc(item.get('evidence', ''))}</p>"
+        f"<small>{esc(item.get('local_next_action', ''))}</small>"
+        "</article>"
+        for item in payload.get("blockers", [])
+    ) or "<p>오늘 브리프 읽기를 막는 high blocker는 없습니다.</p>"
+    reading_order = "".join(f"<li>{esc(item)}</li>" for item in payload.get("beginner_reading_order", []))
+    questions = "".join(f"<li>{esc(item)}</li>" for item in payload.get("next_questions", []))
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("linked_surfaces", {}).items()
+        if path
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Analyst Council</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --block:#9f2f2f; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:18px; }}
+a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
+header {{ padding:28px 0 16px; }}
+.eyebrow,.card span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:18px; }}
+p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.card {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.metrics,.grid,.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.metric,.card,.links a {{ background:white; border:1px solid var(--line); border-radius:8px; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:26px; }}
+.warn {{ border-color:#d7b36a; }}
+.block {{ border-color:#d99; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Council · {esc(_short_date(payload.get('generated_at', '')))}</span>
+<h1>오늘 브리프 읽기 전 analyst council</h1>
+<p>여러 역할이 같은 산출물을 읽고, 초보자가 무엇을 믿고 무엇을 조심해야 하는지 합의/충돌/블로커로 정리합니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<h2>{esc(decision.get('title', payload.get('status', 'read_with_caution')))}</h2>
+<p>{esc(decision.get('rationale', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Roles</span><strong>{esc(summary.get('role_count', 0))}</strong></article>
+<article class="metric"><span>Agree</span><strong>{esc(summary.get('agreement_count', 0))}</strong></article>
+<article class="metric"><span>Caution</span><strong>{esc(summary.get('caution_count', 0))}</strong></article>
+<article class="metric"><span>Blockers</span><strong>{esc(summary.get('blocker_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>역할별 검토</h2>
+<div class="grid">{role_cards}</div>
+</section>
+<section class="section">
+<h2>관점 충돌</h2>
+<div class="grid">{disagreements}</div>
+</section>
+<section class="section">
+<h2>블로커</h2>
+<div class="grid">{blockers}</div>
+</section>
+<section class="section">
+<h2>초보자 읽기 순서</h2>
+<ol>{reading_order}</ol>
+</section>
+<section class="section">
+<h2>다음 질문</h2>
+<ul>{questions}</ul>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 council은 로컬 산출물만 읽습니다. live network, 알림 전송, host write, credential, 계좌 접근, 주문 실행, 일임 판단을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def _analyst_council_roles(
+    *,
+    scenario: dict[str, Any],
+    verdict: dict[str, Any],
+    journal: dict[str, Any],
+    memory: dict[str, Any],
+    evidence: dict[str, Any],
+    memory_audit: dict[str, Any],
+    scout: dict[str, Any],
+) -> list[dict[str, Any]]:
+    source_rows = evidence.get("source_status", [])
+    weak_rows = [
+        row for row in source_rows
+        if row.get("freshness_status") in {"stale", "unknown"} or row.get("relevance_label") in {"weak", "unscored"}
+    ]
+    fallback_rows = [row for row in source_rows if "fallback" in str(row.get("freshness_status", ""))]
+    memory_topics = memory.get("topics", [])
+    changed_topics = [topic for topic in memory_topics if topic.get("changed_since_previous")]
+    audit_summary = memory_audit.get("summary", {})
+    audit_risks = memory_audit.get("risks", [])
+    high_or_medium_risks = [risk for risk in audit_risks if risk.get("severity") in {"high", "medium"}]
+    primary = verdict.get("primary_next_step", {})
+    scenarios = scenario.get("scenarios", [])
+    market_map = scenario.get("market_map", {})
+    recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    role_notes = {note.get("role"): note for note in journal.get("role_notes", [])}
+    source_confidence = max(0.35, min(0.95, 0.9 - (0.12 * len(weak_rows)) - (0.06 * len(fallback_rows))))
+    scenario_confidence = float(primary.get("confidence", 0.65) or 0.65)
+    memory_confidence = max(0.35, min(0.95, 0.78 + (0.02 * int(audit_summary.get("run_count", 0) or 0)) - (0.12 * len(high_or_medium_risks))))
+    return [
+        {
+            "role": "source_scout",
+            "stance": "caution" if weak_rows or fallback_rows else "agree",
+            "finding": f"{len(source_rows)}개 source 중 {len(weak_rows)}개는 약하거나 오래됐고 {len(fallback_rows)}개는 fallback 상태입니다.",
+            "confidence": round(source_confidence, 2),
+            "evidence": [row.get("source_name", row.get("source_id", "")) for row in source_rows][:5],
+            "beginner_translation": "근거가 강해 보여도 live 실패 후 sample/cache로 대체된 항목은 오늘 결론의 강도를 낮춰 읽어야 합니다.",
+            "next_check": "source-refresh 화면에서 어떤 원천이 실제 최신인지와 어떤 원천이 승인 대기인지 확인합니다.",
+        },
+        {
+            "role": "evidence_curator",
+            "stance": "caution" if evidence.get("collection_gaps") or weak_rows else "agree",
+            "finding": f"수집 gap {len(evidence.get('collection_gaps', []))}개와 evidence item {len(evidence.get('items', []))}개를 확인했습니다.",
+            "confidence": round(max(0.4, source_confidence - (0.05 * len(evidence.get("collection_gaps", [])))), 2),
+            "evidence": [_gap_label(gap) for gap in evidence.get("collection_gaps", [])][:5],
+            "beginner_translation": "자료가 비어 있거나 중복이면 같은 뉴스가 여러 번 보이는 착시가 생길 수 있습니다.",
+            "next_check": "오늘 브리프의 핵심 문장마다 어떤 source가 받치는지 하나씩 연결합니다.",
+        },
+        {
+            "role": "market_mapper",
+            "stance": "agree" if market_map.get("beginner_summary") else "caution",
+            "finding": market_map.get("beginner_summary", role_notes.get("market_mapper", {}).get("finding", "시장 지도 요약이 약합니다.")),
+            "confidence": round(min(0.9, 0.62 + (0.05 * len(scenario.get("relationships", [])))), 2),
+            "evidence": [item.get("label", item.get("source", "")) for item in scenario.get("market_map", {}).get("nodes", [])][:5],
+            "beginner_translation": "시장 흐름은 한 가지 사건이 아니라 주제, 기업, 지표, 리스크가 연결된 지도처럼 읽어야 합니다.",
+            "next_check": "가장 중요한 연결 하나와 그 연결이 깨지는 조건 하나를 적습니다.",
+        },
+        {
+            "role": "scenario_analyst",
+            "stance": "agree" if len(scenarios) >= 3 and scenario_confidence >= 0.65 else "caution",
+            "finding": f"{len(scenarios)}개 경로와 primary next step confidence {scenario_confidence:.2f}를 확인했습니다.",
+            "confidence": round(max(0.4, min(0.94, scenario_confidence)), 2),
+            "evidence": [item.get("title", item.get("name", "")) for item in scenarios][:5],
+            "beginner_translation": "좋은 브리프는 한 방향 예측이 아니라 기본/긍정/부정 경로를 같이 보여줘야 합니다.",
+            "next_check": "각 경로에서 무엇이 사실이면 맞고, 무엇이 나오면 틀리는지 확인합니다.",
+        },
+        {
+            "role": "skeptic",
+            "stance": "block" if high_or_medium_risks else ("caution" if audit_risks else "agree"),
+            "finding": f"memory audit risk {len(audit_risks)}개 중 high/medium {len(high_or_medium_risks)}개를 확인했습니다.",
+            "confidence": round(max(0.45, 0.86 - (0.14 * len(high_or_medium_risks)) - (0.03 * len(audit_risks))), 2),
+            "evidence": [risk.get("risk_id", "") for risk in audit_risks][:5],
+            "beginner_translation": "근거가 부족한 상태에서는 결론을 키우지 말고 질문을 키워야 합니다.",
+            "next_check": "memory-audit의 risk를 먼저 읽고 오늘 결론을 얼마나 약하게 봐야 할지 정합니다.",
+        },
+        {
+            "role": "beginner_tutor",
+            "stance": "agree" if primary.get("action_type") in {"learn", "observe", "defer", "watchlist"} else "caution",
+            "finding": primary.get("title", recommended.get("name", "오늘 먼저 배울 주제")),
+            "confidence": round(max(0.45, min(0.92, scenario_confidence - 0.04)), 2),
+            "evidence": primary.get("evidence", [])[:5],
+            "beginner_translation": primary.get("rationale", "오늘은 실행보다 시장 흐름 이해와 질문 정리를 우선합니다."),
+            "next_check": "오늘 브리프를 읽고 review-prompt의 한 줄 피드백을 남깁니다.",
+        },
+        {
+            "role": "memory_librarian",
+            "stance": "caution" if not changed_topics or int(audit_summary.get("review_response_count", 0) or 0) == 0 else "agree",
+            "finding": f"누적 실행 {memory.get('run_count', 0)}회, vault note {audit_summary.get('vault_note_count', 0)}개, changed topic {len(changed_topics)}개입니다.",
+            "confidence": round(memory_confidence, 2),
+            "evidence": [topic.get("name", "") for topic in memory_topics[:5]],
+            "beginner_translation": "개인 애널리스트는 새 정보보다 누적 기억이 틀어지는 순간을 먼저 잡아야 합니다.",
+            "next_check": "오늘 읽은 뒤 다음 run에 반영할 피드백을 review-response-apply로 남깁니다.",
+        },
+    ]
+
+
+def _analyst_council_blockers(
+    *,
+    roles: list[dict[str, Any]],
+    memory_audit: dict[str, Any],
+    evidence: dict[str, Any],
+) -> list[dict[str, Any]]:
+    blockers: list[dict[str, Any]] = []
+    for risk in memory_audit.get("risks", []):
+        if risk.get("severity") in {"high", "medium"}:
+            blockers.append({
+                "severity": risk.get("severity", "medium"),
+                "title": risk.get("title", ""),
+                "evidence": risk.get("evidence", ""),
+                "local_next_action": risk.get("recommended_local_action", ""),
+            })
+    if not evidence.get("source_status"):
+        blockers.append({
+            "severity": "medium",
+            "title": "source status가 없어 council이 근거 강도를 판단할 수 없습니다",
+            "evidence": "source_status is empty",
+            "local_next_action": "appliance run 또는 collect-evidence를 다시 실행합니다.",
+        })
+    if any(role.get("stance") == "block" for role in roles) and not blockers:
+        blockers.append({
+            "severity": "medium",
+            "title": "하나 이상의 역할이 block stance를 냈습니다",
+            "evidence": ", ".join(role.get("role", "") for role in roles if role.get("stance") == "block"),
+            "local_next_action": "해당 역할 카드의 next_check를 먼저 확인합니다.",
+        })
+    return blockers
+
+
+def _analyst_council_disagreement(*, roles: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    agreement = [role for role in roles if role.get("stance") == "agree"]
+    caution = [role for role in roles if role.get("stance") == "caution"]
+    blocked = [role for role in roles if role.get("stance") == "block"]
+    items: list[dict[str, Any]] = []
+    if agreement and caution:
+        items.append({
+            "type": "confidence_split",
+            "title": f"{len(agreement)}개 역할은 읽기 가능, {len(caution)}개 역할은 주의 필요",
+            "why_it_matters": "초보자는 agree 카드보다 caution 카드의 조건을 먼저 읽어야 과신을 줄일 수 있습니다.",
+        })
+    if blocked:
+        items.append({
+            "type": "blocker_present",
+            "title": f"{len(blocked)}개 역할이 읽기 전 보완을 요구합니다",
+            "why_it_matters": "블로커가 있으면 오늘 브리프는 결론보다 보완 작업으로 처리해야 합니다.",
+        })
+    return items
+
+
+def _analyst_council_decision(
+    *,
+    roles: list[dict[str, Any]],
+    blockers: list[dict[str, Any]],
+    disagreement: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if any(blocker.get("severity") == "high" for blocker in blockers):
+        return {
+            "status": "blocked",
+            "title": "오늘 브리프는 보완 전까지 읽기 보류",
+            "rationale": "high blocker가 있어 근거나 기억 품질을 먼저 보완해야 합니다.",
+            "operator_action": "blocker의 local_next_action을 수행한 뒤 appliance run을 다시 실행합니다.",
+        }
+    if blockers or disagreement or any(role.get("stance") == "caution" for role in roles):
+        return {
+            "status": "read_with_caution",
+            "title": "오늘 브리프는 읽되 조건을 먼저 확인",
+            "rationale": "읽기를 막는 high blocker는 없지만 source, memory, scenario 중 일부가 주의 상태입니다.",
+            "operator_action": "역할별 caution 카드와 다음 질문을 먼저 읽고 review-response-apply로 피드백을 남깁니다.",
+        }
+    return {
+        "status": "ready_to_read",
+        "title": "오늘 브리프 읽기 가능",
+        "rationale": "역할별 검토에서 큰 충돌이나 blocker가 보이지 않습니다.",
+        "operator_action": "today와 market brief를 읽고 핵심 질문 하나를 vault나 review에 남깁니다.",
+    }
+
+
+def _analyst_council_reading_order(*, decision: dict[str, Any], roles: list[dict[str, Any]]) -> list[str]:
+    caution_roles = [role.get("role", "") for role in roles if role.get("stance") in {"caution", "block"}]
+    order = [
+        f"판정: {decision.get('title', '')}",
+        "skeptic과 source_scout 카드에서 근거 약점을 먼저 확인",
+        "scenario_analyst 카드에서 base/upside/downside 경로를 비교",
+        "beginner_tutor 카드의 쉬운 설명을 읽고 오늘 질문 하나를 고르기",
+        "review-prompt 또는 review-response-apply로 실제 피드백 남기기",
+    ]
+    if caution_roles:
+        order.insert(1, f"주의 역할 먼저 읽기: {', '.join(caution_roles)}")
+    return order
+
+
+def _analyst_council_next_questions(
+    *,
+    roles: list[dict[str, Any]],
+    blockers: list[dict[str, Any]],
+    journal: dict[str, Any],
+    memory_audit: dict[str, Any],
+) -> list[str]:
+    questions = []
+    if blockers:
+        questions.append("오늘 브리프를 읽기 전에 어떤 blocker를 로컬에서 먼저 해소해야 하나?")
+    questions.extend(journal.get("follow_up_questions", [])[:2])
+    questions.extend(memory_audit.get("next_questions", [])[:2])
+    caution_roles = [role for role in roles if role.get("stance") in {"caution", "block"}]
+    for role in caution_roles[:2]:
+        questions.append(f"{role.get('role')}가 지적한 약점은 오늘 결론의 강도를 얼마나 낮추는가?")
+    if not questions:
+        questions.append("오늘 브리프에서 내가 내일 다시 확인하고 싶은 한 문장은 무엇인가?")
+    return questions[:5]
+
+
 def render_analyst_journal(payload: dict[str, Any]) -> str:
     focus = payload.get("today_focus", {})
     changed_cards = "".join(
@@ -5018,6 +5504,7 @@ def build_morning_control_packet(
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
     review_effect_surface_path: str | Path = DEFAULT_REVIEW_EFFECT_SURFACE,
+    analyst_council_surface_path: str | Path = DEFAULT_ANALYST_COUNCIL_SURFACE,
     memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
@@ -5082,6 +5569,7 @@ def build_morning_control_packet(
             "review": Path(review_surface_path).as_posix(),
             "review_prompt": Path(review_prompt_surface_path).as_posix(),
             "review_effect": Path(review_effect_surface_path).as_posix(),
+            "council": Path(analyst_council_surface_path).as_posix(),
             "memory_audit": Path(memory_audit_surface_path).as_posix(),
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
             "trace": Path(run_trace_surface_path).as_posix(),
@@ -5146,6 +5634,7 @@ def write_morning_control_packet(
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
     review_effect_surface_path: str | Path = DEFAULT_REVIEW_EFFECT_SURFACE,
+    analyst_council_surface_path: str | Path = DEFAULT_ANALYST_COUNCIL_SURFACE,
     memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
@@ -5171,6 +5660,7 @@ def write_morning_control_packet(
         review_surface_path=review_surface_path,
         review_prompt_surface_path=review_prompt_surface_path,
         review_effect_surface_path=review_effect_surface_path,
+        analyst_council_surface_path=analyst_council_surface_path,
         memory_audit_surface_path=memory_audit_surface_path,
         pattern_radar_surface_path=pattern_radar_surface_path,
         run_trace_surface_path=run_trace_surface_path,

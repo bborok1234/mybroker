@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_archive.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T19:01:58.417199+00:00",
+  "generated_at": "2026-06-05T19:20:22.757039+00:00",
   "archive_dir": "reports/archive/2026-06-05",
   "artifacts": {
     "scenario": "reports/archive/2026-06-05/daily-research-sim.json",
@@ -40,9 +40,11 @@
     "scheduler_operations_surface": "reports/archive/2026-06-05/scheduler.html",
     "daily_readiness": "reports/archive/2026-06-05/daily-readiness.json",
     "daily_readiness_surface": "reports/archive/2026-06-05/readiness.html",
+    "analyst_council": "reports/archive/2026-06-05/analyst-council.json",
+    "analyst_council_surface": "reports/archive/2026-06-05/council.html",
     "memory_audit": "reports/archive/2026-06-05/audit.json",
     "memory_audit_surface": "reports/archive/2026-06-05/memory-audit.html"
   },
   "policy": "research_only",
-  "updated_at": "2026-06-05T19:01:58.453906+00:00"
+  "updated_at": "2026-06-05T19:20:22.807951+00:00"
 }

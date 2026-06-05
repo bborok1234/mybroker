@@ -131,6 +131,7 @@ PYTHONPATH=src python3 -m mybroker appliance task-status-apply
 PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
+PYTHONPATH=src python3 -m mybroker appliance council
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
@@ -155,6 +156,10 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/review-response-apply.html`: phone-readable handoff proof after a copied
   feedback command records review memory, regenerates review/scout/prompt/effect artifacts, and
   confirms whether the same local run applied the response.
+- `reports/runtime/analyst-council.json`: machine-readable role review over today's scenario,
+  verdict, journal, evidence, memory, scout, and memory audit.
+- `reports/product/council.html`: phone-readable analyst council with role agreement,
+  disagreement, blockers, beginner reading order, and next questions.
 - `reports/runtime/agent-pattern-radar.json`: machine-readable record of which external agentic workflow patterns are adopted, partially adopted, or rejected for the local daily analyst loop.
 - `reports/product/pattern-radar.html`: phone-readable workflow evolution radar for the next safe slice and safety guardrails.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
@@ -185,6 +190,12 @@ whether the accumulated memory itself is becoming trustworthy enough for tomorro
 It flags missing archive history, weak or stale source rows, no compiled vault notes, missing source
 names, and absent operator review feedback. It remains local-only and does not fetch, notify,
 write host state, use credentials, or execute anything.
+`appliance council` is the recurring role-review verb. It borrows the useful part of
+TradingAgents/FinRobot-style analyst debate and MiroFish-style scenario contrast, but keeps it
+deterministic and local. The council reads existing artifacts only, then asks source_scout,
+evidence_curator, market_mapper, scenario_analyst, skeptic, beginner_tutor, and memory_librarian
+roles whether today's brief is ready, should be read with caution, or is blocked by evidence/memory
+quality. It is not a chat agent, executor, or advisor; it only creates a reading-quality gate.
 `tasks.html` translates that journal into queued work for source_scout, market_mapper, skeptic,
 beginner_tutor, memory_librarian, and publisher roles. It does not execute commands; live network,
 host writes, notification send, credentials, and trading remain behind separate approval gates.

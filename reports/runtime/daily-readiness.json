@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-05T19:01:58.447145+00:00",
+  "generated_at": "2026-06-05T19:20:22.800632+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.403130+00:00",
+      "generated_at": "2026-06-05T19:20:22.744122+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -52,7 +52,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.402087+00:00",
+      "generated_at": "2026-06-05T19:20:22.743232+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -74,7 +74,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.446628+00:00",
+      "generated_at": "2026-06-05T19:20:22.800164+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -96,7 +96,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.442273+00:00",
+      "generated_at": "2026-06-05T19:20:22.794992+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
@@ -118,7 +118,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.445309+00:00",
+      "generated_at": "2026-06-05T19:20:22.798458+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
@@ -140,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.429245+00:00",
+      "generated_at": "2026-06-05T19:20:22.768881+00:00",
       "schema_version": "operator_review_prompt.v1"
     },
     {
@@ -162,12 +162,34 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.429681+00:00",
+      "generated_at": "2026-06-05T19:20:22.769267+00:00",
       "schema_version": "operator_review_effect.v1"
     },
     {
       "name": "review_effect_surface",
       "path": "reports/product/review-effect.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "analyst_council",
+      "path": "reports/runtime/analyst-council.json",
+      "kind": "control_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T19:20:22.767170+00:00",
+      "schema_version": "analyst_council.v1"
+    },
+    {
+      "name": "analyst_council_surface",
+      "path": "reports/product/council.html",
       "kind": "phone_surface",
       "required": false,
       "exists": true,
@@ -184,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.399015+00:00",
+      "generated_at": "2026-06-05T19:20:22.741143+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -195,7 +217,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.396021+00:00",
+      "generated_at": "2026-06-05T19:20:22.738870+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -206,7 +228,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.396724+00:00",
+      "generated_at": "2026-06-05T19:20:22.739773+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -217,7 +239,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.404559+00:00",
+      "generated_at": "2026-06-05T19:20:22.745436+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -228,7 +250,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.404559+00:00",
+      "generated_at": "2026-06-05T19:20:22.745436+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -239,7 +261,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.417199+00:00",
+      "generated_at": "2026-06-05T19:20:22.757039+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -249,7 +271,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 11.54,
+      "age_hours": 11.84,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -261,7 +283,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.440211+00:00",
+      "generated_at": "2026-06-05T19:20:22.792796+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -272,7 +294,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.440721+00:00",
+      "generated_at": "2026-06-05T19:20:22.793396+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -293,7 +315,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 1.02,
+      "age_hours": 1.32,
       "generated_at": "",
       "schema_version": ""
     },
@@ -316,7 +338,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:01:58.426370+00:00",
+      "generated_at": "2026-06-05T19:20:22.765554+00:00",
       "schema_version": "personal_memory_audit.v1"
     },
     {
@@ -347,6 +369,7 @@
     "drift_review": "reports/product/drift-review.html",
     "review_prompt": "reports/product/review-prompt.html",
     "review_effect": "reports/product/review-effect.html",
+    "council": "reports/product/council.html",
     "today": "reports/product/today.html",
     "agenda": "reports/product/daily-agenda.html",
     "memory": "reports/product/memory.html",
