@@ -250,6 +250,19 @@ def build_daily_scout(
             "missing_evidence": memory_topic.get("collection_gaps", []),
             "score_factors": factors,
         }
+        recommendation["operator_brief"] = _scout_operator_brief(
+            recommendation=recommendation,
+            interest=interest,
+            memory_topic=memory_topic,
+            plan_item=plan_item,
+        )
+        recommendation["beginner_reading_order"] = _scout_reading_order(
+            recommendation=recommendation,
+            plan_item=plan_item,
+            memory_topic=memory_topic,
+            linked_notes=linked_notes,
+        )
+        recommendation["copy_ready_responses"] = _scout_copy_ready_responses(recommendation)
         recommendations.append(recommendation)
     recommendations.sort(key=lambda row: (-float(row["score"]), row["name"]))
     for index, recommendation in enumerate(recommendations, start=1):
@@ -280,6 +293,13 @@ def build_daily_scout(
             "response_count": int(review.get("summary", {}).get("response_count", 0) or 0),
             "signal_count": len(review_by_topic),
         },
+        "autonomous_start": {
+            "mode": "system_recommends_first_topic",
+            "operator_input_required": False,
+            "why": "초보 사용자는 종목, 섹터, 이벤트 가설을 직접 넣기 어렵기 때문에 scout가 먼저 오늘 볼 주제를 추천합니다.",
+            "operator_can_respond_with": ["more", "less", "confusing", "done", "carry"],
+        },
+        "pattern_watch": _scout_pattern_watch(),
         "policy": _research_only_policy(),
         "next_step": "inspect_recommended_topic_first",
     }
@@ -295,11 +315,38 @@ def validate_daily_scout_payload(payload: dict[str, Any]) -> list[str]:
     if not payload.get("recommended_topic"):
         errors.append("recommended_topic must not be empty")
     for index, item in enumerate(payload.get("recommendations", [])):
-        for field in ["topic_id", "name", "score", "priority_rank", "action", "confidence", "why", "next_question"]:
+        for field in [
+            "topic_id",
+            "name",
+            "score",
+            "priority_rank",
+            "action",
+            "confidence",
+            "why",
+            "next_question",
+            "operator_brief",
+            "beginner_reading_order",
+            "copy_ready_responses",
+        ]:
             if field not in item:
                 errors.append(f"recommendations[{index}] missing {field}")
         if item.get("action") not in {"inspect_first", "monitor", "defer"}:
             errors.append(f"recommendations[{index}] invalid action")
+        if not item.get("beginner_reading_order"):
+            errors.append(f"recommendations[{index}] beginner_reading_order must not be empty")
+        if not item.get("copy_ready_responses"):
+            errors.append(f"recommendations[{index}] copy_ready_responses must not be empty")
+        brief = item.get("operator_brief", {})
+        for field in ["headline", "why_today", "confidence_note", "missing_evidence_note", "research_only_note"]:
+            if field not in brief:
+                errors.append(f"recommendations[{index}].operator_brief missing {field}")
+    autonomous = payload.get("autonomous_start", {})
+    if autonomous.get("mode") != "system_recommends_first_topic":
+        errors.append("autonomous_start.mode must be system_recommends_first_topic")
+    if autonomous.get("operator_input_required") is not False:
+        errors.append("autonomous_start.operator_input_required must be false")
+    if not payload.get("pattern_watch"):
+        errors.append("pattern_watch must not be empty")
     policy = payload.get("policy", {})
     if policy.get("output_boundary") != "research_only":
         errors.append("policy.output_boundary must be research_only")
@@ -1201,6 +1248,132 @@ def _scout_next_question(plan_item: dict[str, Any], memory_topic: dict[str, Any]
     return f"오늘 {name}를 먼저 볼 만큼 근거가 충분한가요?"
 
 
+def _scout_operator_brief(
+    *,
+    recommendation: dict[str, Any],
+    interest: dict[str, Any],
+    memory_topic: dict[str, Any],
+    plan_item: dict[str, Any],
+) -> dict[str, str]:
+    source_count = len(memory_topic.get("source_names", []))
+    latest_titles = memory_topic.get("latest_titles", [])
+    gaps = memory_topic.get("collection_gaps", [])
+    name = recommendation.get("name", interest.get("name", "오늘 주제"))
+    if recommendation.get("action") == "inspect_first":
+        headline = f"오늘은 {name}부터 봅니다."
+    elif recommendation.get("action") == "monitor":
+        headline = f"{name}는 짧게 점검합니다."
+    else:
+        headline = f"{name}는 아직 보류해도 됩니다."
+    if latest_titles:
+        why_today = f"최근 연결된 공개 근거 {len(latest_titles)}개와 출처군 {source_count}개가 있어 시장 흐름을 배우기 좋은 주제입니다."
+    else:
+        why_today = "연결된 공개 근거가 얇아서 결론보다 자료 부족 자체를 먼저 배우는 주제입니다."
+    if memory_topic.get("changed_since_previous"):
+        why_today += " 이전 실행 대비 새 근거가 있어 변화 여부를 확인해야 합니다."
+    beginner_focus = interest.get("beginner_focus") or plan_item.get("beginner_reason", "")
+    confidence_note = f"신뢰도는 {recommendation.get('confidence', 'low')}입니다. 초보자용 학습/리서치 판단으로만 사용합니다."
+    missing_note = " · ".join(_gap_label(gap) for gap in gaps[:3]) if gaps else "오늘 scout 기준의 핵심 missing evidence는 크지 않습니다."
+    return {
+        "headline": headline,
+        "why_today": why_today,
+        "beginner_focus": beginner_focus,
+        "confidence_note": confidence_note,
+        "missing_evidence_note": missing_note,
+        "research_only_note": "계좌 접근, 주문, 일임, 개인화 매수/매도 지시는 하지 않습니다.",
+    }
+
+
+def _scout_reading_order(
+    *,
+    recommendation: dict[str, Any],
+    plan_item: dict[str, Any],
+    memory_topic: dict[str, Any],
+    linked_notes: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    name = recommendation.get("name", "오늘 주제")
+    titles = memory_topic.get("latest_titles", [])
+    first_title = titles[0] if titles else ""
+    steps = [
+        {
+            "step": "1",
+            "title": f"{name}를 왜 보는지 먼저 읽기",
+            "why": recommendation.get("operator_brief", {}).get("why_today", recommendation.get("why", "")),
+            "done_when": "오늘 이 주제가 중요한 이유를 한 문장으로 말할 수 있습니다.",
+        },
+        {
+            "step": "2",
+            "title": "가장 가까운 공개 근거 확인",
+            "why": first_title or "연결 근거가 얇으면 source refresh 필요 여부를 먼저 확인합니다.",
+            "done_when": "근거가 충분한지, 오래됐는지, 한쪽으로 치우쳤는지 표시할 수 있습니다.",
+        },
+        {
+            "step": "3",
+            "title": "반대 근거와 missing evidence 표시",
+            "why": recommendation.get("next_question", ""),
+            "done_when": "오늘 결론을 약하게 만드는 이유를 최소 하나 적을 수 있습니다.",
+        },
+    ]
+    if linked_notes:
+        steps.insert(2, {
+            "step": "2b",
+            "title": "내 vault 노트와 연결하기",
+            "why": linked_notes[0].get("title", ""),
+            "done_when": "예전 노트가 오늘 근거와 같은 방향인지, 반대 방향인지 구분합니다.",
+        })
+    questions = plan_item.get("daily_questions", [])
+    if questions:
+        steps.append({
+            "step": str(len(steps) + 1),
+            "title": "내일 이어갈 질문 고르기",
+            "why": questions[-1],
+            "done_when": "내일 scout에 반영할 질문 하나를 고릅니다.",
+        })
+    return steps[:5]
+
+
+def _scout_copy_ready_responses(recommendation: dict[str, Any]) -> list[dict[str, str]]:
+    name = recommendation.get("name", "오늘 주제")
+    quoted = name.replace('"', "'")
+    return [
+        {
+            "intent": "more",
+            "command": f'more "{quoted}" "내일도 이 주제를 더 보고 싶다"',
+            "effect": "다음 scout에서 이 주제의 operator_review 점수를 올립니다.",
+        },
+        {
+            "intent": "confusing",
+            "command": f'confusing "{quoted}" "초보자 설명과 반대 근거를 더 쉽게 풀어줘"',
+            "effect": "다음 brief에서 tutor/skeptic 설명을 강화합니다.",
+        },
+        {
+            "intent": "done",
+            "command": f'done "{quoted}" "오늘은 충분히 읽었다"',
+            "effect": "handoff에서 오늘 주제 확인 상태로 남길 수 있습니다.",
+        },
+    ]
+
+
+def _scout_pattern_watch() -> list[dict[str, str]]:
+    return [
+        {
+            "pattern": "local_worker_memory_scheduler",
+            "status": "adopted",
+            "why": "daily run, archive, review memory, run ledger가 로컬 애널리스트 루프의 기본 골격입니다.",
+        },
+        {
+            "pattern": "multi_role_research_council",
+            "status": "adopted",
+            "why": "역할별 검토는 결론 과신을 낮추고 초보자 설명을 분리합니다.",
+        },
+        {
+            "pattern": "live_browser_scrape_tools",
+            "status": "gated_candidate",
+            "why": "최신 근거 수집에는 유용하지만 live network와 브라우저 권한은 별도 preflight 뒤에만 허용합니다.",
+        },
+    ]
+
+
 def _refresh_action(*, source_name: str, adapter_id: str, cadence: str, priority: str, reason: str, command: str) -> dict[str, Any]:
     return {
         "source_name": source_name,
@@ -1349,6 +1522,21 @@ def _source_needs_for_topics(topics: list[str]) -> list[str]:
     if {"rates", "inflation", "consumer"}.intersection(topics):
         needs.add("FRED macro series once free-key support is configured")
     return sorted(needs)
+
+
+def _gap_label(value: str) -> str:
+    labels = {
+        "live_refresh": "live refresh 미실행",
+        "deduplication": "중복 근거 점검 필요",
+        "source_terms_review": "source 사용 조건 검토 필요",
+        "no_matching_evidence": "직접 연결 근거 없음",
+        "needs_second_source_family": "두 번째 출처군 필요",
+        "live_refresh_not_enabled": "live refresh 비활성",
+        "source_license_review_pending": "source 라이선스 검토 필요",
+    }
+    if value.startswith("no_matching_evidence_for:"):
+        return "일부 관심 주제에 연결 근거 없음"
+    return labels.get(value, value.replace("_", " "))
 
 
 def _slugify(value: str) -> str:

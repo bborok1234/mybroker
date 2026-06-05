@@ -39,11 +39,11 @@ td,th { padding:10px; border-bottom:1px solid var(--line); text-align:left; vert
 </section>
 <section class="section">
 <h2>판단 신호</h2>
-<div class="grid"><article class='mini'><strong>trace_health</strong><p>ready</p><small>missing required 0, stale 0</small></article><article class='mini'><strong>pattern_next</strong><p>pattern freshness audit before adding new runtime authority</p><small>다음 slice 후보가 pattern radar에 남아 있는지 확인합니다.</small></article><article class='mini'><strong>readiness</strong><p>ready</p><small>fresh required 11, stale required 0</small></article><article class='mini'><strong>source_authority</strong><p>approval_required</p><small>live source 실행이 필요한 상태라면 별도 승인 gate가 필요합니다.</small></article><article class='mini'><strong>task_pressure</strong><p>0</p><small>blocked task가 많으면 새 기능보다 운영 정리가 먼저입니다.</small></article><article class='mini'><strong>operator_feedback</strong><p>0</p><small>operator review가 적으면 방향 판단 confidence를 낮춥니다.</small></article></div>
+<div class="grid"><article class='mini'><strong>trace_health</strong><p>ready</p><small>missing required 0, stale 0</small></article><article class='mini'><strong>pattern_next</strong><p>pattern freshness audit before adding new runtime authority</p><small>다음 slice 후보가 pattern radar에 남아 있는지 확인합니다.</small></article><article class='mini'><strong>readiness</strong><p>ready</p><small>fresh required 11, stale required 0</small></article><article class='mini'><strong>source_authority</strong><p>approval_required</p><small>live source 실행이 필요한 상태라면 별도 승인 gate가 필요합니다.</small></article><article class='mini'><strong>task_pressure</strong><p>0</p><small>blocked task가 많으면 새 기능보다 운영 정리가 먼저입니다.</small></article><article class='mini'><strong>operator_feedback</strong><p>1</p><small>operator review가 적으면 방향 판단 confidence를 낮춥니다.</small></article></div>
 </section>
 <section class="section">
 <h2>다음 행동</h2>
-<ul><li>추천 branch를 확인합니다: hold_external_effect_until_scoped_approval</li><li>새 외부효과 작업은 source/host/notification approval gate와 분리합니다.</li><li>operator가 명시 승인하기 전까지 live/source/host 작업은 진행하지 않습니다.</li><li>operator review 응답이 없으므로 review prompt에서 복사 가능한 피드백을 남깁니다.</li></ul>
+<ul><li>추천 branch를 확인합니다: hold_external_effect_until_scoped_approval</li><li>새 외부효과 작업은 source/host/notification approval gate와 분리합니다.</li><li>operator가 명시 승인하기 전까지 live/source/host 작업은 진행하지 않습니다.</li><li>operator review effect에서 피드백이 scout score에 반영됐는지 확인합니다.</li></ul>
 </section>
 <section class="section">
 <h2>입력 artifact</h2>

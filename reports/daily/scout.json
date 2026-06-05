@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_scout.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T20:38:09.497049+00:00",
+  "generated_at": "2026-06-05T21:42:36.929150+00:00",
   "inputs": {
     "topics_path": "config/topics.json",
     "plan_path": "reports/daily/research-plan.json",
@@ -88,6 +88,63 @@
         "delta": 0.4,
         "reason": "부족한 근거를 점검해야 함"
       }
+    ],
+    "operator_brief": {
+      "headline": "오늘은 Semiconductors부터 봅니다.",
+      "why_today": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+      "beginner_focus": "반도체가 AI 기대와 경기 둔화 리스크를 동시에 받는 이유를 본다.",
+      "confidence_note": "신뢰도는 low-medium입니다. 초보자용 학습/리서치 판단으로만 사용합니다.",
+      "missing_evidence_note": "중복 근거 점검 필요 · live refresh 미실행",
+      "research_only_note": "계좌 접근, 주문, 일임, 개인화 매수/매도 지시는 하지 않습니다."
+    },
+    "beginner_reading_order": [
+      {
+        "step": "1",
+        "title": "Semiconductors를 왜 보는지 먼저 읽기",
+        "why": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+        "done_when": "오늘 이 주제가 중요한 이유를 한 문장으로 말할 수 있습니다."
+      },
+      {
+        "step": "2",
+        "title": "가장 가까운 공개 근거 확인",
+        "why": "AI infrastructure demand keeps data center and chip supply chains in focus",
+        "done_when": "근거가 충분한지, 오래됐는지, 한쪽으로 치우쳤는지 표시할 수 있습니다."
+      },
+      {
+        "step": "2b",
+        "title": "내 vault 노트와 연결하기",
+        "why": "Semiconductor cycle learning note",
+        "done_when": "예전 노트가 오늘 근거와 같은 방향인지, 반대 방향인지 구분합니다."
+      },
+      {
+        "step": "3",
+        "title": "반대 근거와 missing evidence 표시",
+        "why": "Vault 노트 'Semiconductor cycle learning note'가 오늘 근거와 같은 방향을 가리키나요?",
+        "done_when": "오늘 결론을 약하게 만드는 이유를 최소 하나 적을 수 있습니다."
+      },
+      {
+        "step": "5",
+        "title": "내일 이어갈 질문 고르기",
+        "why": "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?",
+        "done_when": "내일 scout에 반영할 질문 하나를 고릅니다."
+      }
+    ],
+    "copy_ready_responses": [
+      {
+        "intent": "more",
+        "command": "more \"Semiconductors\" \"내일도 이 주제를 더 보고 싶다\"",
+        "effect": "다음 scout에서 이 주제의 operator_review 점수를 올립니다."
+      },
+      {
+        "intent": "confusing",
+        "command": "confusing \"Semiconductors\" \"초보자 설명과 반대 근거를 더 쉽게 풀어줘\"",
+        "effect": "다음 brief에서 tutor/skeptic 설명을 강화합니다."
+      },
+      {
+        "intent": "done",
+        "command": "done \"Semiconductors\" \"오늘은 충분히 읽었다\"",
+        "effect": "handoff에서 오늘 주제 확인 상태로 남길 수 있습니다."
+      }
     ]
   },
   "recommendations": [
@@ -168,6 +225,63 @@
           "delta": 0.4,
           "reason": "부족한 근거를 점검해야 함"
         }
+      ],
+      "operator_brief": {
+        "headline": "오늘은 Semiconductors부터 봅니다.",
+        "why_today": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+        "beginner_focus": "반도체가 AI 기대와 경기 둔화 리스크를 동시에 받는 이유를 본다.",
+        "confidence_note": "신뢰도는 low-medium입니다. 초보자용 학습/리서치 판단으로만 사용합니다.",
+        "missing_evidence_note": "중복 근거 점검 필요 · live refresh 미실행",
+        "research_only_note": "계좌 접근, 주문, 일임, 개인화 매수/매도 지시는 하지 않습니다."
+      },
+      "beginner_reading_order": [
+        {
+          "step": "1",
+          "title": "Semiconductors를 왜 보는지 먼저 읽기",
+          "why": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+          "done_when": "오늘 이 주제가 중요한 이유를 한 문장으로 말할 수 있습니다."
+        },
+        {
+          "step": "2",
+          "title": "가장 가까운 공개 근거 확인",
+          "why": "AI infrastructure demand keeps data center and chip supply chains in focus",
+          "done_when": "근거가 충분한지, 오래됐는지, 한쪽으로 치우쳤는지 표시할 수 있습니다."
+        },
+        {
+          "step": "2b",
+          "title": "내 vault 노트와 연결하기",
+          "why": "Semiconductor cycle learning note",
+          "done_when": "예전 노트가 오늘 근거와 같은 방향인지, 반대 방향인지 구분합니다."
+        },
+        {
+          "step": "3",
+          "title": "반대 근거와 missing evidence 표시",
+          "why": "Vault 노트 'Semiconductor cycle learning note'가 오늘 근거와 같은 방향을 가리키나요?",
+          "done_when": "오늘 결론을 약하게 만드는 이유를 최소 하나 적을 수 있습니다."
+        },
+        {
+          "step": "5",
+          "title": "내일 이어갈 질문 고르기",
+          "why": "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?",
+          "done_when": "내일 scout에 반영할 질문 하나를 고릅니다."
+        }
+      ],
+      "copy_ready_responses": [
+        {
+          "intent": "more",
+          "command": "more \"Semiconductors\" \"내일도 이 주제를 더 보고 싶다\"",
+          "effect": "다음 scout에서 이 주제의 operator_review 점수를 올립니다."
+        },
+        {
+          "intent": "confusing",
+          "command": "confusing \"Semiconductors\" \"초보자 설명과 반대 근거를 더 쉽게 풀어줘\"",
+          "effect": "다음 brief에서 tutor/skeptic 설명을 강화합니다."
+        },
+        {
+          "intent": "done",
+          "command": "done \"Semiconductors\" \"오늘은 충분히 읽었다\"",
+          "effect": "handoff에서 오늘 주제 확인 상태로 남길 수 있습니다."
+        }
       ]
     },
     {
@@ -213,6 +327,57 @@
           "name": "needs_inspection",
           "delta": 0.4,
           "reason": "부족한 근거를 점검해야 함"
+        }
+      ],
+      "operator_brief": {
+        "headline": "Consumer weakness는 짧게 점검합니다.",
+        "why_today": "최근 연결된 공개 근거 5개와 출처군 3개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+        "beginner_focus": "소비 둔화가 기업 매출과 경기 기대에 주는 영향을 이해한다.",
+        "confidence_note": "신뢰도는 medium입니다. 초보자용 학습/리서치 판단으로만 사용합니다.",
+        "missing_evidence_note": "중복 근거 점검 필요 · live refresh 미실행",
+        "research_only_note": "계좌 접근, 주문, 일임, 개인화 매수/매도 지시는 하지 않습니다."
+      },
+      "beginner_reading_order": [
+        {
+          "step": "1",
+          "title": "Consumer weakness를 왜 보는지 먼저 읽기",
+          "why": "최근 연결된 공개 근거 5개와 출처군 3개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+          "done_when": "오늘 이 주제가 중요한 이유를 한 문장으로 말할 수 있습니다."
+        },
+        {
+          "step": "2",
+          "title": "가장 가까운 공개 근거 확인",
+          "why": "AI infrastructure demand keeps data center and chip supply chains in focus",
+          "done_when": "근거가 충분한지, 오래됐는지, 한쪽으로 치우쳤는지 표시할 수 있습니다."
+        },
+        {
+          "step": "3",
+          "title": "반대 근거와 missing evidence 표시",
+          "why": "오늘 Consumer weakness에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+          "done_when": "오늘 결론을 약하게 만드는 이유를 최소 하나 적을 수 있습니다."
+        },
+        {
+          "step": "4",
+          "title": "내일 이어갈 질문 고르기",
+          "why": "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?",
+          "done_when": "내일 scout에 반영할 질문 하나를 고릅니다."
+        }
+      ],
+      "copy_ready_responses": [
+        {
+          "intent": "more",
+          "command": "more \"Consumer weakness\" \"내일도 이 주제를 더 보고 싶다\"",
+          "effect": "다음 scout에서 이 주제의 operator_review 점수를 올립니다."
+        },
+        {
+          "intent": "confusing",
+          "command": "confusing \"Consumer weakness\" \"초보자 설명과 반대 근거를 더 쉽게 풀어줘\"",
+          "effect": "다음 brief에서 tutor/skeptic 설명을 강화합니다."
+        },
+        {
+          "intent": "done",
+          "command": "done \"Consumer weakness\" \"오늘은 충분히 읽었다\"",
+          "effect": "handoff에서 오늘 주제 확인 상태로 남길 수 있습니다."
         }
       ]
     },
@@ -260,6 +425,57 @@
           "delta": 0.4,
           "reason": "부족한 근거를 점검해야 함"
         }
+      ],
+      "operator_brief": {
+        "headline": "Korea semiconductors는 짧게 점검합니다.",
+        "why_today": "최근 연결된 공개 근거 5개와 출처군 3개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+        "beginner_focus": "Korea semiconductors 흐름이 시장에 왜 중요한지 초보자 관점에서 이해한다.",
+        "confidence_note": "신뢰도는 medium입니다. 초보자용 학습/리서치 판단으로만 사용합니다.",
+        "missing_evidence_note": "중복 근거 점검 필요 · live refresh 미실행",
+        "research_only_note": "계좌 접근, 주문, 일임, 개인화 매수/매도 지시는 하지 않습니다."
+      },
+      "beginner_reading_order": [
+        {
+          "step": "1",
+          "title": "Korea semiconductors를 왜 보는지 먼저 읽기",
+          "why": "최근 연결된 공개 근거 5개와 출처군 3개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+          "done_when": "오늘 이 주제가 중요한 이유를 한 문장으로 말할 수 있습니다."
+        },
+        {
+          "step": "2",
+          "title": "가장 가까운 공개 근거 확인",
+          "why": "AI infrastructure demand keeps data center and chip supply chains in focus",
+          "done_when": "근거가 충분한지, 오래됐는지, 한쪽으로 치우쳤는지 표시할 수 있습니다."
+        },
+        {
+          "step": "3",
+          "title": "반대 근거와 missing evidence 표시",
+          "why": "오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+          "done_when": "오늘 결론을 약하게 만드는 이유를 최소 하나 적을 수 있습니다."
+        },
+        {
+          "step": "4",
+          "title": "내일 이어갈 질문 고르기",
+          "why": "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?",
+          "done_when": "내일 scout에 반영할 질문 하나를 고릅니다."
+        }
+      ],
+      "copy_ready_responses": [
+        {
+          "intent": "more",
+          "command": "more \"Korea semiconductors\" \"내일도 이 주제를 더 보고 싶다\"",
+          "effect": "다음 scout에서 이 주제의 operator_review 점수를 올립니다."
+        },
+        {
+          "intent": "confusing",
+          "command": "confusing \"Korea semiconductors\" \"초보자 설명과 반대 근거를 더 쉽게 풀어줘\"",
+          "effect": "다음 brief에서 tutor/skeptic 설명을 강화합니다."
+        },
+        {
+          "intent": "done",
+          "command": "done \"Korea semiconductors\" \"오늘은 충분히 읽었다\"",
+          "effect": "handoff에서 오늘 주제 확인 상태로 남길 수 있습니다."
+        }
       ]
     },
     {
@@ -304,6 +520,57 @@
           "delta": 0.4,
           "reason": "부족한 근거를 점검해야 함"
         }
+      ],
+      "operator_brief": {
+        "headline": "AI infrastructure는 짧게 점검합니다.",
+        "why_today": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+        "beginner_focus": "AI 수요가 실제 실적과 공급망으로 이어지는지 이해한다.",
+        "confidence_note": "신뢰도는 low-medium입니다. 초보자용 학습/리서치 판단으로만 사용합니다.",
+        "missing_evidence_note": "중복 근거 점검 필요 · live refresh 미실행",
+        "research_only_note": "계좌 접근, 주문, 일임, 개인화 매수/매도 지시는 하지 않습니다."
+      },
+      "beginner_reading_order": [
+        {
+          "step": "1",
+          "title": "AI infrastructure를 왜 보는지 먼저 읽기",
+          "why": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+          "done_when": "오늘 이 주제가 중요한 이유를 한 문장으로 말할 수 있습니다."
+        },
+        {
+          "step": "2",
+          "title": "가장 가까운 공개 근거 확인",
+          "why": "AI infrastructure demand keeps data center and chip supply chains in focus",
+          "done_when": "근거가 충분한지, 오래됐는지, 한쪽으로 치우쳤는지 표시할 수 있습니다."
+        },
+        {
+          "step": "3",
+          "title": "반대 근거와 missing evidence 표시",
+          "why": "오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+          "done_when": "오늘 결론을 약하게 만드는 이유를 최소 하나 적을 수 있습니다."
+        },
+        {
+          "step": "4",
+          "title": "내일 이어갈 질문 고르기",
+          "why": "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?",
+          "done_when": "내일 scout에 반영할 질문 하나를 고릅니다."
+        }
+      ],
+      "copy_ready_responses": [
+        {
+          "intent": "more",
+          "command": "more \"AI infrastructure\" \"내일도 이 주제를 더 보고 싶다\"",
+          "effect": "다음 scout에서 이 주제의 operator_review 점수를 올립니다."
+        },
+        {
+          "intent": "confusing",
+          "command": "confusing \"AI infrastructure\" \"초보자 설명과 반대 근거를 더 쉽게 풀어줘\"",
+          "effect": "다음 brief에서 tutor/skeptic 설명을 강화합니다."
+        },
+        {
+          "intent": "done",
+          "command": "done \"AI infrastructure\" \"오늘은 충분히 읽었다\"",
+          "effect": "handoff에서 오늘 주제 확인 상태로 남길 수 있습니다."
+        }
       ]
     },
     {
@@ -346,6 +613,57 @@
           "delta": 0.4,
           "reason": "부족한 근거를 점검해야 함"
         }
+      ],
+      "operator_brief": {
+        "headline": "US rates는 짧게 점검합니다.",
+        "why_today": "최근 연결된 공개 근거 2개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+        "beginner_focus": "금리가 성장 테마의 가격 부담을 어떻게 바꾸는지 본다.",
+        "confidence_note": "신뢰도는 low-medium입니다. 초보자용 학습/리서치 판단으로만 사용합니다.",
+        "missing_evidence_note": "중복 근거 점검 필요 · live refresh 미실행",
+        "research_only_note": "계좌 접근, 주문, 일임, 개인화 매수/매도 지시는 하지 않습니다."
+      },
+      "beginner_reading_order": [
+        {
+          "step": "1",
+          "title": "US rates를 왜 보는지 먼저 읽기",
+          "why": "최근 연결된 공개 근거 2개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+          "done_when": "오늘 이 주제가 중요한 이유를 한 문장으로 말할 수 있습니다."
+        },
+        {
+          "step": "2",
+          "title": "가장 가까운 공개 근거 확인",
+          "why": "Higher yields pressure growth themes despite resilient demand",
+          "done_when": "근거가 충분한지, 오래됐는지, 한쪽으로 치우쳤는지 표시할 수 있습니다."
+        },
+        {
+          "step": "3",
+          "title": "반대 근거와 missing evidence 표시",
+          "why": "오늘 US rates에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+          "done_when": "오늘 결론을 약하게 만드는 이유를 최소 하나 적을 수 있습니다."
+        },
+        {
+          "step": "4",
+          "title": "내일 이어갈 질문 고르기",
+          "why": "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?",
+          "done_when": "내일 scout에 반영할 질문 하나를 고릅니다."
+        }
+      ],
+      "copy_ready_responses": [
+        {
+          "intent": "more",
+          "command": "more \"US rates\" \"내일도 이 주제를 더 보고 싶다\"",
+          "effect": "다음 scout에서 이 주제의 operator_review 점수를 올립니다."
+        },
+        {
+          "intent": "confusing",
+          "command": "confusing \"US rates\" \"초보자 설명과 반대 근거를 더 쉽게 풀어줘\"",
+          "effect": "다음 brief에서 tutor/skeptic 설명을 강화합니다."
+        },
+        {
+          "intent": "done",
+          "command": "done \"US rates\" \"오늘은 충분히 읽었다\"",
+          "effect": "handoff에서 오늘 주제 확인 상태로 남길 수 있습니다."
+        }
       ]
     }
   ],
@@ -362,6 +680,35 @@
     "response_count": 1,
     "signal_count": 1
   },
+  "autonomous_start": {
+    "mode": "system_recommends_first_topic",
+    "operator_input_required": false,
+    "why": "초보 사용자는 종목, 섹터, 이벤트 가설을 직접 넣기 어렵기 때문에 scout가 먼저 오늘 볼 주제를 추천합니다.",
+    "operator_can_respond_with": [
+      "more",
+      "less",
+      "confusing",
+      "done",
+      "carry"
+    ]
+  },
+  "pattern_watch": [
+    {
+      "pattern": "local_worker_memory_scheduler",
+      "status": "adopted",
+      "why": "daily run, archive, review memory, run ledger가 로컬 애널리스트 루프의 기본 골격입니다."
+    },
+    {
+      "pattern": "multi_role_research_council",
+      "status": "adopted",
+      "why": "역할별 검토는 결론 과신을 낮추고 초보자 설명을 분리합니다."
+    },
+    {
+      "pattern": "live_browser_scrape_tools",
+      "status": "gated_candidate",
+      "why": "최신 근거 수집에는 유용하지만 live network와 브라우저 권한은 별도 preflight 뒤에만 허용합니다."
+    }
+  ],
   "policy": {
     "output_boundary": "research_only",
     "disallowed": [

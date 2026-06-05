@@ -1,25 +1,25 @@
 {
   "schema_version": "daily_handoff.v1",
-  "generated_at": "2026-06-05T20:15:30.010255+00:00",
+  "generated_at": "2026-06-05T21:42:36.988473+00:00",
   "status": "review",
   "run_id": "daily-research",
   "summary": {
     "carried_item_count": 15,
-    "reflected_today_count": 5,
-    "unresolved_count": 10,
-    "duplicate_today_count": 1,
-    "review_effect_status": "no_feedback",
+    "reflected_today_count": 6,
+    "unresolved_count": 9,
+    "duplicate_today_count": 2,
+    "review_effect_status": "applied",
     "council_status": "read_with_caution",
     "memory_risk_count": 1
   },
   "canonical_run": {
-    "entry_id": "2026-06-05:daily-research:2026-06-05T20:15:30.009678+00:00",
+    "entry_id": "2026-06-05:daily-research:2026-06-05T21:42:36.987901+00:00",
     "run_id": "daily-research",
     "local_day": "2026-06-05",
     "run_status": "ready",
     "today_path": "reports/archive/2026-06-05/today.html",
     "archive_manifest": "reports/archive/2026-06-05/manifest.json",
-    "recorded_at": "2026-06-05T20:15:30.009678+00:00"
+    "recorded_at": "2026-06-05T21:42:36.987901+00:00"
   },
   "carried_forward": [
     {
@@ -135,8 +135,8 @@
       "kind": "operator_feedback",
       "title": "어제/이전 review feedback이 오늘 scout scoring에 반영됐는지",
       "source": "review_effect",
-      "reflected_today": false,
-      "evidence": "아직 기록된 review-response가 없어 scout가 개인 피드백을 반영할 수 없습니다.",
+      "reflected_today": true,
+      "evidence": "daily_review의 topic signal이 현재 scout score_factors에 operator_review로 반영됐습니다.",
       "next_action": "반영됐으면 오늘 결과를 읽고, 아니면 review-response-apply 명령으로 선호를 다시 남기세요."
     },
     {
@@ -203,6 +203,15 @@
       "reflected_today": true,
       "evidence": "task status: carried",
       "next_action": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
+    },
+    {
+      "id": "DH-REVIEW",
+      "kind": "operator_feedback",
+      "title": "어제/이전 review feedback이 오늘 scout scoring에 반영됐는지",
+      "source": "review_effect",
+      "reflected_today": true,
+      "evidence": "daily_review의 topic signal이 현재 scout score_factors에 operator_review로 반영됐습니다.",
+      "next_action": "반영됐으면 오늘 결과를 읽고, 아니면 review-response-apply 명령으로 선호를 다시 남기세요."
     }
   ],
   "unresolved": [
@@ -270,15 +279,6 @@
       "next_action": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
     },
     {
-      "id": "DH-REVIEW",
-      "kind": "operator_feedback",
-      "title": "어제/이전 review feedback이 오늘 scout scoring에 반영됐는지",
-      "source": "review_effect",
-      "reflected_today": false,
-      "evidence": "아직 기록된 review-response가 없어 scout가 개인 피드백을 반영할 수 없습니다.",
-      "next_action": "반영됐으면 오늘 결과를 읽고, 아니면 review-response-apply 명령으로 선호를 다시 남기세요."
-    },
-    {
       "id": "DH-COUNCIL",
       "kind": "council_warning",
       "title": "analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.",
@@ -300,14 +300,20 @@
   "copy_ready_commands": [
     {
       "label": "오늘 읽음 기록",
-      "command": "more \"Semiconductors\" \"오늘 읽고 더 보고 싶은 부분을 기록\"",
-      "why": "review-response-apply에 넣으면 내일 scout scoring과 handoff에 반영됩니다.",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance handoff-response-apply 'more \"Semiconductors\" \"오늘 읽고 더 보고 싶은 부분을 기록\"'",
+      "why": "handoff-response-apply가 review/scout/effect/handoff proof를 같은 local run에서 갱신합니다.",
       "external_effect_performed": false
     },
     {
       "label": "남은 질문 강조",
-      "command": "more \"Semiconductors\" \"AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?\"",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance handoff-response-apply 'more \"Semiconductors\" \"AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?\"'",
       "why": "가장 중요한 unresolved 질문을 내일 우선순위로 넘깁니다.",
+      "external_effect_performed": false
+    },
+    {
+      "label": "task 이월 기록",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance handoff-response-apply 'AT-001 carry \"handoff에서 아직 남은 task로 확인\"'",
+      "why": "task 상태를 로컬 응답으로 남기고 task ledger와 handoff proof를 다시 생성합니다.",
       "external_effect_performed": false
     },
     {
@@ -329,6 +335,7 @@
   },
   "phone_links": {
     "handoff": "reports/product/handoff.html",
+    "handoff_apply": "reports/product/handoff-response-apply.html",
     "morning": "reports/product/morning.html",
     "today": "reports/product/today.html",
     "run_ledger": "reports/product/run-ledger.html",

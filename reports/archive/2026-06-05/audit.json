@@ -1,18 +1,18 @@
 {
   "schema_version": "personal_memory_audit.v1",
-  "generated_at": "2026-06-05T20:15:29.982790+00:00",
+  "generated_at": "2026-06-05T21:42:36.957293+00:00",
   "status": "ready",
   "audit_mode": "local_memory_and_vault_audit",
   "summary": {
     "topic_count": 5,
-    "run_count": 48,
+    "run_count": 49,
     "archive_count": 1,
     "vault_note_count": 1,
     "source_count": 3,
     "risk_count": 1,
     "high_risk_count": 0,
     "medium_risk_count": 0,
-    "review_response_count": 0
+    "review_response_count": 1
   },
   "coverage": [
     {
@@ -48,15 +48,14 @@
   ],
   "risks": [
     {
-      "risk_id": "MA-005",
+      "risk_id": "MA-000",
       "severity": "low",
-      "title": "operator review가 없어 다음 주제 선택이 개인 피드백을 거의 반영하지 못합니다",
-      "evidence": "daily review response count is 0",
-      "recommended_local_action": "review-prompt에서 복사한 review-response-apply 한 줄을 남깁니다."
+      "title": "치명적인 memory audit risk는 보이지 않습니다",
+      "evidence": "vault, archive, source rows, review inputs are present enough for local study",
+      "recommended_local_action": "오늘 브리프를 읽고 review-response-apply로 다음 루프 피드백을 남깁니다."
     }
   ],
   "next_questions": [
-    "내가 오늘 실제로 읽은 주제는 무엇이며 내일 더 보고 싶은가?",
     "AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?",
     "오늘 브리프의 가장 약한 source는 무엇이고 왜 약한가?",
     "vault 원천 노트와 오늘 evidence가 서로 보강하는가, 아니면 충돌하는가?"

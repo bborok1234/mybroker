@@ -28,11 +28,11 @@ Must not show adapter IDs, schema names, raw validation logs, Flyhigh gates, or 
 
 `reports/product/journal.html` is not a project dashboard. It is the daily analyst work log: what changed, what stayed stable, what each analyst role noticed, what evidence is weak, and which questions should continue tomorrow.
 
-`reports/product/daily-home.html` is not the Flyhigh project dashboard, not the ops artifact dashboard, and not a market answer. It is the phone-first entrypoint for the day: what to open first, whether the local artifacts are trustworthy enough, what cross-day handoff remains open, and which safe local response command can close the loop. It reads existing artifacts only.
+`reports/product/daily-home.html` is not the Flyhigh project dashboard, not the ops artifact dashboard, and not a market answer. It is the phone-first entrypoint for the day: what the autonomous scout picked first, why it was picked, what to open next, whether the local artifacts are trustworthy enough, what cross-day handoff remains open, and which safe local response command can close the loop. It reads existing artifacts only.
 
 `reports/product/phone-access.html` is not a server console and not an approval executor. It is the read-only proof that the daily home can be treated as the private/local phone entrypoint: access guidance exists, required local links resolve, public exposure is not the default, and manual commands are visible but not executed.
 
-`reports/product/daily-agenda.html` is not an ops dashboard. It is the phone-first daily study order: what to read first, which sources influenced the top topic, which evidence is weak or stale, what each analyst role should check next, and which beginner-readable questions should continue the loop.
+`reports/product/daily-agenda.html` is not an ops dashboard. It is the phone-first daily study order: what to read first, why the scout chose that topic without requiring user input, which sources influenced the top topic, which evidence is weak or stale, what each analyst role should check next, which beginner-readable questions should continue the loop, and which short feedback responses can shape tomorrow.
 
 `reports/product/readiness.html` is not the Flyhigh project dashboard. It is the personal analyst's phone-first trust check: whether today's daily surfaces and required machine artifacts are fresh enough, which files are stale or missing, what scheduler status is known, and what local run command should be used next.
 

@@ -1883,6 +1883,7 @@ def build_daily_brief_agenda(
         "source_fanout": _agenda_source_fanout(source_rows=source_rows, top_cards=top_cards),
         "role_brief": role_brief,
         "copy_ready_questions": _agenda_questions(primary=primary, weak_points=weak_points),
+        "copy_ready_responses": primary.get("copy_ready_responses", []),
         "weak_points": weak_points,
         "external_effect_performed": False,
         "policy": "research_only",
@@ -1940,6 +1941,8 @@ def validate_daily_brief_agenda_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("study_sequence must not be empty")
     if not payload.get("topic_cards"):
         errors.append("topic_cards must not be empty")
+    if not payload.get("copy_ready_responses"):
+        errors.append("copy_ready_responses must not be empty")
     if payload.get("external_effect_performed") is not False:
         errors.append("external_effect_performed must be false")
     if payload.get("policy") != "research_only":
@@ -3670,6 +3673,14 @@ def render_daily_brief_agenda(payload: dict[str, Any]) -> str:
     )
     weak_items = "".join(f"<li>{esc(item)}</li>" for item in payload.get("weak_points", [])) or "<li>오늘 기록된 약한 근거가 없습니다.</li>"
     questions = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in payload.get("copy_ready_questions", []))
+    response_cards = "".join(
+        "<article class='question'>"
+        f"<p><strong>{esc(response.get('intent', 'response'))}</strong></p>"
+        f"<code>{esc(response.get('command', ''))}</code>"
+        f"<small>{esc(response.get('effect', '다음 로컬 실행에 반영합니다.'))}</small>"
+        "</article>"
+        for response in payload.get("copy_ready_responses", [])
+    ) or "<p>오늘 복사할 피드백 명령이 없습니다.</p>"
     return f"""<!doctype html>
 <html lang="ko">
 <head>
@@ -3694,6 +3705,7 @@ p {{ margin:0; color:var(--muted); }}
 .step strong,.card strong {{ display:block; margin-bottom:6px; }}
 .step p,.step small,.card p,.card small,.question p {{ overflow-wrap:anywhere; word-break:break-word; }}
 .step small,.card small {{ display:block; color:var(--ink); }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
 ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 .boundary {{ border-left:4px solid var(--green); }}
 @media (max-width:520px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} }}
@@ -3733,6 +3745,10 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <section class="section">
 <h2>오늘 물어볼 질문</h2>
 <div class="stack">{questions}</div>
+</section>
+<section class="section">
+<h2>짧게 남길 응답</h2>
+<div class="stack">{response_cards}</div>
 </section>
 <section class="section boundary">
 <h2>안전 경계</h2>
@@ -6957,6 +6973,8 @@ def _daily_home_commands(*, payloads: dict[str, dict[str, Any]]) -> list[dict[st
 
 def build_daily_operator_home(
     *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
     morning_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     readiness_path: str | Path = DEFAULT_DAILY_READINESS_OUTPUT,
@@ -6971,6 +6989,8 @@ def build_daily_operator_home(
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     generated = generated_at or datetime.now(timezone.utc)
+    scout = _load_optional_json(scout_path)
+    agenda = _load_optional_json(agenda_path)
     morning = _load_optional_json(morning_path)
     readiness = _load_optional_json(readiness_path)
     handoff = _load_optional_json(handoff_path)
@@ -6982,6 +7002,23 @@ def build_daily_operator_home(
     notification = _load_optional_json(notification_path)
     memory_audit = _load_optional_json(memory_audit_path)
     read_first = morning.get("read_first", {})
+    scout_topic = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    primary_agenda = agenda.get("primary_topic", {}) if agenda.get("schema_version") == DAILY_BRIEF_AGENDA_SCHEMA_VERSION else {}
+    autonomous_topic = scout_topic or primary_agenda
+    operator_brief = autonomous_topic.get("operator_brief", {})
+    autonomous_name = autonomous_topic.get("name", read_first.get("title", "오늘 브리프"))
+    autonomous_why = operator_brief.get(
+        "why_today",
+        primary_agenda.get("why_today", read_first.get("reason", "오늘 생성된 beginner brief를 먼저 읽습니다.")),
+    )
+    autonomous_confidence = operator_brief.get(
+        "confidence_note",
+        primary_agenda.get("confidence_note", "신뢰도는 로컬 산출물과 readiness를 함께 확인해야 합니다."),
+    )
+    autonomous_missing = operator_brief.get(
+        "missing_evidence_note",
+        primary_agenda.get("missing_evidence_note", "source freshness와 weak evidence를 agenda에서 확인하세요."),
+    )
     unresolved_count = int(handoff.get("summary", {}).get("unresolved_count", 0) or 0)
     pending_decision_count = len(morning.get("pending_decisions", []))
     required_stale = int(readiness.get("summary", {}).get("stale_required_count", 0) or 0)
@@ -7012,6 +7049,14 @@ def build_daily_operator_home(
     daily_route = [
         {
             "step": 1,
+            "label": "오늘 주제 잡기",
+            "title": autonomous_name,
+            "why": autonomous_why,
+            "href": links["agenda"],
+            "status": "ready" if agenda.get("schema_version") == DAILY_BRIEF_AGENDA_SCHEMA_VERSION else "missing",
+        },
+        {
+            "step": 2,
             "label": "먼저 읽기",
             "title": read_first.get("title", "오늘 브리프"),
             "why": read_first.get("reason", "오늘 생성된 beginner brief를 먼저 읽습니다."),
@@ -7019,7 +7064,7 @@ def build_daily_operator_home(
             "status": "ready" if Path(today_path).exists() else "missing",
         },
         {
-            "step": 2,
+            "step": 3,
             "label": "운영 상태 확인",
             "title": "morning control",
             "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -7027,7 +7072,7 @@ def build_daily_operator_home(
             "status": morning.get("status", "missing"),
         },
         {
-            "step": 3,
+            "step": 4,
             "label": "신뢰도 확인",
             "title": "readiness",
             "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -7035,7 +7080,7 @@ def build_daily_operator_home(
             "status": readiness.get("status", "missing"),
         },
         {
-            "step": 4,
+            "step": 5,
             "label": "전날 맥락 닫기",
             "title": "handoff",
             "why": f"남은 항목 {unresolved_count}개를 보고 필요한 응답을 복사합니다.",
@@ -7043,7 +7088,7 @@ def build_daily_operator_home(
             "status": handoff.get("status", "missing"),
         },
         {
-            "step": 5,
+            "step": 6,
             "label": "응답 반영 확인",
             "title": "handoff apply proof",
             "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -7051,7 +7096,7 @@ def build_daily_operator_home(
             "status": handoff_apply.get("status", "missing"),
         },
         {
-            "step": 6,
+            "step": 7,
             "label": "기억 품질 확인",
             "title": "memory audit",
             "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -7073,8 +7118,29 @@ def build_daily_operator_home(
             "scheduler_status": scheduler.get("status", "missing"),
             "notification_status": notification.get("delivery_status", "missing"),
             "phone_access_path": phone_access.get("recommended_path", "missing"),
+            "autonomous_topic": autonomous_name,
+            "autonomous_reason": autonomous_why,
+            "scout_operator_input_required": scout.get("autonomous_start", {}).get("operator_input_required", False),
         },
         "daily_route": daily_route,
+        "autonomous_scout": {
+            "mode": scout.get("autonomous_start", {}).get("mode", "system_recommends_first_topic"),
+            "operator_input_required": scout.get("autonomous_start", {}).get("operator_input_required", False),
+            "recommended_topic": autonomous_topic,
+            "headline": operator_brief.get("headline", primary_agenda.get("headline", f"오늘은 {autonomous_name}부터 봅니다.")),
+            "why_today": autonomous_why,
+            "confidence_note": autonomous_confidence,
+            "missing_evidence_note": autonomous_missing,
+            "copy_ready_responses": (
+                autonomous_topic.get("copy_ready_responses")
+                or agenda.get("copy_ready_responses")
+                or [{
+                    "intent": "more",
+                    "command": f'more "{autonomous_name}" "내일도 이 주제를 더 보고 싶다"',
+                    "effect": "다음 로컬 실행에 반영합니다.",
+                }]
+            )[:3],
+        },
         "copy_ready_commands": _daily_home_commands(payloads=payloads),
         "phone_links": links,
         "access": {
@@ -7089,6 +7155,8 @@ def build_daily_operator_home(
             "send_requires_separate_approval": True,
         },
         "artifacts": [
+            _daily_home_artifact_status(name="scout", path=scout_path, payload=scout),
+            _daily_home_artifact_status(name="agenda", path=agenda_path, payload=agenda),
             _daily_home_artifact_status(name="morning", path=morning_path, payload=morning),
             _daily_home_artifact_status(name="readiness", path=readiness_path, payload=readiness),
             _daily_home_artifact_status(name="handoff", path=handoff_path, payload=handoff),
@@ -7145,6 +7213,13 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("host_write_performed must be false")
     if not payload.get("daily_route"):
         errors.append("daily_route must not be empty")
+    autonomous = payload.get("autonomous_scout", {})
+    if autonomous.get("mode") != "system_recommends_first_topic":
+        errors.append("autonomous_scout.mode must be system_recommends_first_topic")
+    if autonomous.get("operator_input_required") is not False:
+        errors.append("autonomous_scout.operator_input_required must be false")
+    if not autonomous.get("why_today"):
+        errors.append("autonomous_scout.why_today must not be empty")
     for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
@@ -7172,6 +7247,7 @@ def validate_daily_operator_home_file(path: str | Path) -> list[str]:
 
 def render_daily_operator_home(payload: dict[str, Any]) -> str:
     summary = payload.get("summary", {})
+    autonomous = payload.get("autonomous_scout", {})
     status_label = {
         "ready": "오늘 읽기 준비됨",
         "operator_review": "사람 확인 필요",
@@ -7203,6 +7279,14 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
         "</article>"
         for command in payload.get("copy_ready_commands", [])
     ) or "<p>지금 복사할 로컬 응답 명령이 없습니다.</p>"
+    scout_response_cards = "".join(
+        "<article class='command'>"
+        f"<span>scout · {esc(response.get('intent', 'response'))}</span>"
+        f"<code>{esc(response.get('command', ''))}</code>"
+        f"<small>{esc(response.get('effect', '다음 로컬 실행에 반영합니다.'))}</small>"
+        "</article>"
+        for response in autonomous.get("copy_ready_responses", [])
+    ) or "<p>오늘 scout에 남길 짧은 응답이 아직 없습니다.</p>"
     link_cards = "".join(
         f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
         for label, path in payload.get("phone_links", {}).items()
@@ -7270,6 +7354,14 @@ td strong,td span {{ display:block; }}
 <article class="metric"><span>Missing</span><strong>{esc(summary.get('required_missing_count', 0))}</strong></article>
 <article class="metric"><span>Scheduler</span><strong>{esc(scheduler_label)}</strong></article>
 </div>
+</section>
+<section class="section">
+<h2>Scout가 먼저 고른 주제</h2>
+<p><strong>{esc(autonomous.get('headline', summary.get('autonomous_topic', '오늘 추천 주제 없음')))}</strong></p>
+<p>{esc(autonomous.get('why_today', summary.get('autonomous_reason', '')))}</p>
+<p>{esc(autonomous.get('confidence_note', ''))}</p>
+<p>{esc(autonomous.get('missing_evidence_note', ''))}</p>
+<div class="commands">{scout_response_cards}</div>
 </section>
 <section class="section">
 <h2>오늘 볼 순서</h2>
@@ -10125,15 +10217,21 @@ def _agenda_topic_card(
         ][:3]
     source_family_count = len(source_names)
     weak_points = list(dict.fromkeys(recommendation.get("missing_evidence", []) + memory_topic.get("collection_gaps", [])))
+    operator_brief = recommendation.get("operator_brief", {})
     return {
         "topic_id": recommendation.get("topic_id", ""),
         "name": recommendation.get("name", ""),
         "priority_rank": recommendation.get("priority_rank", 0),
         "action": recommendation.get("action", "monitor"),
         "confidence": recommendation.get("confidence", ""),
-        "why_today": recommendation.get("why", ""),
-        "beginner_focus": recommendation.get("beginner_focus", ""),
+        "why_today": operator_brief.get("why_today", recommendation.get("why", "")),
+        "headline": operator_brief.get("headline", ""),
+        "beginner_focus": operator_brief.get("beginner_focus", recommendation.get("beginner_focus", "")),
+        "confidence_note": operator_brief.get("confidence_note", ""),
+        "missing_evidence_note": operator_brief.get("missing_evidence_note", ""),
         "next_question": recommendation.get("next_question", ""),
+        "beginner_reading_order": recommendation.get("beginner_reading_order", []),
+        "copy_ready_responses": recommendation.get("copy_ready_responses", []),
         "evidence_count": len(supporting),
         "source_family_count": source_family_count,
         "vault_note_count": len(linked_vault),
@@ -10192,6 +10290,19 @@ def _agenda_weak_points(
 
 def _agenda_study_sequence(*, primary: dict[str, Any], weak_points: list[str]) -> list[dict[str, Any]]:
     primary_name = primary.get("name", "오늘 추천 주제")
+    reading_order = primary.get("beginner_reading_order", [])
+    if reading_order:
+        sequence = []
+        minute_budget = [4, 5, 5, 4, 2]
+        for index, item in enumerate(reading_order[:5], start=1):
+            sequence.append({
+                "step": index,
+                "minutes": minute_budget[index - 1],
+                "title": item.get("title", f"{primary_name} 읽기"),
+                "operator_action": item.get("why", ""),
+                "stop_condition": item.get("done_when", "다음 질문 하나를 남기면 이동합니다."),
+            })
+        return sequence
     return [
         {
             "step": 1,
