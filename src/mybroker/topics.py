@@ -14,6 +14,7 @@ from mybroker.public_evidence import (
     build_public_evidence_catalog,
     build_public_evidence_graph,
     evaluate_feasibility,
+    write_public_evidence_catalog,
 )
 from mybroker.scenario import TOPIC_DEFINITIONS, detect_topics
 
@@ -25,6 +26,7 @@ DAILY_SCOUT_SCHEMA_VERSION = "daily_scout.v1"
 SOURCE_REFRESH_PLAN_SCHEMA_VERSION = "source_refresh_plan.v1"
 SOURCE_REFRESH_APPLY_SCHEMA_VERSION = "source_refresh_apply.v1"
 SOURCE_REFRESH_LIVE_GATE_SCHEMA_VERSION = "source_refresh_live_gate.v1"
+SOURCE_REFRESH_LIVE_RUN_SCHEMA_VERSION = "source_refresh_live_run.v1"
 
 DEFAULT_TOPICS_PATH = Path("config/topics.json")
 DEFAULT_RESEARCH_PLAN_OUTPUT = Path("reports/daily/research-plan.json")
@@ -32,8 +34,10 @@ DEFAULT_DAILY_SCOUT_OUTPUT = Path("reports/daily/scout.json")
 DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT = Path("reports/daily/source-refresh-plan.json")
 DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT = Path("reports/daily/source-refresh-apply.json")
 DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT = Path("reports/daily/source-refresh-live-gate.json")
+DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT = Path("reports/daily/source-refresh-live-run.json")
 DEFAULT_TOPIC_MEMORY_OUTPUT = Path("reports/memory/topic-memory.json")
 DEFAULT_DAILY_EVIDENCE_OUTPUT = Path("reports/evidence/daily-evidence-catalog.json")
+DEFAULT_LIVE_EVIDENCE_OUTPUT = Path("reports/evidence/live-evidence-catalog.json")
 
 DEFAULT_INTERESTS = [
     {
@@ -567,6 +571,118 @@ def validate_source_refresh_live_gate_file(path: str | Path) -> list[str]:
     return validate_source_refresh_live_gate_payload(load_json(path))
 
 
+def build_source_refresh_live_run(
+    *,
+    live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    response: str = "",
+    output_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    evidence_output_path: str | Path = DEFAULT_LIVE_EVIDENCE_OUTPUT,
+    execute: bool = False,
+    confirm_live_network: bool = False,
+) -> dict[str, Any]:
+    gate = load_json(live_gate_path)
+    gate_errors = validate_source_refresh_live_gate_payload(gate)
+    if gate_errors:
+        raise ValueError("; ".join(gate_errors))
+    normalized_response = " ".join(response.strip().split())
+    decision = (gate.get("decisions") or [{}])[0] if gate.get("decisions") else {}
+    expected_response = decision.get("copy_ready_response", "")
+    approval_status = "not_required" if gate.get("status") == "no_live_refresh_requested" else "missing"
+    if expected_response and normalized_response == expected_response:
+        approval_status = "approved"
+    elif normalized_response:
+        approval_status = "invalid"
+    proposed_commands = list(decision.get("agent_will_run", []))
+    source_ids = _live_source_ids_from_gate(gate)
+    blockers = []
+    if gate.get("status") == "approval_required" and approval_status != "approved":
+        blockers.append("live_network_refresh_not_approved")
+    if execute and not confirm_live_network:
+        blockers.append("missing_confirm_live_network")
+    if execute and not source_ids:
+        blockers.append("no_live_sources_to_run")
+    execution_status = "not_requested"
+    catalog_summary: dict[str, Any] = {}
+    external_effect_performed = False
+    if not execute:
+        execution_status = "ready_to_execute" if approval_status == "approved" and not blockers else "not_requested"
+    elif blockers:
+        execution_status = "blocked"
+    else:
+        catalog = build_public_evidence_catalog(source_ids)
+        write_public_evidence_catalog(catalog, evidence_output_path)
+        external_effect_performed = True
+        execution_status = "executed"
+        catalog_summary = {
+            "evidence_output_path": Path(evidence_output_path).as_posix(),
+            "mode": catalog.get("mode", ""),
+            "source_count": len(catalog.get("source_status", [])),
+            "item_count": len(catalog.get("items", [])),
+            "freshness": [
+                {
+                    "source_id": row.get("source_id", ""),
+                    "freshness_status": row.get("freshness_status", ""),
+                    "item_count": row.get("item_count", "0"),
+                }
+                for row in catalog.get("source_status", [])
+            ],
+        }
+    payload = {
+        "schema_version": SOURCE_REFRESH_LIVE_RUN_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "inputs": {
+            "live_gate_path": Path(live_gate_path).as_posix(),
+            "evidence_output_path": Path(evidence_output_path).as_posix(),
+        },
+        "response": normalized_response,
+        "expected_response": expected_response,
+        "approval_status": approval_status,
+        "execution": {
+            "execute_requested": execute,
+            "confirm_live_network": confirm_live_network,
+            "status": execution_status,
+            "source_ids": source_ids,
+            "proposed_commands": proposed_commands,
+            "blockers": blockers,
+        },
+        "catalog_summary": catalog_summary,
+        "external_effect_performed": external_effect_performed,
+        "policy": _research_only_policy(),
+        "next_step": _live_run_next_step(execution_status, approval_status),
+    }
+    return write_json(payload, output_path)
+
+
+def validate_source_refresh_live_run_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != SOURCE_REFRESH_LIVE_RUN_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("approval_status") not in {"approved", "missing", "invalid", "not_required"}:
+        errors.append("approval_status must be approved, missing, invalid, or not_required")
+    execution = payload.get("execution", {})
+    if execution.get("status") not in {"not_requested", "ready_to_execute", "blocked", "executed"}:
+        errors.append("execution.status must be not_requested, ready_to_execute, blocked, or executed")
+    if payload.get("external_effect_performed") is True:
+        if execution.get("status") != "executed":
+            errors.append("external_effect_performed true requires execution.status executed")
+        if not execution.get("execute_requested") or not execution.get("confirm_live_network"):
+            errors.append("executed live run requires execute_requested and confirm_live_network")
+    else:
+        if execution.get("status") == "executed":
+            errors.append("execution.status executed requires external_effect_performed true")
+    for command in execution.get("proposed_commands", []):
+        if any(blocked in command for blocked in ["--send", "--confirm-host-write", "launchctl", "tailscale serve --bg"]):
+            errors.append("proposed command crosses non-network external-effect boundary")
+    policy = payload.get("policy", {})
+    if policy.get("output_boundary") != "research_only":
+        errors.append("policy.output_boundary must be research_only")
+    return errors
+
+
+def validate_source_refresh_live_run_file(path: str | Path) -> list[str]:
+    return validate_source_refresh_live_run_payload(load_json(path))
+
+
 def collect_topic_evidence(
     *,
     topics_path: str | Path = DEFAULT_TOPICS_PATH,
@@ -991,6 +1107,27 @@ def _unique_preserve_order(values: Any) -> list[str]:
             seen.add(value)
             rows.append(value)
     return rows
+
+
+def _live_source_ids_from_gate(gate: dict[str, Any]) -> list[str]:
+    source_ids = []
+    for action in gate.get("blocked_actions", []):
+        adapter_id = action.get("adapter_id", "")
+        if adapter_id in {"gdelt-live", "stooq-live"}:
+            source_ids.append(adapter_id)
+    if source_ids:
+        source_ids.append("sec-sample")
+    return _unique_preserve_order(source_ids)
+
+
+def _live_run_next_step(execution_status: str, approval_status: str) -> str:
+    if execution_status == "executed":
+        return "validate_live_evidence_catalog_then_refresh_daily_loop"
+    if execution_status == "ready_to_execute":
+        return "operator_may_run_with_execute_and_confirm_live_network"
+    if approval_status in {"missing", "invalid"}:
+        return "provide_copy_ready_live_network_refresh_approval"
+    return "review_live_refresh_gate"
 
 
 def _needs_news_refresh(recommendations: list[dict[str, Any]], source_status: dict[str, dict[str, Any]]) -> bool:

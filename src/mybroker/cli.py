@@ -68,10 +68,12 @@ from mybroker.scenario import (
 from mybroker.signals import momentum_signals
 from mybroker.topics import (
     DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    DEFAULT_LIVE_EVIDENCE_OUTPUT,
     DEFAULT_DAILY_SCOUT_OUTPUT,
     DEFAULT_RESEARCH_PLAN_OUTPUT,
     DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
     DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
     DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
     DEFAULT_TOPIC_MEMORY_OUTPUT,
     DEFAULT_TOPICS_PATH,
@@ -80,6 +82,7 @@ from mybroker.topics import (
     build_research_plan,
     build_source_refresh_apply,
     build_source_refresh_live_gate,
+    build_source_refresh_live_run,
     build_source_refresh_plan,
     collect_topic_evidence,
     init_topic_config,
@@ -88,6 +91,7 @@ from mybroker.topics import (
     validate_research_plan_file,
     validate_source_refresh_apply_file,
     validate_source_refresh_live_gate_file,
+    validate_source_refresh_live_run_file,
     validate_source_refresh_plan_file,
     validate_topic_config_file,
     validate_topic_memory_file,
@@ -207,6 +211,14 @@ def main(argv: list[str] | None = None) -> int:
     refresh_live_gate_parser.add_argument("--refresh-apply", default=DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT.as_posix())
     refresh_live_gate_parser.add_argument("--output", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
 
+    refresh_live_run_parser = subcommands.add_parser("source-refresh-live-run", help="Write or execute a guarded live source refresh run proof.")
+    refresh_live_run_parser.add_argument("--live-gate", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
+    refresh_live_run_parser.add_argument("--response", default="")
+    refresh_live_run_parser.add_argument("--output", default=DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix())
+    refresh_live_run_parser.add_argument("--evidence-output", default=DEFAULT_LIVE_EVIDENCE_OUTPUT.as_posix())
+    refresh_live_run_parser.add_argument("--execute", action="store_true", help="Execute no-key live network refresh if approval and confirmation are present.")
+    refresh_live_run_parser.add_argument("--confirm-live-network", action="store_true", help="Required with --execute to permit live network calls.")
+
     validate_topics_parser = subcommands.add_parser("validate-topics", help="Validate a topic_config.v1 artifact.")
     validate_topics_parser.add_argument("topics_path")
     validate_plan_parser = subcommands.add_parser("validate-research-plan", help="Validate a daily_research_plan.v1 artifact.")
@@ -219,6 +231,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_refresh_apply_parser.add_argument("refresh_apply_path")
     validate_refresh_live_gate_parser = subcommands.add_parser("validate-source-refresh-live-gate", help="Validate a source_refresh_live_gate.v1 artifact.")
     validate_refresh_live_gate_parser.add_argument("refresh_live_gate_path")
+    validate_refresh_live_run_parser = subcommands.add_parser("validate-source-refresh-live-run", help="Validate a source_refresh_live_run.v1 artifact.")
+    validate_refresh_live_run_parser.add_argument("refresh_live_run_path")
     validate_memory_parser = subcommands.add_parser("validate-topic-memory", help="Validate a topic_memory.v1 artifact.")
     validate_memory_parser.add_argument("memory_path")
 
@@ -236,6 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     daily_parser.add_argument("--refresh-plan-output", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
     daily_parser.add_argument("--refresh-apply-output", default=DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT.as_posix())
     daily_parser.add_argument("--refresh-live-gate-output", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
+    daily_parser.add_argument("--refresh-live-run-output", default=DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix())
     daily_parser.add_argument("--evidence-output", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
     daily_parser.add_argument("--memory-output", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     daily_parser.add_argument("--scenario-output", default="reports/scenarios/daily-research-sim.json")
@@ -310,6 +325,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--refresh-plan", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--refresh-apply", default=DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--refresh-live-gate", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
+    appliance_today_parser.add_argument("--refresh-live-run", default=DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--brief", default="reports/product/market-brief.html")
     appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--archive-manifest")
@@ -364,6 +380,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_run_parser.add_argument("--refresh-plan-output", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
     appliance_run_parser.add_argument("--refresh-apply-output", default=DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT.as_posix())
     appliance_run_parser.add_argument("--refresh-live-gate-output", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
+    appliance_run_parser.add_argument("--refresh-live-run-output", default=DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix())
 
     quality_parser = subcommands.add_parser("quality", help="Inspect local price dataset quality without writing a research report.")
     quality_parser.add_argument("--source", action="append", help="Local price CSV file or directory. Repeat for multiple CSV files. Defaults to the bundled sample data.")
@@ -585,6 +602,25 @@ def main(argv: list[str] | None = None) -> int:
             "external_effect_performed": payload["external_effect_performed"],
         }, indent=2, ensure_ascii=False))
         return 0
+    if args.command == "source-refresh-live-run":
+        payload = build_source_refresh_live_run(
+            live_gate_path=args.live_gate,
+            response=args.response,
+            output_path=args.output,
+            evidence_output_path=args.evidence_output,
+            execute=args.execute,
+            confirm_live_network=args.confirm_live_network,
+        )
+        print(json.dumps({
+            "source_refresh_live_run": args.output,
+            "schema_version": payload["schema_version"],
+            "approval_status": payload["approval_status"],
+            "execution_status": payload["execution"]["status"],
+            "external_effect_performed": payload["external_effect_performed"],
+            "blockers": payload["execution"]["blockers"],
+            "next_step": payload["next_step"],
+        }, indent=2, ensure_ascii=False))
+        return 0
     if args.command == "validate-topics":
         errors = validate_topic_config_file(args.topics_path)
         if errors:
@@ -622,6 +658,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-source-refresh-live-gate":
         errors = validate_source_refresh_live_gate_file(args.refresh_live_gate_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-source-refresh-live-run":
+        errors = validate_source_refresh_live_run_file(args.refresh_live_run_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -680,6 +723,10 @@ def main(argv: list[str] | None = None) -> int:
             refresh_apply_path=args.refresh_apply_output,
             output_path=args.refresh_live_gate_output,
         )
+        refresh_live_run = build_source_refresh_live_run(
+            live_gate_path=args.refresh_live_gate_output,
+            output_path=args.refresh_live_run_output,
+        )
         report = run_market_simulation(
             seed_sources=["examples/seeds"],
             profile_path=args.profile,
@@ -699,6 +746,7 @@ def main(argv: list[str] | None = None) -> int:
             "source_refresh_plan": args.refresh_plan_output,
             "source_refresh_apply": args.refresh_apply_output,
             "source_refresh_live_gate": args.refresh_live_gate_output,
+            "source_refresh_live_run": args.refresh_live_run_output,
             "evidence_catalog": args.evidence_output,
             "topic_memory": args.memory_output,
             "scenario_report": scenario_path.as_posix(),
@@ -713,6 +761,8 @@ def main(argv: list[str] | None = None) -> int:
             "refresh_ready_count": refresh_apply["summary"]["ready_count"],
             "refresh_blocked_count": refresh_apply["summary"]["blocked_count"],
             "live_gate_status": refresh_live_gate["status"],
+            "live_run_approval_status": refresh_live_run["approval_status"],
+            "live_run_status": refresh_live_run["execution"]["status"],
         }, indent=2, ensure_ascii=False))
         return 0
     if args.command == "appliance":
@@ -868,6 +918,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_plan_path=args.refresh_plan,
                 refresh_apply_path=args.refresh_apply,
                 refresh_live_gate_path=args.refresh_live_gate,
+                refresh_live_run_path=args.refresh_live_run,
                 brief_path=args.brief,
                 output_path=args.output,
                 archive_manifest_path=args.archive_manifest,
@@ -948,6 +999,7 @@ def main(argv: list[str] | None = None) -> int:
             refresh_plan_path = Path(args.refresh_plan_output)
             refresh_apply_path = Path(args.refresh_apply_output)
             refresh_live_gate_path = Path(args.refresh_live_gate_output)
+            refresh_live_run_path = Path(args.refresh_live_run_output)
             evidence_path = DEFAULT_DAILY_EVIDENCE_OUTPUT
             memory_path = DEFAULT_TOPIC_MEMORY_OUTPUT
             scenario_path = Path("reports/scenarios/daily-research-sim.json")
@@ -989,6 +1041,10 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_apply_path=refresh_apply_path,
                 output_path=refresh_live_gate_path,
             )
+            refresh_live_run = build_source_refresh_live_run(
+                live_gate_path=refresh_live_gate_path,
+                output_path=refresh_live_run_path,
+            )
             report = run_market_simulation(
                 seed_sources=["examples/seeds"],
                 profile_path=args.profile,
@@ -1011,6 +1067,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_plan_path=refresh_plan_path,
                 refresh_apply_path=refresh_apply_path,
                 refresh_live_gate_path=refresh_live_gate_path,
+                refresh_live_run_path=refresh_live_run_path,
                 brief_path=written_brief,
                 output_path=today_path,
             )
@@ -1025,6 +1082,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_plan_path=refresh_plan_path,
                 refresh_apply_path=refresh_apply_path,
                 refresh_live_gate_path=refresh_live_gate_path,
+                refresh_live_run_path=refresh_live_run_path,
                 archive_root=args.archive_root,
             )
             written_memory = write_memory_surface(
@@ -1045,6 +1103,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_plan_path=refresh_plan_path,
                 refresh_apply_path=refresh_apply_path,
                 refresh_live_gate_path=refresh_live_gate_path,
+                refresh_live_run_path=refresh_live_run_path,
                 brief_path=written_brief,
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,
@@ -1069,6 +1128,7 @@ def main(argv: list[str] | None = None) -> int:
                 "source_refresh_plan": refresh_plan_path.as_posix(),
                 "source_refresh_apply": refresh_apply_path.as_posix(),
                 "source_refresh_live_gate": refresh_live_gate_path.as_posix(),
+                "source_refresh_live_run": refresh_live_run_path.as_posix(),
                 "evidence_catalog": evidence_path.as_posix(),
                 "topic_memory": memory_path.as_posix(),
                 "scenario_report": written_scenario.as_posix(),
@@ -1089,6 +1149,8 @@ def main(argv: list[str] | None = None) -> int:
                 "refresh_ready_count": refresh_apply["summary"]["ready_count"],
                 "refresh_blocked_count": refresh_apply["summary"]["blocked_count"],
                 "live_gate_status": refresh_live_gate["status"],
+                "live_run_approval_status": refresh_live_run["approval_status"],
+                "live_run_status": refresh_live_run["execution"]["status"],
             }, indent=2, ensure_ascii=False))
             return 0
     if args.command == "validate-profile":

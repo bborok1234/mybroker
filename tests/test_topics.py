@@ -11,6 +11,7 @@ from mybroker.topics import (
     build_research_plan,
     build_source_refresh_apply,
     build_source_refresh_live_gate,
+    build_source_refresh_live_run,
     build_source_refresh_plan,
     collect_topic_evidence,
     init_topic_config,
@@ -18,6 +19,7 @@ from mybroker.topics import (
     validate_research_plan_file,
     validate_source_refresh_apply_file,
     validate_source_refresh_live_gate_file,
+    validate_source_refresh_live_run_file,
     validate_source_refresh_plan_file,
     validate_topic_config_file,
     validate_topic_memory_file,
@@ -85,12 +87,25 @@ class TopicResearchLoopTests(unittest.TestCase):
                 refresh_apply_path=refresh_apply_path,
                 output_path=refresh_live_gate_path,
             )
+            refresh_live_run_path = root / "source-refresh-live-run.json"
+            refresh_live_run = build_source_refresh_live_run(
+                live_gate_path=refresh_live_gate_path,
+                output_path=refresh_live_run_path,
+            )
+            approved_live_run_path = root / "source-refresh-live-run-approved.json"
+            approved_live_run = build_source_refresh_live_run(
+                live_gate_path=refresh_live_gate_path,
+                response="approve live_network_refresh live_network_refresh",
+                output_path=approved_live_run_path,
+            )
 
             plan_errors = validate_research_plan_file(plan_path)
             scout_errors = validate_daily_scout_file(scout_path)
             refresh_plan_errors = validate_source_refresh_plan_file(refresh_plan_path)
             refresh_apply_errors = validate_source_refresh_apply_file(refresh_apply_path)
             refresh_live_gate_errors = validate_source_refresh_live_gate_file(refresh_live_gate_path)
+            refresh_live_run_errors = validate_source_refresh_live_run_file(refresh_live_run_path)
+            approved_live_run_errors = validate_source_refresh_live_run_file(approved_live_run_path)
             catalog_errors = validate_public_evidence_catalog_payload(catalog)
             memory_errors = validate_topic_memory_file(memory_path)
 
@@ -100,6 +115,8 @@ class TopicResearchLoopTests(unittest.TestCase):
         self.assertEqual(refresh_plan_errors, [])
         self.assertEqual(refresh_apply_errors, [])
         self.assertEqual(refresh_live_gate_errors, [])
+        self.assertEqual(refresh_live_run_errors, [])
+        self.assertEqual(approved_live_run_errors, [])
         self.assertEqual(catalog_errors, [])
         self.assertEqual(memory_errors, [])
         self.assertEqual(catalog["mode"], "sample_cache_topic_research")
@@ -117,8 +134,17 @@ class TopicResearchLoopTests(unittest.TestCase):
         self.assertTrue(any(result["decision"] in {"ready", "blocked"} for result in refresh_apply["results"]))
         self.assertEqual(refresh_live_gate["schema_version"], "source_refresh_live_gate.v1")
         self.assertFalse(refresh_live_gate["external_effect_performed"])
+        self.assertEqual(refresh_live_run["schema_version"], "source_refresh_live_run.v1")
+        self.assertFalse(refresh_live_run["external_effect_performed"])
         if refresh_live_gate["decisions"]:
             self.assertEqual(refresh_live_gate["decisions"][0]["copy_ready_response"], "approve live_network_refresh live_network_refresh")
+            self.assertEqual(refresh_live_run["approval_status"], "missing")
+            self.assertEqual(refresh_live_run["execution"]["status"], "not_requested")
+            self.assertEqual(approved_live_run["approval_status"], "approved")
+            self.assertEqual(approved_live_run["execution"]["status"], "ready_to_execute")
+            self.assertFalse(approved_live_run["external_effect_performed"])
+        else:
+            self.assertEqual(refresh_live_run["approval_status"], "not_required")
         self.assertGreaterEqual(len(catalog["items"]), 2)
 
 
