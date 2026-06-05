@@ -1,10 +1,10 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-05T23:18:49.891802+00:00",
+  "generated_at": "2026-06-05T23:36:17.644734+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
-    "unresolved_handoff_count": 9,
+    "unresolved_handoff_count": 4,
     "pending_decision_count": 2,
     "required_stale_count": 0,
     "required_missing_count": 0,
@@ -19,7 +19,7 @@
     "trace_status": "ready",
     "trace_fresh_count": 21,
     "trace_weak_spot_count": 0,
-    "action_item_count": 8
+    "action_item_count": 5
   },
   "daily_route": [
     {
@@ -74,7 +74,7 @@
       "step": 7,
       "label": "전날 맥락 닫기",
       "title": "handoff",
-      "why": "남은 항목 9개를 보고 필요한 응답을 복사합니다.",
+      "why": "남은 항목 4개를 보고 필요한 응답을 복사합니다.",
       "href": "reports/product/handoff.html",
       "status": "review"
     },
@@ -308,7 +308,7 @@
       },
       {
         "label": "누적 실행",
-        "value": "54회",
+        "value": "56회",
         "source": "topic_memory"
       },
       {
@@ -342,10 +342,10 @@
     "status": "approval_review",
     "summary": {
       "pending_decision_count": 2,
-      "unresolved_handoff_count": 9,
-      "carried_task_count": 6,
+      "unresolved_handoff_count": 4,
+      "carried_task_count": 0,
       "ready_task_count": 0,
-      "priority_item_count": 8
+      "priority_item_count": 5
     },
     "priority_items": [
       {
@@ -401,53 +401,14 @@
         "host_write_performed": false
       },
       {
-        "kind": "task",
-        "id": "DH-AT-001",
-        "title": "자료 신선도와 부족한 근거를 먼저 확인",
-        "why": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-        "source": "analyst_task_ledger",
+        "kind": "council_warning",
+        "id": "DH-COUNCIL",
+        "title": "analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.",
+        "why": "council.html에서 역할별 caution/blocker를 먼저 읽고 오늘 결론 강도를 낮추세요.",
+        "source": "analyst_council",
         "status": "unresolved",
         "href": "reports/product/handoff.html",
-        "copy_ready_command": "AT-001 carry \"오늘 action inbox에서 계속 이월\"",
-        "requires_separate_approval": false,
-        "external_effect_performed": false,
-        "host_write_performed": false
-      },
-      {
-        "kind": "local_task",
-        "id": "AT-002",
-        "title": "오늘 초점 주제를 시장 지도에 다시 연결",
-        "why": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-        "source": "task_ledger",
-        "status": "carried",
-        "href": "reports/product/task-ledger.html",
-        "copy_ready_command": "AT-002 carry \"내일 계속 확인\"",
-        "requires_separate_approval": false,
-        "external_effect_performed": false,
-        "host_write_performed": false
-      },
-      {
-        "kind": "local_task",
-        "id": "AT-003",
-        "title": "가장 약한 결론을 반대 근거로 공격",
-        "why": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-        "source": "task_ledger",
-        "status": "carried",
-        "href": "reports/product/task-ledger.html",
-        "copy_ready_command": "AT-003 carry \"내일 계속 확인\"",
-        "requires_separate_approval": false,
-        "external_effect_performed": false,
-        "host_write_performed": false
-      },
-      {
-        "kind": "local_task",
-        "id": "AT-004",
-        "title": "초보자가 이해할 질문 하나를 쉬운 언어로 풀기",
-        "why": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-        "source": "task_ledger",
-        "status": "carried",
-        "href": "reports/product/task-ledger.html",
-        "copy_ready_command": "AT-004 carry \"내일 계속 확인\"",
+        "copy_ready_command": "more \"analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.\" \"내일 이어서 확인\"",
         "requires_separate_approval": false,
         "external_effect_performed": false,
         "host_write_performed": false
@@ -480,37 +441,23 @@
     },
     {
       "source": "handoff",
-      "label": "task 이월 기록",
-      "command": "PYTHONPATH=src python3 -m mybroker appliance handoff-response-apply 'AT-001 carry \"handoff에서 아직 남은 task로 확인\"'",
-      "why": "task 상태를 로컬 응답으로 남기고 task ledger와 handoff proof를 다시 생성합니다.",
+      "label": "먼저 볼 화면",
+      "command": "open reports/product/handoff.html reports/product/morning.html reports/product/today.html",
+      "why": "로컬 파일 열기만 수행합니다. 외부 효과는 없습니다.",
       "external_effect_performed": false
     },
     {
       "source": "morning",
-      "label": "AT-001 완료 표시",
-      "command": "AT-001 complete \"오늘 확인 완료\"",
-      "why": "local task status response only",
+      "label": "live_network_refresh 승인 응답",
+      "command": "approve live_network_refresh live_network_refresh",
+      "why": "approval response only; separate apply/preflight still required",
       "external_effect_performed": false
     },
     {
       "source": "morning",
-      "label": "AT-001 이월 표시",
-      "command": "AT-001 carry \"내일 계속 확인\"",
-      "why": "local task status response only",
-      "external_effect_performed": false
-    },
-    {
-      "source": "morning",
-      "label": "AT-002 완료 표시",
-      "command": "AT-002 complete \"오늘 확인 완료\"",
-      "why": "local task status response only",
-      "external_effect_performed": false
-    },
-    {
-      "source": "morning",
-      "label": "AT-002 이월 표시",
-      "command": "AT-002 carry \"내일 계속 확인\"",
-      "why": "local task status response only",
+      "label": "live_refresh_preflight 승인 응답",
+      "command": "rerun preflight after exact approval and confirmation",
+      "why": "approval response only; separate apply/preflight still required",
       "external_effect_performed": false
     }
   ],
@@ -554,7 +501,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T23:18:49.838815+00:00"
+      "generated_at": "2026-06-05T23:36:17.589342+00:00"
     },
     {
       "name": "agenda",
@@ -562,7 +509,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T23:18:49.841273+00:00"
+      "generated_at": "2026-06-05T23:36:17.591702+00:00"
     },
     {
       "name": "morning",
@@ -570,7 +517,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-05T23:18:49.877157+00:00"
+      "generated_at": "2026-06-05T23:36:17.629528+00:00"
     },
     {
       "name": "readiness",
@@ -578,7 +525,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T23:18:49.889118+00:00"
+      "generated_at": "2026-06-05T23:36:17.641593+00:00"
     },
     {
       "name": "handoff",
@@ -586,7 +533,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-05T23:18:49.882799+00:00"
+      "generated_at": "2026-06-05T23:36:17.635620+00:00"
     },
     {
       "name": "handoff_apply",
@@ -602,7 +549,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T23:18:49.882174+00:00"
+      "generated_at": "2026-06-05T23:36:17.634894+00:00"
     },
     {
       "name": "run_trace",
@@ -610,7 +557,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T23:18:49.871946+00:00"
+      "generated_at": "2026-06-05T23:36:17.624465+00:00"
     },
     {
       "name": "task_ledger",
@@ -618,7 +565,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T23:18:49.860905+00:00"
+      "generated_at": "2026-06-05T23:36:17.609519+00:00"
     },
     {
       "name": "scheduler",
@@ -626,7 +573,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-05T23:18:49.870510+00:00"
+      "generated_at": "2026-06-05T23:36:17.623601+00:00"
     },
     {
       "name": "phone_access",
@@ -634,7 +581,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T23:18:49.835919+00:00"
+      "generated_at": "2026-06-05T23:36:17.587120+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -642,7 +589,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T23:18:49.888442+00:00"
+      "generated_at": "2026-06-05T23:36:17.640908+00:00"
     },
     {
       "name": "notification",
@@ -650,7 +597,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-05T23:18:49.863702+00:00"
+      "generated_at": "2026-06-05T23:36:17.612165+00:00"
     },
     {
       "name": "memory_query",
@@ -658,7 +605,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-05T23:18:49.858582+00:00"
+      "generated_at": "2026-06-05T23:36:17.607106+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -666,7 +613,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-05T23:18:49.874971+00:00"
+      "generated_at": "2026-06-05T23:36:17.627777+00:00"
     }
   ],
   "external_effect_performed": false,

@@ -52,7 +52,7 @@ It must show a source freshness scorecard so sample/cache/fallback evidence is n
 
 `reports/product/tasks.html` is not an executor. It is the role-based task board for the next local research loop. Queued tasks do not run live network, host writes, notification send, credential access, account access, trading, or discretionary advice.
 
-`reports/product/task-ledger.html` is not a project tracker. It is the personal analyst's local work memory: new, carried, blocked, and retired task states across daily runs.
+`reports/product/task-ledger.html` is not a project tracker and not a task runner. It is the personal analyst's local work memory: new, carried, blocked, completed, and retired task states across daily runs. It may show local task auto-completion when every declared local artifact input already exists, but that completion is evidence inference only. It must expose local proof status and must not imply that suggested commands, live network calls, notifications, account access, or external writes were executed.
 
 `reports/product/review.html` is not a project tracker and not a market brief. It is the personal analyst's local feedback loop: what the operator read, skipped, found confusing, or wants to see more often, and how that local signal can influence the next scout.
 

@@ -1,9 +1,9 @@
 {
   "schema_version": "personal_memory_index.v1",
-  "generated_at": "2026-06-05T23:18:49.857484+00:00",
+  "generated_at": "2026-06-05T23:36:17.606000+00:00",
   "memory_path": "reports/memory/topic-memory.json",
   "archive_root": "reports/archive",
-  "run_count": 54,
+  "run_count": 56,
   "topic_count": 5,
   "topics": [
     {
@@ -140,6 +140,20 @@
   "recent_runs": [
     {
       "run_id": "daily-research",
+      "generated_at": "2026-06-05T23:36:17.588645+00:00",
+      "evidence_catalog": "2026-06-05T23:36:17.588470+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
+      "generated_at": "2026-06-05T23:33:43.308250+00:00",
+      "evidence_catalog": "2026-06-05T23:33:43.307921+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
       "generated_at": "2026-06-05T23:18:49.837983+00:00",
       "evidence_catalog": "2026-06-05T23:18:49.837652+00:00",
       "topic_count": 5,
@@ -193,33 +207,13 @@
       "evidence_catalog": "2026-06-05T19:56:15.849882+00:00",
       "topic_count": 5,
       "changed_topics": []
-    },
-    {
-      "run_id": "daily-research",
-      "generated_at": "2026-06-05T19:39:26.254223+00:00",
-      "evidence_catalog": "2026-06-05T19:39:26.253910+00:00",
-      "topic_count": 5,
-      "changed_topics": []
-    },
-    {
-      "run_id": "daily-research",
-      "generated_at": "2026-06-05T19:38:11.651295+00:00",
-      "evidence_catalog": "2026-06-05T19:38:11.650895+00:00",
-      "topic_count": 5,
-      "changed_topics": [
-        "ai-infrastructure",
-        "semiconductors",
-        "us-rates",
-        "consumer-weakness",
-        "korea-semiconductors"
-      ]
     }
   ],
   "archives": [
     {
       "schema_version": "daily_archive.v1",
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T23:18:49.851416+00:00",
+      "generated_at": "2026-06-05T23:36:17.600538+00:00",
       "archive_dir": "reports/archive/2026-06-05",
       "artifacts": {
         "scenario": "reports/archive/2026-06-05/daily-research-sim.json",

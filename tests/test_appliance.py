@@ -385,7 +385,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("MyBroker Task Ledger", ledger_html)
         self.assertIn("상태별 작업", ledger_html)
         self.assertEqual(ledger_payload["schema_version"], "personal_analyst_task_ledger.v1")
-        self.assertEqual(ledger_payload["summary"]["ready_for_local_work"], ledger_payload["entry_count"])
+        self.assertEqual(ledger_payload["summary"]["completed"], ledger_payload["entry_count"])
+        self.assertTrue(all(entry["local_completion"]["status"] == "satisfied" for entry in ledger_payload["entries"]))
         self.assertIn("MyBroker Memory", memory_html)
         self.assertIn("주제별 누적 기억", memory_html)
         self.assertIn("근거 품질 추적", memory_html)
@@ -1759,6 +1760,83 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(updated["entries"][0]["status"], "completed")
         self.assertEqual(updated["summary"]["completed"], 1)
         self.assertIn("checked dry-run source plan", html)
+
+    def test_task_ledger_auto_completes_local_tasks_from_artifact_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task_queue = root / "tasks.json"
+            ledger = root / "ledger.json"
+            surface = root / "ledger.html"
+            evidence = root / "evidence.json"
+            today = root / "today.html"
+            handoff = root / "handoff.json"
+            handoff_surface = root / "handoff.html"
+            evidence.write_text('{"schema_version":"daily_evidence_catalog.v1"}', encoding="utf-8")
+            today.write_text("<html>today</html>", encoding="utf-8")
+            task_queue.write_text(
+                json.dumps({
+                    "schema_version": "personal_analyst_task_queue.v1",
+                    "generated_at": "2026-06-05T00:00:00+00:00",
+                    "run_id": "daily-test",
+                    "status": "queued",
+                    "source_journal": "journal.json",
+                    "task_count": 1,
+                    "tasks": [{
+                        "task_id": "AT-001",
+                        "role": "market_mapper",
+                        "title": "오늘 초점 주제를 시장 지도에 다시 연결",
+                        "why": "local artifacts already exist",
+                        "priority": "high",
+                        "status": "queued",
+                        "autonomy_level": "autonomous_local",
+                        "approval_scope": "local_render_only",
+                        "external_effect_allowed": False,
+                        "requires_operator_approval": False,
+                        "inputs": [evidence.as_posix(), today.as_posix()],
+                        "suggested_command": "mybroker appliance today",
+                        "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
+                    }],
+                    "reading_order": ["market_mapper"],
+                    "policy": "research_only",
+                    "safety_boundary": ["queued_tasks_do_not_execute"],
+                }),
+                encoding="utf-8",
+            )
+            write_analyst_task_ledger(
+                task_queue_path=task_queue,
+                previous_ledger_path=root / "missing.json",
+                status_apply_path=root / "missing-apply.json",
+                artifact_output_path=ledger,
+                surface_output_path=surface,
+            )
+            write_daily_handoff(
+                journal_path=root / "missing-journal.json",
+                task_ledger_path=ledger,
+                daily_review_path=root / "missing-review.json",
+                review_effect_path=root / "missing-effect.json",
+                analyst_council_path=root / "missing-council.json",
+                memory_audit_path=root / "missing-audit.json",
+                scout_path=root / "missing-scout.json",
+                run_ledger_path=root / "missing-run-ledger.json",
+                artifact_output_path=handoff,
+                surface_output_path=handoff_surface,
+            )
+            payload = json.loads(ledger.read_text(encoding="utf-8"))
+            handoff_payload = json.loads(handoff.read_text(encoding="utf-8"))
+            html = surface.read_text(encoding="utf-8")
+            ledger_errors = validate_analyst_task_ledger_file(ledger)
+            handoff_errors = validate_daily_handoff_file(handoff)
+
+        self.assertEqual(ledger_errors, [])
+        self.assertEqual(handoff_errors, [])
+        self.assertEqual(payload["summary"]["completed"], 1)
+        self.assertEqual(payload["summary"]["carried"], 0)
+        self.assertEqual(payload["entries"][0]["status"], "completed")
+        self.assertEqual(payload["entries"][0]["local_completion"]["status"], "satisfied")
+        self.assertEqual(payload["entries"][0]["local_completion"]["present_count"], 2)
+        self.assertFalse(payload["entries"][0]["local_completion"]["external_effect_performed"])
+        self.assertFalse(any(item.get("id") == "DH-AT-001" for item in handoff_payload["unresolved"]))
+        self.assertIn("local proof: satisfied", html)
 
     def test_source_refresh_response_updates_local_proofs_without_network_execution(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

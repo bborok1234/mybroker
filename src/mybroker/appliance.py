@@ -5976,7 +5976,8 @@ def build_analyst_task_ledger(
         fingerprint = _task_fingerprint(task)
         prior = previous_by_fingerprint.get(fingerprint, {})
         override = overrides.get(task.get("task_id", ""))
-        status = override.get("status") if override else _ledger_status_for_task(task=task, prior=prior)
+        completion = _local_task_completion_evidence(task=task, task_queue_path=task_queue_path)
+        status = override.get("status") if override else _ledger_status_for_task(task=task, prior=prior, completion=completion)
         current_entries.append({
             "ledger_id": f"{queue.get('run_id', 'daily')}-{task.get('task_id', '')}",
             "task_id": task.get("task_id", ""),
@@ -5994,8 +5995,9 @@ def build_analyst_task_ledger(
             "requires_operator_approval": bool(task.get("requires_operator_approval")),
             "suggested_command": task.get("suggested_command", ""),
             "stop_condition": task.get("stop_condition", ""),
-            "operator_note": override.get("note") if override and override.get("note") else _ledger_note_for_task(task=task, status=status),
+            "operator_note": override.get("note") if override and override.get("note") else _ledger_note_for_task(task=task, status=status, completion=completion),
             "operator_override": override or {},
+            "local_completion": completion,
         })
     current_fingerprints = {entry["fingerprint"] for entry in current_entries}
     retired_entries = []
@@ -6022,6 +6024,7 @@ def build_analyst_task_ledger(
         "safety_boundary": [
             "ledger_records_status_only",
             "does_not_execute_tasks",
+            "completion_inferred_from_local_artifact_presence_only",
             "no_account_access",
             "no_live_trading",
             "external_effects_require_separate_gate",
@@ -8317,15 +8320,25 @@ def validate_analyst_task_ledger_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("entries must not be empty")
     allowed_statuses = {"ready_for_local_work", "carried", "blocked_requires_approval", "retired_not_in_current_queue", "completed", "deferred", "blocked_by_operator"}
     for index, entry in enumerate(entries):
-        for field in ["ledger_id", "task_id", "fingerprint", "role", "title", "priority", "status", "first_seen_at", "last_seen_at", "operator_note"]:
+        for field in ["ledger_id", "task_id", "fingerprint", "role", "title", "priority", "status", "first_seen_at", "last_seen_at", "operator_note", "local_completion"]:
             if field not in entry:
                 errors.append(f"entries[{index}] missing {field}")
         if entry.get("status") not in allowed_statuses:
             errors.append(f"entries[{index}] invalid status {entry.get('status')}")
         if entry.get("external_effect_allowed") is True and entry.get("requires_operator_approval") is not True:
             errors.append(f"entries[{index}] external effects require operator approval")
+        completion = entry.get("local_completion", {})
+        for field in ["status", "required_count", "present_count", "missing_count", "artifacts", "external_effect_performed"]:
+            if field not in completion:
+                errors.append(f"entries[{index}].local_completion missing {field}")
+        if completion.get("external_effect_performed") is not False:
+            errors.append(f"entries[{index}].local_completion.external_effect_performed must be false")
+        if entry.get("status") == "completed" and entry.get("operator_override") == {} and completion.get("status") != "satisfied":
+            errors.append(f"entries[{index}] auto-completed task must have satisfied local_completion")
     if "does_not_execute_tasks" not in payload.get("safety_boundary", []):
         errors.append("safety_boundary must include does_not_execute_tasks")
+    if "completion_inferred_from_local_artifact_presence_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include completion_inferred_from_local_artifact_presence_only")
     return errors
 
 
@@ -8340,6 +8353,7 @@ def render_analyst_task_ledger(payload: dict[str, Any]) -> str:
         f"<span>{esc(entry.get('status', ''))} · {esc(entry.get('role', ''))} · {esc(entry.get('priority', ''))}</span>"
         f"<h2>{esc(entry.get('title', ''))}</h2>"
         f"<p>{esc(entry.get('operator_note', ''))}</p>"
+        f"<p>local proof: {esc(entry.get('local_completion', {}).get('status', 'missing'))} · present {esc(entry.get('local_completion', {}).get('present_count', 0))}/{esc(entry.get('local_completion', {}).get('required_count', 0))}</p>"
         f"<small>first: {esc(_short_date(entry.get('first_seen_at', '')))} · last: {esc(_short_date(entry.get('last_seen_at', '')))} · scope: {esc(entry.get('approval_scope', ''))}</small>"
         "</article>"
         for entry in payload.get("entries", [])
@@ -9558,17 +9572,78 @@ def _task_fingerprint(task: dict[str, Any]) -> str:
     ])
 
 
-def _ledger_status_for_task(*, task: dict[str, Any], prior: dict[str, Any]) -> str:
+def _resolve_local_artifact_path(raw_path: str, *, base_path: Path) -> Path:
+    path = Path(raw_path)
+    if path.is_absolute():
+        return path
+    if path.exists():
+        return path
+    base_candidate = base_path / path
+    if base_candidate.exists():
+        return base_candidate
+    return path
+
+
+def _local_task_completion_evidence(*, task: dict[str, Any], task_queue_path: str | Path) -> dict[str, Any]:
+    inputs = [str(item) for item in task.get("inputs", []) if str(item).strip()]
+    if task.get("requires_operator_approval") or task.get("external_effect_allowed"):
+        return {
+            "status": "approval_required",
+            "required_count": len(inputs),
+            "present_count": 0,
+            "missing_count": len(inputs),
+            "artifacts": [],
+            "reason": "approval-gated task cannot be auto-completed",
+            "external_effect_performed": False,
+        }
+    if not inputs:
+        return {
+            "status": "not_checked",
+            "required_count": 0,
+            "present_count": 0,
+            "missing_count": 0,
+            "artifacts": [],
+            "reason": "task has no local artifact inputs",
+            "external_effect_performed": False,
+        }
+    base_path = Path(task_queue_path).parent
+    artifacts = []
+    for raw_path in inputs:
+        resolved = _resolve_local_artifact_path(raw_path, base_path=base_path)
+        artifacts.append({
+            "path": raw_path,
+            "resolved_path": resolved.as_posix(),
+            "exists": resolved.exists(),
+            "is_local": not resolved.as_posix().startswith(("http://", "https://")),
+        })
+    present_count = sum(1 for artifact in artifacts if artifact.get("exists"))
+    missing_count = len(artifacts) - present_count
+    return {
+        "status": "satisfied" if artifacts and missing_count == 0 else "missing_artifacts",
+        "required_count": len(artifacts),
+        "present_count": present_count,
+        "missing_count": missing_count,
+        "artifacts": artifacts,
+        "reason": "all declared local artifact inputs exist" if missing_count == 0 else "one or more declared local artifact inputs are missing",
+        "external_effect_performed": False,
+    }
+
+
+def _ledger_status_for_task(*, task: dict[str, Any], prior: dict[str, Any], completion: dict[str, Any] | None = None) -> str:
     if task.get("requires_operator_approval"):
         return "blocked_requires_approval"
+    if completion and completion.get("status") == "satisfied":
+        return "completed"
     if prior:
         return "carried"
     return "ready_for_local_work"
 
 
-def _ledger_note_for_task(*, task: dict[str, Any], status: str) -> str:
+def _ledger_note_for_task(*, task: dict[str, Any], status: str, completion: dict[str, Any] | None = None) -> str:
     if status == "blocked_requires_approval":
         return "명시 승인 없이는 진행하지 않습니다. gate와 preflight를 먼저 확인하세요."
+    if status == "completed" and completion and completion.get("status") == "satisfied":
+        return f"로컬 산출물 {completion.get('present_count', 0)}개가 확인되어 자동 완료로 닫았습니다."
     if status == "carried":
         return "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
     return "로컬에서 외부 효과 없이 수행 가능한 작업입니다."
@@ -10194,6 +10269,13 @@ def _morning_command_bar(*, ledger: dict[str, Any], pending_decisions: list[dict
             "label": f"{decision.get('id', 'decision')} 승인 응답",
             "command": decision.get("copy_ready_response", ""),
             "effect": "approval response only; separate apply/preflight still required",
+            "external_effect_performed": False,
+        })
+    if not commands:
+        commands.append({
+            "label": "오늘 홈 열기",
+            "command": "open reports/product/daily-home.html reports/product/handoff.html",
+            "effect": "local file open only",
             "external_effect_performed": False,
         })
     return commands[:6]
