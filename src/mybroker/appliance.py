@@ -35,6 +35,7 @@ NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
 AGENT_PATTERN_RADAR_SCHEMA_VERSION = "agent_pattern_radar.v1"
+PATTERN_DRY_RUN_PROOF_SCHEMA_VERSION = "pattern_dry_run_proof.v1"
 PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
 PHONE_ACCESS_VERIFY_SCHEMA_VERSION = "phone_access_verify.v1"
 OPERATOR_DECISION_PACKET_SCHEMA_VERSION = "operator_decision_packet.v1"
@@ -81,6 +82,8 @@ DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
 DEFAULT_AGENT_PATTERN_RADAR_OUTPUT = Path("reports/runtime/agent-pattern-radar.json")
 DEFAULT_AGENT_PATTERN_RADAR_SURFACE = Path("reports/product/pattern-radar.html")
+DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT = Path("reports/runtime/pattern-dry-run-proof.json")
+DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE = Path("reports/product/pattern-dry-run.html")
 DEFAULT_PHONE_ACCESS_OUTPUT = Path("reports/runtime/phone-access.json")
 DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT = Path("reports/runtime/phone-access-verify.json")
 DEFAULT_PHONE_ACCESS_VERIFY_SURFACE = Path("reports/product/phone-access.html")
@@ -564,6 +567,302 @@ def validate_agent_pattern_radar_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_agent_pattern_radar_file(path: str | Path) -> list[str]:
     return validate_agent_pattern_radar_payload(load_json(path))
+
+
+def _pattern_proof_artifact_check(*, candidate: dict[str, Any], payload: dict[str, Any], surface_path: Path) -> tuple[str, list[str]]:
+    candidate_id = candidate.get("candidate_id", "")
+    reasons: list[str] = []
+    status = "passed"
+    if candidate.get("approval_scope") != "local_dry_run_only":
+        return "approval_required", ["승격하려면 별도 승인 scope가 필요합니다."]
+    if not payload:
+        return "failed", ["기대 artifact가 없습니다."]
+    if candidate_id == "pattern-memory-recall-quality":
+        errors = validate_memory_audit_payload(payload)
+        if errors:
+            status = "failed"
+            reasons.extend(errors)
+        if payload.get("status") not in {"ready", "needs_attention", "blocked"}:
+            status = "failed"
+            reasons.append("memory audit status가 허용 범위 밖입니다.")
+        if not surface_path.exists():
+            status = "failed"
+            reasons.append("phone-readable memory audit surface가 없습니다.")
+    elif candidate_id == "pattern-run-trace-observability":
+        errors = validate_run_trace_payload(payload)
+        if errors:
+            status = "failed"
+            reasons.extend(errors)
+        if payload.get("status") not in {"ready", "review", "blocked"}:
+            status = "failed"
+            reasons.append("run trace status가 허용 범위 밖입니다.")
+        if not surface_path.exists():
+            status = "failed"
+            reasons.append("phone-readable run trace surface가 없습니다.")
+    else:
+        status = "blocked"
+        reasons.append("이 후보에 대한 local proof 규칙이 아직 없습니다.")
+    if payload.get("external_effect_performed") is not False:
+        status = "failed"
+        reasons.append("external_effect_performed가 false가 아닙니다.")
+    if payload.get("host_write_performed") is not False:
+        status = "failed"
+        reasons.append("host_write_performed가 false가 아닙니다.")
+    if not reasons:
+        reasons.append("로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.")
+    return status, reasons
+
+
+def _pattern_proof_surface_for_candidate(candidate_id: str) -> Path:
+    if candidate_id == "pattern-memory-recall-quality":
+        return DEFAULT_MEMORY_AUDIT_SURFACE
+    if candidate_id == "pattern-run-trace-observability":
+        return DEFAULT_RUN_TRACE_SURFACE
+    if candidate_id == "pattern-live-source-browser-gateway":
+        return DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE
+    return Path("reports/product/missing.html")
+
+
+def build_pattern_dry_run_proof(
+    *,
+    pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    radar = load_json(pattern_radar_path)
+    candidates = radar.get("dry_run_candidates", [])
+    results: list[dict[str, Any]] = []
+    for candidate in candidates:
+        artifact_path = Path(candidate.get("expected_artifact", ""))
+        surface_path = _pattern_proof_surface_for_candidate(candidate.get("candidate_id", ""))
+        payload = _load_optional_json(artifact_path)
+        if candidate.get("status") == "requires_approval":
+            proof_status = "approval_required"
+            proof_notes = ["live network, browser, scraper, credential, 또는 host write 경계는 별도 승인 전에는 실행하지 않습니다."]
+        elif candidate.get("status") == "blocked":
+            proof_status = "blocked"
+            proof_notes = [candidate.get("why", "아직 deterministic local proof가 없습니다.")]
+        else:
+            proof_status, proof_notes = _pattern_proof_artifact_check(candidate=candidate, payload=payload, surface_path=surface_path)
+        results.append({
+            "candidate_id": candidate.get("candidate_id", ""),
+            "source": candidate.get("source", ""),
+            "input_status": candidate.get("status", ""),
+            "approval_scope": candidate.get("approval_scope", ""),
+            "proof_status": proof_status,
+            "expected_artifact": artifact_path.as_posix(),
+            "artifact_exists": artifact_path.exists(),
+            "artifact_schema_version": payload.get("schema_version", "missing"),
+            "surface": surface_path.as_posix(),
+            "surface_exists": surface_path.exists(),
+            "promotion_rule": candidate.get("promotion_rule", ""),
+            "proof_notes": proof_notes,
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+    passed = [row for row in results if row.get("proof_status") == "passed"]
+    approval_required = [row for row in results if row.get("proof_status") == "approval_required"]
+    blocked = [row for row in results if row.get("proof_status") == "blocked"]
+    failed = [row for row in results if row.get("proof_status") == "failed"]
+    return {
+        "schema_version": PATTERN_DRY_RUN_PROOF_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": "blocked" if failed else ("proof_ready" if passed else "review"),
+        "source_artifact": Path(pattern_radar_path).as_posix(),
+        "summary": {
+            "candidate_count": len(results),
+            "passed_count": len(passed),
+            "approval_required_count": len(approval_required),
+            "blocked_count": len(blocked),
+            "failed_count": len(failed),
+        },
+        "promotion_decisions": [
+            {
+                "candidate_id": row["candidate_id"],
+                "decision": "adopted_proof_ready",
+                "reason": "로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.",
+                "requires_operator_approval": False,
+            }
+            for row in passed
+        ],
+        "candidate_results": results,
+        "operator_reading_order": [
+            "summary",
+            "promotion_decisions",
+            "candidate_results",
+            "safety_boundary",
+        ],
+        "phone_links": {
+            "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
+            "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
+            "run_trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+            "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_existing_local_artifacts_only",
+            "does_not_execute_candidate_commands",
+            "does_not_fetch_live_network",
+            "does_not_open_browser_or_scraper",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_order_execution",
+            "external_effects_require_separate_gate",
+        ],
+    }
+
+
+def validate_pattern_dry_run_proof_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != PATTERN_DRY_RUN_PROOF_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"proof_ready", "review", "blocked"}:
+        errors.append(f"invalid status {payload.get('status')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if not payload.get("candidate_results"):
+        errors.append("candidate_results must not be empty")
+    for index, row in enumerate(payload.get("candidate_results", [])):
+        for field in ["candidate_id", "source", "approval_scope", "proof_status", "expected_artifact", "artifact_exists", "surface", "surface_exists", "promotion_rule"]:
+            if field not in row:
+                errors.append(f"candidate_results[{index}] missing {field}")
+        if row.get("proof_status") not in {"passed", "approval_required", "blocked", "failed"}:
+            errors.append(f"candidate_results[{index}] invalid proof_status")
+        if row.get("external_effect_performed") is not False:
+            errors.append(f"candidate_results[{index}] external_effect_performed must be false")
+        if row.get("host_write_performed") is not False:
+            errors.append(f"candidate_results[{index}] host_write_performed must be false")
+        if row.get("proof_status") == "passed" and (not row.get("artifact_exists") or not row.get("surface_exists")):
+            errors.append(f"candidate_results[{index}] passed proof requires artifact and surface")
+        if row.get("approval_scope") != "local_dry_run_only" and row.get("proof_status") == "passed":
+            errors.append(f"candidate_results[{index}] non-local scope cannot pass dry-run proof")
+    boundary = payload.get("safety_boundary", [])
+    for required in ["reads_existing_local_artifacts_only", "does_not_execute_candidate_commands", "does_not_fetch_live_network"]:
+        if required not in boundary:
+            errors.append(f"safety_boundary must include {required}")
+    if payload.get("summary", {}).get("passed_count", 0) < 1:
+        errors.append("at least one local candidate must pass")
+    return errors
+
+
+def validate_pattern_dry_run_proof_file(path: str | Path) -> list[str]:
+    return validate_pattern_dry_run_proof_payload(load_json(path))
+
+
+def render_pattern_dry_run_proof(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    status_label = {
+        "proof_ready": "로컬 채택 후보 있음",
+        "review": "검토 필요",
+        "blocked": "막힌 증거 있음",
+    }.get(payload.get("status", ""), payload.get("status", "review"))
+    result_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(row.get('proof_status', 'review'))} · {esc(row.get('approval_scope', ''))}</span>"
+        f"<h2>{esc(row.get('source', ''))}</h2>"
+        f"<strong>{esc(row.get('candidate_id', ''))}</strong>"
+        f"<p>{esc('; '.join(row.get('proof_notes', [])[:2]))}</p>"
+        f"<small>Artifact: {esc(row.get('expected_artifact', ''))} · Surface: {esc(row.get('surface', ''))}</small>"
+        "</article>"
+        for row in payload.get("candidate_results", [])
+    )
+    decision_cards = "".join(
+        "<article class='mini'>"
+        f"<strong>{esc(item.get('candidate_id', ''))}</strong>"
+        f"<p>{esc(item.get('reason', ''))}</p>"
+        "</article>"
+        for item in payload.get("promotion_decisions", [])
+    ) or "<p>아직 daily loop에 더 깊게 연결할 local proof 후보가 없습니다.</p>"
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if path
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Pattern Dry-run Proof</title>
+<style>
+:root {{ --bg:#f8f7f2; --ink:#17212b; --muted:#66717e; --line:#dfe2d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:900px; margin:0 auto; padding:16px; }}
+.eyebrow {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:20px; }}
+p,small {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics,.grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
+.metric,.card,.mini {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; }}
+.card span {{ color:var(--green); font-size:12px; font-weight:900; }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:680px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Pattern Proof · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>새 에이전트 패턴을 실제 루프에 넣어도 되는가</h1>
+<p>후보 명령을 실행하지 않고 기존 로컬 artifact와 phone surface만 읽어 승격 가능성을 판정합니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">{esc(status_label)}</strong>
+<div class="metrics">
+<article class="metric"><span>후보</span><strong>{esc(summary.get('candidate_count', 0))}</strong></article>
+<article class="metric"><span>통과</span><strong>{esc(summary.get('passed_count', 0))}</strong></article>
+<article class="metric"><span>승인필요</span><strong>{esc(summary.get('approval_required_count', 0))}</strong></article>
+<article class="metric"><span>막힘</span><strong>{esc(summary.get('blocked_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>승격 가능한 후보</h2>
+<div class="grid">{decision_cards}</div>
+</section>
+<section class="section">
+<h2>후보별 dry-run 증거</h2>
+<div class="grid">{result_cards}</div>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 화면은 live network, browser/scraper, credential, 알림 발송, host scheduler write, 계좌 접근, 주문 실행을 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def write_pattern_dry_run_proof(
+    *,
+    pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE,
+) -> Path:
+    payload = build_pattern_dry_run_proof(pattern_radar_path=pattern_radar_path)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_pattern_dry_run_proof(payload), encoding="utf-8")
+    return target
 
 
 def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -2105,6 +2404,8 @@ def build_daily_readiness(
         ("daily_agenda", DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT, "machine_artifact", True),
         ("source_refresh_brief", DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT, "control_artifact", False),
         ("source_refresh_surface", DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE, "phone_surface", False),
+        ("pattern_dry_run_proof", DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT, "control_artifact", False),
+        ("pattern_dry_run_proof_surface", DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE, "phone_surface", False),
         ("morning_control", DEFAULT_MORNING_CONTROL_OUTPUT, "control_artifact", True),
         ("morning_surface", DEFAULT_MORNING_CONTROL_SURFACE, "phone_surface", True),
         ("run_trace", DEFAULT_RUN_TRACE_OUTPUT, "control_artifact", False),
@@ -2183,6 +2484,7 @@ def build_daily_readiness(
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+            "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
             "handoff": DEFAULT_DAILY_HANDOFF_SURFACE.as_posix(),
@@ -6861,6 +7163,7 @@ def build_morning_control_packet(
     analyst_council_surface_path: str | Path = DEFAULT_ANALYST_COUNCIL_SURFACE,
     memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
+    pattern_dry_run_surface_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     handoff_surface_path: str | Path = DEFAULT_DAILY_HANDOFF_SURFACE,
@@ -6932,6 +7235,7 @@ def build_morning_control_packet(
             "council": Path(analyst_council_surface_path).as_posix(),
             "memory_audit": Path(memory_audit_surface_path).as_posix(),
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
+            "pattern_dry_run": Path(pattern_dry_run_surface_path).as_posix(),
             "trace": Path(run_trace_surface_path).as_posix(),
             "run_ledger": Path(run_ledger_surface_path).as_posix(),
             "handoff": Path(handoff_surface_path).as_posix(),
@@ -7000,6 +7304,7 @@ def write_morning_control_packet(
     analyst_council_surface_path: str | Path = DEFAULT_ANALYST_COUNCIL_SURFACE,
     memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
+    pattern_dry_run_surface_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     handoff_surface_path: str | Path = DEFAULT_DAILY_HANDOFF_SURFACE,
@@ -7030,6 +7335,7 @@ def write_morning_control_packet(
         analyst_council_surface_path=analyst_council_surface_path,
         memory_audit_surface_path=memory_audit_surface_path,
         pattern_radar_surface_path=pattern_radar_surface_path,
+        pattern_dry_run_surface_path=pattern_dry_run_surface_path,
         run_trace_surface_path=run_trace_surface_path,
         run_ledger_surface_path=run_ledger_surface_path,
         handoff_surface_path=handoff_surface_path,
@@ -7141,6 +7447,7 @@ def build_daily_operator_home(
     phone_access_verify_path: str | Path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT,
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    pattern_dry_run_proof_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     generated = generated_at or datetime.now(timezone.utc)
@@ -7156,6 +7463,7 @@ def build_daily_operator_home(
     phone_access_verify = _load_optional_json(phone_access_verify_path)
     notification = _load_optional_json(notification_path)
     memory_audit = _load_optional_json(memory_audit_path)
+    pattern_proof = _load_optional_json(pattern_dry_run_proof_path)
     read_first = morning.get("read_first", {})
     scout_topic = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
     primary_agenda = agenda.get("primary_topic", {}) if agenda.get("schema_version") == DAILY_BRIEF_AGENDA_SCHEMA_VERSION else {}
@@ -7196,6 +7504,7 @@ def build_daily_operator_home(
         "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
         "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
         "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
+        "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
         "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
         "phone_access": DEFAULT_PHONE_ACCESS_VERIFY_SURFACE.as_posix(),
         "phone_access_plan": Path(phone_access_path).as_posix(),
@@ -7257,6 +7566,14 @@ def build_daily_operator_home(
             "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
             "href": links["memory_audit"],
             "status": memory_audit.get("status", "missing"),
+        },
+        {
+            "step": 8,
+            "label": "새 작업 방식 증거 확인",
+            "title": "pattern dry-run proof",
+            "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
+            "href": links["pattern_dry_run"],
+            "status": pattern_proof.get("status", "missing"),
         },
     ]
     payloads = {"morning": morning, "handoff": handoff}
@@ -7321,6 +7638,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="phone_access", path=phone_access_path, payload=phone_access),
             _daily_home_artifact_status(name="phone_access_verify", path=phone_access_verify_path, payload=phone_access_verify),
             _daily_home_artifact_status(name="notification", path=notification_path, payload=notification),
+            _daily_home_artifact_status(name="pattern_dry_run_proof", path=pattern_dry_run_proof_path, payload=pattern_proof),
         ],
         "external_effect_performed": False,
         "host_write_performed": False,

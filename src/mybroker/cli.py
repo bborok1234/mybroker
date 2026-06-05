@@ -18,6 +18,8 @@ from mybroker.appliance import (
     DEFAULT_ANALYST_TASK_STATUS_APPLY,
     DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
     DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
+    DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
+    DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE,
     DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     DEFAULT_DAILY_HOME_OUTPUT,
@@ -82,6 +84,7 @@ from mybroker.appliance import (
     parse_daily_review_response,
     send_notification_payload,
     write_agent_pattern_radar,
+    write_pattern_dry_run_proof,
     write_launchd_assets,
     write_analyst_council,
     write_analyst_journal,
@@ -128,6 +131,7 @@ from mybroker.appliance import (
     validate_analyst_task_queue_file,
     validate_analyst_task_ledger_file,
     validate_agent_pattern_radar_file,
+    validate_pattern_dry_run_proof_file,
     validate_daily_brief_agenda_file,
     validate_daily_operator_home_file,
     validate_daily_readiness_file,
@@ -380,6 +384,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_council_parser.add_argument("council_path")
     validate_pattern_radar_parser = subcommands.add_parser("validate-agent-pattern-radar", help="Validate an agent_pattern_radar.v1 artifact.")
     validate_pattern_radar_parser.add_argument("pattern_radar_path")
+    validate_pattern_proof_parser = subcommands.add_parser("validate-pattern-dry-run-proof", help="Validate a pattern_dry_run_proof.v1 artifact.")
+    validate_pattern_proof_parser.add_argument("pattern_proof_path")
     validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
     validate_journal_parser.add_argument("journal_path")
     validate_tasks_parser = subcommands.add_parser("validate-analyst-task-queue", help="Validate a personal_analyst_task_queue.v1 artifact.")
@@ -533,6 +539,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_home_parser.add_argument("--phone-access-verify", default=DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--pattern-dry-run-proof", default=DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_HOME_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--output", default=DEFAULT_DAILY_HOME_SURFACE.as_posix())
     appliance_agenda_parser = appliance_subcommands.add_parser("agenda", help="Render the phone-first daily study agenda from scout and evidence artifacts.")
@@ -705,6 +712,10 @@ def main(argv: list[str] | None = None) -> int:
     appliance_pattern_radar_parser.add_argument("--playbook", default=DEFAULT_RUNTIME_PLAYBOOK_OUTPUT.as_posix())
     appliance_pattern_radar_parser.add_argument("--artifact-output", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
     appliance_pattern_radar_parser.add_argument("--output", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
+    appliance_pattern_proof_parser = appliance_subcommands.add_parser("pattern-dry-run", help="Render proof that local workflow-pattern candidates can be adopted safely.")
+    appliance_pattern_proof_parser.add_argument("--pattern-radar", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
+    appliance_pattern_proof_parser.add_argument("--artifact-output", default=DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT.as_posix())
+    appliance_pattern_proof_parser.add_argument("--output", default=DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix())
     appliance_trace_parser = appliance_subcommands.add_parser("trace", help="Render a compact local run trace proof from existing daily artifacts.")
     appliance_trace_parser.add_argument("--artifact-output", default=DEFAULT_RUN_TRACE_OUTPUT.as_posix())
     appliance_trace_parser.add_argument("--output", default=DEFAULT_RUN_TRACE_SURFACE.as_posix())
@@ -731,6 +742,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_morning_parser.add_argument("--scheduler-surface", default=DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--source-refresh-surface", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--pattern-radar-surface", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
+    appliance_morning_parser.add_argument("--pattern-dry-run-surface", default=DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--run-trace-surface", default=DEFAULT_RUN_TRACE_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--run-ledger-surface", default=DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--handoff-surface", default=DEFAULT_DAILY_HANDOFF_SURFACE.as_posix())
@@ -1221,6 +1233,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-pattern-dry-run-proof":
+        errors = validate_pattern_dry_run_proof_file(args.pattern_proof_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-analyst-journal":
         errors = validate_analyst_journal_file(args.journal_path)
         if errors:
@@ -1586,6 +1605,7 @@ def main(argv: list[str] | None = None) -> int:
                 agenda_surface_path=args.agenda_surface,
                 source_refresh_surface_path=args.source_refresh_surface,
                 pattern_radar_surface_path=args.pattern_radar_surface,
+                pattern_dry_run_surface_path=args.pattern_dry_run_surface,
                 run_trace_surface_path=args.run_trace_surface,
                 drift_review_surface_path=args.drift_review_surface,
                 brief_path=args.brief,
@@ -1611,6 +1631,7 @@ def main(argv: list[str] | None = None) -> int:
                 phone_access_verify_path=args.phone_access_verify,
                 notification_path=args.notification,
                 memory_audit_path=args.memory_audit,
+                pattern_dry_run_proof_path=args.pattern_dry_run_proof,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
@@ -2242,6 +2263,22 @@ def main(argv: list[str] | None = None) -> int:
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "pattern-dry-run":
+            path = write_pattern_dry_run_proof(
+                pattern_radar_path=args.pattern_radar,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "pattern_dry_run_proof": args.artifact_output,
+                "pattern_dry_run_proof_surface": path.as_posix(),
+                "status": payload["status"],
+                "passed_count": payload["summary"]["passed_count"],
+                "approval_required_count": payload["summary"]["approval_required_count"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "trace":
             path = write_run_trace(
                 artifact_output_path=args.artifact_output,
@@ -2468,6 +2505,8 @@ def main(argv: list[str] | None = None) -> int:
             review_effect_surface_path = DEFAULT_REVIEW_EFFECT_SURFACE
             pattern_radar_artifact_path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT
             pattern_radar_surface_path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE
+            pattern_proof_artifact_path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT
+            pattern_proof_surface_path = DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE
             run_trace_artifact_path = DEFAULT_RUN_TRACE_OUTPUT
             run_trace_surface_path = DEFAULT_RUN_TRACE_SURFACE
             run_ledger_artifact_path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT
@@ -2820,6 +2859,11 @@ def main(argv: list[str] | None = None) -> int:
                 memory_audit_path=memory_audit_artifact_path,
                 scheduler_operations_path=scheduler_operations_artifact_path,
             )
+            written_pattern_proof = write_pattern_dry_run_proof(
+                pattern_radar_path=pattern_radar_artifact_path,
+                artifact_output_path=pattern_proof_artifact_path,
+                surface_output_path=pattern_proof_surface_path,
+            )
             written_drift_review = write_drift_review(
                 artifact_output_path=drift_review_artifact_path,
                 surface_output_path=drift_review_surface_path,
@@ -2850,6 +2894,7 @@ def main(argv: list[str] | None = None) -> int:
                 analyst_council_surface_path=written_analyst_council,
                 memory_audit_surface_path=written_memory_audit,
                 pattern_radar_surface_path=written_pattern_radar,
+                pattern_dry_run_surface_path=written_pattern_proof,
                 run_trace_surface_path=written_run_trace,
                 run_ledger_surface_path=run_ledger_surface_path,
                 handoff_surface_path=handoff_surface_path,
@@ -2926,6 +2971,7 @@ def main(argv: list[str] | None = None) -> int:
                 phone_access_path=phone_access_path,
                 notification_path=notification_path,
                 memory_audit_path=memory_audit_artifact_path,
+                pattern_dry_run_proof_path=pattern_proof_artifact_path,
             )
             written_phone_access_verify = write_phone_access_verify(
                 project_root=".",
@@ -2953,6 +2999,7 @@ def main(argv: list[str] | None = None) -> int:
                 phone_access_path=phone_access_path,
                 notification_path=notification_path,
                 memory_audit_path=memory_audit_artifact_path,
+                pattern_dry_run_proof_path=pattern_proof_artifact_path,
             )
             written_phone_access_verify = write_phone_access_verify(
                 project_root=".",
@@ -2986,6 +3033,8 @@ def main(argv: list[str] | None = None) -> int:
                     "analyst_council_surface": written_analyst_council,
                     "memory_audit": memory_audit_artifact_path,
                     "memory_audit_surface": written_memory_audit,
+                    "pattern_dry_run_proof": pattern_proof_artifact_path,
+                    "pattern_dry_run_proof_surface": written_pattern_proof,
                     "run_trace": run_trace_artifact_path,
                     "run_trace_surface": written_run_trace,
                     "daily_run_ledger": run_ledger_artifact_path,
@@ -3024,6 +3073,8 @@ def main(argv: list[str] | None = None) -> int:
                 "review_effect_surface": written_review_effect.as_posix(),
                 "agent_pattern_radar": pattern_radar_artifact_path.as_posix(),
                 "agent_pattern_radar_surface": written_pattern_radar.as_posix(),
+                "pattern_dry_run_proof": pattern_proof_artifact_path.as_posix(),
+                "pattern_dry_run_proof_surface": written_pattern_proof.as_posix(),
                 "run_trace": run_trace_artifact_path.as_posix(),
                 "run_trace_surface": written_run_trace.as_posix(),
                 "daily_run_ledger": run_ledger_artifact_path.as_posix(),

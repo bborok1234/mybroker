@@ -1,0 +1,128 @@
+{
+  "schema_version": "pattern_dry_run_proof.v1",
+  "generated_at": "2026-06-05T22:08:54.484546+00:00",
+  "status": "proof_ready",
+  "source_artifact": "reports/runtime/agent-pattern-radar.json",
+  "summary": {
+    "candidate_count": 4,
+    "passed_count": 2,
+    "approval_required_count": 1,
+    "blocked_count": 1,
+    "failed_count": 0
+  },
+  "promotion_decisions": [
+    {
+      "candidate_id": "pattern-memory-recall-quality",
+      "decision": "adopted_proof_ready",
+      "reason": "로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.",
+      "requires_operator_approval": false
+    },
+    {
+      "candidate_id": "pattern-run-trace-observability",
+      "decision": "adopted_proof_ready",
+      "reason": "로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.",
+      "requires_operator_approval": false
+    }
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "pattern-memory-recall-quality",
+      "source": "Obsidian vault research workflow",
+      "input_status": "ready",
+      "approval_scope": "local_dry_run_only",
+      "proof_status": "passed",
+      "expected_artifact": "reports/memory/audit.json",
+      "artifact_exists": true,
+      "artifact_schema_version": "personal_memory_audit.v1",
+      "surface": "reports/product/memory-audit.html",
+      "surface_exists": true,
+      "promotion_rule": "Adopt only if memory audit artifact validates and phone surface shows stale or weak coverage clearly.",
+      "proof_notes": [
+        "로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다."
+      ],
+      "external_effect_performed": false,
+      "host_write_performed": false
+    },
+    {
+      "candidate_id": "pattern-run-trace-observability",
+      "source": "TraceAgent",
+      "input_status": "ready",
+      "approval_scope": "local_dry_run_only",
+      "proof_status": "passed",
+      "expected_artifact": "reports/runtime/run-trace.json",
+      "artifact_exists": true,
+      "artifact_schema_version": "local_run_trace.v1",
+      "surface": "reports/product/run-trace.html",
+      "surface_exists": true,
+      "promotion_rule": "Adopt only if trace stays compact, fresh, and linked from daily home/readiness surfaces.",
+      "proof_notes": [
+        "로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다."
+      ],
+      "external_effect_performed": false,
+      "host_write_performed": false
+    },
+    {
+      "candidate_id": "pattern-live-source-browser-gateway",
+      "source": "Browser-use / Playwright / Firecrawl",
+      "input_status": "requires_approval",
+      "approval_scope": "live_network_refresh",
+      "proof_status": "approval_required",
+      "expected_artifact": "reports/daily/source-refresh-live-preflight.json",
+      "artifact_exists": true,
+      "artifact_schema_version": "source_refresh_live_preflight.v1",
+      "surface": "reports/product/source-refresh.html",
+      "surface_exists": true,
+      "promotion_rule": "Adopt only after scoped approval, preflight, cached output validation, and source freshness labeling.",
+      "proof_notes": [
+        "live network, browser, scraper, credential, 또는 host write 경계는 별도 승인 전에는 실행하지 않습니다."
+      ],
+      "external_effect_performed": false,
+      "host_write_performed": false
+    },
+    {
+      "candidate_id": "pattern-code-analytics-sandbox",
+      "source": "TaskWeaver",
+      "input_status": "blocked",
+      "approval_scope": "future_local_sandbox",
+      "proof_status": "blocked",
+      "expected_artifact": "reports/runtime/analytics-sandbox-proof.json",
+      "artifact_exists": false,
+      "artifact_schema_version": "missing",
+      "surface": "reports/product/missing.html",
+      "surface_exists": false,
+      "promotion_rule": "Adopt only after deterministic inputs, saved outputs, validator, and no external effect proof exist.",
+      "proof_notes": [
+        "Generated analysis code needs a deterministic sandbox and report schema before it can shape the daily brief."
+      ],
+      "external_effect_performed": false,
+      "host_write_performed": false
+    }
+  ],
+  "operator_reading_order": [
+    "summary",
+    "promotion_decisions",
+    "candidate_results",
+    "safety_boundary"
+  ],
+  "phone_links": {
+    "pattern_radar": "reports/product/pattern-radar.html",
+    "memory_audit": "reports/product/memory-audit.html",
+    "run_trace": "reports/product/run-trace.html",
+    "source_refresh": "reports/product/source-refresh.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "reads_existing_local_artifacts_only",
+    "does_not_execute_candidate_commands",
+    "does_not_fetch_live_network",
+    "does_not_open_browser_or_scraper",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_order_execution",
+    "external_effects_require_separate_gate"
+  ]
+}

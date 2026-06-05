@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_archive.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T21:53:41.455447+00:00",
+  "generated_at": "2026-06-05T22:08:54.463442+00:00",
   "archive_dir": "reports/archive/2026-06-05",
   "artifacts": {
     "scenario": "reports/archive/2026-06-05/daily-research-sim.json",
@@ -49,11 +49,13 @@
     "analyst_council_surface": "reports/archive/2026-06-05/council.html",
     "memory_audit": "reports/archive/2026-06-05/audit.json",
     "memory_audit_surface": "reports/archive/2026-06-05/memory-audit.html",
+    "pattern_dry_run_proof": "reports/archive/2026-06-05/pattern-dry-run-proof.json",
+    "pattern_dry_run_proof_surface": "reports/archive/2026-06-05/pattern-dry-run.html",
     "daily_run_ledger": "reports/archive/2026-06-05/daily-run-ledger.json",
     "daily_run_ledger_surface": "reports/archive/2026-06-05/run-ledger.html",
     "daily_handoff": "reports/archive/2026-06-05/daily-handoff.json",
     "daily_handoff_surface": "reports/archive/2026-06-05/handoff.html"
   },
   "policy": "research_only",
-  "updated_at": "2026-06-05T21:53:41.503589+00:00"
+  "updated_at": "2026-06-05T22:08:54.505439+00:00"
 }
