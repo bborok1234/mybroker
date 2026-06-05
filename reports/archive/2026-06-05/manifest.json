@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_archive.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T06:20:19.040076+00:00",
+  "generated_at": "2026-06-05T06:32:26.454459+00:00",
   "archive_dir": "reports/archive/2026-06-05",
   "artifacts": {
     "scenario": "reports/archive/2026-06-05/daily-research-sim.json",

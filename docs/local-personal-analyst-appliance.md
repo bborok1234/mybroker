@@ -39,6 +39,7 @@ launchd
   -> scenario_report.v1 + market_verdict.v1
   -> product brief + /today mobile surface
   -> /memory accumulated research surface
+  -> /memory-query local recall surface
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -96,6 +97,7 @@ PYTHONPATH=src python3 -m mybroker appliance access
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
+PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 ```
 
@@ -105,9 +107,13 @@ The local loop now writes two memory surfaces:
 
 - `reports/memory/index.json`: machine-readable topic memory, source relevance, run history, and archive links.
 - `reports/product/memory.html`: phone-readable accumulated research notebook.
+- `reports/memory/latest-query.json`: machine-readable recall result for one operator question.
+- `reports/product/memory-query.html`: phone-readable recall page that links the question to matching topics, archives, and next inspection questions.
 
 This is the Obsidian vault pattern in product form: every run is still a plain local artifact,
-but the daily user surface can link back to what MyBroker has learned over time.
+but the daily user surface can link back to what MyBroker has learned over time. `appliance
+query` is intentionally deterministic local retrieval first; a later LLM summary can sit on
+top of the same artifact without hiding source context.
 
 The launchd assets are written under `ops/local/`:
 

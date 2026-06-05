@@ -9,6 +9,7 @@ from mybroker.appliance import (
     archive_daily_run,
     send_notification_payload,
     write_launchd_assets,
+    write_memory_query,
     write_memory_surface,
     write_notification_payload,
     write_phone_access_plan,
@@ -92,11 +93,21 @@ class LocalApplianceTests(unittest.TestCase):
                 index_output_path=root / "memory-index.json",
                 output_path=root / "memory.html",
             )
+            query_surface = write_memory_query(
+                query="semiconductor cycle",
+                memory_path=memory_path,
+                archive_root=root / "archive",
+                evidence_path=evidence_path,
+                output_path=root / "memory-query.json",
+                surface_path=root / "memory-query.html",
+            )
             playbook = write_runtime_playbook(root / "playbook.json")
             assets = write_launchd_assets(project_root=root, output_dir=root / "ops", hour=7, minute=15)
 
             html = today.read_text(encoding="utf-8")
             memory_html = memory_surface.read_text(encoding="utf-8")
+            query_payload = json.loads((root / "memory-query.json").read_text(encoding="utf-8"))
+            query_html = query_surface.read_text(encoding="utf-8")
             notification_payload = json.loads(notification.read_text(encoding="utf-8"))
             access_payload = json.loads(access_plan.read_text(encoding="utf-8"))
             manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
@@ -111,6 +122,12 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("MyBroker Memory", memory_html)
         self.assertIn("주제별 누적 기억", memory_html)
         self.assertIn("근거 품질 추적", memory_html)
+        self.assertEqual(query_payload["schema_version"], "personal_memory_query.v1")
+        self.assertEqual(query_payload["status"], "matched")
+        self.assertGreaterEqual(query_payload["matched_topic_count"], 1)
+        self.assertIn("MyBroker Memory Query", query_html)
+        self.assertIn("다음에 확인할 질문", query_html)
+        self.assertNotIn("schema_version", query_html)
         self.assertNotIn("schema_version", html)
         self.assertNotIn("Flyhigh", html)
         self.assertEqual(notification_payload["schema_version"], "notification_delivery.v1")

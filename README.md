@@ -49,6 +49,7 @@ PYTHONPATH=src python3 -m mybroker appliance access
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
+PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
 ```
@@ -138,6 +139,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/runtime/phone-access.json`: private phone access guidance, preferring Tailscale Serve;
 - `reports/product/today.html`: a mobile-first `/today` surface for the phone;
 - `reports/product/memory.html` and `reports/memory/index.json`: accumulated topic memory, source relevance, and archive history;
+- `reports/product/memory-query.html` and `reports/memory/latest-query.json`: deterministic recall over accumulated memory and archives;
 - `reports/notifications/latest.json`: a dry-run notification payload for Telegram or Pushover;
 - `reports/archive/<date>/manifest.json`: a daily archive manifest with copied artifacts;
 - `ops/local/run-daily-analyst.sh` and `ops/local/com.mybroker.daily-analyst.plist` from
@@ -148,7 +150,10 @@ Funnel/tunnel exposure is a later decision after access control and secret bound
 `docs/local-personal-analyst-appliance.md`.
 
 This follows the Obsidian-vault pattern: each daily run remains a local artifact, while
-`memory.html` gives the phone-readable view of what has accumulated across runs.
+`memory.html` gives the phone-readable view of what has accumulated across runs. `appliance
+query` is the librarian step: it searches accumulated topic memory and archive manifests,
+writes a reproducible query artifact, and renders a phone-readable recall page for the next
+question to inspect.
 
 ## First Pipeline Slice
 

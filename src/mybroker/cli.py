@@ -9,6 +9,8 @@ from mybroker.appliance import (
     DEFAULT_ARCHIVE_ROOT,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
+    DEFAULT_MEMORY_QUERY_OUTPUT,
+    DEFAULT_MEMORY_QUERY_SURFACE,
     DEFAULT_MEMORY_OUTPUT,
     DEFAULT_NOTIFICATION_OUTPUT,
     DEFAULT_PHONE_ACCESS_OUTPUT,
@@ -17,6 +19,7 @@ from mybroker.appliance import (
     archive_daily_run,
     send_notification_payload,
     write_launchd_assets,
+    write_memory_query,
     write_memory_surface,
     write_notification_payload,
     write_phone_access_plan,
@@ -195,6 +198,14 @@ def main(argv: list[str] | None = None) -> int:
     appliance_memory_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--index-output", default=DEFAULT_MEMORY_INDEX_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--output", default=DEFAULT_MEMORY_OUTPUT.as_posix())
+    appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
+    appliance_query_parser.add_argument("query")
+    appliance_query_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_query_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
+    appliance_query_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_query_parser.add_argument("--output", default=DEFAULT_MEMORY_QUERY_OUTPUT.as_posix())
+    appliance_query_parser.add_argument("--surface-output", default=DEFAULT_MEMORY_QUERY_SURFACE.as_posix())
+    appliance_query_parser.add_argument("--limit", type=int, default=5)
     appliance_notify_parser = appliance_subcommands.add_parser("notify", help="Prepare a phone notification payload. Dry-run by default.")
     appliance_notify_parser.add_argument("--provider", choices=["telegram", "pushover"], default="telegram")
     appliance_notify_parser.add_argument("--today-url", default="http://localhost:8787/reports/product/today.html")
@@ -476,6 +487,22 @@ def main(argv: list[str] | None = None) -> int:
                 output_path=args.output,
             )
             print(json.dumps({"memory": path.as_posix(), "index": args.index_output}, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "query":
+            path = write_memory_query(
+                query=args.query,
+                memory_path=args.memory,
+                archive_root=args.archive_root,
+                evidence_path=args.evidence,
+                output_path=args.output,
+                surface_path=args.surface_output,
+                limit=args.limit,
+            )
+            print(json.dumps({
+                "query": args.query,
+                "query_artifact": args.output,
+                "query_surface": path.as_posix(),
+            }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "notify":
             path = write_notification_payload(
