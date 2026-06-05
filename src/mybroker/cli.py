@@ -13,6 +13,7 @@ from mybroker.appliance import (
     DEFAULT_MEMORY_QUERY_SURFACE,
     DEFAULT_MEMORY_OUTPUT,
     DEFAULT_NOTIFICATION_OUTPUT,
+    DEFAULT_OPERATOR_DECISION_APPLY_OUTPUT,
     DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT,
     DEFAULT_PHONE_ACCESS_OUTPUT,
     DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
@@ -29,6 +30,7 @@ from mybroker.appliance import (
     write_memory_query,
     write_memory_surface,
     write_notification_payload,
+    write_operator_decision_apply,
     write_operator_decision_packet,
     write_phone_access_plan,
     write_runtime_doctor,
@@ -201,6 +203,13 @@ def main(argv: list[str] | None = None) -> int:
     appliance_decision_parser = appliance_subcommands.add_parser("decision-packet", help="Write pending operator decisions for external-effect appliance gates.")
     appliance_decision_parser.add_argument("--project-root", default=".")
     appliance_decision_parser.add_argument("--output", default=DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT.as_posix())
+    appliance_decision_workflow_parser = appliance_subcommands.add_parser("decision", help="Validate and apply operator decision responses without executing external effects.")
+    appliance_decision_subcommands = appliance_decision_workflow_parser.add_subparsers(dest="decision_command", required=True)
+    appliance_decision_apply_parser = appliance_decision_subcommands.add_parser("apply", help="Turn an operator approval response into a dry-run command plan.")
+    appliance_decision_apply_parser.add_argument("--response", required=True, help="Example: approve private_phone_access private_network_exposure")
+    appliance_decision_apply_parser.add_argument("--project-root", default=".")
+    appliance_decision_apply_parser.add_argument("--packet", default=DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT.as_posix())
+    appliance_decision_apply_parser.add_argument("--output", default=DEFAULT_OPERATOR_DECISION_APPLY_OUTPUT.as_posix())
     appliance_doctor_parser = appliance_subcommands.add_parser("doctor", help="Write a local runtime readiness proof without installing host services.")
     appliance_doctor_parser.add_argument("--project-root", default=".")
     appliance_doctor_parser.add_argument("--output", default=DEFAULT_RUNTIME_DOCTOR_OUTPUT.as_posix())
@@ -526,6 +535,25 @@ def main(argv: list[str] | None = None) -> int:
                 "host_write_performed": payload["host_write_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "decision":
+            if args.decision_command == "apply":
+                path = write_operator_decision_apply(
+                    response=args.response,
+                    project_root=args.project_root,
+                    packet_path=args.packet,
+                    output_path=args.output,
+                )
+                payload = json.loads(Path(path).read_text(encoding="utf-8"))
+                print(json.dumps({
+                    "operator_decision_apply": path.as_posix(),
+                    "status": payload["status"],
+                    "decision_id": payload["decision_id"],
+                    "approval_scope": payload["approval_scope"],
+                    "command_count": len(payload["commands"]),
+                    "external_effect_performed": payload["external_effect_performed"],
+                    "blockers": payload["blockers"],
+                }, indent=2, ensure_ascii=False))
+                return 0
         if args.appliance_command == "doctor":
             path = write_runtime_doctor(
                 project_root=args.project_root,

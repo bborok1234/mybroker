@@ -1,0 +1,34 @@
+{
+  "schema_version": "operator_decision_apply.v1",
+  "generated_at": "2026-06-05T08:12:52.673477+00:00",
+  "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
+  "packet_path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/operator-decision-packet.json",
+  "operator_response": "approve private_phone_access private_network_exposure",
+  "parsed_response": {
+    "action": "approve",
+    "decision_id": "private_phone_access",
+    "approval_scope": "private_network_exposure",
+    "parse_status": "parsed",
+    "parse_error": ""
+  },
+  "decision_id": "private_phone_access",
+  "approval_scope": "private_network_exposure",
+  "status": "ready_to_apply",
+  "blockers": [],
+  "commands": [
+    "cd <mybroker-repo> && python3 -m http.server 8787",
+    "tailscale serve --bg 8787"
+  ],
+  "rollback_command": "tailscale serve reset",
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "execution_mode": "dry_run_plan_only",
+  "next_action": "Review the commands and rollback_command. The artifact did not execute anything; external execution still requires explicit scoped approval for private_network_exposure.",
+  "safety": {
+    "does_not_execute_commands": true,
+    "requires_exact_decision_id": true,
+    "requires_exact_approval_scope": true,
+    "blocked_decisions_do_not_emit_commands": true
+  },
+  "policy": "research_only"
+}
