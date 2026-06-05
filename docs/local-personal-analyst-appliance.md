@@ -113,6 +113,8 @@ PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --p
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
+PYTHONPATH=src python3 -m mybroker appliance vault init
+PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 ```
 
@@ -129,6 +131,17 @@ This is the Obsidian vault pattern in product form: every run is still a plain l
 but the daily user surface can link back to what MyBroker has learned over time. `appliance
 query` is intentionally deterministic local retrieval first; a later LLM summary can sit on
 top of the same artifact without hiding source context.
+
+The local vault is the raw inbox side of the same pattern:
+
+- `research-vault/raw`: where clipped markdown/text source notes can be dropped.
+- `research-vault/wiki`: deterministic topic notes and `_master-index.md`.
+- `reports/vault/compile.json`: machine-readable compile proof.
+- `reports/product/vault.html`: phone-readable list of compiled raw notes.
+
+`appliance vault compile` does not delete or move raw files. It classifies notes against configured
+interests when possible, writes wiki notes with source paths and hashes, and keeps the result
+research-only.
 
 The launchd assets are written under `ops/local/`:
 

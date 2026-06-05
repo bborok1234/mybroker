@@ -58,6 +58,9 @@ PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --p
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
+PYTHONPATH=src python3 -m mybroker appliance vault init
+PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
+PYTHONPATH=src python3 -m mybroker validate-vault reports/vault/compile.json
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
 ```
@@ -170,6 +173,12 @@ This follows the Obsidian-vault pattern: each daily run remains a local artifact
 query` is the librarian step: it searches accumulated topic memory and archive manifests,
 writes a reproducible query artifact, and renders a phone-readable recall page for the next
 question to inspect.
+
+`appliance vault init` creates a local `research-vault/raw`, `research-vault/wiki`, and
+`research-vault/output` structure. `appliance vault compile` files local markdown/text notes from
+raw into deterministic wiki notes, `_master-index.md`, `reports/vault/compile.json`, and
+`reports/product/vault.html`. Raw files are not deleted or moved. This keeps the Obsidian-style
+inbox and librarian workflow separate from generated daily market artifacts.
 
 Run `appliance doctor` before installing host-level scheduling. It does not install launchd by
 default; it writes a readiness proof with pass/warn/fail checks and manual install/uninstall
