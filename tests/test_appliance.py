@@ -372,6 +372,11 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(decision_ids, {"scheduler_activation", "notification_send", "private_phone_access"})
         self.assertIn("confirmed_host_write", {decision["approval_scope"] for decision in payload["decisions"]})
         self.assertGreaterEqual(payload["summary"]["blocked_count"], 1)
+        phone_decision = next(decision for decision in payload["decisions"] if decision["id"] == "private_phone_access")
+        self.assertIn("cd <mybroker-repo> && python3 -m http.server 8787", phone_decision["agent_will_run"])
+        self.assertIn("tailscale serve --bg 8787", phone_decision["agent_will_run"])
+        self.assertNotIn("tailscale serve reset", phone_decision["agent_will_run"])
+        self.assertEqual(phone_decision["rollback_command"], "tailscale serve reset")
 
     def test_today_surface_can_use_public_catalog_without_topic_memory_leakage(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
