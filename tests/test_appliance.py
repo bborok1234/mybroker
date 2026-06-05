@@ -16,6 +16,7 @@ from mybroker.appliance import (
     write_runtime_doctor,
     write_runtime_playbook,
     write_scheduler_status,
+    write_scheduler_apply,
     write_today_surface,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
@@ -116,6 +117,13 @@ class LocalApplianceTests(unittest.TestCase):
                 project_root=root,
                 output_path=root / "scheduler-status.json",
             )
+            scheduler_apply = write_scheduler_apply(
+                project_root=root,
+                output_path=root / "scheduler-apply.json",
+                install=True,
+                load=True,
+                start_now=True,
+            )
 
             html = today.read_text(encoding="utf-8")
             memory_html = memory_surface.read_text(encoding="utf-8")
@@ -127,6 +135,7 @@ class LocalApplianceTests(unittest.TestCase):
             playbook_payload = json.loads(playbook.read_text(encoding="utf-8"))
             doctor_payload = json.loads(doctor.read_text(encoding="utf-8"))
             scheduler_payload = json.loads(scheduler.read_text(encoding="utf-8"))
+            scheduler_apply_payload = json.loads(scheduler_apply.read_text(encoding="utf-8"))
             script_exists = Path(assets["script"]).exists()
             plist_exists = Path(assets["plist"]).exists()
 
@@ -162,6 +171,11 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn(scheduler_payload["status"], {"assets_ready", "installed_not_loaded", "loaded"})
         self.assertFalse(scheduler_payload["host_write_performed"])
         self.assertIn("install", scheduler_payload["commands"])
+        self.assertEqual(scheduler_apply_payload["schema_version"], "local_scheduler_apply.v1")
+        self.assertTrue(scheduler_apply_payload["dry_run"])
+        self.assertFalse(scheduler_apply_payload["host_write_performed"])
+        self.assertEqual({item["status"] for item in scheduler_apply_payload["actions"]}, {"planned"})
+        self.assertIn("post_status", scheduler_apply_payload)
         self.assertTrue(script_exists)
         self.assertTrue(plist_exists)
 

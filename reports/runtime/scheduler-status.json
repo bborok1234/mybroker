@@ -1,6 +1,6 @@
 {
   "schema_version": "local_scheduler_status.v1",
-  "generated_at": "2026-06-05T06:50:49.550717+00:00",
+  "generated_at": "2026-06-05T07:00:40.369813+00:00",
   "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
   "label": "com.mybroker.daily-analyst",
   "host_write_performed": false,

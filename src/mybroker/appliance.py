@@ -21,6 +21,7 @@ MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
+SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
 LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
@@ -34,6 +35,7 @@ DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
 DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
+DEFAULT_SCHEDULER_APPLY_OUTPUT = Path("reports/runtime/scheduler-apply.json")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -252,6 +254,70 @@ def write_scheduler_status(
             installed_plist=installed_plist,
             loaded=launchd["loaded"],
         ),
+        "policy": "research_only",
+    }
+    return write_json(payload, output_path)
+
+
+def write_scheduler_apply(
+    *,
+    project_root: str | Path = ".",
+    output_path: str | Path = DEFAULT_SCHEDULER_APPLY_OUTPUT,
+    install: bool = False,
+    load: bool = False,
+    start_now: bool = False,
+    unload: bool = False,
+    uninstall: bool = False,
+    confirm_host_write: bool = False,
+) -> Path:
+    root = Path(project_root).resolve()
+    source_plist = root / DEFAULT_LOCAL_OPS_DIR / f"{LAUNCHD_LABEL}.plist"
+    installed_plist = Path.home() / "Library" / "LaunchAgents" / f"{LAUNCHD_LABEL}.plist"
+    actions = _scheduler_apply_actions(
+        source_plist=source_plist,
+        installed_plist=installed_plist,
+        install=install,
+        load=load,
+        start_now=start_now,
+        unload=unload,
+        uninstall=uninstall,
+    )
+    dry_run = not confirm_host_write
+    results = []
+    for action in actions:
+        if dry_run:
+            result = dict(action)
+            result["status"] = "planned"
+            result["executed"] = False
+        else:
+            result = _execute_scheduler_action(action)
+        results.append(result)
+    post_status_path = write_scheduler_status(project_root=root, output_path=DEFAULT_SCHEDULER_STATUS_OUTPUT)
+    payload = {
+        "schema_version": SCHEDULER_APPLY_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "project_root": root.as_posix(),
+        "label": LAUNCHD_LABEL,
+        "dry_run": dry_run,
+        "host_write_performed": bool(confirm_host_write and actions),
+        "requested": {
+            "install": install,
+            "load": load,
+            "start_now": start_now,
+            "unload": unload,
+            "uninstall": uninstall,
+        },
+        "actions": results,
+        "post_status_path": post_status_path.as_posix(),
+        "post_status": load_json(post_status_path),
+        "safety": {
+            "requires_confirm_host_write": True,
+            "default_behavior": "dry_run",
+            "notes": [
+                "Dry-run records planned host-level commands without changing launchd state.",
+                "Actual install/load/start/unload/uninstall requires --confirm-host-write.",
+            ],
+        },
         "policy": "research_only",
     }
     return write_json(payload, output_path)
@@ -1178,6 +1244,83 @@ def _scheduler_next_actions(*, source_plist: Path, source_script: Path, installe
     if not loaded:
         return ["The LaunchAgent plist is installed but not loaded. Run the load command, then `appliance scheduler status` again."]
     return ["Scheduler is loaded. Use the start_now command for an immediate proof run, then inspect reports/runtime logs and tomorrow's archive."]
+
+
+def _scheduler_apply_actions(
+    *,
+    source_plist: Path,
+    installed_plist: Path,
+    install: bool,
+    load: bool,
+    start_now: bool,
+    unload: bool,
+    uninstall: bool,
+) -> list[dict[str, Any]]:
+    actions = []
+    if install:
+        actions.append({
+            "name": "install",
+            "kind": "copy_plist",
+            "source": source_plist.as_posix(),
+            "target": installed_plist.as_posix(),
+            "command": f"mkdir -p {installed_plist.parent.as_posix()} && cp {source_plist.as_posix()} {installed_plist.as_posix()}",
+        })
+    if load:
+        actions.append({
+            "name": "load",
+            "kind": "launchctl",
+            "command": f"launchctl bootstrap gui/{os.getuid()} {installed_plist.as_posix()}",
+        })
+    if start_now:
+        actions.append({
+            "name": "start_now",
+            "kind": "launchctl",
+            "command": f"launchctl kickstart -k gui/{os.getuid()}/{LAUNCHD_LABEL}",
+        })
+    if unload:
+        actions.append({
+            "name": "unload",
+            "kind": "launchctl",
+            "command": f"launchctl bootout gui/{os.getuid()}/{LAUNCHD_LABEL}",
+        })
+    if uninstall:
+        actions.append({
+            "name": "uninstall",
+            "kind": "remove_file",
+            "target": installed_plist.as_posix(),
+            "command": f"rm {installed_plist.as_posix()}",
+        })
+    return actions
+
+
+def _execute_scheduler_action(action: dict[str, Any]) -> dict[str, Any]:
+    result = dict(action)
+    result["executed"] = True
+    try:
+        if action["kind"] == "copy_plist":
+            source = Path(action["source"])
+            target = Path(action["target"])
+            if not source.exists():
+                raise FileNotFoundError(source.as_posix())
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+            result["status"] = "ok"
+            return result
+        if action["kind"] == "remove_file":
+            target = Path(action["target"])
+            if target.exists():
+                target.unlink()
+            result["status"] = "ok"
+            return result
+        completed = subprocess.run(action["command"].split(), text=True, capture_output=True, timeout=30, check=False)
+        result["returncode"] = completed.returncode
+        result["stdout_excerpt"] = completed.stdout[:500]
+        result["stderr_excerpt"] = completed.stderr[:500]
+        result["status"] = "ok" if completed.returncode == 0 else "failed"
+    except Exception as exc:  # pragma: no cover - defensive host-level guard
+        result["status"] = "failed"
+        result["error"] = str(exc)
+    return result
 
 
 def _doctor_next_actions(checks: list[dict[str, Any]]) -> list[str]:
