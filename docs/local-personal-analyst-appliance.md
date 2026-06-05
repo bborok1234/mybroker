@@ -183,10 +183,11 @@ The apply artifact records `external_effect_performed: false`; it updates status
 `daily_review.v1`. The next `daily-scout` reads that artifact and adds an `operator_review` score
 factor. This is local memory only: it does not execute tasks, fetch live data, or send notifications.
 `pattern-radar` writes `agent_pattern_radar.v1` and `reports/product/pattern-radar.html`. It
-keeps Hermes/OpenClaw/MiroFish/TradingAgents/Obsidian-style lessons explicit: adopted patterns
-become local surfaces, memory, review, role separation, or scenario maps; rejected patterns remain
-outside the product when they imply credentials, live execution, account access, or unsupported
-personalized recommendations.
+keeps Hermes/OpenClaw/MiroFish/TradingAgents/work-buddy/Dexter/TaskWeaver/TraceAgent/Obsidian-style
+lessons explicit: adopted patterns become local surfaces, memory, review, role separation, scenario
+maps, recall quality, or future trace proofs; deferred patterns wait for stronger schemas and
+sandboxing; rejected patterns remain outside the product when they imply credentials, live
+execution, account access, or unsupported personalized recommendations.
 
 The local vault is the raw inbox side of the same pattern:
 

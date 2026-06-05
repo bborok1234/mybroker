@@ -1,6 +1,6 @@
 {
   "schema_version": "knowledge_vault_compile.v1",
-  "generated_at": "2026-06-05T17:27:32.786544+00:00",
+  "generated_at": "2026-06-05T17:38:35.981907+00:00",
   "raw_dir": "examples/vault/raw",
   "wiki_dir": "reports/vault/wiki",
   "topics_path": "config/topics.json",
