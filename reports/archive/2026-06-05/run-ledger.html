@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Run Ledger</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:840px; margin:0 auto; padding:16px; }
+a { color:var(--blue); font-weight:800; text-decoration:none; }
+.eyebrow { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 10px; font-size:20px; }
+p,small,td span { color:var(--muted); overflow-wrap:anywhere; }
+.hero,.section { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.metric { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }
+.metric strong { display:block; font-size:24px; }
+table { width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }
+td,th { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+td strong,td span { display:block; }
+.links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }
+@media (max-width:680px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.links { grid-template-columns:1fr; } table { font-size:13px; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Run Ledger · 2026-06-06 local</span>
+<h1>오늘 어떤 run을 믿을지</h1>
+<p>예약 실행, 수동 실행, 검증 실행이 같은 날 겹쳐도 canonical run과 중복 run을 분리해서 봅니다.</p>
+</header>
+<section class="hero">
+<div class="metrics">
+<article class="metric"><span>Today Runs</span><strong>1</strong></article>
+<article class="metric"><span>Duplicates</span><strong>0</strong></article>
+<article class="metric"><span>Status</span><strong>ready</strong></article>
+<article class="metric"><span>Effects</span><strong>no</strong></article>
+</div>
+<p>오늘은 현재 canonical run 하나만 기록되어 있습니다.</p>
+</section>
+<section class="section">
+<h2>Run history</h2>
+<table><thead><tr><th>Day</th><th>Run</th><th>Status</th><th>Scheduler</th><th>Links</th></tr></thead><tbody><tr><td><strong>2026-06-05</strong><span>canonical</span></td><td>daily-research</td><td>ready</td><td>activation_ready</td><td><a href='reports/archive/2026-06-05/today.html'>today</a> · <a href='reports/archive/2026-06-05/manifest.json'>archive</a></td></tr></tbody></table>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links"><a href='reports/product/morning.html'>morning</a><a href='reports/product/today.html'>today</a><a href='reports/product/readiness.html'>readiness</a><a href='reports/product/run-trace.html'>trace</a><a href='reports/product/scheduler.html'>scheduler</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 ledger는 기존 로컬 artifact만 읽고 오늘의 canonical run을 표시합니다. live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

@@ -1,13 +1,13 @@
 {
   "schema_version": "agent_pattern_radar.v1",
-  "generated_at": "2026-06-05T19:39:18.425552+00:00",
+  "generated_at": "2026-06-05T19:55:56.650176+00:00",
   "status": "ready",
   "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
   "playbook_source": "reports/runtime/local-analyst-playbook.json",
   "playbook_pattern_count": 6,
   "summary": {
-    "case_count": 14,
-    "adopted_count": 11,
+    "case_count": 15,
+    "adopted_count": 12,
     "deferred_count": 1,
     "rejected_count": 2,
     "top_next_pattern": "pattern freshness audit before adding new runtime authority"
@@ -146,6 +146,17 @@
       "priority": "medium"
     },
     {
+      "source": "Hermes/OpenClaw-style heartbeat ledgers",
+      "source_url": "",
+      "observed_pattern": "persistent local agent loops keep heartbeat, latest-run, and duplicate-run state visible to the operator",
+      "decision": "adopt_partial",
+      "mybroker_translation": "write a daily run ledger that identifies the canonical run for each local day, duplicate/manual runs, archive links, and no-external-effect proof",
+      "why": "A scheduled personal analyst must stay understandable when launchd, manual runs, and validation runs happen on the same day.",
+      "risk": "a ledger can become another unread log if it is not phone-readable",
+      "guardrail": "render a compact run-ledger surface and link it from morning/readiness/trace outputs",
+      "priority": "high"
+    },
+    {
       "source": "Hosted trading bots and broker-connected agents",
       "source_url": "",
       "observed_pattern": "always-on execution, account credentials, live orders, discretionary automation",
@@ -234,6 +245,12 @@
       "priority": "medium",
       "translation": "add run trace artifacts that explain which local steps shaped today's brief, recall result, and follow-up queue",
       "guardrail": "summarize traces into a small daily proof, keep raw traces linkable, and validate freshness"
+    },
+    {
+      "source": "Hermes/OpenClaw-style heartbeat ledgers",
+      "priority": "high",
+      "translation": "write a daily run ledger that identifies the canonical run for each local day, duplicate/manual runs, archive links, and no-external-effect proof",
+      "guardrail": "render a compact run-ledger surface and link it from morning/readiness/trace outputs"
     }
   ],
   "rejected_patterns": [

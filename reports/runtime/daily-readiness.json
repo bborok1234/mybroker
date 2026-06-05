@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-05T19:39:26.300951+00:00",
+  "generated_at": "2026-06-05T19:56:15.904703+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.259673+00:00",
+      "generated_at": "2026-06-05T19:56:15.857407+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -52,7 +52,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.258333+00:00",
+      "generated_at": "2026-06-05T19:56:15.856124+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -74,7 +74,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.300475+00:00",
+      "generated_at": "2026-06-05T19:56:15.900247+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -96,12 +96,34 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.295825+00:00",
+      "generated_at": "2026-06-05T19:56:15.895585+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
       "name": "run_trace_surface",
       "path": "reports/product/run-trace.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "daily_run_ledger",
+      "path": "reports/runtime/daily-run-ledger.json",
+      "kind": "control_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T19:56:15.904117+00:00",
+      "schema_version": "daily_run_ledger.v1"
+    },
+    {
+      "name": "daily_run_ledger_surface",
+      "path": "reports/product/run-ledger.html",
       "kind": "phone_surface",
       "required": false,
       "exists": true,
@@ -118,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.299268+00:00",
+      "generated_at": "2026-06-05T19:56:15.902792+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
@@ -140,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.285510+00:00",
+      "generated_at": "2026-06-05T19:56:15.903574+00:00",
       "schema_version": "operator_review_prompt.v1"
     },
     {
@@ -162,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.286217+00:00",
+      "generated_at": "2026-06-05T19:56:15.903934+00:00",
       "schema_version": "operator_review_effect.v1"
     },
     {
@@ -184,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.283427+00:00",
+      "generated_at": "2026-06-05T19:56:15.883395+00:00",
       "schema_version": "analyst_council.v1"
     },
     {
@@ -206,7 +228,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.255654+00:00",
+      "generated_at": "2026-06-05T19:56:15.853538+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -217,7 +239,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.253910+00:00",
+      "generated_at": "2026-06-05T19:56:15.849882+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -228,7 +250,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.254229+00:00",
+      "generated_at": "2026-06-05T19:56:15.851439+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -239,7 +261,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.261275+00:00",
+      "generated_at": "2026-06-05T19:56:15.859262+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -250,7 +272,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.261275+00:00",
+      "generated_at": "2026-06-05T19:56:15.859262+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -261,7 +283,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.272235+00:00",
+      "generated_at": "2026-06-05T19:56:15.872251+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -271,7 +293,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 12.16,
+      "age_hours": 12.44,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -283,7 +305,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.294447+00:00",
+      "generated_at": "2026-06-05T19:56:15.893243+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -294,7 +316,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.294907+00:00",
+      "generated_at": "2026-06-05T19:56:15.893753+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -315,7 +337,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 1.64,
+      "age_hours": 1.92,
       "generated_at": "",
       "schema_version": ""
     },
@@ -338,7 +360,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:39:26.281601+00:00",
+      "generated_at": "2026-06-05T19:56:15.881626+00:00",
       "schema_version": "personal_memory_audit.v1"
     },
     {
@@ -366,6 +388,7 @@
     "scheduler": "reports/product/scheduler.html",
     "source_refresh": "reports/product/source-refresh.html",
     "trace": "reports/product/run-trace.html",
+    "run_ledger": "reports/product/run-ledger.html",
     "drift_review": "reports/product/drift-review.html",
     "review_prompt": "reports/product/review-prompt.html",
     "review_effect": "reports/product/review-effect.html",
