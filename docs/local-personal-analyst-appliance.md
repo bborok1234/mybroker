@@ -36,6 +36,7 @@ launchd
   -> daily_research_plan.v1
   -> public_evidence_catalog.v1
   -> topic_memory.v1
+  -> daily_scout.v1
   -> scenario_report.v1 + market_verdict.v1
   -> product brief + /today mobile surface
   -> /memory accumulated research surface
@@ -147,6 +148,11 @@ are visible in the same accumulated memory and recall surfaces as generated dail
 `appliance today` also reads the compile artifact by default. It renders the most relevant compiled
 notes in the phone-readable daily brief and adds source-linked inspection questions, so a daily run
 can challenge its latest evidence against accumulated raw notes.
+
+`daily-scout` is the local topic-selection step. It writes `reports/daily/scout.json` by ranking
+configured interests with source breadth, memory changes, evidence gaps, and linked vault notes.
+`appliance run` creates this artifact automatically, and `appliance today` renders it as "오늘 Scout
+추천" so the first phone screen explains what to inspect first and why.
 
 The launchd assets are written under `ops/local/`:
 

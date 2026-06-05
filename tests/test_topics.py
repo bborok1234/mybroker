@@ -7,9 +7,11 @@ from pathlib import Path
 from mybroker.public_evidence import validate_public_evidence_catalog_payload
 from mybroker.topics import (
     add_interest,
+    build_daily_scout,
     build_research_plan,
     collect_topic_evidence,
     init_topic_config,
+    validate_daily_scout_file,
     validate_research_plan_file,
     validate_topic_config_file,
     validate_topic_memory_file,
@@ -52,17 +54,31 @@ class TopicResearchLoopTests(unittest.TestCase):
                 output_path=catalog_path,
                 memory_path=memory_path,
             )
+            scout_path = root / "daily-scout.json"
+            scout = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=catalog_path,
+                memory_path=memory_path,
+                output_path=scout_path,
+                run_id="daily-test",
+            )
 
             plan_errors = validate_research_plan_file(plan_path)
+            scout_errors = validate_daily_scout_file(scout_path)
             catalog_errors = validate_public_evidence_catalog_payload(catalog)
             memory_errors = validate_topic_memory_file(memory_path)
 
         self.assertEqual(plan["schema_version"], "daily_research_plan.v1")
         self.assertEqual(plan_errors, [])
+        self.assertEqual(scout_errors, [])
         self.assertEqual(catalog_errors, [])
         self.assertEqual(memory_errors, [])
         self.assertEqual(catalog["mode"], "sample_cache_topic_research")
         self.assertIn("topic_memory_snapshot", catalog)
+        self.assertEqual(scout["schema_version"], "daily_scout.v1")
+        self.assertGreaterEqual(scout["recommendation_count"], 1)
+        self.assertIn(scout["recommended_topic"]["action"], {"inspect_first", "monitor", "defer"})
         self.assertGreaterEqual(len(catalog["items"]), 2)
 
 

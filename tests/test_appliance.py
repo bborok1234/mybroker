@@ -26,7 +26,7 @@ from mybroker.appliance import (
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
 from mybroker.scenario import run_market_simulation, write_scenario_report, write_verdict
-from mybroker.topics import build_research_plan, collect_topic_evidence, init_topic_config
+from mybroker.topics import build_daily_scout, build_research_plan, collect_topic_evidence, init_topic_config
 from mybroker.vault import compile_knowledge_vault, init_knowledge_vault, validate_knowledge_vault_compile_file
 
 
@@ -68,6 +68,7 @@ class LocalApplianceTests(unittest.TestCase):
                 evidence_path=evidence_path,
                 brief_path=brief_path,
                 vault_path=root / "missing-vault.json",
+                scout_path=root / "missing-scout.json",
                 output_path=today_path,
             )
             manifest = archive_daily_run(
@@ -87,6 +88,7 @@ class LocalApplianceTests(unittest.TestCase):
                 evidence_path=evidence_path,
                 brief_path=brief_path,
                 vault_path=root / "missing-vault.json",
+                scout_path=root / "missing-scout.json",
                 output_path=today_path,
                 archive_manifest_path=manifest,
             )
@@ -476,6 +478,7 @@ class LocalApplianceTests(unittest.TestCase):
                 evidence_path=evidence_path,
                 brief_path=brief_path,
                 vault_path=root / "missing-vault.json",
+                scout_path=root / "missing-scout.json",
                 output_path=root / "today.html",
             )
             html = today.read_text(encoding="utf-8")
@@ -543,10 +546,29 @@ class LocalApplianceTests(unittest.TestCase):
             evidence_path = root / "reports" / "evidence" / "daily-evidence-catalog.json"
             evidence_path.parent.mkdir(parents=True, exist_ok=True)
             evidence_path.write_text(json.dumps({"source_status": []}), encoding="utf-8")
+            plan_path = root / "reports" / "daily" / "research-plan.json"
+            plan = build_research_plan(topics_path=root / "topics.json", output_path=plan_path, run_id="vault-today")
+            daily_evidence_path = root / "reports" / "evidence" / "scout-evidence.json"
+            collect_topic_evidence(
+                topics_path=root / "topics.json",
+                plan_path=plan_path,
+                output_path=daily_evidence_path,
+                memory_path=memory_path,
+            )
+            scout_path = root / "reports" / "daily" / "scout.json"
+            scout = build_daily_scout(
+                topics_path=root / "topics.json",
+                plan_path=plan_path,
+                evidence_path=daily_evidence_path,
+                memory_path=memory_path,
+                vault_path=output,
+                output_path=scout_path,
+                run_id="vault-today",
+            )
             memory_surface = write_memory_surface(
                 memory_path=memory_path,
                 archive_root=root / "reports" / "archive",
-                evidence_path=evidence_path,
+                evidence_path=daily_evidence_path,
                 vault_path=output,
                 index_output_path=root / "reports" / "memory" / "index.json",
                 output_path=root / "reports" / "product" / "memory.html",
@@ -555,7 +577,7 @@ class LocalApplianceTests(unittest.TestCase):
                 query="memory pricing",
                 memory_path=memory_path,
                 archive_root=root / "reports" / "archive",
-                evidence_path=evidence_path,
+                evidence_path=daily_evidence_path,
                 vault_path=output,
                 output_path=root / "reports" / "memory" / "latest-query.json",
                 surface_path=root / "reports" / "product" / "memory-query.html",
@@ -570,9 +592,10 @@ class LocalApplianceTests(unittest.TestCase):
                 scenario_path=scenario_path,
                 verdict_path=verdict_path,
                 memory_path=memory_path,
-                evidence_path=evidence_path,
+                evidence_path=daily_evidence_path,
                 brief_path=brief_path,
                 vault_path=output,
+                scout_path=scout_path,
                 output_path=root / "reports" / "product" / "today.html",
             )
             memory_index = json.loads((root / "reports" / "memory" / "index.json").read_text(encoding="utf-8"))
@@ -588,6 +611,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(payload["compiled_count"], 1)
         self.assertEqual(payload["topic_count"], 1)
         self.assertEqual(payload["policy"], "research_only")
+        self.assertEqual(plan["schema_version"], "daily_research_plan.v1")
+        self.assertEqual(scout["schema_version"], "daily_scout.v1")
         self.assertEqual(note["title"], "Semiconductor cycle note")
         self.assertIn("AI demand is lifting chip suppliers.", note["key_takeaways"])
         self.assertTrue(wiki_note_exists)
@@ -598,9 +623,10 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(query_payload["matched_vault_note_count"], 1)
         self.assertEqual(query_payload["matched_vault_notes"][0]["title"], "Semiconductor cycle note")
         self.assertIn("관련 Vault 노트", query_surface_html)
+        self.assertIn("오늘 Scout 추천", today_surface_html)
         self.assertIn("Vault에서 다시 볼 원천 노트", today_surface_html)
         self.assertIn("Semiconductor cycle note", today_surface_html)
-        self.assertIn("Vault 노트 &#x27;Semiconductor cycle note&#x27;의 원천 근거", today_surface_html)
+        self.assertIn("Vault 노트 &#x27;Semiconductor cycle note&#x27;가 오늘 근거와 같은 방향", today_surface_html)
 
 
 if __name__ == "__main__":
