@@ -47,6 +47,7 @@ from mybroker.appliance import (
     write_today_surface,
     validate_morning_control_packet_file,
     validate_analyst_council_file,
+    validate_analyst_task_ledger_file,
     validate_memory_audit_file,
     validate_run_trace_file,
     validate_agent_pattern_radar_file,
@@ -63,6 +64,8 @@ from mybroker.appliance import (
     validate_operator_review_effect_file,
     validate_operator_review_response_apply_file,
     validate_operator_council_response_apply_file,
+    validate_operator_handoff_response_apply_file,
+    validate_task_status_apply_file,
     validate_scheduler_operations_file,
     validate_scheduler_operations_payload,
     validate_source_refresh_brief_file,
@@ -1061,6 +1064,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("trace", morning_payload["phone_links"])
         self.assertIn("run_ledger", morning_payload["phone_links"])
         self.assertIn("handoff", morning_payload["phone_links"])
+        self.assertIn("handoff_apply", morning_payload["phone_links"])
         self.assertIn("drift_review", morning_payload["phone_links"])
         self.assertIn("review", morning_payload["phone_links"])
         self.assertIn("review_prompt", morning_payload["phone_links"])
@@ -1099,6 +1103,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("trace", readiness_payload["phone_links"])
         self.assertIn("run_ledger", readiness_payload["phone_links"])
         self.assertIn("handoff", readiness_payload["phone_links"])
+        self.assertIn("handoff_apply", readiness_payload["phone_links"])
         self.assertIn("drift_review", readiness_payload["phone_links"])
         self.assertIn("review_prompt", readiness_payload["phone_links"])
         self.assertIn("review_effect", readiness_payload["phone_links"])
@@ -1110,6 +1115,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(item["name"] == "run_trace" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "daily_handoff" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "daily_handoff_surface" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "handoff_response_apply" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "handoff_response_apply_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "drift_review" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "review_prompt" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "review_effect" for item in readiness_payload["artifacts"]))
@@ -1836,6 +1843,205 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(factor["name"] == "operator_review" for factor in topic_after["score_factors"]))
         self.assertIn("피드백 응답 적용", apply_html)
         self.assertIn("응답 적용됨", apply_html)
+
+    def test_handoff_response_apply_routes_review_feedback_and_refreshes_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            topics_path = root / "topics.json"
+            plan_path = root / "research-plan.json"
+            evidence_path = root / "daily-evidence.json"
+            memory_path = root / "topic-memory.json"
+            scout_path = root / "scout.json"
+            handoff_responses_path = root / "handoff-responses.jsonl"
+            review_responses_path = root / "daily-review-responses.jsonl"
+            review_path = root / "daily-review.json"
+            review_surface_path = root / "review.html"
+            review_prompt_path = root / "review-prompt.json"
+            review_prompt_surface_path = root / "review-prompt.html"
+            review_effect_path = root / "review-effect.json"
+            review_effect_surface_path = root / "review-effect.html"
+            handoff_path = root / "daily-handoff.json"
+            handoff_surface_path = root / "handoff.html"
+            apply_path = root / "handoff-response-apply.json"
+            apply_surface_path = root / "handoff-response-apply.html"
+
+            init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="handoff-review-apply")
+            collect_topic_evidence(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                output_path=evidence_path,
+                memory_path=memory_path,
+            )
+            scout_before = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                review_path=root / "missing-review.json",
+                output_path=scout_path,
+                run_id="handoff-review-apply",
+            )
+            topic_name = scout_before["recommended_topic"]["name"]
+            result = cli_main([
+                "appliance",
+                "handoff-response-apply",
+                f'more "{topic_name}" "handoff에서 이어서 보고 싶다"',
+                "--topics",
+                topics_path.as_posix(),
+                "--plan",
+                plan_path.as_posix(),
+                "--evidence",
+                evidence_path.as_posix(),
+                "--memory",
+                memory_path.as_posix(),
+                "--vault",
+                (root / "missing-vault.json").as_posix(),
+                "--responses",
+                handoff_responses_path.as_posix(),
+                "--review-responses",
+                review_responses_path.as_posix(),
+                "--daily-review-output",
+                review_path.as_posix(),
+                "--daily-review-surface",
+                review_surface_path.as_posix(),
+                "--scout-output",
+                scout_path.as_posix(),
+                "--review-prompt-output",
+                review_prompt_path.as_posix(),
+                "--review-prompt-surface",
+                review_prompt_surface_path.as_posix(),
+                "--review-effect-output",
+                review_effect_path.as_posix(),
+                "--review-effect-surface",
+                review_effect_surface_path.as_posix(),
+                "--handoff-output",
+                handoff_path.as_posix(),
+                "--handoff-surface",
+                handoff_surface_path.as_posix(),
+                "--artifact-output",
+                apply_path.as_posix(),
+                "--output",
+                apply_surface_path.as_posix(),
+                "--run-id",
+                "handoff-review-apply",
+            ])
+
+            apply_payload = json.loads(apply_path.read_text(encoding="utf-8"))
+            handoff_payload = json.loads(handoff_path.read_text(encoding="utf-8"))
+            scout_after = json.loads(scout_path.read_text(encoding="utf-8"))
+            apply_html = apply_surface_path.read_text(encoding="utf-8")
+            apply_errors = validate_operator_handoff_response_apply_file(apply_path)
+            handoff_errors = validate_daily_handoff_file(handoff_path)
+
+        self.assertEqual(result, 0)
+        self.assertEqual(apply_errors, [])
+        self.assertEqual(handoff_errors, [])
+        self.assertEqual(apply_payload["route"], "daily_review")
+        self.assertEqual(apply_payload["status"], "applied")
+        self.assertEqual(apply_payload["daily_review"]["response_count"], 1)
+        self.assertEqual(apply_payload["review_effect"]["status"], "applied")
+        self.assertEqual(scout_after["review_context"]["response_count"], 1)
+        self.assertTrue(any("handoff-response-apply" in command["command"] for command in handoff_payload["copy_ready_commands"]))
+        self.assertFalse(apply_payload["external_effect_performed"])
+        self.assertFalse(apply_payload["host_write_performed"])
+        self.assertIn("handoff 응답 적용", apply_html)
+
+    def test_handoff_response_apply_routes_task_status_and_refreshes_task_ledger(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task_queue_path = root / "task-queue.json"
+            task_ledger_path = root / "task-ledger.json"
+            task_ledger_surface_path = root / "task-ledger.html"
+            task_responses_path = root / "task-responses.jsonl"
+            handoff_responses_path = root / "handoff-responses.jsonl"
+            task_apply_path = root / "task-status-apply.json"
+            review_path = root / "daily-review.json"
+            review_surface_path = root / "review.html"
+            handoff_path = root / "daily-handoff.json"
+            handoff_surface_path = root / "handoff.html"
+            apply_path = root / "handoff-response-apply.json"
+            apply_surface_path = root / "handoff-response-apply.html"
+            task_queue = {
+                "schema_version": "personal_analyst_task_queue.v1",
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "run_id": "handoff-task-apply",
+                "task_count": 1,
+                "tasks": [{
+                    "task_id": "AT-001",
+                    "role": "beginner_tutor",
+                    "title": "오늘 질문을 쉬운 언어로 풀기",
+                    "priority": "high",
+                    "approval_scope": "local_research_only",
+                    "external_effect_allowed": False,
+                    "requires_operator_approval": False,
+                    "suggested_command": "local note",
+                    "stop_condition": "설명이 기록됨",
+                }],
+                "external_effect_performed": False,
+                "policy": "research_only",
+            }
+            task_queue_path.write_text(json.dumps(task_queue, ensure_ascii=False), encoding="utf-8")
+            write_analyst_task_ledger(
+                task_queue_path=task_queue_path,
+                previous_ledger_path=root / "missing-ledger.json",
+                status_apply_path=root / "missing-status-apply.json",
+                artifact_output_path=task_ledger_path,
+                surface_output_path=task_ledger_surface_path,
+            )
+
+            result = cli_main([
+                "appliance",
+                "handoff-response-apply",
+                'AT-001 complete "폰에서 확인하고 완료"',
+                "--responses",
+                handoff_responses_path.as_posix(),
+                "--task-responses",
+                task_responses_path.as_posix(),
+                "--task-queue",
+                task_queue_path.as_posix(),
+                "--task-ledger",
+                task_ledger_path.as_posix(),
+                "--task-ledger-surface",
+                task_ledger_surface_path.as_posix(),
+                "--task-status-apply",
+                task_apply_path.as_posix(),
+                "--daily-review-output",
+                review_path.as_posix(),
+                "--daily-review-surface",
+                review_surface_path.as_posix(),
+                "--handoff-output",
+                handoff_path.as_posix(),
+                "--handoff-surface",
+                handoff_surface_path.as_posix(),
+                "--artifact-output",
+                apply_path.as_posix(),
+                "--output",
+                apply_surface_path.as_posix(),
+            ])
+
+            apply_payload = json.loads(apply_path.read_text(encoding="utf-8"))
+            task_apply_payload = json.loads(task_apply_path.read_text(encoding="utf-8"))
+            task_ledger_payload = json.loads(task_ledger_path.read_text(encoding="utf-8"))
+            handoff_payload = json.loads(handoff_path.read_text(encoding="utf-8"))
+            apply_errors = validate_operator_handoff_response_apply_file(apply_path)
+            task_apply_errors = validate_task_status_apply_file(task_apply_path)
+            task_ledger_errors = validate_analyst_task_ledger_file(task_ledger_path)
+            handoff_errors = validate_daily_handoff_file(handoff_path)
+
+        self.assertEqual(result, 0)
+        self.assertEqual(apply_errors, [])
+        self.assertEqual(task_apply_errors, [])
+        self.assertEqual(task_ledger_errors, [])
+        self.assertEqual(handoff_errors, [])
+        self.assertEqual(apply_payload["route"], "task_status")
+        self.assertEqual(apply_payload["status"], "applied")
+        self.assertEqual(task_apply_payload["applied_count"], 1)
+        self.assertEqual(task_ledger_payload["summary"]["completed"], 1)
+        self.assertEqual(handoff_payload["artifact_inputs"]["task_ledger"], task_ledger_path.as_posix())
+        self.assertFalse(apply_payload["external_effect_performed"])
+        self.assertFalse(apply_payload["host_write_performed"])
 
     def test_council_response_apply_refreshes_review_scout_effect_and_council(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -1,6 +1,6 @@
 {
   "schema_version": "morning_control_packet.v1",
-  "generated_at": "2026-06-05T20:15:30.005021+00:00",
+  "generated_at": "2026-06-05T20:38:20.816052+00:00",
   "status": "operator_review",
   "run_id": "daily-research",
   "read_first": {
@@ -193,6 +193,7 @@
     "trace": "reports/product/run-trace.html",
     "run_ledger": "reports/product/run-ledger.html",
     "handoff": "reports/product/handoff.html",
+    "handoff_apply": "reports/product/handoff-response-apply.html",
     "drift_review": "reports/product/drift-review.html",
     "vault": "reports/product/vault.html",
     "journal": "reports/product/journal.html",

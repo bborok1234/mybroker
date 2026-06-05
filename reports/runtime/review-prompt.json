@@ -1,11 +1,11 @@
 {
   "schema_version": "operator_review_prompt.v1",
-  "generated_at": "2026-06-05T20:15:30.009028+00:00",
-  "status": "needs_feedback",
+  "generated_at": "2026-06-05T20:38:09.497497+00:00",
+  "status": "ready",
   "summary": {
     "prompt_count": 3,
-    "current_response_count": 0,
-    "applied_response_count": 0,
+    "current_response_count": 1,
+    "applied_response_count": 1,
     "operator_feedback_signal": "0",
     "ready_task_count": 0
   },

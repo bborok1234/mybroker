@@ -1,21 +1,32 @@
 {
   "schema_version": "operator_review_effect.v1",
-  "generated_at": "2026-06-05T20:15:30.009418+00:00",
-  "status": "no_feedback",
+  "generated_at": "2026-06-05T20:38:09.497938+00:00",
+  "status": "applied",
   "summary": {
-    "response_count": 0,
-    "scout_response_count": 0,
-    "review_signal_count": 0,
-    "applied_topic_count": 0,
+    "response_count": 1,
+    "scout_response_count": 1,
+    "review_signal_count": 1,
+    "applied_topic_count": 1,
     "prompt_count": 3
   },
-  "interpretation": "아직 기록된 review-response가 없어 scout가 개인 피드백을 반영할 수 없습니다.",
-  "topic_effects": [],
+  "interpretation": "daily_review의 topic signal이 현재 scout score_factors에 operator_review로 반영됐습니다.",
+  "topic_effects": [
+    {
+      "topic_id": "semiconductors",
+      "topic": "Semiconductors",
+      "review_delta": 1.2,
+      "scout_delta": 1.2,
+      "effect_status": "applied",
+      "latest_status": "want_more",
+      "latest_note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다",
+      "evidence": "운영자가 이 주제를 더 보고 싶다고 기록했습니다."
+    }
+  ],
   "next_actions": [
     {
-      "label": "피드백 남기기",
-      "why": "오늘 읽은 주제에 대해 가장 가까운 응답을 하나 남기면 다음 run에서 scout score에 반영됩니다.",
-      "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'read \"Semiconductors\" \"Semiconductors을 읽었다\"'",
+      "label": "유지",
+      "why": "피드백이 현재 scout에 반영됐습니다. 오늘 브리프를 읽고 다음 피드백을 남기면 루프가 계속 개인화됩니다.",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance review-prompt",
       "external_effect_performed": false
     }
   ],

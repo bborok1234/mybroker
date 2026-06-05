@@ -1,19 +1,40 @@
 {
   "schema_version": "daily_review.v1",
-  "generated_at": "2026-06-05T20:15:29.985515+00:00",
+  "generated_at": "2026-06-05T20:38:09.496197+00:00",
   "inputs": {
     "scout_path": "reports/daily/scout.json",
     "task_status_apply_path": "reports/memory/analyst-task-status-apply.json",
     "responses_path": "reports/memory/daily-review-responses.jsonl"
   },
   "summary": {
-    "response_count": 0,
-    "applied_response_count": 0,
+    "response_count": 1,
+    "applied_response_count": 1,
     "ignored_response_count": 0,
     "completed_task_count": 0,
-    "signal_count": 0
+    "signal_count": 1
   },
-  "topic_signals": [],
+  "topic_signals": [
+    {
+      "topic_id": "semiconductors",
+      "name": "Semiconductors",
+      "responses": [
+        {
+          "schema_version": "daily_review_response.v1",
+          "recorded_at": "2026-06-05T20:38:09.495891+00:00",
+          "action": "more",
+          "status": "want_more",
+          "topic": "Semiconductors",
+          "note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다",
+          "external_effect_performed": false
+        }
+      ],
+      "score_delta": 1.2,
+      "reason": "운영자가 이 주제를 더 보고 싶다고 기록했습니다.",
+      "response_count": 1,
+      "latest_status": "want_more",
+      "latest_note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다"
+    }
+  ],
   "ignored_responses": [],
   "task_feedback": {
     "completed_task_count": 0,

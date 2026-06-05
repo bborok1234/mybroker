@@ -4,6 +4,8 @@ MyBroker should first become a local personal analyst appliance, not a hosted in
 web app. The useful product is a daily workflow that compounds evidence and explanations
 while staying narrow, auditable, and research-only.
 
+See `docs/personal-agent-system-research.md` for the current case research behind this direction.
+
 ## Why Not Start With Deployment
 
 A hosted web app adds authentication, secrets, uptime, billing, and public attack surface before
@@ -161,6 +163,9 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/review-response-apply.html`: phone-readable handoff proof after a copied
   feedback command records review memory, regenerates review/scout/prompt/effect artifacts, and
   confirms whether the same local run applied the response.
+- `reports/product/handoff-response-apply.html`: phone-readable handoff closure proof after a
+  copied `handoff.html` command routes a short response into either review memory or task status,
+  refreshes the affected artifacts, and regenerates handoff.
 - `reports/runtime/analyst-council.json`: machine-readable role review over today's scenario,
   verdict, journal, evidence, memory, scout, and memory audit.
 - `reports/product/council.html`: phone-readable analyst council with role agreement,
@@ -236,6 +241,12 @@ for leaving better feedback; it does not change topic scores until the operator 
 feedback exists, it points back to the prompt; if feedback exists but scout did not read the same
 response count or delta, it tells the operator to rerun the local appliance; if applied, it shows the
 topic-level score evidence.
+`handoff-response-apply` is the phone-friendly wrapper over the two common handoff responses. If the
+copied response starts with `AT-`, it updates task status and task ledger proof. Otherwise it treats
+the response as daily review feedback and refreshes review/scout/prompt/effect proof. Both routes
+regenerate `daily_handoff.v1` and write `operator_handoff_response_apply.v1`; neither route executes
+tasks, calls live network sources, sends notifications, writes host scheduler state, uses
+credentials, touches accounts, or places orders.
 `pattern-radar` writes `agent_pattern_radar.v1` and `reports/product/pattern-radar.html`. It
 keeps Hermes/OpenClaw/MiroFish/TradingAgents/work-buddy/Dexter/TaskWeaver/TraceAgent/Obsidian-style
 lessons explicit: adopted patterns become local surfaces, memory, review, role separation, scenario
@@ -301,6 +312,9 @@ network, send notifications, write host scheduler state, use credentials, or tou
 analyst council, memory audit, scout, and run ledger. It shows what was reflected today and what
 remains unresolved, but it does not execute tasks, fetch live network data, send notifications,
 write host scheduler state, use credentials, or touch account flows.
+When unresolved items remain, `handoff.html` now suggests copy-ready `handoff-response-apply`
+commands so the phone operator can close the loop without remembering separate review/task command
+grammars.
 
 `appliance drift-review` is the local direction check that uses trace evidence. It writes
 `local_drift_review.v1` and `reports/product/drift-review.html` by reading the run trace, pattern

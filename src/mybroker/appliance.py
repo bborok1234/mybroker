@@ -50,6 +50,7 @@ OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION = "operator_review_prompt.v1"
 OPERATOR_REVIEW_EFFECT_SCHEMA_VERSION = "operator_review_effect.v1"
 OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION = "operator_review_response_apply.v1"
 OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION = "operator_council_response_apply.v1"
+OPERATOR_HANDOFF_RESPONSE_APPLY_SCHEMA_VERSION = "operator_handoff_response_apply.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUN_TRACE_SCHEMA_VERSION = "local_run_trace.v1"
 DAILY_RUN_LEDGER_SCHEMA_VERSION = "daily_run_ledger.v1"
@@ -105,6 +106,9 @@ DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/review-response-app
 DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE = Path("reports/product/review-response-apply.html")
 DEFAULT_COUNCIL_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/council-response-apply.json")
 DEFAULT_COUNCIL_RESPONSE_APPLY_SURFACE = Path("reports/product/council-response-apply.html")
+DEFAULT_HANDOFF_RESPONSES = Path("reports/memory/daily-handoff-responses.jsonl")
+DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/handoff-response-apply.json")
+DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE = Path("reports/product/handoff-response-apply.html")
 DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
 DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
 DEFAULT_RUN_TRACE_OUTPUT = Path("reports/runtime/run-trace.json")
@@ -1669,6 +1673,8 @@ def build_daily_readiness(
         ("daily_run_ledger_surface", DEFAULT_DAILY_RUN_LEDGER_SURFACE, "phone_surface", False),
         ("daily_handoff", DEFAULT_DAILY_HANDOFF_OUTPUT, "control_artifact", False),
         ("daily_handoff_surface", DEFAULT_DAILY_HANDOFF_SURFACE, "phone_surface", False),
+        ("handoff_response_apply", DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT, "control_artifact", False),
+        ("handoff_response_apply_surface", DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE, "phone_surface", False),
         ("drift_review", DEFAULT_DRIFT_REVIEW_OUTPUT, "control_artifact", False),
         ("drift_review_surface", DEFAULT_DRIFT_REVIEW_SURFACE, "phone_surface", False),
         ("review_prompt", DEFAULT_REVIEW_PROMPT_OUTPUT, "control_artifact", False),
@@ -1738,6 +1744,7 @@ def build_daily_readiness(
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
             "handoff": DEFAULT_DAILY_HANDOFF_SURFACE.as_posix(),
+            "handoff_apply": DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix(),
             "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
@@ -1905,6 +1912,7 @@ def build_run_trace(
             "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
+            "handoff_apply": DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix(),
             "council": DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix(),
             "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
@@ -2266,6 +2274,7 @@ def build_daily_handoff(
         },
         "phone_links": {
             "handoff": DEFAULT_DAILY_HANDOFF_SURFACE.as_posix(),
+            "handoff_apply": DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix(),
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
@@ -2347,6 +2356,184 @@ def validate_daily_handoff_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_daily_handoff_file(path: str | Path) -> list[str]:
     return validate_daily_handoff_payload(load_json(path))
+
+
+def parse_handoff_response(response: str) -> dict[str, Any]:
+    try:
+        parts = shlex.split(response.strip())
+    except ValueError as error:
+        raise ValueError(f"response must be shell-quote parseable: {error}") from error
+    if not parts:
+        raise ValueError("response must not be empty")
+    first = parts[0].strip()
+    route = "task_status" if first.startswith("AT-") else "daily_review"
+    if route == "task_status":
+        parsed = parse_task_status_response(response)
+    else:
+        parsed = parse_daily_review_response(response)
+    return {
+        "schema_version": "daily_handoff_response.v1",
+        "recorded_at": _now(),
+        "route": route,
+        "raw_response": response,
+        "parsed_response": parsed,
+        "external_effect_performed": False,
+    }
+
+
+def record_handoff_response(
+    *,
+    response: str,
+    responses_path: str | Path = DEFAULT_HANDOFF_RESPONSES,
+) -> tuple[Path, dict[str, Any]]:
+    payload = parse_handoff_response(response)
+    target = Path(responses_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    return target, payload
+
+
+def write_operator_handoff_response_apply(
+    *,
+    payload: dict[str, Any],
+    artifact_output_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE,
+) -> Path:
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_operator_handoff_response_apply(payload), encoding="utf-8")
+    return target
+
+
+def validate_operator_handoff_response_apply_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != OPERATOR_HANDOFF_RESPONSE_APPLY_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"applied", "blocked"}:
+        errors.append("status must be applied or blocked")
+    if payload.get("route") not in {"daily_review", "task_status"}:
+        errors.append("route must be daily_review or task_status")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    for field in ["operator_response", "handoff_response", "responses_path", "daily_handoff", "next_action"]:
+        if field not in payload:
+            errors.append(f"missing {field}")
+    if not payload.get("daily_handoff", {}).get("surface"):
+        errors.append("daily_handoff.surface must not be empty")
+    if "local_handoff_response_apply_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include local_handoff_response_apply_only")
+    if payload.get("route") == "daily_review" and "review_effect" not in payload:
+        errors.append("daily_review route must include review_effect")
+    if payload.get("route") == "task_status" and "task_status_apply" not in payload:
+        errors.append("task_status route must include task_status_apply")
+    return errors
+
+
+def validate_operator_handoff_response_apply_file(path: str | Path) -> list[str]:
+    return validate_operator_handoff_response_apply_payload(load_json(path))
+
+
+def render_operator_handoff_response_apply(payload: dict[str, Any]) -> str:
+    handoff = payload.get("daily_handoff", {})
+    review = payload.get("daily_review", {})
+    effect = payload.get("review_effect", {})
+    task_apply = payload.get("task_status_apply", {})
+    task_ledger = payload.get("task_ledger", {})
+    route_label = "review feedback" if payload.get("route") == "daily_review" else "task status"
+    metrics = [
+        ("Route", route_label),
+        ("Status", payload.get("status", "")),
+        ("Handoff", handoff.get("status", "unknown")),
+        ("Unresolved", handoff.get("unresolved_count", 0)),
+    ]
+    if payload.get("route") == "daily_review":
+        metrics.extend([
+            ("Responses", review.get("response_count", 0)),
+            ("Effect", effect.get("status", "unknown")),
+        ])
+    else:
+        metrics.extend([
+            ("Task applied", task_apply.get("applied_count", 0)),
+            ("Ledger", task_ledger.get("entry_count", 0)),
+        ])
+    metric_cards = "".join(
+        "<article class='metric'>"
+        f"<span>{esc(label)}</span>"
+        f"<strong>{esc(value)}</strong>"
+        "</article>"
+        for label, value in metrics
+    )
+    links = {
+        "handoff": handoff.get("surface", DEFAULT_DAILY_HANDOFF_SURFACE.as_posix()),
+        "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+        "review_effect": effect.get("surface", DEFAULT_REVIEW_EFFECT_SURFACE.as_posix()),
+        "task_ledger": task_ledger.get("surface", DEFAULT_ANALYST_TASK_LEDGER_OUTPUT.as_posix()),
+    }
+    link_cards = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in links.items()
+        if path
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Handoff Response Apply</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+.eyebrow,.metric span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics,.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; overflow-wrap:anywhere; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Handoff Apply · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>handoff 응답 적용</h1>
+<p>handoff에서 복사한 짧은 응답을 로컬 메모리와 증거 산출물에 반영한 proof입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">{esc(payload.get('status', ''))}</strong>
+<p>{esc(payload.get('next_action', ''))}</p>
+<code>{esc(payload.get('operator_response', ''))}</code>
+</section>
+<section class="section">
+<h2>적용 결과</h2>
+<div class="metrics">{metric_cards}</div>
+</section>
+<section class="section">
+<h2>갱신된 화면</h2>
+<div class="links">{link_cards}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 apply는 로컬 review/task/handoff proof만 갱신합니다. task 실행, live network, 알림 전송, host write, credential, 계좌 접근, 주문 실행을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def render_daily_handoff(payload: dict[str, Any]) -> str:
@@ -6196,6 +6383,7 @@ def build_morning_control_packet(
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     handoff_surface_path: str | Path = DEFAULT_DAILY_HANDOFF_SURFACE,
+    handoff_apply_surface_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
@@ -6263,6 +6451,7 @@ def build_morning_control_packet(
             "trace": Path(run_trace_surface_path).as_posix(),
             "run_ledger": Path(run_ledger_surface_path).as_posix(),
             "handoff": Path(handoff_surface_path).as_posix(),
+            "handoff_apply": Path(handoff_apply_surface_path).as_posix(),
             "drift_review": Path(drift_review_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
             "journal": Path(journal_surface_path).as_posix(),
@@ -6330,6 +6519,7 @@ def write_morning_control_packet(
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     handoff_surface_path: str | Path = DEFAULT_DAILY_HANDOFF_SURFACE,
+    handoff_apply_surface_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
@@ -6358,6 +6548,7 @@ def write_morning_control_packet(
         run_trace_surface_path=run_trace_surface_path,
         run_ledger_surface_path=run_ledger_surface_path,
         handoff_surface_path=handoff_surface_path,
+        handoff_apply_surface_path=handoff_apply_surface_path,
         drift_review_surface_path=drift_review_surface_path,
     )
     write_json(payload, artifact_output_path)
@@ -8060,16 +8251,27 @@ def _daily_handoff_commands(*, unresolved: list[dict[str, Any]], scout: dict[str
     commands = [
         {
             "label": "오늘 읽음 기록",
-            "command": f'more "{topic}" "오늘 읽고 더 보고 싶은 부분을 기록"',
-            "why": "review-response-apply에 넣으면 내일 scout scoring과 handoff에 반영됩니다.",
+            "command": f"PYTHONPATH=src python3 -m mybroker appliance handoff-response-apply {shlex.quote(f'more \"{topic}\" \"오늘 읽고 더 보고 싶은 부분을 기록\"')}",
+            "why": "handoff-response-apply가 review/scout/effect/handoff proof를 같은 local run에서 갱신합니다.",
             "external_effect_performed": False,
         }
     ]
     if question_items:
+        response = f'more "{topic}" "{question_items[0].get("title", "남은 질문")}"'
         commands.append({
             "label": "남은 질문 강조",
-            "command": f'more "{topic}" "{question_items[0].get("title", "남은 질문")}"',
+            "command": f"PYTHONPATH=src python3 -m mybroker appliance handoff-response-apply {shlex.quote(response)}",
             "why": "가장 중요한 unresolved 질문을 내일 우선순위로 넘깁니다.",
+            "external_effect_performed": False,
+        })
+    task_items = [item for item in unresolved if item.get("kind") == "task" and item.get("id", "").startswith("DH-AT-")]
+    if task_items:
+        task_id = task_items[0].get("id", "DH-AT-001").replace("DH-", "")
+        response = f'{task_id} carry "handoff에서 아직 남은 task로 확인"'
+        commands.append({
+            "label": "task 이월 기록",
+            "command": f"PYTHONPATH=src python3 -m mybroker appliance handoff-response-apply {shlex.quote(response)}",
+            "why": "task 상태를 로컬 응답으로 남기고 task ledger와 handoff proof를 다시 생성합니다.",
             "external_effect_performed": False,
         })
     commands.append({

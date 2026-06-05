@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Handoff Response Apply</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:760px; margin:0 auto; padding:16px; }
+.eyebrow,.metric span { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 10px; font-size:20px; }
+p,small { color:var(--muted); overflow-wrap:anywhere; }
+.hero,.section { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }
+.status { display:block; margin:8px 0; font-size:28px; line-height:1.1; }
+.metrics,.links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.metric { border:1px solid var(--line); border-radius:8px; background:white; padding:14px; min-width:0; }
+.metric strong { display:block; font-size:24px; overflow-wrap:anywhere; }
+code { display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.links { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Handoff Apply · 2026-06-06 local</span>
+<h1>handoff 응답 적용</h1>
+<p>handoff에서 복사한 짧은 응답을 로컬 메모리와 증거 산출물에 반영한 proof입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">applied</strong>
+<p>handoff 응답이 review/scout/effect에 반영됐습니다. handoff와 review-effect 화면에서 확인하세요.</p>
+<code>more &quot;Semiconductors&quot; &quot;내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다&quot;</code>
+</section>
+<section class="section">
+<h2>적용 결과</h2>
+<div class="metrics"><article class='metric'><span>Route</span><strong>review feedback</strong></article><article class='metric'><span>Status</span><strong>applied</strong></article><article class='metric'><span>Handoff</span><strong>review</strong></article><article class='metric'><span>Unresolved</span><strong>9</strong></article><article class='metric'><span>Responses</span><strong>1</strong></article><article class='metric'><span>Effect</span><strong>applied</strong></article></div>
+</section>
+<section class="section">
+<h2>갱신된 화면</h2>
+<div class="links"><a href='reports/product/handoff.html'>handoff</a><a href='reports/product/morning.html'>morning</a><a href='reports/product/review-effect.html'>review_effect</a><a href='reports/product/task-ledger.html'>task_ledger</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 apply는 로컬 review/task/handoff proof만 갱신합니다. task 실행, live network, 알림 전송, host write, credential, 계좌 접근, 주문 실행을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
