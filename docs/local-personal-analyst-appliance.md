@@ -110,7 +110,7 @@ PYTHONPATH=src python3 -m mybroker appliance scheduler run-once
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
-PYTHONPATH=src python3 -m mybroker appliance today
+PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
@@ -144,6 +144,9 @@ interests when possible, writes wiki notes with source paths and hashes, and kee
 research-only.
 `appliance memory` and `appliance query` read the compile artifact by default, so raw-source notes
 are visible in the same accumulated memory and recall surfaces as generated daily artifacts.
+`appliance today` also reads the compile artifact by default. It renders the most relevant compiled
+notes in the phone-readable daily brief and adds source-linked inspection questions, so a daily run
+can challenge its latest evidence against accumulated raw notes.
 
 The launchd assets are written under `ops/local/`:
 

@@ -258,9 +258,11 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
     appliance_today_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_today_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--brief", default="reports/product/market-brief.html")
     appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--archive-manifest")
+    appliance_today_parser.add_argument("--memory-surface")
     appliance_memory_parser = appliance_subcommands.add_parser("memory", help="Render the mobile-friendly accumulated memory and archive surface.")
     appliance_memory_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
@@ -683,9 +685,11 @@ def main(argv: list[str] | None = None) -> int:
                 verdict_path=args.verdict,
                 memory_path=args.memory,
                 evidence_path=args.evidence,
+                vault_path=args.vault,
                 brief_path=args.brief,
                 output_path=args.output,
                 archive_manifest_path=args.archive_manifest,
+                memory_surface_path=args.memory_surface,
             )
             print(json.dumps({"today": path.as_posix()}, indent=2, ensure_ascii=False))
             return 0
@@ -793,6 +797,7 @@ def main(argv: list[str] | None = None) -> int:
                 verdict_path=written_verdict,
                 memory_path=memory_path,
                 evidence_path=evidence_path,
+                vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
                 brief_path=written_brief,
                 output_path=today_path,
             )
@@ -810,6 +815,7 @@ def main(argv: list[str] | None = None) -> int:
                 memory_path=memory_path,
                 archive_root=args.archive_root,
                 evidence_path=evidence_path,
+                vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
                 index_output_path=DEFAULT_MEMORY_INDEX_OUTPUT,
                 output_path=memory_surface_path,
             )
@@ -818,6 +824,7 @@ def main(argv: list[str] | None = None) -> int:
                 verdict_path=written_verdict,
                 memory_path=memory_path,
                 evidence_path=evidence_path,
+                vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
                 brief_path=written_brief,
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,

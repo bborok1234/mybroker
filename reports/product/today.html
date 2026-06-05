@@ -12,7 +12,7 @@ a { color:var(--blue); font-weight:800; text-decoration:none; }
 main { max-width:760px; margin:0 auto; padding:16px; }
 header { padding:26px 0 16px; }
 .eyebrow { color:var(--green); font-size:12px; font-weight:900; }
-h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }
 h2 { margin:0 0 12px; font-size:20px; }
 h3 { margin:0 0 8px; font-size:17px; }
 p { margin:0; color:var(--muted); }
@@ -29,14 +29,14 @@ p { margin:0; color:var(--muted); }
 .links a,.links span { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }
 ul { margin:0; padding-left:18px; color:var(--muted); }
 .boundary { border-left:4px solid var(--green); }
-@media (max-width:520px) { main { padding:12px; } h1 { font-size:29px; } .links { grid-template-columns:1fr; } }
+@media (max-width:520px) { main { padding:12px; } h1 { font-size:29px; line-height:1.14; } .links { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <main>
 <header>
 <span class="eyebrow">MyBroker Today · 2026-06-05</span>
-<h1>오늘 시장을 이해하기 위한 5분 브리프</h1>
+<h1>오늘 시장 5분 브리프</h1>
 </header>
 <section class="hero">
 <span class="eyebrow">가장 먼저 볼 것</span>
@@ -46,6 +46,10 @@ ul { margin:0; padding-left:18px; color:var(--muted); }
 <section class="section">
 <h2>오늘의 주제 기억</h2>
 <div class="stack"><article class='card'><span>AI infrastructure</span><strong>누적 관찰</strong><p>AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.</p></article><article class='card'><span>Semiconductors</span><strong>누적 관찰</strong><p>Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.</p></article><article class='card'><span>US rates</span><strong>누적 관찰</strong><p>US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음.</p></article><article class='card'><span>Consumer weakness</span><strong>누적 관찰</strong><p>Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.</p></article><article class='card'><span>Korea semiconductors</span><strong>누적 관찰</strong><p>Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.</p></article></div>
+</section>
+<section class="section">
+<h2>Vault에서 다시 볼 원천 노트</h2>
+<div class="stack"><article class='card'><span>Semiconductors</span><strong>Semiconductor cycle learning note</strong><p>AI data center demand can lift chip suppliers before the effect is visible in every company&#x27;s reported revenue. · Memory pricing remains cyclical, so a beginner should separate structural AI demand from short-term inventory swings.</p><small>examples/vault/raw/semiconductor-cycle.md</small></article></div>
 </section>
 <section class="section">
 <h2>가능한 세 가지 경로</h2>
@@ -65,7 +69,7 @@ ul { margin:0; padding-left:18px; color:var(--muted); }
 </section>
 <section class="section">
 <h2>오늘 공부할 질문</h2>
-<div class="stack"><article class='question'><p>오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</p></article><article class='question'><p>오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</p></article><article class='question'><p>오늘 US rates에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</p></article><article class='question'><p>오늘 부족한 근거가 결론의 강도를 얼마나 낮추나요?</p></article><article class='question'><p>이 브리프가 틀렸다고 판단할 가장 빠른 반대 신호는 무엇인가요?</p></article></div>
+<div class="stack"><article class='question'><p>오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</p></article><article class='question'><p>오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</p></article><article class='question'><p>오늘 US rates에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</p></article><article class='question'><p>Vault 노트 &#x27;Semiconductor cycle learning note&#x27;의 원천 근거가 오늘 자료와 같은 방향을 가리키나요?</p></article><article class='question'><p>오늘 부족한 근거가 결론의 강도를 얼마나 낮추나요?</p></article></div>
 </section>
 <section class="section">
 <h2>연결된 산출물</h2>

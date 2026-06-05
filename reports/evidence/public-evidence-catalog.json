@@ -1,6 +1,6 @@
 {
   "schema_version": "public_evidence_catalog.v1",
-  "generated_at": "2026-05-29T08:29:04.453007+00:00",
+  "generated_at": "2026-06-05T08:58:19.120135+00:00",
   "mode": "sample_cache",
   "source_status": [
     {
@@ -8,21 +8,27 @@
       "source_name": "GDELT",
       "adapter_id": "gdelt_cached_v1",
       "item_count": "2",
-      "freshness_status": "sample_cache"
+      "freshness_status": "sample_cache",
+      "relevance_score": "0.97",
+      "relevance_label": "strong"
     },
     {
       "source_id": "stooq-sample",
       "source_name": "Stooq",
       "adapter_id": "stooq_cached_v1",
       "item_count": "1",
-      "freshness_status": "sample_cache"
+      "freshness_status": "sample_cache",
+      "relevance_score": "0.78",
+      "relevance_label": "strong"
     },
     {
       "source_id": "sec-sample",
       "source_name": "SEC EDGAR",
       "adapter_id": "sec_cached_v1",
       "item_count": "2",
-      "freshness_status": "sample_cache"
+      "freshness_status": "sample_cache",
+      "relevance_score": "0.98",
+      "relevance_label": "strong"
     }
   ],
   "source_matrix": [
@@ -119,7 +125,17 @@
         "semiconductors",
         "cloud"
       ],
-      "freshness_status": "sample_cache"
+      "freshness_status": "sample_cache",
+      "relevance": {
+        "score": 0.94,
+        "label": "strong",
+        "reasons": [
+          "cached sample",
+          "source URL",
+          "context text",
+          "news_narrative"
+        ]
+      }
     },
     {
       "item_id": "gdelt-2",
@@ -141,7 +157,17 @@
         "growth stocks",
         "consumer demand"
       ],
-      "freshness_status": "sample_cache"
+      "freshness_status": "sample_cache",
+      "relevance": {
+        "score": 1.0,
+        "label": "strong",
+        "reasons": [
+          "cached sample",
+          "source URL",
+          "context text",
+          "news_narrative"
+        ]
+      }
     },
     {
       "item_id": "stooq-spy-trend",
@@ -159,7 +185,17 @@
         "SPY",
         "broad market"
       ],
-      "freshness_status": "sample_cache"
+      "freshness_status": "sample_cache",
+      "relevance": {
+        "score": 0.78,
+        "label": "strong",
+        "reasons": [
+          "cached sample",
+          "source URL",
+          "context text",
+          "market_price_context"
+        ]
+      }
     },
     {
       "item_id": "sec-1",
@@ -179,7 +215,17 @@
         "Apple Inc.",
         "10-Q"
       ],
-      "freshness_status": "sample_cache"
+      "freshness_status": "sample_cache",
+      "relevance": {
+        "score": 0.98,
+        "label": "strong",
+        "reasons": [
+          "cached sample",
+          "source URL",
+          "context text",
+          "company_filing"
+        ]
+      }
     },
     {
       "item_id": "sec-2",
@@ -199,7 +245,17 @@
         "Apple Inc.",
         "8-K"
       ],
-      "freshness_status": "sample_cache"
+      "freshness_status": "sample_cache",
+      "relevance": {
+        "score": 0.98,
+        "label": "strong",
+        "reasons": [
+          "cached sample",
+          "source URL",
+          "context text",
+          "company_filing"
+        ]
+      }
     }
   ],
   "graph": {
