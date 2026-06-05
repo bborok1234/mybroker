@@ -55,6 +55,8 @@ from mybroker.topics import (
     build_source_refresh_plan,
     collect_topic_evidence,
     init_topic_config,
+    validate_source_refresh_live_preflight_file,
+    validate_source_refresh_live_run_file,
 )
 from mybroker.vault import compile_knowledge_vault, init_knowledge_vault, validate_knowledge_vault_compile_file
 
@@ -1062,6 +1064,106 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(updated["entries"][0]["status"], "completed")
         self.assertEqual(updated["summary"]["completed"], 1)
         self.assertIn("checked dry-run source plan", html)
+
+    def test_source_refresh_response_updates_local_proofs_without_network_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            topics_path = root / "topics.json"
+            plan_path = root / "research-plan.json"
+            evidence_path = root / "daily-evidence.json"
+            memory_path = root / "topic-memory.json"
+            scout_path = root / "scout.json"
+            refresh_plan_path = root / "source-refresh-plan.json"
+            refresh_apply_path = root / "source-refresh-apply.json"
+            refresh_live_gate_path = root / "source-refresh-live-gate.json"
+            refresh_live_run_path = root / "source-refresh-live-run.json"
+            refresh_live_preflight_path = root / "source-refresh-live-preflight.json"
+            source_refresh_brief_path = root / "source-refresh-brief.json"
+            source_refresh_surface_path = root / "source-refresh.html"
+
+            init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="approval-handoff")
+            collect_topic_evidence(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                output_path=evidence_path,
+                memory_path=memory_path,
+            )
+            build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                output_path=scout_path,
+                run_id="approval-handoff",
+            )
+            build_source_refresh_plan(
+                scout_path=scout_path,
+                evidence_path=evidence_path,
+                vault_path=root / "missing-vault.json",
+                output_path=refresh_plan_path,
+            )
+            build_source_refresh_apply(
+                refresh_plan_path=refresh_plan_path,
+                output_path=refresh_apply_path,
+            )
+            gate = build_source_refresh_live_gate(
+                refresh_apply_path=refresh_apply_path,
+                output_path=refresh_live_gate_path,
+            )
+            response = gate["decisions"][0]["copy_ready_response"]
+
+            result = cli_main([
+                "appliance",
+                "source-refresh-response",
+                response,
+                "--scout",
+                scout_path.as_posix(),
+                "--evidence",
+                evidence_path.as_posix(),
+                "--refresh-plan",
+                refresh_plan_path.as_posix(),
+                "--refresh-apply",
+                refresh_apply_path.as_posix(),
+                "--refresh-live-gate",
+                refresh_live_gate_path.as_posix(),
+                "--refresh-live-run-output",
+                refresh_live_run_path.as_posix(),
+                "--refresh-live-preflight-output",
+                refresh_live_preflight_path.as_posix(),
+                "--evidence-output",
+                (root / "live-evidence.json").as_posix(),
+                "--intend-execute",
+                "--confirm-live-network",
+                "--artifact-output",
+                source_refresh_brief_path.as_posix(),
+                "--output",
+                source_refresh_surface_path.as_posix(),
+            ])
+
+            live_run = json.loads(refresh_live_run_path.read_text(encoding="utf-8"))
+            preflight = json.loads(refresh_live_preflight_path.read_text(encoding="utf-8"))
+            brief = json.loads(source_refresh_brief_path.read_text(encoding="utf-8"))
+            html = source_refresh_surface_path.read_text(encoding="utf-8")
+            live_run_errors = validate_source_refresh_live_run_file(refresh_live_run_path)
+            preflight_errors = validate_source_refresh_live_preflight_file(refresh_live_preflight_path)
+            brief_errors = validate_source_refresh_brief_file(source_refresh_brief_path)
+            live_evidence_exists = (root / "live-evidence.json").exists()
+
+        self.assertEqual(result, 0)
+        self.assertEqual(live_run_errors, [])
+        self.assertEqual(preflight_errors, [])
+        self.assertEqual(brief_errors, [])
+        self.assertEqual(live_run["approval_status"], "approved")
+        self.assertEqual(live_run["execution"]["status"], "ready_to_execute")
+        self.assertFalse(live_run["external_effect_performed"])
+        self.assertEqual(preflight["status"], "passed")
+        self.assertFalse(preflight["external_effect_performed"])
+        self.assertEqual(brief["status"], "ready_to_execute")
+        self.assertFalse(brief["external_effect_performed"])
+        self.assertIn("실행 전 최종 확인", html)
+        self.assertFalse(live_evidence_exists)
 
 
 if __name__ == "__main__":

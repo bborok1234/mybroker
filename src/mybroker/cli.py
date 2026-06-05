@@ -428,6 +428,20 @@ def main(argv: list[str] | None = None) -> int:
     appliance_source_refresh_parser.add_argument("--refresh-live-preflight", default=DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix())
     appliance_source_refresh_parser.add_argument("--artifact-output", default=DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT.as_posix())
     appliance_source_refresh_parser.add_argument("--output", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
+    appliance_source_refresh_response_parser = appliance_subcommands.add_parser("source-refresh-response", help="Apply a source refresh approval response into local proof artifacts without live network execution.")
+    appliance_source_refresh_response_parser.add_argument("response", help='Example: approve live_network_refresh live_network_refresh')
+    appliance_source_refresh_response_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--refresh-plan", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--refresh-apply", default=DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--refresh-live-gate", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--refresh-live-run-output", default=DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--refresh-live-preflight-output", default=DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--evidence-output", default=DEFAULT_LIVE_EVIDENCE_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--intend-execute", action="store_true", help="Record operator intent for preflight only; does not execute live network.")
+    appliance_source_refresh_response_parser.add_argument("--confirm-live-network", action="store_true", help="Record live-network confirmation for preflight only; does not execute live network.")
+    appliance_source_refresh_response_parser.add_argument("--artifact-output", default=DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--output", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
     appliance_readiness_parser = appliance_subcommands.add_parser("readiness", help="Render daily freshness and next-run readiness for phone review.")
     appliance_readiness_parser.add_argument("--project-root", default=".")
     appliance_readiness_parser.add_argument("--freshness-hours", type=int, default=24)
@@ -1232,6 +1246,47 @@ def main(argv: list[str] | None = None) -> int:
                 "status": payload["status"],
                 "next_action": payload["next_action"],
                 "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "source-refresh-response":
+            live_run = build_source_refresh_live_run(
+                live_gate_path=args.refresh_live_gate,
+                response=args.response,
+                output_path=args.refresh_live_run_output,
+                evidence_output_path=args.evidence_output,
+                execute=False,
+                confirm_live_network=False,
+            )
+            preflight = build_source_refresh_live_preflight(
+                live_run_path=args.refresh_live_run_output,
+                output_path=args.refresh_live_preflight_output,
+                intend_execute=args.intend_execute,
+                confirm_live_network=args.confirm_live_network,
+            )
+            path = write_source_refresh_brief(
+                scout_path=args.scout,
+                evidence_path=args.evidence,
+                refresh_plan_path=args.refresh_plan,
+                refresh_apply_path=args.refresh_apply,
+                refresh_live_gate_path=args.refresh_live_gate,
+                refresh_live_run_path=args.refresh_live_run_output,
+                refresh_live_preflight_path=args.refresh_live_preflight_output,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            brief_payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "source_refresh_response": "applied",
+                "source_refresh_live_run": args.refresh_live_run_output,
+                "source_refresh_live_preflight": args.refresh_live_preflight_output,
+                "source_refresh": path.as_posix(),
+                "artifact": args.artifact_output,
+                "approval_status": live_run["approval_status"],
+                "live_run_status": live_run["execution"]["status"],
+                "preflight_status": preflight["status"],
+                "brief_status": brief_payload["status"],
+                "external_effect_performed": False,
+                "next_action": brief_payload["next_action"],
             }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "readiness":
