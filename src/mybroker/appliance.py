@@ -4,6 +4,7 @@ import html
 import json
 import os
 import shutil
+import subprocess
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -18,6 +19,7 @@ RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
 PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
+RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
@@ -28,6 +30,7 @@ DEFAULT_MEMORY_INDEX_OUTPUT = Path("reports/memory/index.json")
 DEFAULT_MEMORY_OUTPUT = Path("reports/product/memory.html")
 DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
 DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
+DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -143,6 +146,60 @@ def write_phone_access_plan(
             "No secret values are committed to the repository.",
             "Notification sender is tested with dry-run before --send.",
         ],
+    }
+    return write_json(payload, output_path)
+
+
+def write_runtime_doctor(
+    *,
+    project_root: str | Path = ".",
+    output_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
+    freshness_hours: int = 36,
+    require_launchd_loaded: bool = False,
+) -> Path:
+    root = Path(project_root).resolve()
+    ops_dir = root / DEFAULT_LOCAL_OPS_DIR
+    script_path = ops_dir / "run-daily-analyst.sh"
+    plist_path = ops_dir / "com.mybroker.daily-analyst.plist"
+    checks = [
+        _doctor_check_path("project_root", root, "fail", "MyBroker project root exists."),
+        _doctor_check_path("topics_config", root / "config" / "topics.json", "fail", "Daily interests are configured."),
+        _doctor_check_path("runner_script", script_path, "fail", "Daily runner script exists.", executable=True),
+        _doctor_check_path("launchd_plist", plist_path, "fail", "LaunchAgent plist exists."),
+        _doctor_check_path("phone_access_plan", root / DEFAULT_PHONE_ACCESS_OUTPUT, "warn", "Private phone access guidance exists."),
+        _doctor_check_path("today_surface", root / DEFAULT_TODAY_OUTPUT, "warn", "Phone-readable today surface exists.", freshness_hours=freshness_hours),
+        _doctor_check_path("memory_surface", root / DEFAULT_MEMORY_OUTPUT, "warn", "Accumulated memory surface exists.", freshness_hours=freshness_hours),
+        _doctor_check_path("memory_query_surface", root / DEFAULT_MEMORY_QUERY_SURFACE, "warn", "Memory recall surface exists.", freshness_hours=freshness_hours),
+        _doctor_check_path("archive_manifest", _latest_archive_manifest(root / DEFAULT_ARCHIVE_ROOT), "warn", "Latest daily archive manifest exists.", freshness_hours=freshness_hours),
+        _doctor_check_notification(root / DEFAULT_NOTIFICATION_OUTPUT),
+        _doctor_check_launchd(plist_path, require_launchd_loaded=require_launchd_loaded),
+    ]
+    fail_count = sum(1 for check in checks if check["status"] == "fail")
+    warn_count = sum(1 for check in checks if check["status"] == "warn")
+    payload = {
+        "schema_version": RUNTIME_DOCTOR_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "project_root": root.as_posix(),
+        "status": "ready" if fail_count == 0 else "blocked",
+        "fail_count": fail_count,
+        "warn_count": warn_count,
+        "checks": checks,
+        "next_actions": _doctor_next_actions(checks),
+        "install_boundary": {
+            "launchd_install_is_host_level": True,
+            "default_behavior": "diagnose_only",
+            "manual_install_commands": [
+                f"mkdir -p ~/Library/LaunchAgents",
+                f"cp {plist_path.as_posix()} ~/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+                "launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+                "launchctl kickstart -k gui/$(id -u)/com.mybroker.daily-analyst",
+            ],
+            "manual_uninstall_commands": [
+                "launchctl bootout gui/$(id -u)/com.mybroker.daily-analyst",
+                "rm ~/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+            ],
+        },
+        "policy": "research_only",
     }
     return write_json(payload, output_path)
 
@@ -927,6 +984,124 @@ def _query_next_questions(*, query: str, topics: list[dict[str, Any]], status: s
     questions.append(f"'{query}'에 대해 최근 아카이브의 설명이 오늘도 유효한지 확인할까요?")
     questions.append("반대 근거가 쌓인 source가 있는지 먼저 볼까요?")
     return questions[:5]
+
+
+def _doctor_check_path(
+    name: str,
+    path: Path | None,
+    missing_level: str,
+    message: str,
+    *,
+    executable: bool = False,
+    freshness_hours: int | None = None,
+) -> dict[str, Any]:
+    if not path or not path.exists():
+        return {
+            "name": name,
+            "status": missing_level,
+            "message": f"{message} Missing: {path.as_posix() if path else 'not_found'}",
+            "path": path.as_posix() if path else "",
+        }
+    details: dict[str, Any] = {
+        "name": name,
+        "status": "pass",
+        "message": message,
+        "path": path.as_posix(),
+    }
+    if executable and not os.access(path, os.X_OK):
+        details["status"] = "fail"
+        details["message"] = f"{message} File is not executable."
+    if freshness_hours is not None:
+        age = _file_age_hours(path)
+        details["age_hours"] = round(age, 2)
+        if age > freshness_hours:
+            details["status"] = "warn"
+            details["message"] = f"{message} Artifact is older than {freshness_hours} hours."
+    return details
+
+
+def _doctor_check_notification(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {
+            "name": "notification_payload",
+            "status": "warn",
+            "message": "Notification payload has not been generated yet.",
+            "path": path.as_posix(),
+        }
+    payload = load_json(path)
+    required_env = payload.get("required_env", [])
+    missing_env = [key for key in required_env if not os.environ.get(key)]
+    status = "pass" if payload.get("dry_run") or not missing_env else "warn"
+    message = "Notification payload exists."
+    if payload.get("dry_run"):
+        message = "Notification payload is dry-run ready; real send remains explicitly gated."
+    elif missing_env:
+        message = "Notification send is configured but provider environment variables are missing."
+    return {
+        "name": "notification_payload",
+        "status": status,
+        "message": message,
+        "path": path.as_posix(),
+        "provider": payload.get("provider", ""),
+        "delivery_status": payload.get("delivery_status", ""),
+        "missing_env": missing_env,
+    }
+
+
+def _doctor_check_launchd(plist_path: Path, *, require_launchd_loaded: bool) -> dict[str, Any]:
+    label = "com.mybroker.daily-analyst"
+    command = ["launchctl", "print", f"gui/{os.getuid()}/{label}"]
+    try:
+        result = subprocess.run(command, text=True, capture_output=True, timeout=8, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {
+            "name": "launchd_loaded",
+            "status": "fail" if require_launchd_loaded else "warn",
+            "message": f"Could not inspect launchd state: {exc}",
+            "plist": plist_path.as_posix(),
+            "loaded": False,
+        }
+    loaded = result.returncode == 0
+    if loaded:
+        status = "pass"
+        message = "LaunchAgent is loaded for the current user."
+    else:
+        status = "fail" if require_launchd_loaded else "warn"
+        message = "LaunchAgent is not loaded yet; install remains a host-level explicit step."
+    return {
+        "name": "launchd_loaded",
+        "status": status,
+        "message": message,
+        "plist": plist_path.as_posix(),
+        "loaded": loaded,
+        "command": " ".join(command),
+    }
+
+
+def _doctor_next_actions(checks: list[dict[str, Any]]) -> list[str]:
+    actions = []
+    names = {check["name"]: check for check in checks}
+    if names.get("runner_script", {}).get("status") == "fail" or names.get("launchd_plist", {}).get("status") == "fail":
+        actions.append("Run `PYTHONPATH=src python3 -m mybroker appliance init --project-root .` to regenerate local runner assets.")
+    if names.get("today_surface", {}).get("status") != "pass":
+        actions.append("Run `PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --dry-run` to refresh daily artifacts.")
+    if names.get("phone_access_plan", {}).get("status") != "pass":
+        actions.append("Run `PYTHONPATH=src python3 -m mybroker appliance access` to write private phone access guidance.")
+    if names.get("launchd_loaded", {}).get("status") != "pass":
+        actions.append("Install the LaunchAgent manually only after reviewing reports/runtime/local-runtime-doctor.json.")
+    if not actions:
+        actions.append("Local runtime evidence is ready; keep the Mac powered and review tomorrow's archive after the scheduled run.")
+    return actions
+
+
+def _latest_archive_manifest(archive_root: Path) -> Path | None:
+    manifests = sorted(archive_root.glob("*/manifest.json"), reverse=True)
+    return manifests[0] if manifests else None
+
+
+def _file_age_hours(path: Path) -> float:
+    modified = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+    return (datetime.now(timezone.utc) - modified).total_seconds() / 3600
 
 
 def _gap_label(value: str) -> str:
