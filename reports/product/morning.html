@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Morning Control</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:760px; margin:0 auto; padding:18px; }
+a { color:var(--blue); font-weight:800; text-decoration:none; }
+header { padding:28px 0 16px; }
+.eyebrow,.card span,.command span { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 8px; font-size:18px; }
+p,small { color:var(--muted); }
+.hero,.section,.card,.command { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:16px; margin:14px 0; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.stack { display:grid; grid-template-columns:1fr; gap:10px; }
+.card,.command { background:white; padding:14px; min-width:0; }
+.warn { border-color:#d7b36a; }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.metric { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }
+.metric strong { display:block; font-size:24px; }
+code { display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:29px; } .grid,.metrics,.links { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Morning · 2026-06-05</span>
+<h1>아침 analyst 관제판</h1>
+<p>오늘 무엇을 먼저 읽고, 무엇을 승인하지 말아야 하며, 어떤 짧은 응답으로 작업 상태를 닫을지 보는 운영면입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">먼저 볼 것</span>
+<h2>먼저 시장 흐름을 학습</h2>
+<p>리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.</p>
+<div class="metrics">
+<article class="metric"><span>Status</span><strong>operator_review</strong></article>
+<article class="metric"><span>Carried</span><strong>6</strong></article>
+<article class="metric"><span>Blocked</span><strong>0</strong></article>
+<article class="metric"><span>Runtime</span><strong>ready</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>결정 필요</h2>
+<div class="stack"><article class='card warn'><span>live_network_refresh · medium</span><h2>live source refresh 승인 여부</h2><p>무료 공개 자료 live refresh 후보가 있지만 실제 네트워크 호출은 별도 승인 전까지 실행하지 않습니다.</p><code>approve live_network_refresh live_network_refresh</code><small>Regenerate source_refresh_apply.v1 before approval if scout, evidence, or source plan changed.</small></article><article class='card warn'><span>live_refresh_preflight · medium</span><h2>live execution preflight 차단</h2><p>approval_not_approved; live_run_status_not_requested; execute_intent_missing</p><code>rerun preflight after exact approval and confirmation</code><small>Preflight must be regenerated after any approval or source change.</small></article></div>
+</section>
+<section class="section">
+<h2>오늘 닫을 analyst 작업</h2>
+<div class="grid"><article class='card'><span>AT-001 · carried · high</span><h2>자료 신선도와 부족한 근거를 먼저 확인</h2><p>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</p></article><article class='card'><span>AT-002 · carried · high</span><h2>오늘 초점 주제를 시장 지도에 다시 연결</h2><p>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</p></article><article class='card'><span>AT-003 · carried · high</span><h2>가장 약한 결론을 반대 근거로 공격</h2><p>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</p></article><article class='card'><span>AT-004 · carried · medium</span><h2>초보자가 이해할 질문 하나를 쉬운 언어로 풀기</h2><p>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</p></article></div>
+</section>
+<section class="section">
+<h2>복사 가능한 응답</h2>
+<div class="stack"><article class='command'><span>AT-001 완료 표시</span><code>AT-001 complete &quot;오늘 확인 완료&quot;</code><small>local task status response only</small></article><article class='command'><span>AT-001 이월 표시</span><code>AT-001 carry &quot;내일 계속 확인&quot;</code><small>local task status response only</small></article><article class='command'><span>AT-002 완료 표시</span><code>AT-002 complete &quot;오늘 확인 완료&quot;</code><small>local task status response only</small></article><article class='command'><span>AT-002 이월 표시</span><code>AT-002 carry &quot;내일 계속 확인&quot;</code><small>local task status response only</small></article><article class='command'><span>live_network_refresh 승인 응답</span><code>approve live_network_refresh live_network_refresh</code><small>approval response only; separate apply/preflight still required</small></article><article class='command'><span>live_refresh_preflight 승인 응답</span><code>rerun preflight after exact approval and confirmation</code><small>approval response only; separate apply/preflight still required</small></article></div>
+</section>
+<section class="section">
+<h2>폰에서 열기</h2>
+<div class="links"><a href='reports/product/today.html'>today</a><a href='reports/product/journal.html'>journal</a><a href='reports/product/tasks.html'>tasks</a><a href='reports/product/task-ledger.html'>task_ledger</a><a href='reports/product/memory.html'>memory</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 관제판은 기존 산출물을 읽고 표시할 뿐입니다. queued task 실행, live network, host write, notification send, 계좌/주문/일임 행위는 별도 승인 게이트 없이는 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

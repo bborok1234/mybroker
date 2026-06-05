@@ -1,0 +1,218 @@
+{
+  "schema_version": "morning_control_packet.v1",
+  "generated_at": "2026-06-05T14:26:01.938312+00:00",
+  "status": "operator_review",
+  "run_id": "daily-research",
+  "read_first": {
+    "title": "먼저 시장 흐름을 학습",
+    "reason": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
+    "recommended_topic": "Semiconductors",
+    "confidence": "low-medium",
+    "next_question": "Vault 노트 'Semiconductor cycle learning note'가 오늘 근거와 같은 방향을 가리키나요?"
+  },
+  "task_state": {
+    "total": 6,
+    "ready": 0,
+    "carried": 6,
+    "completed": 0,
+    "deferred": 0,
+    "blocked": 0,
+    "top_tasks": [
+      {
+        "ledger_id": "daily-research-AT-001",
+        "task_id": "AT-001",
+        "fingerprint": "source_scout|자료 신선도와 부족한 근거를 먼저 확인|local_dry_run_only",
+        "role": "source_scout",
+        "title": "자료 신선도와 부족한 근거를 먼저 확인",
+        "priority": "high",
+        "status": "carried",
+        "previous_status": "carried",
+        "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
+        "last_seen_at": "2026-06-05T14:26:01.936907+00:00",
+        "run_id": "daily-research",
+        "approval_scope": "local_dry_run_only",
+        "external_effect_allowed": false,
+        "requires_operator_approval": false,
+        "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker source-refresh-plan",
+        "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
+        "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+        "operator_override": {}
+      },
+      {
+        "ledger_id": "daily-research-AT-002",
+        "task_id": "AT-002",
+        "fingerprint": "market_mapper|오늘 초점 주제를 시장 지도에 다시 연결|local_render_only",
+        "role": "market_mapper",
+        "title": "오늘 초점 주제를 시장 지도에 다시 연결",
+        "priority": "high",
+        "status": "carried",
+        "previous_status": "carried",
+        "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
+        "last_seen_at": "2026-06-05T14:26:01.936907+00:00",
+        "run_id": "daily-research",
+        "approval_scope": "local_render_only",
+        "external_effect_allowed": false,
+        "requires_operator_approval": false,
+        "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance today",
+        "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
+        "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+        "operator_override": {}
+      },
+      {
+        "ledger_id": "daily-research-AT-003",
+        "task_id": "AT-003",
+        "fingerprint": "skeptic|가장 약한 결론을 반대 근거로 공격|local_render_only",
+        "role": "skeptic",
+        "title": "가장 약한 결론을 반대 근거로 공격",
+        "priority": "high",
+        "status": "carried",
+        "previous_status": "carried",
+        "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
+        "last_seen_at": "2026-06-05T14:26:01.936907+00:00",
+        "run_id": "daily-research",
+        "approval_scope": "local_render_only",
+        "external_effect_allowed": false,
+        "requires_operator_approval": false,
+        "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance journal",
+        "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
+        "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+        "operator_override": {}
+      },
+      {
+        "ledger_id": "daily-research-AT-004",
+        "task_id": "AT-004",
+        "fingerprint": "beginner_tutor|초보자가 이해할 질문 하나를 쉬운 언어로 풀기|local_query_only",
+        "role": "beginner_tutor",
+        "title": "초보자가 이해할 질문 하나를 쉬운 언어로 풀기",
+        "priority": "medium",
+        "status": "carried",
+        "previous_status": "carried",
+        "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
+        "last_seen_at": "2026-06-05T14:26:01.936907+00:00",
+        "run_id": "daily-research",
+        "approval_scope": "local_query_only",
+        "external_effect_allowed": false,
+        "requires_operator_approval": false,
+        "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance query \"오늘 먼저 볼 주제\"",
+        "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
+        "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+        "operator_override": {}
+      }
+    ]
+  },
+  "pending_decisions": [
+    {
+      "id": "live_network_refresh",
+      "title": "live source refresh 승인 여부",
+      "why": "무료 공개 자료 live refresh 후보가 있지만 실제 네트워크 호출은 별도 승인 전까지 실행하지 않습니다.",
+      "approval_scope": "live_network_refresh",
+      "risk_level": "medium",
+      "reversibility": "cache_artifact_can_be_deleted",
+      "copy_ready_response": "approve live_network_refresh live_network_refresh",
+      "agent_will_run": [
+        "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json"
+      ],
+      "agent_will_not_run": [
+        "paid API calls",
+        "credentialed sources",
+        "host-level scheduler or private serving commands",
+        "notification send",
+        "account access",
+        "execution or personalized advice"
+      ],
+      "stale_context_guard": "Regenerate source_refresh_apply.v1 before approval if scout, evidence, or source plan changed.",
+      "approval_required": true
+    },
+    {
+      "id": "live_refresh_preflight",
+      "title": "live execution preflight 차단",
+      "why": "approval_not_approved; live_run_status_not_requested; execute_intent_missing",
+      "approval_scope": "live_network_refresh",
+      "risk_level": "medium",
+      "reversibility": "no external effect performed",
+      "copy_ready_response": "rerun preflight after exact approval and confirmation",
+      "agent_will_run": [],
+      "agent_will_not_run": [
+        "network execution until preflight passes"
+      ],
+      "stale_context_guard": "Preflight must be regenerated after any approval or source change.",
+      "approval_required": true
+    }
+  ],
+  "command_bar": [
+    {
+      "label": "AT-001 완료 표시",
+      "command": "AT-001 complete \"오늘 확인 완료\"",
+      "effect": "local task status response only",
+      "external_effect_performed": false
+    },
+    {
+      "label": "AT-001 이월 표시",
+      "command": "AT-001 carry \"내일 계속 확인\"",
+      "effect": "local task status response only",
+      "external_effect_performed": false
+    },
+    {
+      "label": "AT-002 완료 표시",
+      "command": "AT-002 complete \"오늘 확인 완료\"",
+      "effect": "local task status response only",
+      "external_effect_performed": false
+    },
+    {
+      "label": "AT-002 이월 표시",
+      "command": "AT-002 carry \"내일 계속 확인\"",
+      "effect": "local task status response only",
+      "external_effect_performed": false
+    },
+    {
+      "label": "live_network_refresh 승인 응답",
+      "command": "approve live_network_refresh live_network_refresh",
+      "effect": "approval response only; separate apply/preflight still required",
+      "external_effect_performed": false
+    },
+    {
+      "label": "live_refresh_preflight 승인 응답",
+      "command": "rerun preflight after exact approval and confirmation",
+      "effect": "approval response only; separate apply/preflight still required",
+      "external_effect_performed": false
+    }
+  ],
+  "phone_links": {
+    "morning": "reports/product/morning.html",
+    "today": "reports/product/today.html",
+    "journal": "reports/product/journal.html",
+    "tasks": "reports/product/tasks.html",
+    "task_ledger": "reports/product/task-ledger.html",
+    "memory": "reports/product/memory.html"
+  },
+  "runtime": {
+    "notification_status": "dry_run_ready",
+    "notification_dry_run": true,
+    "runtime_doctor_status": "ready",
+    "runtime_warn_count": 1,
+    "runtime_fail_count": 0
+  },
+  "artifact_inputs": {
+    "scout": "reports/daily/scout.json",
+    "journal": "reports/memory/analyst-journal.json",
+    "task_queue": "reports/memory/analyst-task-queue.json",
+    "task_ledger": "reports/memory/analyst-task-ledger.json",
+    "source_refresh_live_gate": "reports/daily/source-refresh-live-gate.json",
+    "source_refresh_live_run": "reports/daily/source-refresh-live-run.json",
+    "source_refresh_live_preflight": "reports/daily/source-refresh-live-preflight.json",
+    "notification": "reports/notifications/latest.json",
+    "runtime_doctor": "reports/runtime/local-runtime-doctor.json"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "control_packet_reads_existing_artifacts_only",
+    "does_not_execute_tasks",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "no_account_access",
+    "no_live_trading",
+    "external_effects_require_separate_gate"
+  ]
+}

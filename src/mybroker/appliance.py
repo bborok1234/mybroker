@@ -37,6 +37,7 @@ ANALYST_JOURNAL_SCHEMA_VERSION = "personal_analyst_journal.v1"
 ANALYST_TASK_QUEUE_SCHEMA_VERSION = "personal_analyst_task_queue.v1"
 ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
 ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION = "personal_analyst_task_status_apply.v1"
+MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
@@ -64,6 +65,8 @@ DEFAULT_ANALYST_TASK_LEDGER_OUTPUT = Path("reports/product/task-ledger.html")
 DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT = Path("reports/memory/analyst-task-ledger.json")
 DEFAULT_ANALYST_TASK_RESPONSES = Path("reports/memory/analyst-task-responses.jsonl")
 DEFAULT_ANALYST_TASK_STATUS_APPLY = Path("reports/memory/analyst-task-status-apply.json")
+DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
+DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_RUNTIME_DOCTOR_ACTIVATION_OUTPUT = Path("reports/runtime/local-runtime-doctor-activation.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
@@ -1856,6 +1859,289 @@ def build_task_status_apply(
     return payload
 
 
+def build_morning_control_packet(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    task_queue_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
+    task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    refresh_live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
+    notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
+    runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
+    today_path: str | Path = DEFAULT_TODAY_OUTPUT,
+    memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
+    journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
+    task_queue_surface_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
+    task_ledger_surface_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    scout = _load_optional_json(scout_path)
+    journal = _load_optional_json(journal_path)
+    queue = _load_optional_json(task_queue_path)
+    ledger = _load_optional_json(task_ledger_path)
+    live_gate = _load_optional_json(refresh_live_gate_path)
+    live_run = _load_optional_json(refresh_live_run_path)
+    preflight = _load_optional_json(refresh_live_preflight_path)
+    notification = _load_optional_json(notification_path)
+    doctor = _load_optional_json(runtime_doctor_path)
+    recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    focus = journal.get("today_focus", {})
+    ledger_summary = ledger.get("summary", {})
+    pending_decisions = _morning_pending_decisions(live_gate=live_gate, live_run=live_run, preflight=preflight)
+    command_bar = _morning_command_bar(ledger=ledger, pending_decisions=pending_decisions)
+    status = _morning_status(
+        pending_decisions=pending_decisions,
+        ledger_summary=ledger_summary,
+        doctor=doctor,
+    )
+    payload = {
+        "schema_version": MORNING_CONTROL_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "status": status,
+        "run_id": journal.get("run_id", scout.get("run_id", "")),
+        "read_first": {
+            "title": focus.get("title", recommended.get("name", "오늘 브리프 먼저 확인")),
+            "reason": focus.get("rationale", recommended.get("why", "")),
+            "recommended_topic": recommended.get("name", focus.get("recommended_topic", "")),
+            "confidence": recommended.get("confidence", focus.get("confidence", "")),
+            "next_question": recommended.get("next_question", ""),
+        },
+        "task_state": {
+            "total": ledger.get("entry_count", queue.get("task_count", 0)),
+            "ready": ledger_summary.get("ready_for_local_work", 0),
+            "carried": ledger_summary.get("carried", 0),
+            "completed": ledger_summary.get("completed", 0),
+            "deferred": ledger_summary.get("deferred", 0),
+            "blocked": ledger_summary.get("blocked_requires_approval", 0) + ledger_summary.get("blocked_by_operator", 0),
+            "top_tasks": _morning_top_tasks(ledger=ledger, queue=queue),
+        },
+        "pending_decisions": pending_decisions,
+        "command_bar": command_bar,
+        "phone_links": {
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "today": Path(today_path).as_posix(),
+            "journal": Path(journal_surface_path).as_posix(),
+            "tasks": Path(task_queue_surface_path).as_posix(),
+            "task_ledger": Path(task_ledger_surface_path).as_posix(),
+            "memory": Path(memory_surface_path).as_posix(),
+        },
+        "runtime": {
+            "notification_status": notification.get("delivery_status", "missing"),
+            "notification_dry_run": notification.get("dry_run", True),
+            "runtime_doctor_status": doctor.get("status", "missing"),
+            "runtime_warn_count": doctor.get("warn_count", 0),
+            "runtime_fail_count": doctor.get("fail_count", 0),
+        },
+        "artifact_inputs": {
+            "scout": Path(scout_path).as_posix(),
+            "journal": Path(journal_path).as_posix(),
+            "task_queue": Path(task_queue_path).as_posix(),
+            "task_ledger": Path(task_ledger_path).as_posix(),
+            "source_refresh_live_gate": Path(refresh_live_gate_path).as_posix(),
+            "source_refresh_live_run": Path(refresh_live_run_path).as_posix(),
+            "source_refresh_live_preflight": Path(refresh_live_preflight_path).as_posix(),
+            "notification": Path(notification_path).as_posix(),
+            "runtime_doctor": Path(runtime_doctor_path).as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "control_packet_reads_existing_artifacts_only",
+            "does_not_execute_tasks",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "no_account_access",
+            "no_live_trading",
+            "external_effects_require_separate_gate",
+        ],
+    }
+    return payload
+
+
+def write_morning_control_packet(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    task_queue_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
+    task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    refresh_live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
+    notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
+    runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
+) -> Path:
+    payload = build_morning_control_packet(
+        scout_path=scout_path,
+        journal_path=journal_path,
+        task_queue_path=task_queue_path,
+        task_ledger_path=task_ledger_path,
+        refresh_live_gate_path=refresh_live_gate_path,
+        refresh_live_run_path=refresh_live_run_path,
+        refresh_live_preflight_path=refresh_live_preflight_path,
+        notification_path=notification_path,
+        runtime_doctor_path=runtime_doctor_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_morning_control_packet(payload), encoding="utf-8")
+    return target
+
+
+def validate_morning_control_packet_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != MORNING_CONTROL_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("status") not in {"ready", "operator_review", "blocked"}:
+        errors.append(f"invalid status {payload.get('status')}")
+    if not payload.get("read_first", {}).get("title"):
+        errors.append("read_first.title must not be empty")
+    if not payload.get("phone_links", {}).get("today"):
+        errors.append("phone_links.today must not be empty")
+    if "does_not_execute_tasks" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include does_not_execute_tasks")
+    forbidden_fragments = [" --send", "--confirm-host-write", "--execute", "launchctl bootstrap"]
+    for index, item in enumerate(payload.get("command_bar", [])):
+        command = item.get("command", "")
+        if any(fragment in command for fragment in forbidden_fragments):
+            errors.append(f"command_bar[{index}] includes gated execution fragment")
+        if item.get("external_effect_performed") is not False:
+            errors.append(f"command_bar[{index}] external_effect_performed must be false")
+    for index, decision in enumerate(payload.get("pending_decisions", [])):
+        if not decision.get("copy_ready_response"):
+            errors.append(f"pending_decisions[{index}] missing copy_ready_response")
+        if decision.get("agent_will_run") and decision.get("approval_required") is not True:
+            errors.append(f"pending_decisions[{index}] runnable action requires approval flag")
+    return errors
+
+
+def validate_morning_control_packet_file(path: str | Path) -> list[str]:
+    return validate_morning_control_packet_payload(load_json(path))
+
+
+def render_morning_control_packet(payload: dict[str, Any]) -> str:
+    read_first = payload.get("read_first", {})
+    task_state = payload.get("task_state", {})
+    runtime = payload.get("runtime", {})
+    decision_cards = "".join(
+        "<article class='card warn'>"
+        f"<span>{esc(decision.get('id', 'decision'))} · {esc(decision.get('risk_level', 'risk'))}</span>"
+        f"<h2>{esc(decision.get('title', '승인 필요'))}</h2>"
+        f"<p>{esc(decision.get('why', ''))}</p>"
+        f"<code>{esc(decision.get('copy_ready_response', ''))}</code>"
+        f"<small>{esc(decision.get('stale_context_guard', ''))}</small>"
+        "</article>"
+        for decision in payload.get("pending_decisions", [])
+    ) or "<p>지금 사람이 승인해야 할 외부효과 결정은 없습니다.</p>"
+    task_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(task.get('task_id', ''))} · {esc(task.get('status', ''))} · {esc(task.get('priority', ''))}</span>"
+        f"<h2>{esc(task.get('title', ''))}</h2>"
+        f"<p>{esc(task.get('operator_note', task.get('why', '')))}</p>"
+        "</article>"
+        for task in task_state.get("top_tasks", [])
+    ) or "<p>오늘 표시할 analyst task가 없습니다.</p>"
+    command_cards = "".join(
+        "<article class='command'>"
+        f"<span>{esc(item.get('label', 'command'))}</span>"
+        f"<code>{esc(item.get('command', ''))}</code>"
+        f"<small>{esc(item.get('effect', 'local only'))}</small>"
+        "</article>"
+        for item in payload.get("command_bar", [])
+    ) or "<p>오늘 복사할 로컬 응답 명령이 없습니다.</p>"
+    links = payload.get("phone_links", {})
+    link_cards = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in links.items()
+        if path and label != "morning"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Morning Control</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:18px; }}
+a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
+header {{ padding:28px 0 16px; }}
+.eyebrow,.card span,.command span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:18px; }}
+p,small {{ color:var(--muted); }}
+.hero,.section,.card,.command {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.stack {{ display:grid; grid-template-columns:1fr; gap:10px; }}
+.card,.command {{ background:white; padding:14px; min-width:0; }}
+.warn {{ border-color:#d7b36a; }}
+.metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:12px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
+.metric strong {{ display:block; font-size:24px; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .grid,.metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Morning · {esc(_short_date(payload.get('generated_at', '')))}</span>
+<h1>아침 analyst 관제판</h1>
+<p>오늘 무엇을 먼저 읽고, 무엇을 승인하지 말아야 하며, 어떤 짧은 응답으로 작업 상태를 닫을지 보는 운영면입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">먼저 볼 것</span>
+<h2>{esc(read_first.get('title', '오늘 브리프'))}</h2>
+<p>{esc(read_first.get('reason', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Status</span><strong>{esc(payload.get('status', 'ready'))}</strong></article>
+<article class="metric"><span>Carried</span><strong>{esc(task_state.get('carried', 0))}</strong></article>
+<article class="metric"><span>Blocked</span><strong>{esc(task_state.get('blocked', 0))}</strong></article>
+<article class="metric"><span>Runtime</span><strong>{esc(runtime.get('runtime_doctor_status', 'missing'))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>결정 필요</h2>
+<div class="stack">{decision_cards}</div>
+</section>
+<section class="section">
+<h2>오늘 닫을 analyst 작업</h2>
+<div class="grid">{task_cards}</div>
+</section>
+<section class="section">
+<h2>복사 가능한 응답</h2>
+<div class="stack">{command_cards}</div>
+</section>
+<section class="section">
+<h2>폰에서 열기</h2>
+<div class="links">{link_cards}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 관제판은 기존 산출물을 읽고 표시할 뿐입니다. queued task 실행, live network, host write, notification send, 계좌/주문/일임 행위는 별도 승인 게이트 없이는 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
 def validate_task_status_apply_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if payload.get("schema_version") != ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION:
@@ -2725,6 +3011,134 @@ def _task_status_overrides(payload: dict[str, Any]) -> dict[str, dict[str, Any]]
     if payload.get("schema_version") != ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION:
         return {}
     return {item.get("task_id", ""): item for item in payload.get("applied", []) if item.get("task_id")}
+
+
+def _load_optional_json(path: str | Path) -> dict[str, Any]:
+    target = Path(path)
+    if not target.exists():
+        return {}
+    try:
+        return load_json(target)
+    except json.JSONDecodeError:
+        return {}
+
+
+def _morning_pending_decisions(
+    *,
+    live_gate: dict[str, Any],
+    live_run: dict[str, Any],
+    preflight: dict[str, Any],
+) -> list[dict[str, Any]]:
+    decisions = []
+    if live_gate.get("status") == "approval_required":
+        for decision in live_gate.get("decisions", []):
+            decisions.append({
+                "id": decision.get("id", "live_network_refresh"),
+                "title": "live source refresh 승인 여부",
+                "why": "무료 공개 자료 live refresh 후보가 있지만 실제 네트워크 호출은 별도 승인 전까지 실행하지 않습니다.",
+                "approval_scope": decision.get("approval_scope", ""),
+                "risk_level": decision.get("risk_level", "medium"),
+                "reversibility": decision.get("reversibility", ""),
+                "copy_ready_response": decision.get("copy_ready_response", ""),
+                "agent_will_run": decision.get("agent_will_run", []),
+                "agent_will_not_run": decision.get("agent_will_not_run", []),
+                "stale_context_guard": decision.get("stale_context_guard", ""),
+                "approval_required": True,
+            })
+    execution = live_run.get("execution", {})
+    if execution.get("status") in {"blocked", "not_requested"} and live_run.get("approval_status") == "missing":
+        for blocker in execution.get("blockers", []):
+            if blocker == "live_network_refresh_not_approved" and not decisions:
+                decisions.append({
+                    "id": "live_network_refresh",
+                    "title": "live source refresh 승인 누락",
+                    "why": live_run.get("next_step", "approval response is missing"),
+                    "approval_scope": "live_network_refresh",
+                    "risk_level": "medium",
+                    "reversibility": "cache_artifact_can_be_deleted",
+                    "copy_ready_response": "approve live_network_refresh live_network_refresh",
+                    "agent_will_run": execution.get("proposed_commands", []),
+                    "agent_will_not_run": ["paid API calls", "credentialed sources", "notification send", "host-level writes"],
+                    "stale_context_guard": "Regenerate live-run proof before approval if source plan changed.",
+                    "approval_required": True,
+                })
+    if preflight.get("status") == "blocked" and preflight.get("blockers"):
+        decisions.append({
+            "id": "live_refresh_preflight",
+            "title": "live execution preflight 차단",
+            "why": "; ".join(preflight.get("blockers", [])[:3]),
+            "approval_scope": "live_network_refresh",
+            "risk_level": "medium",
+            "reversibility": "no external effect performed",
+            "copy_ready_response": "rerun preflight after exact approval and confirmation",
+            "agent_will_run": [],
+            "agent_will_not_run": ["network execution until preflight passes"],
+            "stale_context_guard": "Preflight must be regenerated after any approval or source change.",
+            "approval_required": True,
+        })
+    return decisions
+
+
+def _morning_top_tasks(*, ledger: dict[str, Any], queue: dict[str, Any]) -> list[dict[str, Any]]:
+    entries = ledger.get("entries", [])
+    if not entries:
+        return queue.get("tasks", [])[:4]
+    rank = {
+        "blocked_requires_approval": 0,
+        "blocked_by_operator": 1,
+        "ready_for_local_work": 2,
+        "carried": 3,
+        "deferred": 4,
+        "completed": 5,
+        "retired_not_in_current_queue": 6,
+    }
+    return sorted(entries, key=lambda item: (rank.get(item.get("status", ""), 9), item.get("priority", ""), item.get("task_id", "")))[:4]
+
+
+def _morning_command_bar(*, ledger: dict[str, Any], pending_decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    commands = []
+    actionable = [
+        entry for entry in ledger.get("entries", [])
+        if entry.get("status") in {"ready_for_local_work", "carried", "deferred"}
+        and entry.get("requires_operator_approval") is not True
+    ]
+    for entry in actionable[:3]:
+        task_id = entry.get("task_id", "")
+        commands.append({
+            "label": f"{task_id} 완료 표시",
+            "command": f"{task_id} complete \"오늘 확인 완료\"",
+            "effect": "local task status response only",
+            "external_effect_performed": False,
+        })
+        commands.append({
+            "label": f"{task_id} 이월 표시",
+            "command": f"{task_id} carry \"내일 계속 확인\"",
+            "effect": "local task status response only",
+            "external_effect_performed": False,
+        })
+        if len(commands) >= 4:
+            break
+    for decision in pending_decisions[:2]:
+        commands.append({
+            "label": f"{decision.get('id', 'decision')} 승인 응답",
+            "command": decision.get("copy_ready_response", ""),
+            "effect": "approval response only; separate apply/preflight still required",
+            "external_effect_performed": False,
+        })
+    return commands[:6]
+
+
+def _morning_status(
+    *,
+    pending_decisions: list[dict[str, Any]],
+    ledger_summary: dict[str, Any],
+    doctor: dict[str, Any],
+) -> str:
+    if doctor.get("fail_count", 0):
+        return "blocked"
+    if pending_decisions or ledger_summary.get("blocked_requires_approval", 0) or ledger_summary.get("blocked_by_operator", 0):
+        return "operator_review"
+    return "ready"
 
 
 def _today_vault_notes(*, vault_notes: list[dict[str, Any]], memory_topics: list[dict[str, Any]]) -> list[dict[str, Any]]:
