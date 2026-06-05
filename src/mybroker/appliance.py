@@ -4243,18 +4243,47 @@ def build_memory_query(
     selected_archives = matched_archives[:limit]
     selected_vault_notes = matched_vault_notes[:limit]
     status = "matched" if selected_topics or selected_archives or selected_vault_notes else "no_direct_match"
+    evidence_bundles = _query_evidence_bundles(
+        topics=selected_topics,
+        vault_notes=selected_vault_notes,
+        archives=selected_archives,
+        source_relevance=index.get("source_relevance", []),
+    )
+    weak_spots = _query_weak_spots(
+        status=status,
+        topics=selected_topics,
+        vault_notes=selected_vault_notes,
+        archives=selected_archives,
+        source_relevance=index.get("source_relevance", []),
+    )
     next_questions = _query_next_questions(query=query, topics=selected_topics, status=status)
     return {
         "schema_version": MEMORY_QUERY_SCHEMA_VERSION,
         "generated_at": _now(),
         "query": query,
         "status": status,
+        "recall_quality": _query_recall_quality(
+            status=status,
+            topic_count=len(selected_topics),
+            archive_count=len(selected_archives),
+            vault_note_count=len(selected_vault_notes),
+            weak_spot_count=len(weak_spots),
+        ),
         "matched_topic_count": len(selected_topics),
         "matched_archive_count": len(selected_archives),
         "matched_vault_note_count": len(selected_vault_notes),
         "matched_topics": selected_topics,
         "matched_archives": selected_archives,
         "matched_vault_notes": selected_vault_notes,
+        "evidence_bundles": evidence_bundles,
+        "weak_spots": weak_spots,
+        "reading_order": _query_reading_order(
+            topics=selected_topics,
+            vault_notes=selected_vault_notes,
+            archives=selected_archives,
+            evidence_bundles=evidence_bundles,
+            weak_spots=weak_spots,
+        ),
         "source_relevance": index.get("source_relevance", []),
         "next_questions": next_questions,
         "policy": "research_only",
@@ -4404,6 +4433,44 @@ ul {{ padding-left:18px; }}
 
 
 def render_memory_query_surface(payload: dict[str, Any]) -> str:
+    recall_quality = payload.get("recall_quality", {})
+    quality_items = "".join(
+        "<article class='metric'>"
+        f"<span>{esc(label)}</span>"
+        f"<strong>{esc(value)}</strong>"
+        "</article>"
+        for label, value in [
+            ("Quality", recall_quality.get("level", "unknown")),
+            ("Coverage", recall_quality.get("coverage_label", "unknown")),
+            ("Confidence", recall_quality.get("confidence", "low")),
+        ]
+    )
+    bundle_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(bundle.get('bundle_type', 'context'))} · {esc(bundle.get('strength', ''))}</span>"
+        f"<h3>{esc(bundle.get('title', ''))}</h3>"
+        f"<p>{esc(bundle.get('why_it_matters', ''))}</p>"
+        f"<small>{esc(' · '.join(bundle.get('source_names', [])) or bundle.get('artifact_path', ''))}</small>"
+        "</article>"
+        for bundle in payload.get("evidence_bundles", [])
+    ) or "<p>묶을 수 있는 근거가 아직 부족합니다.</p>"
+    weak_cards = "".join(
+        "<article class='card warn'>"
+        f"<span>{esc(item.get('severity', 'review'))}</span>"
+        f"<h3>{esc(item.get('title', ''))}</h3>"
+        f"<p>{esc(item.get('why', ''))}</p>"
+        f"<small>{esc(item.get('next_check', ''))}</small>"
+        "</article>"
+        for item in payload.get("weak_spots", [])
+    ) or "<p>현재 query에서 별도 약점은 발견되지 않았습니다.</p>"
+    reading_items = "".join(
+        "<li>"
+        f"<strong>{esc(item.get('label', '읽기'))}</strong>"
+        f"<span>{esc(item.get('why', ''))}</span>"
+        f"<small>{esc(item.get('path', ''))}</small>"
+        "</li>"
+        for item in payload.get("reading_order", [])
+    ) or "<li>먼저 오늘 브리프와 memory surface를 실행하세요.</li>"
     topic_cards = "".join(
         "<article class='card'>"
         f"<span>관련도 {esc(topic.get('score', 0))}</span>"
@@ -4461,12 +4528,17 @@ h3 {{ margin:0 0 8px; font-size:17px; }}
 p,small,li {{ color:var(--muted); }}
 .section,.card,.archive {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
 .section {{ margin:14px 0; padding:16px; }}
+.metrics {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:14px; }}
+.metric strong {{ display:block; font-size:24px; }}
 .grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
 .card,.archive {{ padding:14px; background:white; }}
 .card span,.archive span {{ display:block; color:var(--blue); font-size:12px; font-weight:900; }}
+.warn {{ border-color:#d7b36a; }}
 table {{ width:100%; border-collapse:collapse; }}
 td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; }}
-@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:28px; }} .grid {{ grid-template-columns:1fr; }} }}
+li small,li span {{ display:block; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:28px; }} .grid,.metrics {{ grid-template-columns:1fr; }} }}
 </style>
 </head>
 <body>
@@ -4477,8 +4549,25 @@ td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; }}
 <p>누적 메모리와 아카이브에서 다시 꺼내본 맥락입니다. 결론이 아니라 다음 탐색의 출발점입니다.</p>
 </header>
 <section class="section">
+<h2>Recall 품질</h2>
+<div class="metrics">{quality_items}</div>
+<p>{esc(recall_quality.get('summary', '로컬 기억을 더 쌓으면 recall 품질이 좋아집니다.'))}</p>
+</section>
+<section class="section">
+<h2>먼저 읽을 순서</h2>
+<ul>{reading_items}</ul>
+</section>
+<section class="section">
 <h2>연결된 주제 기억</h2>
 <div class="grid">{topic_cards}</div>
+</section>
+<section class="section">
+<h2>근거 묶음</h2>
+<div class="grid">{bundle_cards}</div>
+</section>
+<section class="section">
+<h2>아직 약한 부분</h2>
+<div class="grid">{weak_cards}</div>
 </section>
 <section class="section">
 <h2>다음에 확인할 질문</h2>
@@ -5048,6 +5137,201 @@ def _query_next_questions(*, query: str, topics: list[dict[str, Any]], status: s
     questions.append(f"'{query}'에 대해 최근 아카이브의 설명이 오늘도 유효한지 확인할까요?")
     questions.append("반대 근거가 쌓인 source가 있는지 먼저 볼까요?")
     return questions[:5]
+
+
+def _query_recall_quality(
+    *,
+    status: str,
+    topic_count: int,
+    archive_count: int,
+    vault_note_count: int,
+    weak_spot_count: int,
+) -> dict[str, Any]:
+    coverage_score = min(1.0, (topic_count * 0.35) + (archive_count * 0.2) + (vault_note_count * 0.25))
+    if status == "no_direct_match":
+        level = "weak"
+        confidence = "low"
+        coverage_label = "직접 매칭 없음"
+        summary = "질문과 직접 연결되는 누적 기억이 부족합니다. 먼저 넓은 키워드로 다시 묻거나 오늘 루프를 실행하세요."
+    elif coverage_score >= 0.85 and weak_spot_count <= 1:
+        level = "strong"
+        confidence = "medium"
+        coverage_label = "주제, 아카이브, vault가 함께 연결됨"
+        summary = "누적 주제 기억, 과거 실행, 원천 노트가 함께 잡혔습니다. 그래도 원문과 최신성은 확인해야 합니다."
+    elif coverage_score >= 0.45:
+        level = "usable"
+        confidence = "medium-low"
+        coverage_label = "일부 기억 연결"
+        summary = "답의 출발점으로는 충분하지만, 약한 source나 빠진 원천 노트를 먼저 확인해야 합니다."
+    else:
+        level = "thin"
+        confidence = "low"
+        coverage_label = "부분 매칭"
+        summary = "연결은 있으나 근거가 얇습니다. 결론보다 추가 자료 확인 질문으로 사용하세요."
+    return {
+        "level": level,
+        "confidence": confidence,
+        "coverage_score": round(coverage_score, 3),
+        "coverage_label": coverage_label,
+        "summary": summary,
+    }
+
+
+def _query_evidence_bundles(
+    *,
+    topics: list[dict[str, Any]],
+    vault_notes: list[dict[str, Any]],
+    archives: list[dict[str, Any]],
+    source_relevance: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    bundles: list[dict[str, Any]] = []
+    for topic in topics[:3]:
+        bundles.append({
+            "bundle_type": "topic_memory",
+            "title": topic.get("name", "주제 기억"),
+            "strength": _bundle_strength(topic.get("score", 0), len(topic.get("source_names", []))),
+            "why_it_matters": topic.get("summary", "누적 주제 기억이 질문과 연결됩니다."),
+            "source_names": topic.get("source_names", [])[:4],
+            "artifact_path": "reports/memory/topic-memory.json",
+        })
+    for note in vault_notes[:3]:
+        bundles.append({
+            "bundle_type": "vault_note",
+            "title": note.get("title", "Vault note"),
+            "strength": _bundle_strength(note.get("score", 0), len(note.get("key_takeaways", []))),
+            "why_it_matters": " · ".join(note.get("key_takeaways", [])[:2]) or "원천 노트가 질문과 연결됩니다.",
+            "source_names": [note.get("topic_name", "")] if note.get("topic_name") else [],
+            "artifact_path": note.get("wiki_path", note.get("source_path", "")),
+        })
+    if archives:
+        latest = archives[0]
+        bundles.append({
+            "bundle_type": "archive",
+            "title": f"최근 실행 {latest.get('generated_at', '')[:10]}",
+            "strength": "context",
+            "why_it_matters": "과거 daily loop 산출물과 연결해 오늘 질문이 반복되는지 확인합니다.",
+            "source_names": list(latest.get("artifacts", {}).keys())[:5],
+            "artifact_path": latest.get("archive_dir", ""),
+        })
+    strong_sources = [
+        row for row in source_relevance
+        if row.get("relevance_label") in {"strong", "medium"} and row.get("freshness_status") not in {"stale", "unknown"}
+    ]
+    if strong_sources:
+        bundles.append({
+            "bundle_type": "source_posture",
+            "title": "상대적으로 쓸 수 있는 source",
+            "strength": "supporting",
+            "why_it_matters": "신선도와 관련도 기준에서 먼저 확인할 source 후보입니다.",
+            "source_names": [row.get("source_name", "") for row in strong_sources[:5]],
+            "artifact_path": "reports/evidence/daily-evidence-catalog.json",
+        })
+    return bundles[:8]
+
+
+def _query_weak_spots(
+    *,
+    status: str,
+    topics: list[dict[str, Any]],
+    vault_notes: list[dict[str, Any]],
+    archives: list[dict[str, Any]],
+    source_relevance: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    weak: list[dict[str, str]] = []
+    if status == "no_direct_match":
+        weak.append({
+            "severity": "high",
+            "title": "직접 매칭 부족",
+            "why": "현재 질문을 설명할 누적 주제 기억이나 vault note가 부족합니다.",
+            "next_check": "넓은 키워드로 다시 묻거나 raw vault에 관련 자료를 넣고 compile하세요.",
+        })
+    if not vault_notes:
+        weak.append({
+            "severity": "medium",
+            "title": "원천 노트 부족",
+            "why": "topic memory는 있어도 사용자가 직접 모은 원천 노트가 연결되지 않았습니다.",
+            "next_check": "관련 글이나 보고서를 research-vault/raw에 넣고 appliance run을 다시 실행하세요.",
+        })
+    stale_sources = [
+        row for row in source_relevance
+        if row.get("freshness_status") in {"stale", "unknown"} or row.get("relevance_label") in {"weak", "unscored"}
+    ]
+    if stale_sources:
+        weak.append({
+            "severity": "medium",
+            "title": "source 신선도/관련도 약함",
+            "why": f"{len(stale_sources)}개 source가 오래됐거나 관련도가 약합니다.",
+            "next_check": "source refresh page에서 승인 없이 가능한 로컬/샘플 확인부터 보세요.",
+        })
+    if not archives:
+        weak.append({
+            "severity": "low",
+            "title": "과거 실행 연결 부족",
+            "why": "관련 archive가 없어 같은 질문이 반복되는지 확인하기 어렵습니다.",
+            "next_check": "며칠간 daily loop를 쌓은 뒤 같은 질문을 다시 비교하세요.",
+        })
+    if topics and all(float(topic.get("score", 0)) < 0.5 for topic in topics):
+        weak.append({
+            "severity": "medium",
+            "title": "낮은 topic match",
+            "why": "매칭된 주제는 있지만 점수가 낮아 우연한 단어 겹침일 수 있습니다.",
+            "next_check": "topic 이름, 관련 기업/섹터, 쉬운 키워드를 섞어 다시 질문하세요.",
+        })
+    return weak[:5]
+
+
+def _query_reading_order(
+    *,
+    topics: list[dict[str, Any]],
+    vault_notes: list[dict[str, Any]],
+    archives: list[dict[str, Any]],
+    evidence_bundles: list[dict[str, Any]],
+    weak_spots: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    order: list[dict[str, str]] = []
+    if topics:
+        order.append({
+            "label": f"1. {topics[0].get('name', 'matched topic')}",
+            "why": "먼저 누적 주제 기억의 요약과 질문을 읽어 현재 맥락을 잡습니다.",
+            "path": "reports/memory/topic-memory.json",
+        })
+    if vault_notes:
+        order.append({
+            "label": f"2. {vault_notes[0].get('title', 'vault note')}",
+            "why": "사용자가 직접 쌓은 원천 노트에서 왜 이 주제가 남았는지 확인합니다.",
+            "path": vault_notes[0].get("wiki_path", vault_notes[0].get("source_path", "")),
+        })
+    if archives:
+        order.append({
+            "label": "3. 최근 archive today/brief",
+            "why": "과거 daily loop의 설명과 오늘 질문이 이어지는지 비교합니다.",
+            "path": archives[0].get("archive_dir", ""),
+        })
+    if evidence_bundles:
+        order.append({
+            "label": "4. 근거 묶음",
+            "why": "topic, vault, archive, source posture를 한 번에 비교합니다.",
+            "path": evidence_bundles[0].get("artifact_path", ""),
+        })
+    if weak_spots:
+        order.append({
+            "label": "5. 약점 먼저 확인",
+            "why": weak_spots[0].get("why", "결론 전에 약한 부분을 확인합니다."),
+            "path": "reports/product/source-refresh.html",
+        })
+    return order[:5]
+
+
+def _bundle_strength(score: Any, support_count: int) -> str:
+    try:
+        numeric = float(score)
+    except (TypeError, ValueError):
+        numeric = 0.0
+    if numeric >= 0.75 and support_count >= 2:
+        return "strong"
+    if numeric >= 0.45 or support_count >= 2:
+        return "usable"
+    return "thin"
 
 
 def _doctor_check_path(
