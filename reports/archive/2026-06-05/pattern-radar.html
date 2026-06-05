@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Pattern Radar</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:860px; margin:0 auto; padding:18px; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 8px; font-size:18px; }
+p,small,li { color:var(--muted); overflow-wrap:anywhere; }
+.eyebrow,.card span { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+.hero,.section,.card,.mini { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:16px; margin:14px 0; }
+.metrics,.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.metric,.card,.mini { background:white; padding:14px; min-width:0; }
+.metric strong { display:block; font-size:28px; }
+.stack { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+.reject { border-color:#d7b36a; }
+@media (max-width:680px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Pattern Radar · 2026-06-05</span>
+<h1>개인 애널리스트 방식 업데이트</h1>
+<p>최신 agentic workflow 사례에서 검증된 패턴만 로컬 daily analyst loop에 흡수하기 위한 운영 레이더입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">이번 판단</span>
+<h2>pattern freshness audit before adding new runtime authority</h2>
+<p>Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.</p>
+<div class="metrics">
+<article class="metric"><span>Cases</span><strong>7</strong></article>
+<article class="metric"><span>Adopt</span><strong>6</strong></article>
+<article class="metric"><span>Reject</span><strong>1</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>사례별 채택/거부 판단</h2>
+<div class="stack"><article class='card'><span>adopt · high</span><h2>Hermes Agent</h2><p>persistent workspace memory, staged tool use, messaging-style handoff</p><strong>MyBroker 적용</strong><p>keep daily artifacts, task state, review memory, and morning control as local files before any external effects</p><small>Guardrail: prepare, approve, preflight, and execute remain separate gates</small></article><article class='card'><span>adopt · high</span><h2>OpenClaw</h2><p>agent-native computer workspace with local memory and tool routing</p><strong>MyBroker 적용</strong><p>use narrow appliance commands and phone-readable surfaces instead of a generic unrestricted assistant</p><small>Guardrail: validate artifacts, mark source freshness, and keep credentialed or live actions behind scoped approval</small></article><article class='card'><span>adopt · high</span><h2>MiroFish</h2><p>graph-style entity/event map, persona simulation, scenario paths</p><strong>MyBroker 적용</strong><p>market map, beginner explanations, persona viewpoints, and optimistic/base/downside paths</p><small>Guardrail: show confidence, missing evidence, stale sources, and research-only action candidates</small></article><article class='card'><span>adopt · medium</span><h2>TradingAgents</h2><p>specialized analyst roles debate market, fundamentals, sentiment, and risk before a decision</p><strong>MyBroker 적용</strong><p>source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor, memory librarian, publisher</p><small>Guardrail: roles produce questions, explanations, and research-only next inspections, not trade instructions</small></article><article class='card'><span>adopt_partial · medium</span><h2>FinRobot</h2><p>financial LLM agents grounded in reports, data, and analyst workflows</p><strong>MyBroker 적용</strong><p>ground generated briefs in local artifacts, source status, and archive history</p><small>Guardrail: keep free/public/local evidence first and separate beginner education from execution</small></article><article class='card'><span>adopt · high</span><h2>Obsidian vault research workflow</h2><p>raw inbox, compiled wiki, linked notes, recurring audit</p><strong>MyBroker 적용</strong><p>compile local raw notes into reports/vault/wiki and feed scout, memory, today, and archive</p><small>Guardrail: surface source paths, freshness, and review feedback; do not delete raw notes automatically</small></article><article class='card'><span>reject · blocked</span><h2>Hosted trading bots and broker-connected agents</h2><p>always-on execution, account credentials, live orders, discretionary automation</p><strong>MyBroker 적용</strong><p>none</p><small>Guardrail: no brokerage credentials, no live trading, no discretionary management</small></article></div>
+</section>
+<section class="section">
+<h2>이번에 흡수한 패턴</h2>
+<div class="grid"><article class='mini'><strong>Hermes Agent</strong><p>keep daily artifacts, task state, review memory, and morning control as local files before any external effects</p></article><article class='mini'><strong>OpenClaw</strong><p>use narrow appliance commands and phone-readable surfaces instead of a generic unrestricted assistant</p></article><article class='mini'><strong>MiroFish</strong><p>market map, beginner explanations, persona viewpoints, and optimistic/base/downside paths</p></article><article class='mini'><strong>TradingAgents</strong><p>source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor, memory librarian, publisher</p></article><article class='mini'><strong>FinRobot</strong><p>ground generated briefs in local artifacts, source status, and archive history</p></article><article class='mini'><strong>Obsidian vault research workflow</strong><p>compile local raw notes into reports/vault/wiki and feed scout, memory, today, and archive</p></article></div>
+</section>
+<section class="section">
+<h2>명시적으로 피할 패턴</h2>
+<div class="stack"><article class='mini reject'><strong>Hosted trading bots and broker-connected agents</strong><p>This violates the current local research-only objective.</p></article></div>
+</section>
+<section class="section">
+<h2>다음 안전한 slice 후보</h2>
+<div class="grid"><article class='mini'><strong>memory_recall_quality</strong><p>daily review and vault notes are now available, so recall quality can improve without external effects.</p><small>승인 필요: 아니오</small></article><article class='mini'><strong>approved_no_key_source_execution</strong><p>source refresh response and preflight exist, but actual live network execution is still a separate gate.</p><small>승인 필요: 예</small></article><article class='mini'><strong>host_scheduler_activation</strong><p>scheduler operations are activation-ready, but host writes require explicit confirmation.</p><small>승인 필요: 예</small></article></div>
+</section>
+<section class="section">
+<h2>내일 사람이 판단할 질문</h2>
+<ul><li>내일의 daily brief에서 어떤 주제를 더 자주 보고 싶은가?</li><li>현재는 source refresh 실행보다 memory recall 품질을 먼저 높이는 것이 맞는가?</li><li>host scheduler 활성화는 별도 승인할 만큼 충분히 믿을 수 있는가?</li></ul>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 레이더는 로컬 리서치와 운영 방식만 갱신합니다. live network, host scheduler write, 알림 전송, credential 사용, 계좌 접근, 주문 실행을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

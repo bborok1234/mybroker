@@ -33,6 +33,7 @@ SOURCE_REFRESH_BRIEF_SCHEMA_VERSION = "source_refresh_brief.v1"
 NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
+AGENT_PATTERN_RADAR_SCHEMA_VERSION = "agent_pattern_radar.v1"
 PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
 OPERATOR_DECISION_PACKET_SCHEMA_VERSION = "operator_decision_packet.v1"
 OPERATOR_DECISION_APPLY_SCHEMA_VERSION = "operator_decision_apply.v1"
@@ -63,6 +64,8 @@ DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE = Path("reports/product/source-refresh.html
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
+DEFAULT_AGENT_PATTERN_RADAR_OUTPUT = Path("reports/runtime/agent-pattern-radar.json")
+DEFAULT_AGENT_PATTERN_RADAR_SURFACE = Path("reports/product/pattern-radar.html")
 DEFAULT_PHONE_ACCESS_OUTPUT = Path("reports/runtime/phone-access.json")
 DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT = Path("reports/runtime/operator-decision-packet.json")
 DEFAULT_OPERATOR_DECISION_APPLY_OUTPUT = Path("reports/runtime/operator-decision-apply.json")
@@ -167,6 +170,316 @@ def write_runtime_playbook(output_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OU
         ],
     }
     return write_json(payload, output_path)
+
+
+def build_agent_pattern_radar(
+    *,
+    playbook_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    playbook = _load_optional_json(playbook_path)
+    cases = [
+        {
+            "source": "Hermes Agent",
+            "source_url": "https://github.com/NousResearch/hermes-agent",
+            "observed_pattern": "persistent workspace memory, staged tool use, messaging-style handoff",
+            "decision": "adopt",
+            "mybroker_translation": "keep daily artifacts, task state, review memory, and morning control as local files before any external effects",
+            "why": "This supports a daily operator loop without requiring a hosted web app or broad account authority.",
+            "risk": "over-automation if external-effect approvals are collapsed",
+            "guardrail": "prepare, approve, preflight, and execute remain separate gates",
+            "priority": "high",
+        },
+        {
+            "source": "OpenClaw",
+            "source_url": "https://openclaw.ai/",
+            "observed_pattern": "agent-native computer workspace with local memory and tool routing",
+            "decision": "adopt",
+            "mybroker_translation": "use narrow appliance commands and phone-readable surfaces instead of a generic unrestricted assistant",
+            "why": "Local workspace control is useful, but MyBroker needs finance-research boundaries and explicit non-execution defaults.",
+            "risk": "capability, identity, and knowledge poisoning if unchecked tools or untrusted memory shape decisions",
+            "guardrail": "validate artifacts, mark source freshness, and keep credentialed or live actions behind scoped approval",
+            "priority": "high",
+        },
+        {
+            "source": "MiroFish",
+            "source_url": "https://github.com/666ghj/MiroFish",
+            "observed_pattern": "graph-style entity/event map, persona simulation, scenario paths",
+            "decision": "adopt",
+            "mybroker_translation": "market map, beginner explanations, persona viewpoints, and optimistic/base/downside paths",
+            "why": "The user wants a beginner-first way to understand market flows without having to provide a precise thesis.",
+            "risk": "simulation can feel authoritative when evidence is weak",
+            "guardrail": "show confidence, missing evidence, stale sources, and research-only action candidates",
+            "priority": "high",
+        },
+        {
+            "source": "TradingAgents",
+            "source_url": "https://github.com/TauricResearch/TradingAgents",
+            "observed_pattern": "specialized analyst roles debate market, fundamentals, sentiment, and risk before a decision",
+            "decision": "adopt",
+            "mybroker_translation": "source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor, memory librarian, publisher",
+            "why": "Role separation improves coverage and makes weak evidence visible to beginners.",
+            "risk": "role debate can drift into unsupported recommendations",
+            "guardrail": "roles produce questions, explanations, and research-only next inspections, not trade instructions",
+            "priority": "medium",
+        },
+        {
+            "source": "FinRobot",
+            "source_url": "https://github.com/AI4Finance-Foundation/FinRobot",
+            "observed_pattern": "financial LLM agents grounded in reports, data, and analyst workflows",
+            "decision": "adopt_partial",
+            "mybroker_translation": "ground generated briefs in local artifacts, source status, and archive history",
+            "why": "Grounding and auditability matter more than adding model complexity at this stage.",
+            "risk": "finance-specific agents may assume paid datasets, account context, or professional workflows",
+            "guardrail": "keep free/public/local evidence first and separate beginner education from execution",
+            "priority": "medium",
+        },
+        {
+            "source": "Obsidian vault research workflow",
+            "source_url": "https://obsidian.md/",
+            "observed_pattern": "raw inbox, compiled wiki, linked notes, recurring audit",
+            "decision": "adopt",
+            "mybroker_translation": "compile local raw notes into reports/vault/wiki and feed scout, memory, today, and archive",
+            "why": "A personal analyst becomes useful when research compounds across days.",
+            "risk": "stale or biased notes can dominate later runs",
+            "guardrail": "surface source paths, freshness, and review feedback; do not delete raw notes automatically",
+            "priority": "high",
+        },
+        {
+            "source": "Hosted trading bots and broker-connected agents",
+            "source_url": "",
+            "observed_pattern": "always-on execution, account credentials, live orders, discretionary automation",
+            "decision": "reject",
+            "mybroker_translation": "none",
+            "why": "This violates the current local research-only objective.",
+            "risk": "financial loss, compliance risk, and unsafe personalized execution",
+            "guardrail": "no brokerage credentials, no live trading, no discretionary management",
+            "priority": "blocked",
+        },
+    ]
+    adopted = [case for case in cases if case["decision"] in {"adopt", "adopt_partial"}]
+    deferred = [case for case in cases if case["decision"] == "defer"]
+    rejected = [case for case in cases if case["decision"] == "reject"]
+    payload = {
+        "schema_version": AGENT_PATTERN_RADAR_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "status": "ready",
+        "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
+        "playbook_source": Path(playbook_path).as_posix(),
+        "playbook_pattern_count": len(playbook.get("absorbed_patterns", [])),
+        "summary": {
+            "case_count": len(cases),
+            "adopted_count": len(adopted),
+            "deferred_count": len(deferred),
+            "rejected_count": len(rejected),
+            "top_next_pattern": "pattern freshness audit before adding new runtime authority",
+        },
+        "cases": cases,
+        "adopted_patterns": [
+            {
+                "source": case["source"],
+                "priority": case["priority"],
+                "translation": case["mybroker_translation"],
+                "guardrail": case["guardrail"],
+            }
+            for case in adopted
+        ],
+        "rejected_patterns": [
+            {
+                "source": case["source"],
+                "why": case["why"],
+                "guardrail": case["guardrail"],
+            }
+            for case in rejected
+        ],
+        "operator_next_questions": [
+            "내일의 daily brief에서 어떤 주제를 더 자주 보고 싶은가?",
+            "현재는 source refresh 실행보다 memory recall 품질을 먼저 높이는 것이 맞는가?",
+            "host scheduler 활성화는 별도 승인할 만큼 충분히 믿을 수 있는가?",
+        ],
+        "next_safe_slice_candidates": [
+            {
+                "candidate": "memory_recall_quality",
+                "why": "daily review and vault notes are now available, so recall quality can improve without external effects.",
+                "requires_approval": False,
+            },
+            {
+                "candidate": "approved_no_key_source_execution",
+                "why": "source refresh response and preflight exist, but actual live network execution is still a separate gate.",
+                "requires_approval": True,
+            },
+            {
+                "candidate": "host_scheduler_activation",
+                "why": "scheduler operations are activation-ready, but host writes require explicit confirmation.",
+                "requires_approval": True,
+            },
+        ],
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "pattern_radar_reads_local_research_only",
+            "does_not_execute_live_network",
+            "does_not_write_host_scheduler",
+            "does_not_send_notifications",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_live_trading",
+        ],
+    }
+    return payload
+
+
+def write_agent_pattern_radar(
+    *,
+    playbook_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
+) -> Path:
+    payload = build_agent_pattern_radar(playbook_path=playbook_path)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_agent_pattern_radar(payload), encoding="utf-8")
+    return target
+
+
+def validate_agent_pattern_radar_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != AGENT_PATTERN_RADAR_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    cases = payload.get("cases", [])
+    if len(cases) < 5:
+        errors.append("cases must include at least 5 researched patterns")
+    allowed = {"adopt", "adopt_partial", "defer", "reject"}
+    for index, case in enumerate(cases):
+        if case.get("decision") not in allowed:
+            errors.append(f"cases[{index}] invalid decision {case.get('decision')}")
+        for key in ["source", "observed_pattern", "mybroker_translation", "why", "risk", "guardrail"]:
+            if not str(case.get(key, "")).strip():
+                errors.append(f"cases[{index}] missing {key}")
+    if not payload.get("adopted_patterns"):
+        errors.append("adopted_patterns must not be empty")
+    if "does_not_execute_live_network" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include does_not_execute_live_network")
+    return errors
+
+
+def validate_agent_pattern_radar_file(path: str | Path) -> list[str]:
+    return validate_agent_pattern_radar_payload(load_json(path))
+
+
+def render_agent_pattern_radar(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    case_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(case.get('decision', 'review'))} · {esc(case.get('priority', ''))}</span>"
+        f"<h2>{esc(case.get('source', ''))}</h2>"
+        f"<p>{esc(case.get('observed_pattern', ''))}</p>"
+        f"<strong>MyBroker 적용</strong><p>{esc(case.get('mybroker_translation', ''))}</p>"
+        f"<small>Guardrail: {esc(case.get('guardrail', ''))}</small>"
+        "</article>"
+        for case in payload.get("cases", [])
+    )
+    adopted_cards = "".join(
+        "<article class='mini'>"
+        f"<strong>{esc(item.get('source', ''))}</strong>"
+        f"<p>{esc(item.get('translation', ''))}</p>"
+        "</article>"
+        for item in payload.get("adopted_patterns", [])
+    )
+    rejected_cards = "".join(
+        "<article class='mini reject'>"
+        f"<strong>{esc(item.get('source', ''))}</strong>"
+        f"<p>{esc(item.get('why', ''))}</p>"
+        "</article>"
+        for item in payload.get("rejected_patterns", [])
+    ) or "<p>명시적으로 거부한 패턴이 없습니다.</p>"
+    question_items = "".join(f"<li>{esc(question)}</li>" for question in payload.get("operator_next_questions", []))
+    next_cards = "".join(
+        "<article class='mini'>"
+        f"<strong>{esc(item.get('candidate', ''))}</strong>"
+        f"<p>{esc(item.get('why', ''))}</p>"
+        f"<small>승인 필요: {esc('예' if item.get('requires_approval') else '아니오')}</small>"
+        "</article>"
+        for item in payload.get("next_safe_slice_candidates", [])
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Pattern Radar</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:860px; margin:0 auto; padding:18px; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:18px; }}
+p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
+.eyebrow,.card span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+.hero,.section,.card,.mini {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.metrics,.grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }}
+.metric,.card,.mini {{ background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:28px; }}
+.stack {{ display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }}
+.reject {{ border-color:#d7b36a; }}
+@media (max-width:680px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Pattern Radar · {esc(_short_date(payload.get('generated_at', '')))}</span>
+<h1>개인 애널리스트 방식 업데이트</h1>
+<p>최신 agentic workflow 사례에서 검증된 패턴만 로컬 daily analyst loop에 흡수하기 위한 운영 레이더입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">이번 판단</span>
+<h2>{esc(summary.get('top_next_pattern', 'pattern freshness audit'))}</h2>
+<p>{esc(payload.get('objective', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Cases</span><strong>{esc(summary.get('case_count', 0))}</strong></article>
+<article class="metric"><span>Adopt</span><strong>{esc(summary.get('adopted_count', 0))}</strong></article>
+<article class="metric"><span>Reject</span><strong>{esc(summary.get('rejected_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>사례별 채택/거부 판단</h2>
+<div class="stack">{case_cards}</div>
+</section>
+<section class="section">
+<h2>이번에 흡수한 패턴</h2>
+<div class="grid">{adopted_cards}</div>
+</section>
+<section class="section">
+<h2>명시적으로 피할 패턴</h2>
+<div class="stack">{rejected_cards}</div>
+</section>
+<section class="section">
+<h2>다음 안전한 slice 후보</h2>
+<div class="grid">{next_cards}</div>
+</section>
+<section class="section">
+<h2>내일 사람이 판단할 질문</h2>
+<ul>{question_items}</ul>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 레이더는 로컬 리서치와 운영 방식만 갱신합니다. live network, host scheduler write, 알림 전송, credential 사용, 계좌 접근, 주문 실행을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def write_phone_access_plan(
@@ -1852,6 +2165,7 @@ def write_today_surface(
     agenda_surface_path: str | Path | None = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     source_refresh_surface_path: str | Path | None = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     review_surface_path: str | Path | None = DEFAULT_DAILY_REVIEW_SURFACE,
+    pattern_radar_surface_path: str | Path | None = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -1891,6 +2205,7 @@ def write_today_surface(
             agenda_surface_path=Path(agenda_surface_path) if agenda_surface_path else None,
             source_refresh_surface_path=Path(source_refresh_surface_path) if source_refresh_surface_path else None,
             review_surface_path=Path(review_surface_path) if review_surface_path else None,
+            pattern_radar_surface_path=Path(pattern_radar_surface_path) if pattern_radar_surface_path else None,
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
             journal_surface_path=Path(journal_surface_path) if journal_surface_path else None,
@@ -1920,6 +2235,7 @@ def render_today_surface(
     agenda_surface_path: Path | None = None,
     source_refresh_surface_path: Path | None = None,
     review_surface_path: Path | None = None,
+    pattern_radar_surface_path: Path | None = None,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
     journal_surface_path: Path | None = None,
@@ -2083,6 +2399,11 @@ def render_today_surface(
         if review_surface_path
         else "<span>오늘 review 없음</span>"
     )
+    pattern_radar_link = (
+        f"<a href='{esc(_relative_href(pattern_radar_surface_path))}'>방식 업데이트 레이더</a>"
+        if pattern_radar_surface_path
+        else "<span>방식 업데이트 없음</span>"
+    )
     questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
@@ -2204,6 +2525,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 {agenda_link}
 {source_refresh_link}
 {review_link}
+{pattern_radar_link}
 {journal_link}
 {task_queue_link}
 {task_ledger_link}
@@ -2240,6 +2562,8 @@ def archive_daily_run(
     task_ledger_path: str | Path | None = None,
     daily_review_path: str | Path | None = None,
     daily_review_surface_path: str | Path | None = None,
+    pattern_radar_path: str | Path | None = None,
+    pattern_radar_surface_path: str | Path | None = None,
     vault_compile_path: str | Path | None = None,
     vault_surface_path: str | Path | None = None,
     agenda_path: str | Path | None = None,
@@ -2265,6 +2589,8 @@ def archive_daily_run(
         "task_ledger": task_ledger_path,
         "daily_review": daily_review_path,
         "daily_review_surface": daily_review_surface_path,
+        "agent_pattern_radar": pattern_radar_path,
+        "agent_pattern_radar_surface": pattern_radar_surface_path,
         "vault_compile": vault_compile_path,
         "vault": vault_surface_path,
         "daily_agenda": agenda_path,
@@ -3354,6 +3680,7 @@ def build_morning_control_packet(
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
+    pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
     task_queue_surface_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
@@ -3412,6 +3739,7 @@ def build_morning_control_packet(
             "today": Path(today_path).as_posix(),
             "agenda": Path(agenda_surface_path).as_posix(),
             "review": Path(review_surface_path).as_posix(),
+            "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
             "journal": Path(journal_surface_path).as_posix(),
             "tasks": Path(task_queue_surface_path).as_posix(),
@@ -3470,6 +3798,7 @@ def write_morning_control_packet(
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
+    pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
 ) -> Path:
@@ -3489,6 +3818,7 @@ def write_morning_control_packet(
         agenda_path=agenda_path,
         agenda_surface_path=agenda_surface_path,
         review_surface_path=review_surface_path,
+        pattern_radar_surface_path=pattern_radar_surface_path,
     )
     write_json(payload, artifact_output_path)
     target = Path(surface_output_path)

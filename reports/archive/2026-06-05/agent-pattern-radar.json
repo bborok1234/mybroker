@@ -1,0 +1,173 @@
+{
+  "schema_version": "agent_pattern_radar.v1",
+  "generated_at": "2026-06-05T17:18:58.059839+00:00",
+  "status": "ready",
+  "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
+  "playbook_source": "reports/runtime/local-analyst-playbook.json",
+  "playbook_pattern_count": 5,
+  "summary": {
+    "case_count": 7,
+    "adopted_count": 6,
+    "deferred_count": 0,
+    "rejected_count": 1,
+    "top_next_pattern": "pattern freshness audit before adding new runtime authority"
+  },
+  "cases": [
+    {
+      "source": "Hermes Agent",
+      "source_url": "https://github.com/NousResearch/hermes-agent",
+      "observed_pattern": "persistent workspace memory, staged tool use, messaging-style handoff",
+      "decision": "adopt",
+      "mybroker_translation": "keep daily artifacts, task state, review memory, and morning control as local files before any external effects",
+      "why": "This supports a daily operator loop without requiring a hosted web app or broad account authority.",
+      "risk": "over-automation if external-effect approvals are collapsed",
+      "guardrail": "prepare, approve, preflight, and execute remain separate gates",
+      "priority": "high"
+    },
+    {
+      "source": "OpenClaw",
+      "source_url": "https://openclaw.ai/",
+      "observed_pattern": "agent-native computer workspace with local memory and tool routing",
+      "decision": "adopt",
+      "mybroker_translation": "use narrow appliance commands and phone-readable surfaces instead of a generic unrestricted assistant",
+      "why": "Local workspace control is useful, but MyBroker needs finance-research boundaries and explicit non-execution defaults.",
+      "risk": "capability, identity, and knowledge poisoning if unchecked tools or untrusted memory shape decisions",
+      "guardrail": "validate artifacts, mark source freshness, and keep credentialed or live actions behind scoped approval",
+      "priority": "high"
+    },
+    {
+      "source": "MiroFish",
+      "source_url": "https://github.com/666ghj/MiroFish",
+      "observed_pattern": "graph-style entity/event map, persona simulation, scenario paths",
+      "decision": "adopt",
+      "mybroker_translation": "market map, beginner explanations, persona viewpoints, and optimistic/base/downside paths",
+      "why": "The user wants a beginner-first way to understand market flows without having to provide a precise thesis.",
+      "risk": "simulation can feel authoritative when evidence is weak",
+      "guardrail": "show confidence, missing evidence, stale sources, and research-only action candidates",
+      "priority": "high"
+    },
+    {
+      "source": "TradingAgents",
+      "source_url": "https://github.com/TauricResearch/TradingAgents",
+      "observed_pattern": "specialized analyst roles debate market, fundamentals, sentiment, and risk before a decision",
+      "decision": "adopt",
+      "mybroker_translation": "source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor, memory librarian, publisher",
+      "why": "Role separation improves coverage and makes weak evidence visible to beginners.",
+      "risk": "role debate can drift into unsupported recommendations",
+      "guardrail": "roles produce questions, explanations, and research-only next inspections, not trade instructions",
+      "priority": "medium"
+    },
+    {
+      "source": "FinRobot",
+      "source_url": "https://github.com/AI4Finance-Foundation/FinRobot",
+      "observed_pattern": "financial LLM agents grounded in reports, data, and analyst workflows",
+      "decision": "adopt_partial",
+      "mybroker_translation": "ground generated briefs in local artifacts, source status, and archive history",
+      "why": "Grounding and auditability matter more than adding model complexity at this stage.",
+      "risk": "finance-specific agents may assume paid datasets, account context, or professional workflows",
+      "guardrail": "keep free/public/local evidence first and separate beginner education from execution",
+      "priority": "medium"
+    },
+    {
+      "source": "Obsidian vault research workflow",
+      "source_url": "https://obsidian.md/",
+      "observed_pattern": "raw inbox, compiled wiki, linked notes, recurring audit",
+      "decision": "adopt",
+      "mybroker_translation": "compile local raw notes into reports/vault/wiki and feed scout, memory, today, and archive",
+      "why": "A personal analyst becomes useful when research compounds across days.",
+      "risk": "stale or biased notes can dominate later runs",
+      "guardrail": "surface source paths, freshness, and review feedback; do not delete raw notes automatically",
+      "priority": "high"
+    },
+    {
+      "source": "Hosted trading bots and broker-connected agents",
+      "source_url": "",
+      "observed_pattern": "always-on execution, account credentials, live orders, discretionary automation",
+      "decision": "reject",
+      "mybroker_translation": "none",
+      "why": "This violates the current local research-only objective.",
+      "risk": "financial loss, compliance risk, and unsafe personalized execution",
+      "guardrail": "no brokerage credentials, no live trading, no discretionary management",
+      "priority": "blocked"
+    }
+  ],
+  "adopted_patterns": [
+    {
+      "source": "Hermes Agent",
+      "priority": "high",
+      "translation": "keep daily artifacts, task state, review memory, and morning control as local files before any external effects",
+      "guardrail": "prepare, approve, preflight, and execute remain separate gates"
+    },
+    {
+      "source": "OpenClaw",
+      "priority": "high",
+      "translation": "use narrow appliance commands and phone-readable surfaces instead of a generic unrestricted assistant",
+      "guardrail": "validate artifacts, mark source freshness, and keep credentialed or live actions behind scoped approval"
+    },
+    {
+      "source": "MiroFish",
+      "priority": "high",
+      "translation": "market map, beginner explanations, persona viewpoints, and optimistic/base/downside paths",
+      "guardrail": "show confidence, missing evidence, stale sources, and research-only action candidates"
+    },
+    {
+      "source": "TradingAgents",
+      "priority": "medium",
+      "translation": "source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor, memory librarian, publisher",
+      "guardrail": "roles produce questions, explanations, and research-only next inspections, not trade instructions"
+    },
+    {
+      "source": "FinRobot",
+      "priority": "medium",
+      "translation": "ground generated briefs in local artifacts, source status, and archive history",
+      "guardrail": "keep free/public/local evidence first and separate beginner education from execution"
+    },
+    {
+      "source": "Obsidian vault research workflow",
+      "priority": "high",
+      "translation": "compile local raw notes into reports/vault/wiki and feed scout, memory, today, and archive",
+      "guardrail": "surface source paths, freshness, and review feedback; do not delete raw notes automatically"
+    }
+  ],
+  "rejected_patterns": [
+    {
+      "source": "Hosted trading bots and broker-connected agents",
+      "why": "This violates the current local research-only objective.",
+      "guardrail": "no brokerage credentials, no live trading, no discretionary management"
+    }
+  ],
+  "operator_next_questions": [
+    "내일의 daily brief에서 어떤 주제를 더 자주 보고 싶은가?",
+    "현재는 source refresh 실행보다 memory recall 품질을 먼저 높이는 것이 맞는가?",
+    "host scheduler 활성화는 별도 승인할 만큼 충분히 믿을 수 있는가?"
+  ],
+  "next_safe_slice_candidates": [
+    {
+      "candidate": "memory_recall_quality",
+      "why": "daily review and vault notes are now available, so recall quality can improve without external effects.",
+      "requires_approval": false
+    },
+    {
+      "candidate": "approved_no_key_source_execution",
+      "why": "source refresh response and preflight exist, but actual live network execution is still a separate gate.",
+      "requires_approval": true
+    },
+    {
+      "candidate": "host_scheduler_activation",
+      "why": "scheduler operations are activation-ready, but host writes require explicit confirmation.",
+      "requires_approval": true
+    }
+  ],
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "pattern_radar_reads_local_research_only",
+    "does_not_execute_live_network",
+    "does_not_write_host_scheduler",
+    "does_not_send_notifications",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_live_trading"
+  ]
+}
