@@ -1,0 +1,64 @@
+{
+  "schema_version": "local_scheduler_activation_preflight.v1",
+  "generated_at": "2026-06-05T07:29:44.696253+00:00",
+  "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
+  "label": "com.mybroker.daily-analyst",
+  "status": "ready",
+  "max_proof_age_hours": 24,
+  "host_write_performed": false,
+  "checks": [
+    {
+      "name": "runtime_doctor_ready",
+      "status": "pass",
+      "message": "Runtime doctor is ready with zero failures.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/local-runtime-doctor.json",
+      "age_hours": 0.0
+    },
+    {
+      "name": "scheduler_assets_ready",
+      "status": "pass",
+      "message": "Scheduler source assets are present and executable.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-status.json",
+      "age_hours": 0.0
+    },
+    {
+      "name": "dry_run_apply_planned",
+      "status": "pass",
+      "message": "Dry-run activation plan exists for install/load/start-now without host writes.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-apply.json",
+      "age_hours": 0.48
+    },
+    {
+      "name": "runner_run_once_passed",
+      "status": "pass",
+      "message": "The scheduler runner executed once locally without host writes.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-run-once.json",
+      "age_hours": 0.23
+    },
+    {
+      "name": "notification_remains_dry_run",
+      "status": "pass",
+      "message": "Notification payload remains dry-run until explicit send approval.",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/notifications/latest.json",
+      "age_hours": 0.23
+    }
+  ],
+  "blockers": [],
+  "warnings": [],
+  "artifacts": {
+    "scheduler_status": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-status.json",
+    "runtime_doctor": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/local-runtime-doctor.json",
+    "scheduler_apply": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-apply.json",
+    "scheduler_run_once": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-run-once.json",
+    "notification": "/Users/mirlim/sidejob/mybroker/mybroker/reports/notifications/latest.json"
+  },
+  "activation_command": "PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now --confirm-host-write",
+  "next_action": "Operator may decide whether to run scheduler apply --install --load --start-now --confirm-host-write.",
+  "safety": {
+    "requires_explicit_operator_approval": true,
+    "preflight_does_not_install_or_load": true,
+    "confirmed_activation_is_host_level": true,
+    "notification_send_remains_separate": true
+  },
+  "policy": "research_only"
+}

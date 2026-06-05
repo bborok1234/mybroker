@@ -15,6 +15,7 @@ from mybroker.appliance import (
     write_phone_access_plan,
     write_runtime_doctor,
     write_runtime_playbook,
+    write_scheduler_activation_preflight,
     write_scheduler_status,
     write_scheduler_apply,
     write_scheduler_run_once,
@@ -209,6 +210,64 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("runner ok", payload["stdout_excerpt"])
         self.assertTrue(payload["post_status_path"].endswith("reports/runtime/scheduler-status.json"))
         self.assertTrue(payload["doctor_path"].endswith("reports/runtime/local-runtime-doctor.json"))
+
+    def test_scheduler_activation_preflight_requires_local_proofs_without_host_write(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "config").mkdir(parents=True)
+            (root / "config" / "topics.json").write_text("{}", encoding="utf-8")
+            for path in [
+                root / "reports" / "runtime" / "phone-access.json",
+                root / "reports" / "product" / "today.html",
+                root / "reports" / "product" / "memory.html",
+                root / "reports" / "product" / "memory-query.html",
+                root / "reports" / "archive" / "test" / "manifest.json",
+            ]:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("ok", encoding="utf-8")
+            (root / "reports" / "notifications").mkdir(parents=True, exist_ok=True)
+            (root / "reports" / "notifications" / "latest.json").write_text(
+                json.dumps({
+                    "schema_version": "notification_delivery.v1",
+                    "generated_at": "2026-06-05T00:00:00+00:00",
+                    "provider": "telegram",
+                    "dry_run": True,
+                    "delivery_status": "dry_run_ready",
+                    "required_env": [],
+                }),
+                encoding="utf-8",
+            )
+            script = root / "ops" / "local" / "run-daily-analyst.sh"
+            script.parent.mkdir(parents=True, exist_ok=True)
+            script.write_text("#!/bin/sh\nprintf 'runner ok\\n'\n", encoding="utf-8")
+            script.chmod(0o755)
+            (root / "ops" / "local" / "com.mybroker.daily-analyst.plist").write_text("<plist />", encoding="utf-8")
+
+            write_scheduler_apply(
+                project_root=root,
+                output_path=root / "reports" / "runtime" / "scheduler-apply.json",
+                install=True,
+                load=True,
+                start_now=True,
+            )
+            write_scheduler_run_once(
+                project_root=root,
+                output_path=root / "reports" / "runtime" / "scheduler-run-once.json",
+                timeout_seconds=5,
+            )
+            output = write_scheduler_activation_preflight(
+                project_root=root,
+                output_path=root / "reports" / "runtime" / "scheduler-activation-preflight.json",
+                max_proof_age_hours=24,
+            )
+            payload = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(payload["schema_version"], "local_scheduler_activation_preflight.v1")
+        self.assertEqual(payload["status"], "ready")
+        self.assertFalse(payload["host_write_performed"])
+        self.assertEqual(payload["blockers"], [])
+        self.assertIn("--confirm-host-write", payload["activation_command"])
+        self.assertTrue(payload["safety"]["requires_explicit_operator_approval"])
 
     def test_today_surface_can_use_public_catalog_without_topic_memory_leakage(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

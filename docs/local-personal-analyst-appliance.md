@@ -44,6 +44,7 @@ launchd
   -> local_scheduler_status.v1
   -> local_scheduler_apply.v1
   -> local_scheduler_run_once.v1
+  -> local_scheduler_activation_preflight.v1
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -102,6 +103,7 @@ PYTHONPATH=src python3 -m mybroker appliance doctor
 PYTHONPATH=src python3 -m mybroker appliance scheduler status
 PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now
 PYTHONPATH=src python3 -m mybroker appliance scheduler run-once
+PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
@@ -153,6 +155,13 @@ local `ops/local/run-daily-analyst.sh` runner once, records command, return code
 stdout/stderr excerpts, post-run scheduler status, and doctor paths, and keeps
 `host_write_performed=false`. This is the proof step between a dry-run activation plan and a
 host-level launchd install/load.
+
+`appliance scheduler activation-preflight` writes
+`reports/runtime/scheduler-activation-preflight.json`. It does not install, load, or start
+launchd. It checks runtime doctor, scheduler assets, dry-run apply, run-once, and notification
+dry-run artifacts, then records `blocked`, `ready`, or `already_active`. A `ready` result means
+the operator has enough local proof to decide whether to run the separate host-level
+`--confirm-host-write` activation command.
 
 ## Safety Boundary
 

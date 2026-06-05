@@ -23,6 +23,7 @@ RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
 SCHEDULER_RUN_ONCE_SCHEMA_VERSION = "local_scheduler_run_once.v1"
+SCHEDULER_ACTIVATION_PREFLIGHT_SCHEMA_VERSION = "local_scheduler_activation_preflight.v1"
 LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
@@ -38,6 +39,7 @@ DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json"
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
 DEFAULT_SCHEDULER_APPLY_OUTPUT = Path("reports/runtime/scheduler-apply.json")
 DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT = Path("reports/runtime/scheduler-run-once.json")
+DEFAULT_SCHEDULER_ACTIVATION_PREFLIGHT_OUTPUT = Path("reports/runtime/scheduler-activation-preflight.json")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -405,6 +407,106 @@ def write_scheduler_run_once(
                 "It does not install, load, start, unload, or uninstall a LaunchAgent.",
                 "The runner uses notification dry-run unless the script is edited by the operator.",
             ],
+        },
+        "policy": "research_only",
+    }
+    return write_json(payload, output_path)
+
+
+def write_scheduler_activation_preflight(
+    *,
+    project_root: str | Path = ".",
+    output_path: str | Path = DEFAULT_SCHEDULER_ACTIVATION_PREFLIGHT_OUTPUT,
+    max_proof_age_hours: int = 24,
+) -> Path:
+    root = Path(project_root).resolve()
+    status_path = write_scheduler_status(project_root=root, output_path=root / DEFAULT_SCHEDULER_STATUS_OUTPUT)
+    doctor_path = write_runtime_doctor(project_root=root, output_path=root / DEFAULT_RUNTIME_DOCTOR_OUTPUT)
+    artifacts = {
+        "scheduler_status": status_path,
+        "runtime_doctor": doctor_path,
+        "scheduler_apply": root / DEFAULT_SCHEDULER_APPLY_OUTPUT,
+        "scheduler_run_once": root / DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT,
+        "notification": root / DEFAULT_NOTIFICATION_OUTPUT,
+    }
+    loaded_status = load_json(status_path).get("status", "unknown")
+    checks = [
+        _preflight_artifact_check(
+            "runtime_doctor_ready",
+            artifacts["runtime_doctor"],
+            expected_schema=RUNTIME_DOCTOR_SCHEMA_VERSION,
+            max_age_hours=max_proof_age_hours,
+            predicate=lambda payload: payload.get("status") == "ready" and int(payload.get("fail_count", 1)) == 0,
+            message="Runtime doctor is ready with zero failures.",
+        ),
+        _preflight_artifact_check(
+            "scheduler_assets_ready",
+            artifacts["scheduler_status"],
+            expected_schema=SCHEDULER_STATUS_SCHEMA_VERSION,
+            max_age_hours=max_proof_age_hours,
+            predicate=lambda payload: payload.get("status") in {"assets_ready", "installed_not_loaded", "loaded"}
+            and bool(payload.get("source_assets", {}).get("script_executable"))
+            and bool(payload.get("source_assets", {}).get("plist_exists")),
+            message="Scheduler source assets are present and executable.",
+        ),
+        _preflight_artifact_check(
+            "dry_run_apply_planned",
+            artifacts["scheduler_apply"],
+            expected_schema=SCHEDULER_APPLY_SCHEMA_VERSION,
+            max_age_hours=max_proof_age_hours,
+            predicate=_dry_run_apply_is_activation_plan,
+            message="Dry-run activation plan exists for install/load/start-now without host writes.",
+        ),
+        _preflight_artifact_check(
+            "runner_run_once_passed",
+            artifacts["scheduler_run_once"],
+            expected_schema=SCHEDULER_RUN_ONCE_SCHEMA_VERSION,
+            max_age_hours=max_proof_age_hours,
+            predicate=lambda payload: payload.get("status") == "passed"
+            and payload.get("returncode") == 0
+            and payload.get("host_write_performed") is False,
+            message="The scheduler runner executed once locally without host writes.",
+        ),
+        _preflight_artifact_check(
+            "notification_remains_dry_run",
+            artifacts["notification"],
+            expected_schema=NOTIFICATION_SCHEMA_VERSION,
+            max_age_hours=max_proof_age_hours,
+            predicate=lambda payload: payload.get("dry_run") is True
+            and payload.get("delivery_status") == "dry_run_ready",
+            message="Notification payload remains dry-run until explicit send approval.",
+        ),
+    ]
+    blockers = [check["message"] for check in checks if check["status"] == "fail"]
+    warnings = [check["message"] for check in checks if check["status"] == "warn"]
+    if loaded_status == "loaded":
+        status = "already_active" if not blockers else "blocked"
+        next_action = "Scheduler already appears loaded. Run scheduler status and inspect logs before changing it."
+    elif blockers:
+        status = "blocked"
+        next_action = "Refresh the failed proof artifacts before requesting confirmed host-level activation."
+    else:
+        status = "ready"
+        next_action = "Operator may decide whether to run scheduler apply --install --load --start-now --confirm-host-write."
+    payload = {
+        "schema_version": SCHEDULER_ACTIVATION_PREFLIGHT_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "project_root": root.as_posix(),
+        "label": LAUNCHD_LABEL,
+        "status": status,
+        "max_proof_age_hours": max_proof_age_hours,
+        "host_write_performed": False,
+        "checks": checks,
+        "blockers": blockers,
+        "warnings": warnings,
+        "artifacts": {name: path.as_posix() for name, path in artifacts.items()},
+        "activation_command": "PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now --confirm-host-write",
+        "next_action": next_action,
+        "safety": {
+            "requires_explicit_operator_approval": True,
+            "preflight_does_not_install_or_load": True,
+            "confirmed_activation_is_host_level": True,
+            "notification_send_remains_separate": True,
         },
         "policy": "research_only",
     }
@@ -1409,6 +1511,85 @@ def _execute_scheduler_action(action: dict[str, Any]) -> dict[str, Any]:
         result["status"] = "failed"
         result["error"] = str(exc)
     return result
+
+
+def _preflight_artifact_check(
+    name: str,
+    path: Path,
+    *,
+    expected_schema: str,
+    max_age_hours: int,
+    predicate: Any,
+    message: str,
+) -> dict[str, Any]:
+    if not path.exists():
+        return {
+            "name": name,
+            "status": "fail",
+            "message": f"Missing artifact: {path.as_posix()}",
+            "path": path.as_posix(),
+        }
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError as exc:
+        return {
+            "name": name,
+            "status": "fail",
+            "message": f"Invalid JSON: {exc}",
+            "path": path.as_posix(),
+        }
+    if payload.get("schema_version") != expected_schema:
+        return {
+            "name": name,
+            "status": "fail",
+            "message": f"Unexpected schema_version: {payload.get('schema_version')}",
+            "path": path.as_posix(),
+        }
+    age_hours = _artifact_age_hours(path, payload)
+    status = "pass"
+    reason = message
+    if age_hours > max_age_hours:
+        status = "warn"
+        reason = f"{message} Artifact is older than {max_age_hours} hours."
+    if not predicate(payload):
+        status = "fail"
+        reason = f"{message} Required condition was not met."
+    return {
+        "name": name,
+        "status": status,
+        "message": reason,
+        "path": path.as_posix(),
+        "age_hours": round(age_hours, 2),
+    }
+
+
+def _dry_run_apply_is_activation_plan(payload: dict[str, Any]) -> bool:
+    requested = payload.get("requested", {})
+    actions = payload.get("actions", [])
+    action_names = {action.get("name") for action in actions}
+    action_statuses = {action.get("status") for action in actions}
+    return (
+        payload.get("dry_run") is True
+        and payload.get("host_write_performed") is False
+        and requested.get("install") is True
+        and requested.get("load") is True
+        and requested.get("start_now") is True
+        and {"install", "load", "start_now"}.issubset(action_names)
+        and action_statuses == {"planned"}
+    )
+
+
+def _artifact_age_hours(path: Path, payload: dict[str, Any]) -> float:
+    generated_at = payload.get("generated_at")
+    if isinstance(generated_at, str) and generated_at:
+        try:
+            generated = datetime.fromisoformat(generated_at)
+            if generated.tzinfo is None:
+                generated = generated.replace(tzinfo=timezone.utc)
+            return (datetime.now(timezone.utc) - generated.astimezone(timezone.utc)).total_seconds() / 3600
+        except ValueError:
+            pass
+    return _file_age_hours(path)
 
 
 def _timeout_output_excerpt(value: str | bytes | None) -> str:
