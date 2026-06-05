@@ -57,6 +57,7 @@ from mybroker.appliance import (
     validate_operator_review_prompt_file,
     validate_operator_review_effect_file,
     validate_operator_review_response_apply_file,
+    validate_operator_council_response_apply_file,
     validate_scheduler_operations_file,
     validate_scheduler_operations_payload,
     validate_source_refresh_brief_file,
@@ -935,7 +936,9 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertFalse(council_payload["host_write_performed"])
         self.assertTrue(any(role["role"] == "skeptic" for role in council_payload["roles"]))
         self.assertIn(council_payload["status"], {"ready_to_read", "read_with_caution", "blocked"})
+        self.assertTrue(any("council-response-apply" in command["command"] for command in council_payload["copy_ready_commands"]))
         self.assertIn("오늘 브리프 읽기 전 analyst council", council_surface_html)
+        self.assertIn("복사 가능한 council 응답", council_surface_html)
         self.assertIn("오늘의 개인 애널리스트 작업일지", journal_surface_html)
         self.assertIn("오늘 Scout 추천", today_surface_html)
         self.assertIn("오늘 새로고침 계획", today_surface_html)
@@ -1063,6 +1066,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn(council_payload["status"], {"ready_to_read", "read_with_caution", "blocked"})
         self.assertGreaterEqual(council_payload["summary"]["role_count"], 6)
         self.assertTrue(any(role["role"] == "beginner_tutor" for role in council_payload["roles"]))
+        self.assertTrue(any("council-response-apply" in command["command"] for command in council_payload["copy_ready_commands"]))
         self.assertEqual(agenda_payload["schema_version"], "daily_brief_agenda.v1")
         self.assertEqual(agenda_errors, [])
         self.assertEqual(validate_daily_brief_agenda_payload(agenda_payload), [])
@@ -1213,6 +1217,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("개인 애널리스트 메모리 감사", memory_audit_html)
         self.assertIn("오늘 브리프 읽기 전 analyst council", council_html)
         self.assertIn("역할별 검토", council_html)
+        self.assertIn("council-response-apply", council_html)
         self.assertIn("컴파일된 리서치 노트", vault_html)
 
     def test_task_status_response_apply_updates_ledger_locally(self) -> None:
@@ -1588,6 +1593,159 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(factor["name"] == "operator_review" for factor in topic_after["score_factors"]))
         self.assertIn("피드백 응답 적용", apply_html)
         self.assertIn("응답 적용됨", apply_html)
+
+    def test_council_response_apply_refreshes_review_scout_effect_and_council(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            topics_path = root / "topics.json"
+            plan_path = root / "research-plan.json"
+            evidence_path = root / "evidence.json"
+            memory_path = root / "memory.json"
+            scout_path = root / "scout.json"
+            scenario_path = root / "scenario.json"
+            verdict_path = root / "verdict.json"
+            journal_path = root / "journal.json"
+            journal_surface_path = root / "journal.html"
+            audit_path = root / "memory-audit.json"
+            audit_surface_path = root / "memory-audit.html"
+            council_path = root / "council.json"
+            council_surface_path = root / "council.html"
+            responses_path = root / "daily-review-responses.jsonl"
+            review_path = root / "daily-review.json"
+            review_surface_path = root / "review.html"
+            review_prompt_path = root / "review-prompt.json"
+            review_prompt_surface_path = root / "review-prompt.html"
+            review_effect_path = root / "review-effect.json"
+            review_effect_surface_path = root / "review-effect.html"
+            apply_path = root / "council-response-apply.json"
+            apply_surface_path = root / "council-response-apply.html"
+
+            init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="council-apply")
+            collect_topic_evidence(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                output_path=evidence_path,
+                memory_path=memory_path,
+            )
+            scout_before = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                review_path=root / "missing-review.json",
+                output_path=scout_path,
+                run_id="council-apply",
+            )
+            scenario = run_market_simulation(seed_sources=["examples/seeds"], evidence_catalog_path=evidence_path, run_id="council-apply")
+            write_scenario_report(scenario, scenario_path)
+            write_verdict(scenario, verdict_path)
+            write_analyst_journal(
+                scenario_path=scenario_path,
+                verdict_path=verdict_path,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                scout_path=scout_path,
+                artifact_output_path=journal_path,
+                surface_output_path=journal_surface_path,
+            )
+            write_memory_audit(
+                memory_path=memory_path,
+                archive_root=root / "archive",
+                evidence_path=evidence_path,
+                vault_path=root / "missing-vault.json",
+                daily_review_path=root / "missing-review.json",
+                output_path=audit_path,
+                surface_path=audit_surface_path,
+            )
+            write_analyst_council(
+                scenario_path=scenario_path,
+                verdict_path=verdict_path,
+                journal_path=journal_path,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                memory_audit_path=audit_path,
+                scout_path=scout_path,
+                artifact_output_path=council_path,
+                surface_output_path=council_surface_path,
+            )
+            initial_council = json.loads(council_path.read_text(encoding="utf-8"))
+            response = initial_council["copy_ready_commands"][0]["response"]
+            result = cli_main([
+                "appliance",
+                "council-response-apply",
+                response,
+                "--topics",
+                topics_path.as_posix(),
+                "--plan",
+                plan_path.as_posix(),
+                "--evidence",
+                evidence_path.as_posix(),
+                "--memory",
+                memory_path.as_posix(),
+                "--vault",
+                (root / "missing-vault.json").as_posix(),
+                "--responses",
+                responses_path.as_posix(),
+                "--daily-review-output",
+                review_path.as_posix(),
+                "--daily-review-surface",
+                review_surface_path.as_posix(),
+                "--scout-output",
+                scout_path.as_posix(),
+                "--review-prompt-output",
+                review_prompt_path.as_posix(),
+                "--review-prompt-surface",
+                review_prompt_surface_path.as_posix(),
+                "--review-effect-output",
+                review_effect_path.as_posix(),
+                "--review-effect-surface",
+                review_effect_surface_path.as_posix(),
+                "--scenario",
+                scenario_path.as_posix(),
+                "--verdict",
+                verdict_path.as_posix(),
+                "--journal",
+                journal_path.as_posix(),
+                "--memory-audit",
+                audit_path.as_posix(),
+                "--council-output",
+                council_path.as_posix(),
+                "--council-surface",
+                council_surface_path.as_posix(),
+                "--artifact-output",
+                apply_path.as_posix(),
+                "--output",
+                apply_surface_path.as_posix(),
+                "--run-id",
+                "council-apply",
+            ])
+
+            review_payload = json.loads(review_path.read_text(encoding="utf-8"))
+            scout_after = json.loads(scout_path.read_text(encoding="utf-8"))
+            effect_payload = json.loads(review_effect_path.read_text(encoding="utf-8"))
+            council_payload = json.loads(council_path.read_text(encoding="utf-8"))
+            apply_payload = json.loads(apply_path.read_text(encoding="utf-8"))
+            apply_html = apply_surface_path.read_text(encoding="utf-8")
+            topic_name = scout_before["recommended_topic"]["name"]
+            topic_after = next(row for row in scout_after["recommendations"] if row["name"] == topic_name)
+            apply_errors = validate_operator_council_response_apply_file(apply_path)
+            council_errors = validate_analyst_council_file(council_path)
+
+        self.assertEqual(result, 0)
+        self.assertEqual(apply_errors, [])
+        self.assertEqual(council_errors, [])
+        self.assertEqual(review_payload["summary"]["response_count"], 1)
+        self.assertEqual(scout_after["review_context"]["response_count"], 1)
+        self.assertEqual(effect_payload["status"], "applied")
+        self.assertEqual(apply_payload["status"], "applied")
+        self.assertFalse(apply_payload["external_effect_performed"])
+        self.assertFalse(apply_payload["host_write_performed"])
+        self.assertIn(council_payload["status"], {"ready_to_read", "read_with_caution", "blocked"})
+        self.assertTrue(any(factor["name"] == "operator_review" for factor in topic_after["score_factors"]))
+        self.assertIn("council 응답 적용", apply_html)
+        self.assertIn("갱신된 화면", apply_html)
 
 
 if __name__ == "__main__":

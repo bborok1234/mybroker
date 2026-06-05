@@ -1,43 +1,73 @@
 {
   "schema_version": "personal_analyst_journal.v1",
-  "generated_at": "2026-06-05T19:20:22.766362+00:00",
+  "generated_at": "2026-06-05T19:38:11.677672+00:00",
   "run_id": "daily-research",
-  "status": "stable_monitor",
+  "status": "changed_review_first",
   "today_focus": {
     "title": "먼저 시장 흐름을 학습",
     "rationale": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
     "recommended_topic": "Semiconductors",
-    "recommended_action": "monitor",
+    "recommended_action": "inspect_first",
     "confidence": "low-medium"
   },
-  "what_changed": [],
-  "stable_observations": [
+  "what_changed": [
     {
       "topic_id": "ai-infrastructure",
       "name": "AI infrastructure",
-      "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+      "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개.",
+      "latest_titles": [
+        "AI infrastructure demand keeps data center and chip supply chains in focus",
+        "Higher yields pressure growth themes despite resilient demand",
+        "Apple Inc. 10-Q",
+        "Apple Inc. 8-K"
+      ]
     },
     {
       "topic_id": "semiconductors",
       "name": "Semiconductors",
-      "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+      "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개.",
+      "latest_titles": [
+        "AI infrastructure demand keeps data center and chip supply chains in focus",
+        "Higher yields pressure growth themes despite resilient demand",
+        "Apple Inc. 10-Q",
+        "Apple Inc. 8-K"
+      ]
     },
     {
       "topic_id": "us-rates",
       "name": "US rates",
-      "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음."
+      "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 1개.",
+      "latest_titles": [
+        "Higher yields pressure growth themes despite resilient demand",
+        "SPY broad market trend sample"
+      ]
     },
     {
       "topic_id": "consumer-weakness",
       "name": "Consumer weakness",
-      "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+      "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개.",
+      "latest_titles": [
+        "AI infrastructure demand keeps data center and chip supply chains in focus",
+        "Higher yields pressure growth themes despite resilient demand",
+        "SPY broad market trend sample",
+        "Apple Inc. 10-Q",
+        "Apple Inc. 8-K"
+      ]
     },
     {
       "topic_id": "korea-semiconductors",
       "name": "Korea semiconductors",
-      "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+      "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개.",
+      "latest_titles": [
+        "AI infrastructure demand keeps data center and chip supply chains in focus",
+        "Higher yields pressure growth themes despite resilient demand",
+        "SPY broad market trend sample",
+        "Apple Inc. 10-Q",
+        "Apple Inc. 8-K"
+      ]
     }
   ],
+  "stable_observations": [],
   "role_notes": [
     {
       "role": "source_scout",
@@ -61,7 +91,7 @@
     },
     {
       "role": "memory_librarian",
-      "finding": "누적 실행 43회, vault note 1개를 연결했습니다.",
+      "finding": "누적 실행 45회, vault note 1개를 연결했습니다.",
       "next_check": "오늘 질문이 내일 다시 검색 가능한 표현인지 확인합니다."
     }
   ],

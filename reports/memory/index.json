@@ -1,15 +1,15 @@
 {
   "schema_version": "personal_memory_index.v1",
-  "generated_at": "2026-06-05T19:20:22.764784+00:00",
+  "generated_at": "2026-06-05T19:38:11.676212+00:00",
   "memory_path": "reports/memory/topic-memory.json",
   "archive_root": "reports/archive",
-  "run_count": 43,
+  "run_count": 45,
   "topic_count": 5,
   "topics": [
     {
       "topic_id": "ai-infrastructure",
       "name": "AI infrastructure",
-      "latest_summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.",
+      "latest_summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개.",
       "daily_questions": [
         "오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
         "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
@@ -29,12 +29,12 @@
         "deduplication",
         "live_refresh"
       ],
-      "changed_since_previous": false
+      "changed_since_previous": true
     },
     {
       "topic_id": "semiconductors",
       "name": "Semiconductors",
-      "latest_summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.",
+      "latest_summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개.",
       "daily_questions": [
         "오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
         "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
@@ -54,12 +54,12 @@
         "deduplication",
         "live_refresh"
       ],
-      "changed_since_previous": false
+      "changed_since_previous": true
     },
     {
       "topic_id": "us-rates",
       "name": "US rates",
-      "latest_summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음.",
+      "latest_summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 1개.",
       "daily_questions": [
         "오늘 US rates에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
         "금리와 국채 수익률 변화가 이 테마의 가격 부담을 키우고 있나요?",
@@ -77,12 +77,12 @@
         "deduplication",
         "live_refresh"
       ],
-      "changed_since_previous": false
+      "changed_since_previous": true
     },
     {
       "topic_id": "consumer-weakness",
       "name": "Consumer weakness",
-      "latest_summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.",
+      "latest_summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개.",
       "daily_questions": [
         "오늘 Consumer weakness에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
         "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
@@ -106,12 +106,12 @@
         "deduplication",
         "live_refresh"
       ],
-      "changed_since_previous": false
+      "changed_since_previous": true
     },
     {
       "topic_id": "korea-semiconductors",
       "name": "Korea semiconductors",
-      "latest_summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.",
+      "latest_summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개.",
       "daily_questions": [
         "오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
         "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
@@ -134,10 +134,36 @@
         "deduplication",
         "live_refresh"
       ],
-      "changed_since_previous": false
+      "changed_since_previous": true
     }
   ],
   "recent_runs": [
+    {
+      "run_id": "daily-research",
+      "generated_at": "2026-06-05T19:38:11.651295+00:00",
+      "evidence_catalog": "2026-06-05T19:38:11.650895+00:00",
+      "topic_count": 5,
+      "changed_topics": [
+        "ai-infrastructure",
+        "semiconductors",
+        "us-rates",
+        "consumer-weakness",
+        "korea-semiconductors"
+      ]
+    },
+    {
+      "run_id": "daily-research",
+      "generated_at": "2026-06-05T19:34:22.202538+00:00",
+      "evidence_catalog": "2026-06-05T19:34:22.201345+00:00",
+      "topic_count": 5,
+      "changed_topics": [
+        "ai-infrastructure",
+        "semiconductors",
+        "us-rates",
+        "consumer-weakness",
+        "korea-semiconductors"
+      ]
+    },
     {
       "run_id": "daily-research",
       "generated_at": "2026-06-05T19:20:22.739760+00:00",
@@ -193,27 +219,13 @@
       "evidence_catalog": "2026-06-05T17:38:35.982698+00:00",
       "topic_count": 5,
       "changed_topics": []
-    },
-    {
-      "run_id": "daily-research",
-      "generated_at": "2026-06-05T17:27:32.787443+00:00",
-      "evidence_catalog": "2026-06-05T17:27:32.787284+00:00",
-      "topic_count": 5,
-      "changed_topics": []
-    },
-    {
-      "run_id": "daily-research",
-      "generated_at": "2026-06-05T17:18:58.063180+00:00",
-      "evidence_catalog": "2026-06-05T17:18:58.062855+00:00",
-      "topic_count": 5,
-      "changed_topics": []
     }
   ],
   "archives": [
     {
       "schema_version": "daily_archive.v1",
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T19:20:22.757039+00:00",
+      "generated_at": "2026-06-05T19:38:11.669421+00:00",
       "archive_dir": "reports/archive/2026-06-05",
       "artifacts": {
         "scenario": "reports/archive/2026-06-05/daily-research-sim.json",

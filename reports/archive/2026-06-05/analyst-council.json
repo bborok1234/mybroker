@@ -1,6 +1,6 @@
 {
   "schema_version": "analyst_council.v1",
-  "generated_at": "2026-06-05T19:20:22.767170+00:00",
+  "generated_at": "2026-06-05T19:38:11.678660+00:00",
   "run_id": "daily-research",
   "status": "read_with_caution",
   "council_mode": "local_role_review_before_daily_reading",
@@ -91,7 +91,7 @@
     {
       "role": "memory_librarian",
       "stance": "caution",
-      "finding": "누적 실행 43회, vault note 1개, changed topic 0개입니다.",
+      "finding": "누적 실행 45회, vault note 1개, changed topic 5개입니다.",
       "confidence": 0.95,
       "evidence": [
         "AI infrastructure",
@@ -126,6 +126,22 @@
     "내가 오늘 실제로 읽은 주제는 무엇이며 내일 더 보고 싶은가?",
     "AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?",
     "source_scout가 지적한 약점은 오늘 결론의 강도를 얼마나 낮추는가?"
+  ],
+  "copy_ready_commands": [
+    {
+      "label": "조건 확인 후 계속 보기",
+      "response": "more \"Semiconductors\" \"council: source-refresh 화면에서 어떤 원천이 실제 최신인지와 어떤 원천이 승인 대기인지 확인합니다.\"",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'more \"Semiconductors\" \"council: source-refresh 화면에서 어떤 원천이 실제 최신인지와 어떤 원천이 승인 대기인지 확인합니다.\"'",
+      "why": "council caution을 다음 scout와 review-effect에 반영합니다.",
+      "external_effect_performed": false
+    },
+    {
+      "label": "헷갈림 표시",
+      "response": "confusing \"Semiconductors\" \"council: 설명과 근거를 더 쉽게 다시 보고 싶다\"",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'confusing \"Semiconductors\" \"council: 설명과 근거를 더 쉽게 다시 보고 싶다\"'",
+      "why": "다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.",
+      "external_effect_performed": false
+    }
   ],
   "linked_surfaces": {
     "today": "reports/product/today.html",
