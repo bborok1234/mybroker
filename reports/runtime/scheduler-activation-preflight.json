@@ -1,6 +1,6 @@
 {
   "schema_version": "local_scheduler_activation_preflight.v1",
-  "generated_at": "2026-06-05T07:29:44.696253+00:00",
+  "generated_at": "2026-06-05T07:50:09.860654+00:00",
   "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
   "label": "com.mybroker.daily-analyst",
   "status": "ready",
@@ -26,21 +26,21 @@
       "status": "pass",
       "message": "Dry-run activation plan exists for install/load/start-now without host writes.",
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-apply.json",
-      "age_hours": 0.48
+      "age_hours": 0.82
     },
     {
       "name": "runner_run_once_passed",
       "status": "pass",
       "message": "The scheduler runner executed once locally without host writes.",
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-run-once.json",
-      "age_hours": 0.23
+      "age_hours": 0.57
     },
     {
       "name": "notification_remains_dry_run",
       "status": "pass",
       "message": "Notification payload remains dry-run until explicit send approval.",
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/notifications/latest.json",
-      "age_hours": 0.23
+      "age_hours": 0.57
     }
   ],
   "blockers": [],

@@ -17,6 +17,7 @@ NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
 PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
+OPERATOR_DECISION_PACKET_SCHEMA_VERSION = "operator_decision_packet.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
@@ -32,6 +33,7 @@ DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
 DEFAULT_PHONE_ACCESS_OUTPUT = Path("reports/runtime/phone-access.json")
+DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT = Path("reports/runtime/operator-decision-packet.json")
 DEFAULT_MEMORY_INDEX_OUTPUT = Path("reports/memory/index.json")
 DEFAULT_MEMORY_OUTPUT = Path("reports/product/memory.html")
 DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
@@ -614,6 +616,61 @@ def write_scheduler_activation_verify(
             "verify_does_not_install_or_load": True,
             "confirmed_activation_is_separate": True,
             "notification_send_remains_separate": True,
+        },
+        "policy": "research_only",
+    }
+    return write_json(payload, output_path)
+
+
+def write_operator_decision_packet(
+    *,
+    project_root: str | Path = ".",
+    output_path: str | Path = DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT,
+) -> Path:
+    root = Path(project_root).resolve()
+    preflight_path = write_scheduler_activation_preflight(
+        project_root=root,
+        output_path=root / DEFAULT_SCHEDULER_ACTIVATION_PREFLIGHT_OUTPUT,
+    )
+    verify_path = write_scheduler_activation_verify(
+        project_root=root,
+        output_path=root / DEFAULT_SCHEDULER_ACTIVATION_VERIFY_OUTPUT,
+    )
+    preflight = load_json(preflight_path)
+    verify = load_json(verify_path)
+    notification_path = root / DEFAULT_NOTIFICATION_OUTPUT
+    notification = load_json(notification_path) if notification_path.exists() else {}
+    phone_access_path = root / DEFAULT_PHONE_ACCESS_OUTPUT
+    phone_access = load_json(phone_access_path) if phone_access_path.exists() else {}
+    decisions = [
+        _scheduler_activation_decision(preflight=preflight, verify=verify),
+        _notification_send_decision(notification=notification),
+        _private_phone_access_decision(phone_access=phone_access),
+    ]
+    payload = {
+        "schema_version": OPERATOR_DECISION_PACKET_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "project_root": root.as_posix(),
+        "status": "pending_operator_decision",
+        "host_write_performed": False,
+        "decisions": decisions,
+        "summary": {
+            "decision_count": len(decisions),
+            "ready_count": sum(1 for decision in decisions if decision.get("readiness") == "ready"),
+            "blocked_count": sum(1 for decision in decisions if decision.get("readiness") == "blocked"),
+            "pending_count": sum(1 for decision in decisions if decision.get("readiness") == "pending"),
+        },
+        "artifacts": {
+            "scheduler_activation_preflight": preflight_path.as_posix(),
+            "scheduler_activation_verify": verify_path.as_posix(),
+            "notification": notification_path.as_posix(),
+            "phone_access": phone_access_path.as_posix(),
+        },
+        "safety": {
+            "packet_does_not_execute_external_effects": True,
+            "scheduler_activation_requires_confirm_host_write": True,
+            "notification_send_requires_provider_secrets": True,
+            "private_serving_changes_network_exposure": True,
         },
         "policy": "research_only",
     }
@@ -1676,6 +1733,84 @@ def _activation_verify_check(name: str, condition: bool, message: str, *, eviden
         "status": "pass" if condition else "fail",
         "message": message if condition else f"Required condition not met: {message}",
         "evidence": evidence,
+    }
+
+
+def _scheduler_activation_decision(*, preflight: dict[str, Any], verify: dict[str, Any]) -> dict[str, Any]:
+    preflight_ready = preflight.get("status") in {"ready", "already_active"}
+    active_verified = verify.get("status") == "active_verified"
+    readiness = "ready" if preflight_ready and not active_verified else "pending"
+    if not preflight_ready:
+        readiness = "blocked"
+    if active_verified:
+        readiness = "complete"
+    return {
+        "id": "scheduler_activation",
+        "title": "Activate daily scheduler",
+        "approval_scope": "confirmed_host_write",
+        "readiness": readiness,
+        "current_state": {
+            "preflight_status": preflight.get("status", "missing"),
+            "verify_status": verify.get("status", "missing"),
+            "preflight_blockers": preflight.get("blockers", []),
+            "verify_blockers": verify.get("blockers", []),
+        },
+        "operator_can_say": "approve scheduler_activation confirmed_host_write",
+        "agent_will_run": [
+            "PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now --confirm-host-write",
+            "PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify",
+        ],
+        "risk": "Installs and loads a LaunchAgent for the current macOS user and starts the local runner.",
+        "reversibility": "partially_reversible",
+        "rollback_command": "PYTHONPATH=src python3 -m mybroker appliance scheduler apply --unload --uninstall --confirm-host-write",
+    }
+
+
+def _notification_send_decision(*, notification: dict[str, Any]) -> dict[str, Any]:
+    required_env = notification.get("required_env", [])
+    missing_env = [key for key in required_env if not os.environ.get(key)]
+    dry_run_ready = notification.get("dry_run") is True and notification.get("delivery_status") == "dry_run_ready"
+    readiness = "ready" if dry_run_ready and not missing_env else "blocked"
+    return {
+        "id": "notification_send",
+        "title": "Send phone notification",
+        "approval_scope": "send_notification",
+        "readiness": readiness,
+        "current_state": {
+            "provider": notification.get("provider", "missing"),
+            "delivery_status": notification.get("delivery_status", "missing"),
+            "dry_run": notification.get("dry_run"),
+            "missing_env": missing_env,
+        },
+        "operator_can_say": "approve notification_send send_notification",
+        "agent_will_run": [
+            "PYTHONPATH=src python3 -m mybroker appliance notify --provider <provider> --send",
+        ],
+        "risk": "Sends one message through the configured provider using local environment secrets.",
+        "reversibility": "not_reversible",
+        "rollback_command": "",
+    }
+
+
+def _private_phone_access_decision(*, phone_access: dict[str, Any]) -> dict[str, Any]:
+    commands = phone_access.get("commands", [])
+    serve_commands = [item.get("command", "") for item in commands if item.get("command")]
+    readiness = "ready" if phone_access.get("schema_version") == PHONE_ACCESS_SCHEMA_VERSION and serve_commands else "blocked"
+    return {
+        "id": "private_phone_access",
+        "title": "Enable private phone access",
+        "approval_scope": "private_network_exposure",
+        "readiness": readiness,
+        "current_state": {
+            "recommended_path": phone_access.get("recommended_path", "missing"),
+            "local_url": phone_access.get("local_url", ""),
+            "private_phone_url": phone_access.get("private_phone_url", ""),
+        },
+        "operator_can_say": "approve private_phone_access private_network_exposure",
+        "agent_will_run": serve_commands,
+        "risk": "Starts local/private serving so the phone can read the daily brief. Public exposure remains out of scope.",
+        "reversibility": "reversible",
+        "rollback_command": "tailscale serve reset",
     }
 
 
