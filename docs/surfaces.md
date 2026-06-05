@@ -30,6 +30,7 @@ Must not show adapter IDs, schema names, raw validation logs, Flyhigh gates, or 
 
 `reports/product/daily-home.html` is not the Flyhigh project dashboard, not the ops artifact dashboard, and not a market answer. It is the phone-first entrypoint for the day: what the autonomous scout picked first, why it was picked, what to open next, whether the local artifacts are trustworthy enough, what cross-day handoff remains open, and which safe local response command can close the loop. It reads existing artifacts only.
 It must show the adopted local memory-recall proof for the scout-selected topic: recall quality, proof status, matched topics/archives/vault notes, weak spots, and the memory-query link.
+It must also show the adopted run-trace observability proof: trace status, proof status, run id, fresh/missing/stale counts, what shaped today's output, weak spots, debug order, and the run-trace link.
 
 `reports/product/phone-access.html` is not a server console and not an approval executor. It is the read-only proof that the daily home can be treated as the private/local phone entrypoint: access guidance exists, required local links resolve, public exposure is not the default, and manual commands are visible but not executed.
 
