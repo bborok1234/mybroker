@@ -62,6 +62,7 @@ Machine-readable artifacts include:
 - `daily_review.v1`
 - `agent_pattern_radar.v1`
 - `local_run_trace.v1`
+- `local_drift_review.v1`
 - `scenario_report.v1`
 - `market_verdict.v1`
 - `research_report.v1`

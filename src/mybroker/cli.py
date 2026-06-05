@@ -23,6 +23,8 @@ from mybroker.appliance import (
     DEFAULT_DAILY_READINESS_SURFACE,
     DEFAULT_DAILY_REVIEW_RESPONSES,
     DEFAULT_DAILY_REVIEW_SURFACE,
+    DEFAULT_DRIFT_REVIEW_OUTPUT,
+    DEFAULT_DRIFT_REVIEW_SURFACE,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
@@ -59,6 +61,7 @@ from mybroker.appliance import (
     write_daily_brief_agenda,
     write_daily_readiness,
     write_daily_review,
+    write_drift_review,
     build_task_status_apply,
     record_daily_review_response,
     record_task_status_response,
@@ -87,6 +90,7 @@ from mybroker.appliance import (
     validate_daily_brief_agenda_file,
     validate_daily_readiness_file,
     validate_daily_review_file,
+    validate_drift_review_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
     validate_run_trace_file,
@@ -319,6 +323,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_morning_parser.add_argument("morning_control_path")
     validate_run_trace_parser = subcommands.add_parser("validate-run-trace", help="Validate a local_run_trace.v1 artifact.")
     validate_run_trace_parser.add_argument("run_trace_path")
+    validate_drift_review_parser = subcommands.add_parser("validate-drift-review", help="Validate a local_drift_review.v1 artifact.")
+    validate_drift_review_parser.add_argument("drift_review_path")
     validate_scheduler_operations_parser = subcommands.add_parser("validate-scheduler-operations", help="Validate a local_scheduler_operations.v1 artifact.")
     validate_scheduler_operations_parser.add_argument("scheduler_operations_path")
     validate_source_refresh_brief_parser = subcommands.add_parser("validate-source-refresh-brief", help="Validate a source_refresh_brief.v1 artifact.")
@@ -426,6 +432,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--source-refresh-surface", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
     appliance_today_parser.add_argument("--pattern-radar-surface", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
     appliance_today_parser.add_argument("--run-trace-surface", default=DEFAULT_RUN_TRACE_SURFACE.as_posix())
+    appliance_today_parser.add_argument("--drift-review-surface", default=DEFAULT_DRIFT_REVIEW_SURFACE.as_posix())
     appliance_today_parser.add_argument("--brief", default="reports/product/market-brief.html")
     appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--archive-manifest")
@@ -523,6 +530,9 @@ def main(argv: list[str] | None = None) -> int:
     appliance_trace_parser = appliance_subcommands.add_parser("trace", help="Render a compact local run trace proof from existing daily artifacts.")
     appliance_trace_parser.add_argument("--artifact-output", default=DEFAULT_RUN_TRACE_OUTPUT.as_posix())
     appliance_trace_parser.add_argument("--output", default=DEFAULT_RUN_TRACE_SURFACE.as_posix())
+    appliance_drift_parser = appliance_subcommands.add_parser("drift-review", help="Render a trace-backed local direction drift review.")
+    appliance_drift_parser.add_argument("--artifact-output", default=DEFAULT_DRIFT_REVIEW_OUTPUT.as_posix())
+    appliance_drift_parser.add_argument("--output", default=DEFAULT_DRIFT_REVIEW_SURFACE.as_posix())
     appliance_morning_parser = appliance_subcommands.add_parser("morning", help="Render the morning analyst control packet from existing daily artifacts.")
     appliance_morning_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--journal", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
@@ -537,6 +547,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_morning_parser.add_argument("--source-refresh-surface", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--pattern-radar-surface", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--run-trace-surface", default=DEFAULT_RUN_TRACE_SURFACE.as_posix())
+    appliance_morning_parser.add_argument("--drift-review-surface", default=DEFAULT_DRIFT_REVIEW_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--artifact-output", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--output", default=DEFAULT_MORNING_CONTROL_SURFACE.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
@@ -982,6 +993,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-drift-review":
+        errors = validate_drift_review_file(args.drift_review_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-scheduler-operations":
         errors = validate_scheduler_operations_file(args.scheduler_operations_path)
         if errors:
@@ -1267,6 +1285,7 @@ def main(argv: list[str] | None = None) -> int:
                 source_refresh_surface_path=args.source_refresh_surface,
                 pattern_radar_surface_path=args.pattern_radar_surface,
                 run_trace_surface_path=args.run_trace_surface,
+                drift_review_surface_path=args.drift_review_surface,
                 brief_path=args.brief,
                 output_path=args.output,
                 archive_manifest_path=args.archive_manifest,
@@ -1501,6 +1520,20 @@ def main(argv: list[str] | None = None) -> int:
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "drift-review":
+            path = write_drift_review(
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "drift_review": args.artifact_output,
+                "drift_review_surface": path.as_posix(),
+                "status": payload["status"],
+                "recommended_branch": payload["decision"]["recommended_branch"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "morning":
             path = write_morning_control_packet(
                 scout_path=args.scout,
@@ -1516,6 +1549,7 @@ def main(argv: list[str] | None = None) -> int:
                 source_refresh_surface_path=args.source_refresh_surface,
                 pattern_radar_surface_path=args.pattern_radar_surface,
                 run_trace_surface_path=args.run_trace_surface,
+                drift_review_surface_path=args.drift_review_surface,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
@@ -1618,6 +1652,8 @@ def main(argv: list[str] | None = None) -> int:
             pattern_radar_surface_path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE
             run_trace_artifact_path = DEFAULT_RUN_TRACE_OUTPUT
             run_trace_surface_path = DEFAULT_RUN_TRACE_SURFACE
+            drift_review_artifact_path = DEFAULT_DRIFT_REVIEW_OUTPUT
+            drift_review_surface_path = DEFAULT_DRIFT_REVIEW_SURFACE
             readiness_artifact_path = DEFAULT_DAILY_READINESS_OUTPUT
             readiness_surface_path = DEFAULT_DAILY_READINESS_SURFACE
             source_refresh_brief_artifact_path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT
@@ -1764,6 +1800,7 @@ def main(argv: list[str] | None = None) -> int:
                 review_surface_path=provisional_review,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=run_trace_surface_path,
+                drift_review_surface_path=drift_review_surface_path,
                 brief_path=written_brief,
                 output_path=today_path,
                 journal_surface_path=provisional_journal,
@@ -1792,6 +1829,8 @@ def main(argv: list[str] | None = None) -> int:
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_path=run_trace_artifact_path,
                 run_trace_surface_path=run_trace_surface_path,
+                drift_review_path=drift_review_artifact_path,
+                drift_review_surface_path=drift_review_surface_path,
                 vault_compile_path=active_vault_path,
                 vault_surface_path=active_vault_surface,
                 agenda_path=agenda_artifact_path,
@@ -1856,6 +1895,7 @@ def main(argv: list[str] | None = None) -> int:
                 review_surface_path=written_review,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=run_trace_surface_path,
+                drift_review_surface_path=drift_review_surface_path,
                 brief_path=written_brief,
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,
@@ -1887,6 +1927,15 @@ def main(argv: list[str] | None = None) -> int:
                 today_path=written_today,
                 scheduler_operations_path=scheduler_operations_artifact_path,
             )
+            written_drift_review = write_drift_review(
+                artifact_output_path=drift_review_artifact_path,
+                surface_output_path=drift_review_surface_path,
+                run_trace_path=run_trace_artifact_path,
+                pattern_radar_path=pattern_radar_artifact_path,
+                source_refresh_brief_path=source_refresh_brief_artifact_path,
+                task_ledger_path=task_ledger_artifact_path,
+                daily_review_path=review_artifact_path,
+            )
             written_morning = write_morning_control_packet(
                 scout_path=scout_path,
                 journal_path=journal_artifact_path,
@@ -1905,6 +1954,7 @@ def main(argv: list[str] | None = None) -> int:
                 review_surface_path=written_review,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=written_run_trace,
+                drift_review_surface_path=written_drift_review,
                 artifact_output_path=morning_artifact_path,
                 surface_output_path=morning_path,
             )
@@ -1912,6 +1962,16 @@ def main(argv: list[str] | None = None) -> int:
                 project_root=".",
                 artifact_output_path=readiness_artifact_path,
                 surface_output_path=readiness_surface_path,
+            )
+            written_drift_review = write_drift_review(
+                artifact_output_path=drift_review_artifact_path,
+                surface_output_path=drift_review_surface_path,
+                run_trace_path=run_trace_artifact_path,
+                pattern_radar_path=pattern_radar_artifact_path,
+                readiness_path=readiness_artifact_path,
+                source_refresh_brief_path=source_refresh_brief_artifact_path,
+                task_ledger_path=task_ledger_artifact_path,
+                daily_review_path=review_artifact_path,
             )
             add_archive_artifacts(
                 manifest_path=archive_manifest,
@@ -1926,6 +1986,8 @@ def main(argv: list[str] | None = None) -> int:
                     "daily_review_surface": written_review,
                     "run_trace": run_trace_artifact_path,
                     "run_trace_surface": written_run_trace,
+                    "drift_review": drift_review_artifact_path,
+                    "drift_review_surface": written_drift_review,
                     "today": written_today,
                 },
             )
@@ -1949,6 +2011,8 @@ def main(argv: list[str] | None = None) -> int:
                     "agent_pattern_radar_surface": written_pattern_radar.as_posix(),
                     "run_trace": run_trace_artifact_path.as_posix(),
                     "run_trace_surface": written_run_trace.as_posix(),
+                    "drift_review": drift_review_artifact_path.as_posix(),
+                    "drift_review_surface": written_drift_review.as_posix(),
                     "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),
                 "source_refresh_brief_surface": written_source_refresh_brief.as_posix(),
                 "scheduler_operations": scheduler_operations_artifact_path.as_posix(),
