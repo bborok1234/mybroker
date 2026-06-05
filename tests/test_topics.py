@@ -9,11 +9,13 @@ from mybroker.topics import (
     add_interest,
     build_daily_scout,
     build_research_plan,
+    build_source_refresh_apply,
     build_source_refresh_plan,
     collect_topic_evidence,
     init_topic_config,
     validate_daily_scout_file,
     validate_research_plan_file,
+    validate_source_refresh_apply_file,
     validate_source_refresh_plan_file,
     validate_topic_config_file,
     validate_topic_memory_file,
@@ -71,10 +73,16 @@ class TopicResearchLoopTests(unittest.TestCase):
                 evidence_path=catalog_path,
                 output_path=refresh_plan_path,
             )
+            refresh_apply_path = root / "source-refresh-apply.json"
+            refresh_apply = build_source_refresh_apply(
+                refresh_plan_path=refresh_plan_path,
+                output_path=refresh_apply_path,
+            )
 
             plan_errors = validate_research_plan_file(plan_path)
             scout_errors = validate_daily_scout_file(scout_path)
             refresh_plan_errors = validate_source_refresh_plan_file(refresh_plan_path)
+            refresh_apply_errors = validate_source_refresh_apply_file(refresh_apply_path)
             catalog_errors = validate_public_evidence_catalog_payload(catalog)
             memory_errors = validate_topic_memory_file(memory_path)
 
@@ -82,6 +90,7 @@ class TopicResearchLoopTests(unittest.TestCase):
         self.assertEqual(plan_errors, [])
         self.assertEqual(scout_errors, [])
         self.assertEqual(refresh_plan_errors, [])
+        self.assertEqual(refresh_apply_errors, [])
         self.assertEqual(catalog_errors, [])
         self.assertEqual(memory_errors, [])
         self.assertEqual(catalog["mode"], "sample_cache_topic_research")
@@ -92,6 +101,11 @@ class TopicResearchLoopTests(unittest.TestCase):
         self.assertEqual(refresh_plan["schema_version"], "source_refresh_plan.v1")
         self.assertFalse(refresh_plan["external_effect_performed"])
         self.assertGreaterEqual(len(refresh_plan["actions"]), 1)
+        self.assertEqual(refresh_apply["schema_version"], "source_refresh_apply.v1")
+        self.assertFalse(refresh_apply["external_effect_performed"])
+        self.assertEqual(refresh_apply["summary"]["action_count"], len(refresh_plan["actions"]))
+        self.assertTrue(all(result["will_execute"] is False for result in refresh_apply["results"]))
+        self.assertTrue(any(result["decision"] in {"ready", "blocked"} for result in refresh_apply["results"]))
         self.assertGreaterEqual(len(catalog["items"]), 2)
 
 

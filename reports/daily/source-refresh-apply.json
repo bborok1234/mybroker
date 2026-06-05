@@ -1,0 +1,76 @@
+{
+  "schema_version": "source_refresh_apply.v1",
+  "generated_at": "2026-06-05T09:58:56.676882+00:00",
+  "inputs": {
+    "refresh_plan_path": "reports/daily/source-refresh-plan.json"
+  },
+  "execution_mode": "dry_run",
+  "external_effect_performed": false,
+  "summary": {
+    "action_count": 4,
+    "ready_count": 2,
+    "blocked_count": 2,
+    "skipped_count": 0
+  },
+  "results": [
+    {
+      "action_index": 1,
+      "source_name": "GDELT",
+      "adapter_id": "gdelt-live",
+      "decision": "blocked",
+      "status": "needs_live_network_gate",
+      "will_execute": false,
+      "approval_required": "live_network_refresh",
+      "reason": "GDELT 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.",
+      "command": "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json",
+      "expected_artifact": "reports/evidence/live-evidence-catalog.json"
+    },
+    {
+      "action_index": 2,
+      "source_name": "Stooq",
+      "adapter_id": "stooq-live",
+      "decision": "blocked",
+      "status": "needs_live_network_gate",
+      "will_execute": false,
+      "approval_required": "live_network_refresh",
+      "reason": "Stooq 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.",
+      "command": "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json",
+      "expected_artifact": "reports/evidence/live-evidence-catalog.json"
+    },
+    {
+      "action_index": 3,
+      "source_name": "SEC EDGAR",
+      "adapter_id": "sec-sample",
+      "decision": "ready",
+      "status": "dry_run_ready",
+      "will_execute": false,
+      "approval_required": "none",
+      "reason": "SEC EDGAR 작업은 로컬/샘플 캐시 경계 안에서 다음 dry-run 검증 대상으로 사용할 수 있습니다.",
+      "command": "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source sec-sample --output reports/evidence/public-evidence-catalog.json",
+      "expected_artifact": "reports/evidence/live-evidence-catalog.json"
+    },
+    {
+      "action_index": 4,
+      "source_name": "Local vault",
+      "adapter_id": "vault-compile",
+      "decision": "ready",
+      "status": "dry_run_ready",
+      "will_execute": false,
+      "approval_required": "none",
+      "reason": "Local vault 작업은 로컬/샘플 캐시 경계 안에서 다음 dry-run 검증 대상으로 사용할 수 있습니다.",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki --output reports/vault/compile.json --surface-output reports/product/vault.html",
+      "expected_artifact": "reports/vault/compile.json"
+    }
+  ],
+  "policy": {
+    "output_boundary": "research_only",
+    "disallowed": [
+      "paid_api_operations",
+      "account_credentials",
+      "live_trading",
+      "discretionary_management",
+      "unsupported_personalized_recommendations"
+    ]
+  },
+  "next_step": "operator_review_before_live_or_host_effect"
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_archive.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T09:42:36.889913+00:00",
+  "generated_at": "2026-06-05T09:58:56.681979+00:00",
   "archive_dir": "reports/archive/2026-06-05",
   "artifacts": {
     "scenario": "reports/archive/2026-06-05/daily-research-sim.json",
@@ -9,6 +9,7 @@
     "evidence": "reports/archive/2026-06-05/daily-evidence-catalog.json",
     "memory": "reports/archive/2026-06-05/topic-memory.json",
     "source_refresh_plan": "reports/archive/2026-06-05/source-refresh-plan.json",
+    "source_refresh_apply": "reports/archive/2026-06-05/source-refresh-apply.json",
     "brief": "reports/archive/2026-06-05/market-brief.html",
     "today": "reports/archive/2026-06-05/today.html"
   },

@@ -162,6 +162,12 @@ today` renders it as "오늘 새로고침 계획". The artifact records `externa
 does not execute live calls, paid APIs, host writes, private serving, notification send, account
 access, or trading.
 
+`source-refresh-apply` is the execution-readiness step. It writes
+`reports/daily/source-refresh-apply.json` with dry-run decisions for each planned action. Local or
+sample-cache actions can be marked ready, while live network actions remain blocked behind a
+separate operator gate. `appliance run` creates it automatically, and `appliance today` renders it
+as "오늘 실행 판정". This artifact also records `external_effect_performed: false`.
+
 The launchd assets are written under `ops/local/`:
 
 - `run-daily-analyst.sh`
