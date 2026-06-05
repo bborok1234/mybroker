@@ -1,7 +1,7 @@
 {
   "schema_version": "scenario_report.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T22:51:41.301137+00:00",
+  "generated_at": "2026-06-05T23:18:49.842176+00:00",
   "product_mode": "beginner_market_understanding_simulation",
   "seed_sources": [
     {
@@ -212,13 +212,13 @@
     ],
     "research_plan": {
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T22:51:41.294009+00:00",
+      "generated_at": "2026-06-05T23:18:49.837032+00:00",
       "topic_count": 5,
       "next_step": "collect_free_public_evidence"
     },
     "topic_memory_snapshot": {
       "memory_path": "reports/memory/topic-memory.json",
-      "run_count": 53,
+      "run_count": 54,
       "topics": [
         {
           "topic_id": "ai-infrastructure",

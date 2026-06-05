@@ -7442,6 +7442,103 @@ def _daily_home_commands(*, payloads: dict[str, dict[str, Any]]) -> list[dict[st
     return commands
 
 
+def _daily_home_action_inbox(
+    *,
+    morning: dict[str, Any],
+    handoff: dict[str, Any],
+    task_ledger: dict[str, Any],
+    links: dict[str, str],
+) -> dict[str, Any]:
+    pending_decisions = morning.get("pending_decisions", [])
+    unresolved = handoff.get("unresolved", [])
+    task_entries = task_ledger.get("entries", []) if task_ledger.get("schema_version") == ANALYST_TASK_LEDGER_SCHEMA_VERSION else []
+    carried_tasks = [entry for entry in task_entries if entry.get("status") == "carried"]
+    ready_tasks = [entry for entry in task_entries if entry.get("status") == "ready_for_local_work"]
+    priority_items: list[dict[str, Any]] = []
+
+    for decision in pending_decisions[:2]:
+        priority_items.append({
+            "kind": "approval_gate",
+            "id": decision.get("id", "approval"),
+            "title": decision.get("title", "승인 필요"),
+            "why": decision.get("why", ""),
+            "source": "morning_control",
+            "status": "requires_separate_approval",
+            "href": links.get("morning", ""),
+            "copy_ready_command": decision.get("copy_ready_response", ""),
+            "requires_separate_approval": True,
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+
+    for item in unresolved[:3]:
+        command = ""
+        if str(item.get("id", "")).startswith("DH-AT-"):
+            command = f'{item.get("id", "").replace("DH-", "")} carry "오늘 action inbox에서 계속 이월"'
+        elif item.get("title"):
+            command = f'more "{str(item.get("title", ""))[:60]}" "내일 이어서 확인"'
+        priority_items.append({
+            "kind": item.get("kind", "handoff"),
+            "id": item.get("id", "handoff"),
+            "title": item.get("title", "handoff item"),
+            "why": item.get("next_action", item.get("evidence", "")),
+            "source": item.get("source", "handoff"),
+            "status": "unresolved",
+            "href": links.get("handoff", ""),
+            "copy_ready_command": command,
+            "requires_separate_approval": False,
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+
+    existing_ids = {item.get("id") for item in priority_items}
+    for task in (ready_tasks + carried_tasks)[:4]:
+        task_id = task.get("task_id", "")
+        if f"DH-{task_id}" in existing_ids:
+            continue
+        priority_items.append({
+            "kind": "local_task",
+            "id": task_id,
+            "title": task.get("title", "local task"),
+            "why": task.get("operator_note", task.get("stop_condition", "")),
+            "source": "task_ledger",
+            "status": task.get("status", "carried"),
+            "href": links.get("task_ledger", ""),
+            "copy_ready_command": f'{task_id} carry "내일 계속 확인"' if task_id else "",
+            "requires_separate_approval": False,
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+
+    status = "clear"
+    if pending_decisions:
+        status = "approval_review"
+    elif unresolved or carried_tasks or ready_tasks:
+        status = "needs_attention"
+
+    return {
+        "pattern_source": "Hermes/OpenClaw operator handoff",
+        "status": status,
+        "summary": {
+            "pending_decision_count": len(pending_decisions),
+            "unresolved_handoff_count": len(unresolved),
+            "carried_task_count": len(carried_tasks),
+            "ready_task_count": len(ready_tasks),
+            "priority_item_count": len(priority_items),
+        },
+        "priority_items": priority_items[:8],
+        "operator_rule": "먼저 approval gate를 읽되, 실행은 별도 승인 전까지 하지 않습니다. 그 다음 unresolved handoff와 local task를 짧은 응답으로 닫습니다.",
+        "phone_links": {
+            "morning": links.get("morning", ""),
+            "handoff": links.get("handoff", ""),
+            "handoff_apply": links.get("handoff_apply", ""),
+            "task_ledger": links.get("task_ledger", ""),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+    }
+
+
 def build_daily_operator_home(
     *,
     scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
@@ -7453,6 +7550,7 @@ def build_daily_operator_home(
     handoff_apply_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT,
     run_ledger_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
     run_trace_path: str | Path = DEFAULT_RUN_TRACE_OUTPUT,
+    task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
     scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
     phone_access_path: str | Path = DEFAULT_PHONE_ACCESS_OUTPUT,
     phone_access_verify_path: str | Path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT,
@@ -7471,6 +7569,7 @@ def build_daily_operator_home(
     handoff_apply = _load_optional_json(handoff_apply_path)
     run_ledger = _load_optional_json(run_ledger_path)
     run_trace = _load_optional_json(run_trace_path)
+    task_ledger = _load_optional_json(task_ledger_path)
     scheduler = _load_optional_json(scheduler_operations_path)
     phone_access = _load_optional_json(phone_access_path)
     phone_access_verify = _load_optional_json(phone_access_verify_path)
@@ -7537,6 +7636,8 @@ def build_daily_operator_home(
         "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
         "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
         "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+        "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
+        "task_ledger": DEFAULT_ANALYST_TASK_LEDGER_OUTPUT.as_posix(),
         "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
         "phone_access": DEFAULT_PHONE_ACCESS_VERIFY_SURFACE.as_posix(),
         "phone_access_plan": Path(phone_access_path).as_posix(),
@@ -7625,6 +7726,7 @@ def build_daily_operator_home(
         },
     ]
     payloads = {"morning": morning, "handoff": handoff}
+    action_inbox = _daily_home_action_inbox(morning=morning, handoff=handoff, task_ledger=task_ledger, links=links)
     payload = {
         "schema_version": DAILY_OPERATOR_HOME_SCHEMA_VERSION,
         "generated_at": generated.isoformat(),
@@ -7646,6 +7748,7 @@ def build_daily_operator_home(
             "trace_status": run_trace.get("status", "missing"),
             "trace_fresh_count": trace_summary.get("fresh_count", 0),
             "trace_weak_spot_count": len(run_trace.get("weak_spots", [])),
+            "action_item_count": action_inbox.get("summary", {}).get("priority_item_count", 0),
         },
         "daily_route": daily_route,
         "autonomous_scout": {
@@ -7700,6 +7803,7 @@ def build_daily_operator_home(
             "external_effect_performed": False,
             "host_write_performed": False,
         },
+        "operator_action_inbox": action_inbox,
         "copy_ready_commands": _daily_home_commands(payloads=payloads),
         "phone_links": links,
         "access": {
@@ -7722,6 +7826,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="handoff_apply", path=handoff_apply_path, payload=handoff_apply),
             _daily_home_artifact_status(name="run_ledger", path=run_ledger_path, payload=run_ledger),
             _daily_home_artifact_status(name="run_trace", path=run_trace_path, payload=run_trace),
+            _daily_home_artifact_status(name="task_ledger", path=task_ledger_path, payload=task_ledger),
             _daily_home_artifact_status(name="scheduler", path=scheduler_operations_path, payload=scheduler),
             _daily_home_artifact_status(name="phone_access", path=phone_access_path, payload=phone_access),
             _daily_home_artifact_status(name="phone_access_verify", path=phone_access_verify_path, payload=phone_access_verify),
@@ -7800,6 +7905,24 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("trace_observability_adoption.status must be ready, review, blocked, or missing")
     if trace.get("step_count", 0) and not trace.get("what_shaped_today"):
         errors.append("trace_observability_adoption.what_shaped_today must not be empty when trace exists")
+    inbox = payload.get("operator_action_inbox", {})
+    for field in ["pattern_source", "status", "summary", "priority_items", "operator_rule", "external_effect_performed", "host_write_performed"]:
+        if field not in inbox:
+            errors.append(f"operator_action_inbox missing {field}")
+    if inbox.get("status") not in {"clear", "needs_attention", "approval_review"}:
+        errors.append("operator_action_inbox.status must be clear, needs_attention, or approval_review")
+    if inbox.get("external_effect_performed") is not False:
+        errors.append("operator_action_inbox.external_effect_performed must be false")
+    if inbox.get("host_write_performed") is not False:
+        errors.append("operator_action_inbox.host_write_performed must be false")
+    for index, item in enumerate(inbox.get("priority_items", [])):
+        for field in ["kind", "id", "title", "why", "source", "status", "href", "requires_separate_approval", "external_effect_performed", "host_write_performed"]:
+            if field not in item:
+                errors.append(f"operator_action_inbox.priority_items[{index}] missing {field}")
+        if item.get("external_effect_performed") is not False:
+            errors.append(f"operator_action_inbox.priority_items[{index}] external_effect_performed must be false")
+        if item.get("host_write_performed") is not False:
+            errors.append(f"operator_action_inbox.priority_items[{index}] host_write_performed must be false")
     for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "memory_query", "trace"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
@@ -7830,6 +7953,7 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
     autonomous = payload.get("autonomous_scout", {})
     recall = payload.get("memory_recall_adoption", {})
     trace = payload.get("trace_observability_adoption", {})
+    inbox = payload.get("operator_action_inbox", {})
     status_label = {
         "ready": "오늘 읽기 준비됨",
         "operator_review": "사람 확인 필요",
@@ -7869,6 +7993,18 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
         "</article>"
         for response in autonomous.get("copy_ready_responses", [])
     ) or "<p>오늘 scout에 남길 짧은 응답이 아직 없습니다.</p>"
+    inbox_summary = inbox.get("summary", {})
+    inbox_cards = "".join(
+        "<article class='command'>"
+        f"<span>{esc(item.get('kind', 'action'))} · {esc(item.get('status', ''))}</span>"
+        f"<h2>{esc(item.get('title', ''))}</h2>"
+        f"<p>{esc(item.get('why', ''))}</p>"
+        f"<small>{esc(item.get('source', ''))} · {esc('별도 승인 필요' if item.get('requires_separate_approval') else 'local only')}</small>"
+        + (f"<code>{esc(item.get('copy_ready_command', ''))}</code>" if item.get("copy_ready_command") else "")
+        + (f"<p><a href='{esc(_relative_href(Path(item.get('href', ''))))}'>관련 화면 열기</a></p>" if item.get("href") else "")
+        + "</article>"
+        for item in inbox.get("priority_items", [])
+    ) or "<p>오늘 닫을 action inbox 항목은 없습니다.</p>"
     link_cards = "".join(
         f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
         for label, path in payload.get("phone_links", {}).items()
@@ -7945,8 +8081,20 @@ td strong,td span {{ display:block; }}
 <article class="metric"><span>Handoff</span><strong>{esc(summary.get('unresolved_handoff_count', 0))}</strong></article>
 <article class="metric"><span>Decisions</span><strong>{esc(summary.get('pending_decision_count', 0))}</strong></article>
 <article class="metric"><span>Missing</span><strong>{esc(summary.get('required_missing_count', 0))}</strong></article>
-<article class="metric"><span>Recall</span><strong>{esc(summary.get('memory_recall_quality', 'missing'))}</strong></article>
+<article class="metric"><span>Actions</span><strong>{esc(summary.get('action_item_count', 0))}</strong></article>
 </div>
+</section>
+<section class="section">
+<h2>오늘 닫을 것</h2>
+<p><strong>{esc(inbox.get('status', 'missing'))}</strong></p>
+<p>{esc(inbox.get('operator_rule', '오늘 action inbox를 아직 만들 수 없습니다.'))}</p>
+<div class="metrics">
+<article class="metric"><span>Approvals</span><strong>{esc(inbox_summary.get('pending_decision_count', 0))}</strong></article>
+<article class="metric"><span>Handoff</span><strong>{esc(inbox_summary.get('unresolved_handoff_count', 0))}</strong></article>
+<article class="metric"><span>Carried</span><strong>{esc(inbox_summary.get('carried_task_count', 0))}</strong></article>
+<article class="metric"><span>Ready</span><strong>{esc(inbox_summary.get('ready_task_count', 0))}</strong></article>
+</div>
+<div class="commands">{inbox_cards}</div>
 </section>
 <section class="section">
 <h2>Scout가 먼저 고른 주제</h2>
