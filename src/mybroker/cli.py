@@ -70,16 +70,19 @@ from mybroker.topics import (
     DEFAULT_DAILY_EVIDENCE_OUTPUT,
     DEFAULT_DAILY_SCOUT_OUTPUT,
     DEFAULT_RESEARCH_PLAN_OUTPUT,
+    DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
     DEFAULT_TOPIC_MEMORY_OUTPUT,
     DEFAULT_TOPICS_PATH,
     add_interest,
     build_daily_scout,
     build_research_plan,
+    build_source_refresh_plan,
     collect_topic_evidence,
     init_topic_config,
     load_topic_config,
     validate_daily_scout_file,
     validate_research_plan_file,
+    validate_source_refresh_plan_file,
     validate_topic_config_file,
     validate_topic_memory_file,
 )
@@ -184,12 +187,20 @@ def main(argv: list[str] | None = None) -> int:
     scout_parser.add_argument("--output", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     scout_parser.add_argument("--run-id", default="daily-research")
 
+    refresh_plan_parser = subcommands.add_parser("source-refresh-plan", help="Plan local/dry-run source refresh actions from today's scout recommendation.")
+    refresh_plan_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    refresh_plan_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    refresh_plan_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    refresh_plan_parser.add_argument("--output", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
+
     validate_topics_parser = subcommands.add_parser("validate-topics", help="Validate a topic_config.v1 artifact.")
     validate_topics_parser.add_argument("topics_path")
     validate_plan_parser = subcommands.add_parser("validate-research-plan", help="Validate a daily_research_plan.v1 artifact.")
     validate_plan_parser.add_argument("plan_path")
     validate_scout_parser = subcommands.add_parser("validate-daily-scout", help="Validate a daily_scout.v1 artifact.")
     validate_scout_parser.add_argument("scout_path")
+    validate_refresh_plan_parser = subcommands.add_parser("validate-source-refresh-plan", help="Validate a source_refresh_plan.v1 artifact.")
+    validate_refresh_plan_parser.add_argument("refresh_plan_path")
     validate_memory_parser = subcommands.add_parser("validate-topic-memory", help="Validate a topic_memory.v1 artifact.")
     validate_memory_parser.add_argument("memory_path")
 
@@ -204,6 +215,7 @@ def main(argv: list[str] | None = None) -> int:
     daily_parser.add_argument("--run-id", default="daily-research")
     daily_parser.add_argument("--plan-output", default=DEFAULT_RESEARCH_PLAN_OUTPUT.as_posix())
     daily_parser.add_argument("--scout-output", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    daily_parser.add_argument("--refresh-plan-output", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
     daily_parser.add_argument("--evidence-output", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
     daily_parser.add_argument("--memory-output", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     daily_parser.add_argument("--scenario-output", default="reports/scenarios/daily-research-sim.json")
@@ -275,6 +287,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_today_parser.add_argument("--refresh-plan", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--brief", default="reports/product/market-brief.html")
     appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--archive-manifest")
@@ -326,6 +339,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_run_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
     appliance_run_parser.add_argument("--playbook-output", default=DEFAULT_RUNTIME_PLAYBOOK_OUTPUT.as_posix())
     appliance_run_parser.add_argument("--scout-output", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_run_parser.add_argument("--refresh-plan-output", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
 
     quality_parser = subcommands.add_parser("quality", help="Inspect local price dataset quality without writing a research report.")
     quality_parser.add_argument("--source", action="append", help="Local price CSV file or directory. Repeat for multiple CSV files. Defaults to the bundled sample data.")
@@ -504,6 +518,21 @@ def main(argv: list[str] | None = None) -> int:
             "recommendation_count": payload["recommendation_count"],
         }, indent=2, ensure_ascii=False))
         return 0
+    if args.command == "source-refresh-plan":
+        payload = build_source_refresh_plan(
+            scout_path=args.scout,
+            evidence_path=args.evidence,
+            vault_path=args.vault,
+            output_path=args.output,
+        )
+        print(json.dumps({
+            "source_refresh_plan": args.output,
+            "schema_version": payload["schema_version"],
+            "action_count": len(payload["actions"]),
+            "selected_live_sources": payload["selected_live_sources"],
+            "external_effect_performed": payload["external_effect_performed"],
+        }, indent=2, ensure_ascii=False))
+        return 0
     if args.command == "validate-topics":
         errors = validate_topic_config_file(args.topics_path)
         if errors:
@@ -520,6 +549,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-daily-scout":
         errors = validate_daily_scout_file(args.scout_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-source-refresh-plan":
+        errors = validate_source_refresh_plan_file(args.refresh_plan_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -564,6 +600,12 @@ def main(argv: list[str] | None = None) -> int:
             output_path=args.scout_output,
             run_id=args.run_id,
         )
+        refresh_plan = build_source_refresh_plan(
+            scout_path=args.scout_output,
+            evidence_path=args.evidence_output,
+            vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
+            output_path=args.refresh_plan_output,
+        )
         report = run_market_simulation(
             seed_sources=["examples/seeds"],
             profile_path=args.profile,
@@ -580,6 +622,7 @@ def main(argv: list[str] | None = None) -> int:
             "topics": topics_path,
             "research_plan": args.plan_output,
             "daily_scout": args.scout_output,
+            "source_refresh_plan": args.refresh_plan_output,
             "evidence_catalog": args.evidence_output,
             "topic_memory": args.memory_output,
             "scenario_report": scenario_path.as_posix(),
@@ -590,6 +633,7 @@ def main(argv: list[str] | None = None) -> int:
             "topic_count": len(plan["plan_items"]),
             "evidence_items": len(catalog["items"]),
             "recommended_topic": scout.get("recommended_topic", {}).get("name", ""),
+            "refresh_action_count": len(refresh_plan["actions"]),
         }, indent=2, ensure_ascii=False))
         return 0
     if args.command == "appliance":
@@ -742,6 +786,7 @@ def main(argv: list[str] | None = None) -> int:
                 evidence_path=args.evidence,
                 vault_path=args.vault,
                 scout_path=args.scout,
+                refresh_plan_path=args.refresh_plan,
                 brief_path=args.brief,
                 output_path=args.output,
                 archive_manifest_path=args.archive_manifest,
@@ -819,6 +864,7 @@ def main(argv: list[str] | None = None) -> int:
                 init_topic_config(topics_path)
             plan_path = DEFAULT_RESEARCH_PLAN_OUTPUT
             scout_path = Path(args.scout_output)
+            refresh_plan_path = Path(args.refresh_plan_output)
             evidence_path = DEFAULT_DAILY_EVIDENCE_OUTPUT
             memory_path = DEFAULT_TOPIC_MEMORY_OUTPUT
             scenario_path = Path("reports/scenarios/daily-research-sim.json")
@@ -846,6 +892,12 @@ def main(argv: list[str] | None = None) -> int:
                 output_path=scout_path,
                 run_id=args.run_id,
             )
+            refresh_plan = build_source_refresh_plan(
+                scout_path=scout_path,
+                evidence_path=evidence_path,
+                vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
+                output_path=refresh_plan_path,
+            )
             report = run_market_simulation(
                 seed_sources=["examples/seeds"],
                 profile_path=args.profile,
@@ -865,6 +917,7 @@ def main(argv: list[str] | None = None) -> int:
                 evidence_path=evidence_path,
                 vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
                 scout_path=scout_path,
+                refresh_plan_path=refresh_plan_path,
                 brief_path=written_brief,
                 output_path=today_path,
             )
@@ -876,6 +929,7 @@ def main(argv: list[str] | None = None) -> int:
                 memory_path=memory_path,
                 brief_path=written_brief,
                 today_path=provisional_today,
+                refresh_plan_path=refresh_plan_path,
                 archive_root=args.archive_root,
             )
             written_memory = write_memory_surface(
@@ -893,6 +947,7 @@ def main(argv: list[str] | None = None) -> int:
                 evidence_path=evidence_path,
                 vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
                 scout_path=scout_path,
+                refresh_plan_path=refresh_plan_path,
                 brief_path=written_brief,
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,
@@ -914,6 +969,7 @@ def main(argv: list[str] | None = None) -> int:
                 "topics": topics_path,
                 "research_plan": plan_path.as_posix(),
                 "daily_scout": scout_path.as_posix(),
+                "source_refresh_plan": refresh_plan_path.as_posix(),
                 "evidence_catalog": evidence_path.as_posix(),
                 "topic_memory": memory_path.as_posix(),
                 "scenario_report": written_scenario.as_posix(),
@@ -930,6 +986,7 @@ def main(argv: list[str] | None = None) -> int:
                 "topic_count": len(plan["plan_items"]),
                 "evidence_items": len(catalog["items"]),
                 "recommended_topic": scout.get("recommended_topic", {}).get("name", ""),
+                "refresh_action_count": len(refresh_plan["actions"]),
             }, indent=2, ensure_ascii=False))
             return 0
     if args.command == "validate-profile":

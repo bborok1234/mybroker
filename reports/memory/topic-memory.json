@@ -1,7 +1,7 @@
 {
   "schema_version": "topic_memory.v1",
-  "generated_at": "2026-06-05T09:15:55.737614+00:00",
-  "run_count": 12,
+  "generated_at": "2026-06-05T09:42:36.884759+00:00",
+  "run_count": 16,
   "topics": [
     {
       "topic_id": "ai-infrastructure",
@@ -278,6 +278,34 @@
       "run_id": "daily-research",
       "generated_at": "2026-06-05T09:15:55.737611+00:00",
       "evidence_catalog": "2026-06-05T09:15:55.737454+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
+      "generated_at": "2026-06-05T09:36:51.983068+00:00",
+      "evidence_catalog": "2026-06-05T09:36:51.982929+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
+      "generated_at": "2026-06-05T09:36:52.045349+00:00",
+      "evidence_catalog": "2026-06-05T09:36:52.045212+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
+      "generated_at": "2026-06-05T09:40:06.363540+00:00",
+      "evidence_catalog": "2026-06-05T09:40:06.363405+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
+      "generated_at": "2026-06-05T09:42:36.884756+00:00",
+      "evidence_catalog": "2026-06-05T09:42:36.884616+00:00",
       "topic_count": 5,
       "changed_topics": []
     }

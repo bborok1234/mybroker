@@ -7,9 +7,10 @@
 <style>
 :root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }
 * { box-sizing:border-box; }
+html,body { max-width:100%; overflow-x:hidden; }
 body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
 a { color:var(--blue); font-weight:800; text-decoration:none; }
-main { max-width:760px; margin:0 auto; padding:16px; }
+main { width:100%; max-width:430px; min-width:0; margin:0; padding:16px; }
 header { padding:26px 0 16px; }
 .eyebrow { color:var(--green); font-size:12px; font-weight:900; }
 h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }
@@ -18,14 +19,16 @@ h3 { margin:0 0 8px; font-size:17px; }
 p { margin:0; color:var(--muted); }
 .hero { border:1px solid var(--line); border-radius:8px; background:linear-gradient(180deg,#fffefa,#f1f7f3); padding:18px; }
 .primary { display:block; margin-top:14px; font-size:24px; color:var(--ink); }
-.section { margin:14px 0; padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
-.stack { display:grid; gap:10px; }
-.card,.path,.question { border:1px solid var(--line); border-radius:8px; background:white; padding:14px; }
+.section { width:100%; min-width:0; overflow:hidden; margin:14px 0; padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.stack { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; gap:10px; }
+.card,.path,.question { min-width:0; border:1px solid var(--line); border-radius:8px; background:white; padding:14px; }
 .card span,.path span { display:block; margin-bottom:7px; color:var(--blue); font-size:12px; font-weight:900; }
 .card strong { display:block; margin-bottom:6px; }
+.card p,.card small,.path p,.question p { overflow-wrap:anywhere; word-break:break-word; }
+.card small { display:block; color:var(--ink); line-height:1.5; }
 .chips { display:flex; flex-wrap:wrap; gap:7px; }
 .chip { display:inline-flex; min-height:28px; align-items:center; border-radius:999px; padding:3px 10px; background:#eef4fb; color:#1f4f78; font-size:12px; font-weight:800; }
-.links { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.links { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
 .links a,.links span { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }
 ul { margin:0; padding-left:18px; color:var(--muted); }
 .boundary { border-left:4px solid var(--green); }
@@ -45,7 +48,11 @@ ul { margin:0; padding-left:18px; color:var(--muted); }
 </section>
 <section class="section">
 <h2>오늘 Scout 추천</h2>
-<div class="stack"><article class='card'><span>monitor · #1</span><strong>Semiconductors</strong><p>Semiconductors는 최근 근거 4개와 연결되어 있습니다. source family 2개가 같은 주제를 가리킵니다. vault 원천 노트 1개가 누적 맥락을 제공합니다. 부족한 근거가 남아 있어 결론보다 점검 질문이 우선입니다.</p><small>질문: Vault 노트 &#x27;Semiconductor cycle learning note&#x27;가 오늘 근거와 같은 방향을 가리키나요?</small></article><article class='card'><span>monitor · #2</span><strong>Consumer weakness</strong><p>Consumer weakness는 최근 근거 5개와 연결되어 있습니다. source family 3개가 같은 주제를 가리킵니다. 부족한 근거가 남아 있어 결론보다 점검 질문이 우선입니다.</p><small>질문: 오늘 Consumer weakness에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</small></article><article class='card'><span>monitor · #3</span><strong>Korea semiconductors</strong><p>Korea semiconductors는 최근 근거 5개와 연결되어 있습니다. source family 3개가 같은 주제를 가리킵니다. 부족한 근거가 남아 있어 결론보다 점검 질문이 우선입니다.</p><small>질문: 오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</small></article></div>
+<div class="stack"><article class='card'><span>monitor · #1</span><strong>Semiconductors</strong><p>근거 4개 · 출처군 2개 · vault 1개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p><small>질문: Vault 노트 &#x27;Semiconductor cycle learning note&#x27;가 오늘 근거와 같은 방향을 가리키나요?</small></article><article class='card'><span>monitor · #2</span><strong>Consumer weakness</strong><p>근거 5개 · 출처군 3개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p><small>질문: 오늘 Consumer weakness에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</small></article><article class='card'><span>monitor · #3</span><strong>Korea semiconductors</strong><p>근거 5개 · 출처군 3개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p><small>질문: 오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</small></article></div>
+</section>
+<section class="section">
+<h2>오늘 새로고침 계획</h2>
+<div class="stack"><article class='card'><span>high · daily</span><strong>GDELT</strong><p>Scout 상위 주제는 최신 뉴스/이벤트 서사가 필요합니다.</p><small>gdelt-live · dry-run 계획</small></article><article class='card'><span>high · daily</span><strong>Stooq</strong><p>Scout 상위 주제는 넓은 가격/위험 맥락 확인이 필요합니다.</p><small>stooq-live · dry-run 계획</small></article><article class='card'><span>medium · weekly_or_event</span><strong>SEC EDGAR</strong><p>기업 공시 맥락은 유용하지만 SEC live refresh는 아직 구현되지 않았습니다.</p><small>sec-sample · dry-run 계획</small></article><article class='card'><span>medium · daily_if_raw_changed</span><strong>Local vault</strong><p>컴파일된 원천 노트가 오늘 Scout 추천과 계속 맞물려 있어야 합니다.</p><small>vault-compile · dry-run 계획</small></article></div>
 </section>
 <section class="section">
 <h2>오늘의 주제 기억</h2>

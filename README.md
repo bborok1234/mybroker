@@ -38,11 +38,13 @@ PYTHONPATH=src python3 -m mybroker topics list --config config/topics.json
 PYTHONPATH=src python3 -m mybroker research-plan --topics config/topics.json --output reports/daily/research-plan.json --run-id daily-research
 PYTHONPATH=src python3 -m mybroker collect-evidence --topics config/topics.json --plan reports/daily/research-plan.json --output reports/evidence/daily-evidence-catalog.json --memory-output reports/memory/topic-memory.json
 PYTHONPATH=src python3 -m mybroker daily-scout --topics config/topics.json --plan reports/daily/research-plan.json --evidence reports/evidence/daily-evidence-catalog.json --memory reports/memory/topic-memory.json --vault reports/vault/compile.json --output reports/daily/scout.json
+PYTHONPATH=src python3 -m mybroker source-refresh-plan --scout reports/daily/scout.json --evidence reports/evidence/daily-evidence-catalog.json --vault reports/vault/compile.json --output reports/daily/source-refresh-plan.json
 PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --profile examples/profiles/beginner-conservative.json --evidence-catalog reports/evidence/public-evidence-catalog.json --run-id public-evidence-sim --output reports/scenarios/public-evidence-sim.json --verdict-output reports/scenarios/public-evidence-verdict.json
 PYTHONPATH=src python3 -m mybroker daily-research --topics config/topics.json --profile examples/profiles/beginner-conservative.json --run-id daily-research
 PYTHONPATH=src python3 -m mybroker validate-scenario reports/scenarios/beginner-market-sim.json
 PYTHONPATH=src python3 -m mybroker validate-verdict reports/scenarios/verdict.json
 PYTHONPATH=src python3 -m mybroker validate-daily-scout reports/daily/scout.json
+PYTHONPATH=src python3 -m mybroker validate-source-refresh-plan reports/daily/source-refresh-plan.json
 PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output reports/dashboard.html --rollup-output reports/report-rollup.json
 PYTHONPATH=src python3 -m mybroker brief --scenario reports/scenarios/public-evidence-sim.json --verdict reports/scenarios/public-evidence-verdict.json --output reports/product/market-brief.html
 PYTHONPATH=src python3 -m mybroker appliance playbook
@@ -140,8 +142,11 @@ brief.
 5. `daily-scout` writes `daily_scout.v1` under `reports/daily/scout.json`. It ranks configured
    interests using memory changes, source breadth, evidence gaps, and compiled vault notes, then
    recommends what to inspect first.
-6. `daily-research` runs the local loop end to end: plan, collect, memory, scout, scenario, verdict,
-   ops dashboard, rollup, and product brief.
+6. `source-refresh-plan` writes `source_refresh_plan.v1` under
+   `reports/daily/source-refresh-plan.json`. It chooses dry-run source refresh actions for the
+   scout recommendation, such as GDELT live, Stooq live, SEC sample review, or vault compile.
+7. `daily-research` runs the local loop end to end: plan, collect, memory, scout, refresh plan,
+   scenario, verdict, ops dashboard, rollup, and product brief.
 
 Manual source ingestion can be added later, but it is not the primary beginner UX. The default
 path is AI-initiated research from user interests.
@@ -163,6 +168,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/runtime/scheduler-activation-verify.json`: post-activation proof for loaded state, installed plist, strict doctor, and fresh artifacts;
 - `reports/product/today.html`: a mobile-first `/today` surface for the phone;
 - `reports/daily/scout.json`: local scout recommendations for what to inspect first;
+- `reports/daily/source-refresh-plan.json`: dry-run source refresh actions for the scout recommendation;
 - `reports/product/memory.html` and `reports/memory/index.json`: accumulated topic memory, source relevance, and archive history;
 - `reports/product/memory-query.html` and `reports/memory/latest-query.json`: deterministic recall over accumulated memory and archives;
 - `reports/notifications/latest.json`: a dry-run notification payload for Telegram or Pushover;
@@ -193,6 +199,10 @@ and turns them into next inspection questions, so the morning brief can ask whet
 source notes still agree with the latest evidence instead of treating each day as a fresh chat.
 It also reads `reports/daily/scout.json` when present, rendering "오늘 Scout 추천" above the topic
 memory cards so the operator can see which broad interest should be inspected first and why.
+When `reports/daily/source-refresh-plan.json` exists, `/today` also shows "오늘 새로고침 계획" so the
+operator can see which sources would be refreshed next. These are dry-run plans and must not imply
+that live source calls, paid APIs, credential use, private serving, notification send, or trading
+actions have occurred.
 `appliance memory` and `appliance query` read `reports/vault/compile.json` by default, so compiled
 raw notes appear alongside topic memory and can be retrieved by the same deterministic local query
 surface.
