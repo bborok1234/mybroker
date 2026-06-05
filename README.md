@@ -71,6 +71,7 @@ PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
 PYTHONPATH=src python3 -m mybroker appliance tasks
+PYTHONPATH=src python3 -m mybroker appliance task-ledger
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
@@ -200,6 +201,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/daily/source-refresh-live-preflight.json`: no-network preflight proof before any approved live source execution;
 - `reports/product/journal.html` and `reports/memory/analyst-journal.json`: the daily analyst work log with today's focus, role notes, weak evidence, and follow-up questions;
 - `reports/product/tasks.html` and `reports/memory/analyst-task-queue.json`: role-based analyst task queue for source scout, market mapper, skeptic, tutor, librarian, and publisher work;
+- `reports/product/task-ledger.html` and `reports/memory/analyst-task-ledger.json`: task status history for ready, carried, blocked, and retired analyst work;
 - `reports/product/memory.html` and `reports/memory/index.json`: accumulated topic memory, source relevance, and archive history;
 - `reports/product/memory-query.html` and `reports/memory/latest-query.json`: deterministic recall over accumulated memory and archives;
 - `reports/notifications/latest.json`: a dry-run notification payload for Telegram or Pushover;
@@ -214,6 +216,7 @@ Funnel/tunnel exposure is a later decision after access control and secret bound
 This follows the Obsidian-vault pattern: each daily run remains a local artifact, while
 `journal.html` records what the personal analyst concluded, doubted, and queued for tomorrow.
 `tasks.html` turns that journal into role-based next work without executing it.
+`task-ledger.html` records whether queued work is new, carried forward, blocked by approval, or retired from the current queue.
 `memory.html` gives the phone-readable view of what has accumulated across runs. `appliance
 query` is the librarian step: it searches accumulated topic memory and archive manifests,
 writes a reproducible query artifact, and renders a phone-readable recall page for the next

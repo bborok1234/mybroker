@@ -1,6 +1,6 @@
 {
   "schema_version": "notification_delivery.v1",
-  "generated_at": "2026-06-05T13:36:10.412789+00:00",
+  "generated_at": "2026-06-05T13:50:36.038298+00:00",
   "provider": "telegram",
   "dry_run": true,
   "title": "MyBroker 오늘의 시장 브리프",

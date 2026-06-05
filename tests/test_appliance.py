@@ -10,6 +10,7 @@ from mybroker.appliance import (
     send_notification_payload,
     write_analyst_journal,
     write_analyst_task_queue,
+    write_analyst_task_ledger,
     write_launchd_assets,
     write_memory_query,
     write_memory_surface,
@@ -58,6 +59,8 @@ class LocalApplianceTests(unittest.TestCase):
             journal_artifact_path = root / "journal.json"
             tasks_path = root / "tasks.html"
             tasks_artifact_path = root / "tasks.json"
+            ledger_path = root / "task-ledger.html"
+            ledger_artifact_path = root / "task-ledger.json"
             today_path = root / "today.html"
             init_topic_config(topics_path)
             init_topic_config(runtime_topics_path)
@@ -93,6 +96,12 @@ class LocalApplianceTests(unittest.TestCase):
                 artifact_output_path=tasks_artifact_path,
                 surface_output_path=tasks_path,
             )
+            ledger = write_analyst_task_ledger(
+                task_queue_path=tasks_artifact_path,
+                previous_ledger_path=root / "missing-ledger.json",
+                artifact_output_path=ledger_artifact_path,
+                surface_output_path=ledger_path,
+            )
 
             today = write_today_surface(
                 scenario_path=scenario_path,
@@ -105,6 +114,7 @@ class LocalApplianceTests(unittest.TestCase):
                 refresh_plan_path=root / "missing-refresh-plan.json",
                 journal_surface_path=journal,
                 task_queue_surface_path=tasks,
+                task_ledger_surface_path=ledger,
                 output_path=today_path,
             )
             refresh_plan_path = root / "source-refresh-plan.json"
@@ -144,6 +154,7 @@ class LocalApplianceTests(unittest.TestCase):
                 refresh_live_preflight_path=refresh_live_preflight_path,
                 journal_path=journal,
                 task_queue_path=tasks,
+                task_ledger_path=ledger,
                 archive_root=root / "archive",
             )
             today = write_today_surface(
@@ -163,6 +174,7 @@ class LocalApplianceTests(unittest.TestCase):
                 archive_manifest_path=manifest,
                 journal_surface_path=journal,
                 task_queue_surface_path=tasks,
+                task_ledger_surface_path=ledger,
             )
             notification = write_notification_payload(
                 provider="telegram",
@@ -212,6 +224,8 @@ class LocalApplianceTests(unittest.TestCase):
             journal_payload = json.loads(journal_artifact_path.read_text(encoding="utf-8"))
             tasks_html = tasks.read_text(encoding="utf-8")
             tasks_payload = json.loads(tasks_artifact_path.read_text(encoding="utf-8"))
+            ledger_html = ledger.read_text(encoding="utf-8")
+            ledger_payload = json.loads(ledger_artifact_path.read_text(encoding="utf-8"))
             memory_html = memory_surface.read_text(encoding="utf-8")
             query_payload = json.loads((root / "memory-query.json").read_text(encoding="utf-8"))
             query_html = query_surface.read_text(encoding="utf-8")
@@ -229,6 +243,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("오늘 시장 5분 브리프", html)
         self.assertIn("오늘의 analyst journal", html)
         self.assertIn("다음 analyst tasks", html)
+        self.assertIn("task ledger", html)
         self.assertIn("근거 품질", html)
         self.assertIn("아카이브 manifest", html)
         self.assertIn("MyBroker Analyst Journal", journal_html)
@@ -241,6 +256,10 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(tasks_payload["schema_version"], "personal_analyst_task_queue.v1")
         self.assertGreaterEqual(tasks_payload["task_count"], 6)
         self.assertFalse(any(task["external_effect_allowed"] for task in tasks_payload["tasks"]))
+        self.assertIn("MyBroker Task Ledger", ledger_html)
+        self.assertIn("상태별 작업", ledger_html)
+        self.assertEqual(ledger_payload["schema_version"], "personal_analyst_task_ledger.v1")
+        self.assertEqual(ledger_payload["summary"]["ready_for_local_work"], ledger_payload["entry_count"])
         self.assertIn("MyBroker Memory", memory_html)
         self.assertIn("주제별 누적 기억", memory_html)
         self.assertIn("근거 품질 추적", memory_html)
@@ -266,6 +285,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("source_refresh_live_preflight", manifest_payload["artifacts"])
         self.assertIn("journal", manifest_payload["artifacts"])
         self.assertIn("tasks", manifest_payload["artifacts"])
+        self.assertIn("task_ledger", manifest_payload["artifacts"])
         self.assertIn("Hermes Agent", {item["source"] for item in playbook_payload["absorbed_patterns"]})
         self.assertEqual(doctor_payload["schema_version"], "local_runtime_doctor.v1")
         self.assertEqual(doctor_payload["status"], "ready")
