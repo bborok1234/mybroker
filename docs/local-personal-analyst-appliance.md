@@ -37,6 +37,7 @@ launchd
   -> public_evidence_catalog.v1
   -> topic_memory.v1
   -> daily_scout.v1
+  -> source_refresh_plan.v1
   -> scenario_report.v1 + market_verdict.v1
   -> product brief + /today mobile surface
   -> /memory accumulated research surface
@@ -153,6 +154,13 @@ can challenge its latest evidence against accumulated raw notes.
 configured interests with source breadth, memory changes, evidence gaps, and linked vault notes.
 `appliance run` creates this artifact automatically, and `appliance today` renders it as "오늘 Scout
 추천" so the first phone screen explains what to inspect first and why.
+
+`source-refresh-plan` is the no-execution source cadence step. It writes
+`reports/daily/source-refresh-plan.json` with dry-run-only actions such as GDELT live, Stooq live,
+SEC sample review, or vault compile. `appliance run` creates it automatically, and `appliance
+today` renders it as "오늘 새로고침 계획". The artifact records `external_effect_performed: false` and
+does not execute live calls, paid APIs, host writes, private serving, notification send, account
+access, or trading.
 
 The launchd assets are written under `ops/local/`:
 

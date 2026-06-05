@@ -22,10 +22,12 @@ TOPIC_CONFIG_SCHEMA_VERSION = "topic_config.v1"
 RESEARCH_PLAN_SCHEMA_VERSION = "daily_research_plan.v1"
 TOPIC_MEMORY_SCHEMA_VERSION = "topic_memory.v1"
 DAILY_SCOUT_SCHEMA_VERSION = "daily_scout.v1"
+SOURCE_REFRESH_PLAN_SCHEMA_VERSION = "source_refresh_plan.v1"
 
 DEFAULT_TOPICS_PATH = Path("config/topics.json")
 DEFAULT_RESEARCH_PLAN_OUTPUT = Path("reports/daily/research-plan.json")
 DEFAULT_DAILY_SCOUT_OUTPUT = Path("reports/daily/scout.json")
+DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT = Path("reports/daily/source-refresh-plan.json")
 DEFAULT_TOPIC_MEMORY_OUTPUT = Path("reports/memory/topic-memory.json")
 DEFAULT_DAILY_EVIDENCE_OUTPUT = Path("reports/evidence/daily-evidence-catalog.json")
 
@@ -279,6 +281,114 @@ def validate_daily_scout_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_daily_scout_file(path: str | Path) -> list[str]:
     return validate_daily_scout_payload(load_json(path))
+
+
+def build_source_refresh_plan(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    vault_path: str | Path | None = None,
+    output_path: str | Path = DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
+) -> dict[str, Any]:
+    scout = load_json(scout_path)
+    evidence = load_json(evidence_path)
+    vault = load_json(vault_path) if vault_path and Path(vault_path).exists() else {}
+    top_recommendations = scout.get("recommendations", [])[:3]
+    source_status = {row.get("source_name", ""): row for row in evidence.get("source_status", [])}
+    actions = []
+    selected_live_sources: list[str] = []
+    if _needs_news_refresh(top_recommendations, source_status):
+        actions.append(_refresh_action(
+            source_name="GDELT",
+            adapter_id="gdelt-live",
+            cadence="daily",
+            priority="high",
+            reason="Scout 상위 주제는 최신 뉴스/이벤트 서사가 필요합니다.",
+            command="PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json",
+        ))
+        selected_live_sources.append("gdelt-live")
+    if _needs_price_refresh(top_recommendations, source_status):
+        actions.append(_refresh_action(
+            source_name="Stooq",
+            adapter_id="stooq-live",
+            cadence="daily",
+            priority="high",
+            reason="Scout 상위 주제는 넓은 가격/위험 맥락 확인이 필요합니다.",
+            command="PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json",
+        ))
+        selected_live_sources.append("stooq-live")
+    if _needs_filing_review(top_recommendations, source_status):
+        actions.append(_refresh_action(
+            source_name="SEC EDGAR",
+            adapter_id="sec-sample",
+            cadence="weekly_or_event",
+            priority="medium",
+            reason="기업 공시 맥락은 유용하지만 SEC live refresh는 아직 구현되지 않았습니다.",
+            command="PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source sec-sample --output reports/evidence/public-evidence-catalog.json",
+        ))
+    if vault.get("schema_version") == "knowledge_vault_compile.v1":
+        actions.append(_refresh_action(
+            source_name="Local vault",
+            adapter_id="vault-compile",
+            cadence="daily_if_raw_changed",
+            priority="medium",
+            reason="컴파일된 원천 노트가 오늘 Scout 추천과 계속 맞물려 있어야 합니다.",
+            command="PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki --output reports/vault/compile.json --surface-output reports/product/vault.html",
+        ))
+    if not actions:
+        actions.append(_refresh_action(
+            source_name="Local cache",
+            adapter_id="sample-cache",
+            cadence="no_refresh_needed",
+            priority="low",
+            reason="현재 근거는 로컬 교육용 dry-run에는 충분합니다.",
+            command="PYTHONPATH=src python3 -m mybroker collect-evidence --topics config/topics.json --plan reports/daily/research-plan.json --output reports/evidence/daily-evidence-catalog.json --memory-output reports/memory/topic-memory.json",
+        ))
+    payload = {
+        "schema_version": SOURCE_REFRESH_PLAN_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "inputs": {
+            "scout_path": Path(scout_path).as_posix(),
+            "evidence_path": Path(evidence_path).as_posix(),
+            "vault_path": Path(vault_path).as_posix() if vault_path else "",
+        },
+        "recommended_topic": scout.get("recommended_topic", {}),
+        "actions": actions,
+        "selected_live_sources": selected_live_sources,
+        "external_effect_performed": False,
+        "policy": _research_only_policy(),
+        "next_step": "review_refresh_plan_before_running_live_sources",
+    }
+    return write_json(payload, output_path)
+
+
+def validate_source_refresh_plan_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != SOURCE_REFRESH_PLAN_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if not payload.get("actions"):
+        errors.append("actions must not be empty")
+    for index, action in enumerate(payload.get("actions", [])):
+        for field in ["source_name", "adapter_id", "cadence", "priority", "reason", "command", "dry_run_only"]:
+            if field not in action:
+                errors.append(f"actions[{index}] missing {field}")
+        if action.get("priority") not in {"high", "medium", "low"}:
+            errors.append(f"actions[{index}] invalid priority")
+        if action.get("dry_run_only") is not True:
+            errors.append(f"actions[{index}] dry_run_only must be true")
+        command = action.get("command", "")
+        if any(blocked in command for blocked in ["--send", "--confirm-host-write", "launchctl", "tailscale serve --bg"]):
+            errors.append(f"actions[{index}] command crosses external-effect boundary")
+    policy = payload.get("policy", {})
+    if policy.get("output_boundary") != "research_only":
+        errors.append("policy.output_boundary must be research_only")
+    return errors
+
+
+def validate_source_refresh_plan_file(path: str | Path) -> list[str]:
+    return validate_source_refresh_plan_payload(load_json(path))
 
 
 def collect_topic_evidence(
@@ -648,6 +758,49 @@ def _scout_next_question(plan_item: dict[str, Any], memory_topic: dict[str, Any]
         return questions[0]
     name = memory_topic.get("name", "이 주제")
     return f"오늘 {name}를 먼저 볼 만큼 근거가 충분한가요?"
+
+
+def _refresh_action(*, source_name: str, adapter_id: str, cadence: str, priority: str, reason: str, command: str) -> dict[str, Any]:
+    return {
+        "source_name": source_name,
+        "adapter_id": adapter_id,
+        "cadence": cadence,
+        "priority": priority,
+        "reason": reason,
+        "command": command,
+        "dry_run_only": True,
+        "expected_artifact": _expected_refresh_artifact(adapter_id),
+    }
+
+
+def _needs_news_refresh(recommendations: list[dict[str, Any]], source_status: dict[str, dict[str, Any]]) -> bool:
+    if any("live_refresh" in item.get("missing_evidence", []) for item in recommendations):
+        return True
+    gdelt = source_status.get("GDELT", {})
+    return gdelt.get("freshness_status") in {"sample_cache", "live_error_fallback_sample", "empty", None}
+
+
+def _needs_price_refresh(recommendations: list[dict[str, Any]], source_status: dict[str, dict[str, Any]]) -> bool:
+    topics = {topic for item in recommendations for topic in [item.get("topic_id", ""), *item.get("source_names", [])]}
+    if {"us-rates", "consumer-weakness"}.intersection(topics):
+        return True
+    stooq = source_status.get("Stooq", {})
+    return stooq.get("freshness_status") in {"sample_cache", "live_error_fallback_sample", "empty", None}
+
+
+def _needs_filing_review(recommendations: list[dict[str, Any]], source_status: dict[str, dict[str, Any]]) -> bool:
+    if any(item.get("linked_vault_notes") for item in recommendations):
+        return True
+    sec = source_status.get("SEC EDGAR", {})
+    return sec.get("freshness_status") in {"sample_cache", "empty", None}
+
+
+def _expected_refresh_artifact(adapter_id: str) -> str:
+    if adapter_id == "vault-compile":
+        return "reports/vault/compile.json"
+    if adapter_id == "sample-cache":
+        return "reports/evidence/daily-evidence-catalog.json"
+    return "reports/evidence/live-evidence-catalog.json"
 
 
 def _questions_for_topics(topics: list[str], name: str) -> list[str]:

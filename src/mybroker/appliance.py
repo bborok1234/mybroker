@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from mybroker.topics import DEFAULT_DAILY_SCOUT_OUTPUT
+from mybroker.topics import DEFAULT_DAILY_SCOUT_OUTPUT, DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT
 from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT
 
 
@@ -736,6 +736,7 @@ def write_today_surface(
     brief_path: str | Path,
     vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
     scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    refresh_plan_path: str | Path = DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -746,6 +747,7 @@ def write_today_surface(
     evidence = load_json(evidence_path)
     vault = load_json(vault_path) if Path(vault_path).exists() else {}
     scout = load_json(scout_path) if Path(scout_path).exists() else {}
+    refresh_plan = load_json(refresh_plan_path) if Path(refresh_plan_path).exists() else {}
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
@@ -756,6 +758,7 @@ def write_today_surface(
             evidence=evidence,
             vault_notes=_vault_notes_for_memory(vault),
             scout=scout,
+            refresh_plan=refresh_plan,
             brief_path=Path(brief_path),
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
@@ -773,6 +776,7 @@ def render_today_surface(
     evidence: dict[str, Any],
     vault_notes: list[dict[str, Any]],
     scout: dict[str, Any],
+    refresh_plan: dict[str, Any],
     brief_path: Path,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
@@ -785,6 +789,7 @@ def render_today_surface(
     gaps = evidence.get("collection_gaps", [])
     generated_at = scenario.get("generated_at", _now())
     scout_recommendations = scout.get("recommendations", []) if scout.get("schema_version") == "daily_scout.v1" else []
+    refresh_actions = refresh_plan.get("actions", []) if refresh_plan.get("schema_version") == "source_refresh_plan.v1" else []
     scout_cards = "".join(
         "<article class='card'>"
         f"<span>{esc(item.get('action', 'monitor'))} · #{esc(item.get('priority_rank', ''))}</span>"
@@ -794,6 +799,15 @@ def render_today_surface(
         "</article>"
         for item in scout_recommendations[:3]
     ) or "<p>오늘 scout 추천이 아직 없습니다.</p>"
+    refresh_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(action.get('priority', 'low'))} · {esc(action.get('cadence', 'review'))}</span>"
+        f"<strong>{esc(action.get('source_name', 'source'))}</strong>"
+        f"<p>{esc(action.get('reason', ''))}</p>"
+        f"<small>{esc(action.get('adapter_id', ''))} · dry-run 계획</small>"
+        "</article>"
+        for action in refresh_actions[:4]
+    ) or "<p>오늘 source refresh plan이 아직 없습니다.</p>"
     theme_cards = "".join(
         "<article class='card'>"
         f"<span>{esc(topic.get('name', ''))}</span>"
@@ -898,6 +912,10 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <div class="stack">{scout_cards}</div>
 </section>
 <section class="section">
+<h2>오늘 새로고침 계획</h2>
+<div class="stack">{refresh_cards}</div>
+</section>
+<section class="section">
 <h2>오늘의 주제 기억</h2>
 <div class="stack">{theme_cards}</div>
 </section>
@@ -952,6 +970,7 @@ def archive_daily_run(
     memory_path: str | Path,
     brief_path: str | Path,
     today_path: str | Path,
+    refresh_plan_path: str | Path | None = None,
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
 ) -> Path:
     timestamp = datetime.now(timezone.utc)
@@ -963,9 +982,12 @@ def archive_daily_run(
         "verdict": verdict_path,
         "evidence": evidence_path,
         "memory": memory_path,
+        "source_refresh_plan": refresh_plan_path,
         "brief": brief_path,
         "today": today_path,
     }.items():
+        if source is None:
+            continue
         source_path = Path(source)
         if source_path.exists():
             target = archive_dir / source_path.name

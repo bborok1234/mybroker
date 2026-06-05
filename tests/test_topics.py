@@ -9,10 +9,12 @@ from mybroker.topics import (
     add_interest,
     build_daily_scout,
     build_research_plan,
+    build_source_refresh_plan,
     collect_topic_evidence,
     init_topic_config,
     validate_daily_scout_file,
     validate_research_plan_file,
+    validate_source_refresh_plan_file,
     validate_topic_config_file,
     validate_topic_memory_file,
 )
@@ -63,15 +65,23 @@ class TopicResearchLoopTests(unittest.TestCase):
                 output_path=scout_path,
                 run_id="daily-test",
             )
+            refresh_plan_path = root / "source-refresh-plan.json"
+            refresh_plan = build_source_refresh_plan(
+                scout_path=scout_path,
+                evidence_path=catalog_path,
+                output_path=refresh_plan_path,
+            )
 
             plan_errors = validate_research_plan_file(plan_path)
             scout_errors = validate_daily_scout_file(scout_path)
+            refresh_plan_errors = validate_source_refresh_plan_file(refresh_plan_path)
             catalog_errors = validate_public_evidence_catalog_payload(catalog)
             memory_errors = validate_topic_memory_file(memory_path)
 
         self.assertEqual(plan["schema_version"], "daily_research_plan.v1")
         self.assertEqual(plan_errors, [])
         self.assertEqual(scout_errors, [])
+        self.assertEqual(refresh_plan_errors, [])
         self.assertEqual(catalog_errors, [])
         self.assertEqual(memory_errors, [])
         self.assertEqual(catalog["mode"], "sample_cache_topic_research")
@@ -79,6 +89,9 @@ class TopicResearchLoopTests(unittest.TestCase):
         self.assertEqual(scout["schema_version"], "daily_scout.v1")
         self.assertGreaterEqual(scout["recommendation_count"], 1)
         self.assertIn(scout["recommended_topic"]["action"], {"inspect_first", "monitor", "defer"})
+        self.assertEqual(refresh_plan["schema_version"], "source_refresh_plan.v1")
+        self.assertFalse(refresh_plan["external_effect_performed"])
+        self.assertGreaterEqual(len(refresh_plan["actions"]), 1)
         self.assertGreaterEqual(len(catalog["items"]), 2)
 
 
