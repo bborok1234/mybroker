@@ -60,6 +60,7 @@ PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/
 PYTHONPATH=src python3 -m mybroker validate-daily-agenda reports/daily/brief-agenda.json
 PYTHONPATH=src python3 -m mybroker validate-daily-readiness reports/runtime/daily-readiness.json
 PYTHONPATH=src python3 -m mybroker validate-daily-home reports/runtime/daily-home.json
+PYTHONPATH=src python3 -m mybroker validate-phone-access-verify reports/runtime/phone-access-verify.json
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-plan reports/daily/source-refresh-plan.json
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-apply reports/daily/source-refresh-apply.json
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-live-gate reports/daily/source-refresh-live-gate.json
@@ -71,6 +72,7 @@ PYTHONPATH=src python3 -m mybroker brief --scenario reports/scenarios/public-evi
 PYTHONPATH=src python3 -m mybroker appliance playbook
 PYTHONPATH=src python3 -m mybroker appliance init --project-root .
 PYTHONPATH=src python3 -m mybroker appliance access
+PYTHONPATH=src python3 -m mybroker appliance access-verify
 PYTHONPATH=src python3 -m mybroker appliance decision-packet
 PYTHONPATH=src python3 -m mybroker appliance decision apply --response "approve private_phone_access private_network_exposure"
 PYTHONPATH=src python3 -m mybroker appliance doctor
@@ -86,6 +88,7 @@ PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile
 PYTHONPATH=src python3 -m mybroker appliance agenda
 PYTHONPATH=src python3 -m mybroker appliance readiness
 PYTHONPATH=src python3 -m mybroker appliance home
+PYTHONPATH=src python3 -m mybroker appliance access-verify
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
 PYTHONPATH=src python3 -m mybroker appliance tasks
@@ -225,6 +228,7 @@ appliance run` uses the existing daily research loop, then writes:
 
 - `reports/runtime/local-analyst-playbook.json`: the runtime pattern MyBroker is following;
 - `reports/runtime/phone-access.json`: private phone access guidance, preferring Tailscale Serve;
+- `reports/runtime/phone-access-verify.json` and `reports/product/phone-access.html`: read-only proof that daily-home is the local phone entrypoint, required local links exist, and access guidance remains private-first without starting services;
 - `reports/runtime/operator-decision-packet.json`: pending operator decisions for scheduler activation, notification send, and private phone access;
 - `reports/runtime/local-runtime-doctor.json`: local runtime readiness proof for runner assets, artifact freshness, notification gate, and launchd state;
 - `reports/runtime/local-runtime-doctor-activation.json`: strict post-activation doctor proof that requires launchd to be loaded;
@@ -306,6 +310,9 @@ local responses so the operator can decide the next step from a phone.
 dashboard and not a market answer; it reads existing artifacts only, then orders the first links,
 readiness proof, continuity proof, scheduler/access state, and safe local commands for the day's
 study loop.
+`phone-access.html` is the proof before trying the phone. It does not start a server or run
+Tailscale; it verifies that daily-home exists, local links resolve, private-first commands are
+present, and public exposure remains out of scope.
 `handoff.html` is the cross-day continuity surface. It is not the market brief and not a project
 tracker; it answers whether yesterday's questions, local feedback, carried tasks, council warnings,
 and memory risks were reflected in today's run or still need a short local response.

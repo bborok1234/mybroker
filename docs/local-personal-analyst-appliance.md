@@ -76,11 +76,15 @@ Generate the local access artifact:
 
 ```bash
 PYTHONPATH=src python3 -m mybroker appliance access
+PYTHONPATH=src python3 -m mybroker appliance access-verify
 ```
 
 The artifact writes the local URL, the private tailnet URL shape, and the commands to run a
 local static server plus `tailscale serve --bg`. MyBroker deliberately does not enable Funnel
 or public exposure by default.
+The verify step writes `phone_access_verify.v1` and `reports/product/phone-access.html` without
+starting a server. It checks that `daily-home.html` is the first entrypoint, required local links
+exist, and access guidance remains private-first.
 
 ## Live Evidence Refresh
 
@@ -113,6 +117,7 @@ freshness. This keeps the local morning loop useful while making weak or stale e
 PYTHONPATH=src python3 -m mybroker appliance playbook
 PYTHONPATH=src python3 -m mybroker appliance init --project-root .
 PYTHONPATH=src python3 -m mybroker appliance access
+PYTHONPATH=src python3 -m mybroker appliance access-verify
 PYTHONPATH=src python3 -m mybroker appliance decision-packet
 PYTHONPATH=src python3 -m mybroker appliance doctor
 PYTHONPATH=src python3 -m mybroker appliance scheduler status
@@ -188,6 +193,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/readiness.html`: phone-readable control page that says whether today's brief is fresh enough, what is stale or missing, and what local run command to use next.
 - `reports/runtime/daily-home.json`: machine-readable phone entrypoint over existing daily artifacts.
 - `reports/product/daily-home.html`: phone-first daily home that says what to open first, what is trustworthy or blocked, which continuity proof matters, and which safe local response commands are available.
+- `reports/runtime/phone-access-verify.json`: machine-readable read-only proof for local/private phone access readiness.
+- `reports/product/phone-access.html`: phone-readable proof that daily-home can be the first private/local entrypoint without starting services or public exposure.
 - `reports/runtime/scheduler-operations.json`: machine-readable summary of scheduler assets, local run-once proof, activation preflight, activation verification, and runtime doctor state.
 - `reports/product/scheduler.html`: phone-readable scheduler operations page that says whether automation is inactive, locally proven, activation-ready, active, or blocked.
 - `reports/memory/analyst-task-queue.json`: machine-readable role-based task queue.
@@ -301,9 +308,14 @@ schedulers, or perform host/network effects.
 `appliance home` is the first phone surface to open each day. It writes
 `daily_operator_home.v1` and `reports/product/daily-home.html` by reading existing today, morning,
 readiness, handoff, handoff-response-apply, run-ledger, scheduler operations, phone access,
-notification, and memory audit artifacts. It does not render project progress, fetch live data,
-send notifications, write host state, or make recommendations; it only orders the existing local
-surfaces and safe response commands.
+phone access verification, notification, and memory audit artifacts. It does not render project
+progress, fetch live data, send notifications, write host state, or make recommendations; it only
+orders the existing local surfaces and safe response commands.
+
+`appliance access-verify` is the no-effect proof before testing from the phone. It writes
+`phone_access_verify.v1` and `reports/product/phone-access.html` by reading the access plan and
+daily-home surface. It does not start `python3 -m http.server`, does not run `tailscale serve`,
+does not open a public tunnel, and does not write host state.
 
 `appliance trace` is the local observability proof. It writes `local_run_trace.v1` and
 `reports/product/run-trace.html` by reading the existing playbook, pattern radar, scout, evidence,

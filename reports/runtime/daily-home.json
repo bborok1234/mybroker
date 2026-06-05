@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-05T21:01:58.596941+00:00",
+  "generated_at": "2026-06-05T21:24:41.354273+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -126,13 +126,14 @@
     "memory": "reports/product/memory.html",
     "memory_audit": "reports/product/memory-audit.html",
     "scheduler": "reports/product/scheduler.html",
+    "phone_access": "reports/product/phone-access.html",
     "phone_access_plan": "reports/runtime/phone-access.json",
     "notification": "reports/notifications/latest.json"
   },
   "access": {
     "recommended_path": "tailscale_serve_private",
-    "local_url": "http://localhost:8787/reports/product/today.html",
-    "private_phone_url": "https://mybroker-mac/reports/product/today.html",
+    "local_url": "http://localhost:8787/reports/product/daily-home.html",
+    "private_phone_url": "https://mybroker-mac/reports/product/daily-home.html",
     "requires_separate_approval": true
   },
   "notification": {
@@ -147,7 +148,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-05T20:38:20.816052+00:00"
+      "generated_at": "2026-06-05T21:24:40.364830+00:00"
     },
     {
       "name": "readiness",
@@ -155,7 +156,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T20:38:20.387606+00:00"
+      "generated_at": "2026-06-05T21:24:41.155507+00:00"
     },
     {
       "name": "handoff",
@@ -195,7 +196,15 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T06:42:15.649687+00:00"
+      "generated_at": "2026-06-05T21:24:40.161882+00:00"
+    },
+    {
+      "name": "phone_access_verify",
+      "path": "reports/runtime/phone-access-verify.json",
+      "exists": true,
+      "schema_version": "phone_access_verify.v1",
+      "status": "ready",
+      "generated_at": "2026-06-05T21:24:40.956825+00:00"
     },
     {
       "name": "notification",
