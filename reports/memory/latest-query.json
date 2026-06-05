@@ -1,6 +1,6 @@
 {
   "schema_version": "personal_memory_query.v1",
-  "generated_at": "2026-06-05T06:32:26.636286+00:00",
+  "generated_at": "2026-06-05T06:42:22.260538+00:00",
   "query": "semiconductor cycle",
   "status": "matched",
   "matched_topic_count": 2,
@@ -61,7 +61,7 @@
   "matched_archives": [
     {
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T06:32:26.454459+00:00",
+      "generated_at": "2026-06-05T06:42:22.078089+00:00",
       "score": 0.0,
       "archive_dir": "reports/archive/2026-06-05",
       "artifacts": {

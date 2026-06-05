@@ -13,6 +13,7 @@ from mybroker.appliance import (
     write_memory_surface,
     write_notification_payload,
     write_phone_access_plan,
+    write_runtime_doctor,
     write_runtime_playbook,
     write_today_surface,
 )
@@ -26,6 +27,7 @@ class LocalApplianceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             topics_path = root / "topics.json"
+            runtime_topics_path = root / "config" / "topics.json"
             plan_path = root / "research-plan.json"
             evidence_path = root / "daily-evidence.json"
             memory_path = root / "topic-memory.json"
@@ -34,6 +36,7 @@ class LocalApplianceTests(unittest.TestCase):
             brief_path = root / "market-brief.html"
             today_path = root / "today.html"
             init_topic_config(topics_path)
+            init_topic_config(runtime_topics_path)
             build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="daily-test")
             collect_topic_evidence(
                 topics_path=topics_path,
@@ -102,7 +105,12 @@ class LocalApplianceTests(unittest.TestCase):
                 surface_path=root / "memory-query.html",
             )
             playbook = write_runtime_playbook(root / "playbook.json")
-            assets = write_launchd_assets(project_root=root, output_dir=root / "ops", hour=7, minute=15)
+            assets = write_launchd_assets(project_root=root, output_dir=root / "ops" / "local", hour=7, minute=15)
+            doctor = write_runtime_doctor(
+                project_root=root,
+                output_path=root / "runtime-doctor.json",
+                freshness_hours=36,
+            )
 
             html = today.read_text(encoding="utf-8")
             memory_html = memory_surface.read_text(encoding="utf-8")
@@ -112,6 +120,7 @@ class LocalApplianceTests(unittest.TestCase):
             access_payload = json.loads(access_plan.read_text(encoding="utf-8"))
             manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
             playbook_payload = json.loads(playbook.read_text(encoding="utf-8"))
+            doctor_payload = json.loads(doctor.read_text(encoding="utf-8"))
             script_exists = Path(assets["script"]).exists()
             plist_exists = Path(assets["plist"]).exists()
 
@@ -138,6 +147,11 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("tailscale serve --bg 8787", {item["command"] for item in access_payload["commands"]})
         self.assertEqual(manifest_payload["schema_version"], "daily_archive.v1")
         self.assertIn("Hermes Agent", {item["source"] for item in playbook_payload["absorbed_patterns"]})
+        self.assertEqual(doctor_payload["schema_version"], "local_runtime_doctor.v1")
+        self.assertEqual(doctor_payload["status"], "ready")
+        self.assertEqual(doctor_payload["fail_count"], 0)
+        self.assertIn("launchd_loaded", {item["name"] for item in doctor_payload["checks"]})
+        self.assertTrue(doctor_payload["install_boundary"]["launchd_install_is_host_level"])
         self.assertTrue(script_exists)
         self.assertTrue(plist_exists)
 

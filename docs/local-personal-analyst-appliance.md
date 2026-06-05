@@ -40,6 +40,7 @@ launchd
   -> product brief + /today mobile surface
   -> /memory accumulated research surface
   -> /memory-query local recall surface
+  -> local_runtime_doctor.v1
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -94,6 +95,7 @@ freshness. This keeps the local morning loop useful while making weak or stale e
 PYTHONPATH=src python3 -m mybroker appliance playbook
 PYTHONPATH=src python3 -m mybroker appliance init --project-root .
 PYTHONPATH=src python3 -m mybroker appliance access
+PYTHONPATH=src python3 -m mybroker appliance doctor
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
@@ -122,6 +124,12 @@ The launchd assets are written under `ops/local/`:
 
 They are intentionally not installed automatically. Installing a LaunchAgent is a host-level
 operation and should remain explicit.
+
+`appliance doctor` writes `reports/runtime/local-runtime-doctor.json`. It checks runner assets,
+topic config, artifact freshness, notification payload state, private phone access guidance, and
+whether the `com.mybroker.daily-analyst` LaunchAgent is loaded for the current user. By default,
+an unloaded LaunchAgent is a warning rather than a failure. Use `--require-launchd-loaded` only
+when validating an installed daily setup.
 
 ## Safety Boundary
 

@@ -15,6 +15,7 @@ from mybroker.appliance import (
     DEFAULT_NOTIFICATION_OUTPUT,
     DEFAULT_PHONE_ACCESS_OUTPUT,
     DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
+    DEFAULT_RUNTIME_DOCTOR_OUTPUT,
     DEFAULT_TODAY_OUTPUT,
     archive_daily_run,
     send_notification_payload,
@@ -23,6 +24,7 @@ from mybroker.appliance import (
     write_memory_surface,
     write_notification_payload,
     write_phone_access_plan,
+    write_runtime_doctor,
     write_runtime_playbook,
     write_today_surface,
 )
@@ -184,6 +186,11 @@ def main(argv: list[str] | None = None) -> int:
     appliance_access_parser.add_argument("--output", default=DEFAULT_PHONE_ACCESS_OUTPUT.as_posix())
     appliance_access_parser.add_argument("--port", type=int, default=8787)
     appliance_access_parser.add_argument("--tailnet-host", default="mybroker-mac")
+    appliance_doctor_parser = appliance_subcommands.add_parser("doctor", help="Write a local runtime readiness proof without installing host services.")
+    appliance_doctor_parser.add_argument("--project-root", default=".")
+    appliance_doctor_parser.add_argument("--output", default=DEFAULT_RUNTIME_DOCTOR_OUTPUT.as_posix())
+    appliance_doctor_parser.add_argument("--freshness-hours", type=int, default=36)
+    appliance_doctor_parser.add_argument("--require-launchd-loaded", action="store_true")
     appliance_today_parser = appliance_subcommands.add_parser("today", help="Render the mobile-first /today product surface.")
     appliance_today_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
     appliance_today_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
@@ -466,6 +473,21 @@ def main(argv: list[str] | None = None) -> int:
             path = write_phone_access_plan(output_path=args.output, port=args.port, tailnet_host=args.tailnet_host)
             print(json.dumps({"phone_access": path.as_posix()}, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "doctor":
+            path = write_runtime_doctor(
+                project_root=args.project_root,
+                output_path=args.output,
+                freshness_hours=args.freshness_hours,
+                require_launchd_loaded=args.require_launchd_loaded,
+            )
+            payload = json.loads(Path(path).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "runtime_doctor": path.as_posix(),
+                "status": payload["status"],
+                "fail_count": payload["fail_count"],
+                "warn_count": payload["warn_count"],
+            }, indent=2, ensure_ascii=False))
+            return 1 if payload["fail_count"] else 0
         if args.appliance_command == "today":
             path = write_today_surface(
                 scenario_path=args.scenario,
