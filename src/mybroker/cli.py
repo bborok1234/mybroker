@@ -39,6 +39,8 @@ from mybroker.appliance import (
     DEFAULT_SCHEDULER_OPERATIONS_SURFACE,
     DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT,
     DEFAULT_SCHEDULER_STATUS_OUTPUT,
+    DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
+    DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     DEFAULT_TODAY_OUTPUT,
     add_archive_artifacts,
     archive_daily_run,
@@ -66,6 +68,7 @@ from mybroker.appliance import (
     write_scheduler_operations,
     write_scheduler_run_once,
     write_scheduler_status,
+    write_source_refresh_brief,
     write_today_surface,
     validate_analyst_journal_file,
     validate_analyst_task_queue_file,
@@ -75,6 +78,7 @@ from mybroker.appliance import (
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
     validate_scheduler_operations_file,
+    validate_source_refresh_brief_file,
 )
 from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
@@ -296,6 +300,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_morning_parser.add_argument("morning_control_path")
     validate_scheduler_operations_parser = subcommands.add_parser("validate-scheduler-operations", help="Validate a local_scheduler_operations.v1 artifact.")
     validate_scheduler_operations_parser.add_argument("scheduler_operations_path")
+    validate_source_refresh_brief_parser = subcommands.add_parser("validate-source-refresh-brief", help="Validate a source_refresh_brief.v1 artifact.")
+    validate_source_refresh_brief_parser.add_argument("source_refresh_brief_path")
 
     brief_parser = subcommands.add_parser("brief", help="Build a user-facing MyBroker product brief from scenario and verdict artifacts.")
     brief_parser.add_argument("--scenario", required=True, help="scenario_report.v1 artifact path.")
@@ -396,6 +402,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--refresh-live-preflight", default=DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--agenda", default=DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--agenda-surface", default=DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix())
+    appliance_today_parser.add_argument("--source-refresh-surface", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
     appliance_today_parser.add_argument("--brief", default="reports/product/market-brief.html")
     appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--archive-manifest")
@@ -411,6 +418,16 @@ def main(argv: list[str] | None = None) -> int:
     appliance_agenda_parser.add_argument("--refresh-plan", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
     appliance_agenda_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT.as_posix())
     appliance_agenda_parser.add_argument("--output", default=DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix())
+    appliance_source_refresh_parser = appliance_subcommands.add_parser("source-refresh", help="Render the phone-first source refresh briefing from refresh artifacts.")
+    appliance_source_refresh_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_source_refresh_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_source_refresh_parser.add_argument("--refresh-plan", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
+    appliance_source_refresh_parser.add_argument("--refresh-apply", default=DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT.as_posix())
+    appliance_source_refresh_parser.add_argument("--refresh-live-gate", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
+    appliance_source_refresh_parser.add_argument("--refresh-live-run", default=DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix())
+    appliance_source_refresh_parser.add_argument("--refresh-live-preflight", default=DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix())
+    appliance_source_refresh_parser.add_argument("--artifact-output", default=DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT.as_posix())
+    appliance_source_refresh_parser.add_argument("--output", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
     appliance_readiness_parser = appliance_subcommands.add_parser("readiness", help="Render daily freshness and next-run readiness for phone review.")
     appliance_readiness_parser.add_argument("--project-root", default=".")
     appliance_readiness_parser.add_argument("--freshness-hours", type=int, default=24)
@@ -464,6 +481,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_morning_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--runtime-doctor", default=DEFAULT_RUNTIME_DOCTOR_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--scheduler-surface", default=DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix())
+    appliance_morning_parser.add_argument("--source-refresh-surface", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--artifact-output", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--output", default=DEFAULT_MORNING_CONTROL_SURFACE.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
@@ -894,6 +912,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-source-refresh-brief":
+        errors = validate_source_refresh_brief_file(args.source_refresh_brief_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-vault":
         errors = validate_knowledge_vault_compile_file(args.vault_path)
         if errors:
@@ -1162,6 +1187,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_preflight_path=args.refresh_live_preflight,
                 agenda_path=args.agenda,
                 agenda_surface_path=args.agenda_surface,
+                source_refresh_surface_path=args.source_refresh_surface,
                 brief_path=args.brief,
                 output_path=args.output,
                 archive_manifest_path=args.archive_manifest,
@@ -1185,6 +1211,27 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({
                 "daily_agenda": path.as_posix(),
                 "artifact": args.artifact_output,
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "source-refresh":
+            path = write_source_refresh_brief(
+                scout_path=args.scout,
+                evidence_path=args.evidence,
+                refresh_plan_path=args.refresh_plan,
+                refresh_apply_path=args.refresh_apply,
+                refresh_live_gate_path=args.refresh_live_gate,
+                refresh_live_run_path=args.refresh_live_run,
+                refresh_live_preflight_path=args.refresh_live_preflight,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "source_refresh": path.as_posix(),
+                "artifact": args.artifact_output,
+                "status": payload["status"],
+                "next_action": payload["next_action"],
+                "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "readiness":
@@ -1292,6 +1339,7 @@ def main(argv: list[str] | None = None) -> int:
                 notification_path=args.notification,
                 runtime_doctor_path=args.runtime_doctor,
                 scheduler_surface_path=args.scheduler_surface,
+                source_refresh_surface_path=args.source_refresh_surface,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
@@ -1390,6 +1438,8 @@ def main(argv: list[str] | None = None) -> int:
             agenda_surface_path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE
             readiness_artifact_path = DEFAULT_DAILY_READINESS_OUTPUT
             readiness_surface_path = DEFAULT_DAILY_READINESS_SURFACE
+            source_refresh_brief_artifact_path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT
+            source_refresh_brief_surface_path = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE
             scheduler_operations_artifact_path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT
             scheduler_operations_surface_path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE
             vault_compile_path = Path(args.vault_output)
@@ -1444,6 +1494,17 @@ def main(argv: list[str] | None = None) -> int:
             refresh_live_preflight = build_source_refresh_live_preflight(
                 live_run_path=refresh_live_run_path,
                 output_path=refresh_live_preflight_path,
+            )
+            written_source_refresh_brief = write_source_refresh_brief(
+                scout_path=scout_path,
+                evidence_path=evidence_path,
+                refresh_plan_path=refresh_plan_path,
+                refresh_apply_path=refresh_apply_path,
+                refresh_live_gate_path=refresh_live_gate_path,
+                refresh_live_run_path=refresh_live_run_path,
+                refresh_live_preflight_path=refresh_live_preflight_path,
+                artifact_output_path=source_refresh_brief_artifact_path,
+                surface_output_path=source_refresh_brief_surface_path,
             )
             written_agenda = write_daily_brief_agenda(
                 scout_path=scout_path,
@@ -1505,6 +1566,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_preflight_path=refresh_live_preflight_path,
                 agenda_path=agenda_artifact_path,
                 agenda_surface_path=written_agenda,
+                source_refresh_surface_path=written_source_refresh_brief,
                 brief_path=written_brief,
                 output_path=today_path,
                 journal_surface_path=provisional_journal,
@@ -1581,6 +1643,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_preflight_path=refresh_live_preflight_path,
                 agenda_path=agenda_artifact_path,
                 agenda_surface_path=written_agenda,
+                source_refresh_surface_path=written_source_refresh_brief,
                 brief_path=written_brief,
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,
@@ -1618,6 +1681,7 @@ def main(argv: list[str] | None = None) -> int:
                 runtime_doctor_path=DEFAULT_RUNTIME_DOCTOR_OUTPUT,
                 readiness_surface_path=readiness_surface_path,
                 scheduler_surface_path=written_scheduler_operations,
+                source_refresh_surface_path=written_source_refresh_brief,
                 agenda_path=agenda_artifact_path,
                 agenda_surface_path=written_agenda,
                 artifact_output_path=morning_artifact_path,
@@ -1631,6 +1695,8 @@ def main(argv: list[str] | None = None) -> int:
             add_archive_artifacts(
                 manifest_path=archive_manifest,
                 artifacts={
+                    "source_refresh_brief": source_refresh_brief_artifact_path,
+                    "source_refresh_brief_surface": written_source_refresh_brief,
                     "scheduler_operations": scheduler_operations_artifact_path,
                     "scheduler_operations_surface": written_scheduler_operations,
                     "daily_readiness": readiness_artifact_path,
@@ -1651,6 +1717,8 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_agenda_surface": written_agenda.as_posix(),
                 "daily_readiness": readiness_artifact_path.as_posix(),
                 "daily_readiness_surface": written_readiness.as_posix(),
+                "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),
+                "source_refresh_brief_surface": written_source_refresh_brief.as_posix(),
                 "scheduler_operations": scheduler_operations_artifact_path.as_posix(),
                 "scheduler_operations_surface": written_scheduler_operations.as_posix(),
                 "evidence_catalog": evidence_path.as_posix(),

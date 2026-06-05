@@ -31,6 +31,7 @@ from mybroker.appliance import (
     write_scheduler_apply,
     write_scheduler_operations,
     write_scheduler_run_once,
+    write_source_refresh_brief,
     write_today_surface,
     validate_morning_control_packet_file,
     validate_daily_brief_agenda_file,
@@ -39,6 +40,8 @@ from mybroker.appliance import (
     validate_daily_readiness_payload,
     validate_scheduler_operations_file,
     validate_scheduler_operations_payload,
+    validate_source_refresh_brief_file,
+    validate_source_refresh_brief_payload,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
 from mybroker.scenario import run_market_simulation, write_scenario_report, write_verdict
@@ -152,6 +155,17 @@ class LocalApplianceTests(unittest.TestCase):
                 '{"schema_version":"source_refresh_live_preflight.v1","status":"not_required","approval_status":"not_required","live_run_status":"not_requested","requested_execution":{"intend_execute":false,"confirm_live_network":false},"source_ids":[],"proposed_commands":[],"blockers":[],"warnings":[],"external_effect_performed":false,"next_step":"no live refresh execution needed"}',
                 encoding="utf-8",
             )
+            source_refresh_brief = write_source_refresh_brief(
+                scout_path=root / "missing-scout.json",
+                evidence_path=root / "missing-evidence.json",
+                refresh_plan_path=refresh_plan_path,
+                refresh_apply_path=refresh_apply_path,
+                refresh_live_gate_path=refresh_live_gate_path,
+                refresh_live_run_path=refresh_live_run_path,
+                refresh_live_preflight_path=refresh_live_preflight_path,
+                artifact_output_path=root / "source-refresh-brief.json",
+                surface_output_path=root / "source-refresh.html",
+            )
             manifest = archive_daily_run(
                 run_id="daily-test",
                 scenario_path=scenario_path,
@@ -256,6 +270,8 @@ class LocalApplianceTests(unittest.TestCase):
             scheduler_apply_payload = json.loads(scheduler_apply.read_text(encoding="utf-8"))
             scheduler_operations_payload = json.loads((root / "scheduler-operations.json").read_text(encoding="utf-8"))
             scheduler_operations_html = scheduler_operations.read_text(encoding="utf-8")
+            source_refresh_brief_payload = json.loads((root / "source-refresh-brief.json").read_text(encoding="utf-8"))
+            source_refresh_brief_html = source_refresh_brief.read_text(encoding="utf-8")
             script_exists = Path(assets["script"]).exists()
             plist_exists = Path(assets["plist"]).exists()
             morning = write_morning_control_packet(
@@ -345,6 +361,13 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(validate_scheduler_operations_payload(scheduler_operations_payload), [])
         self.assertIn("자동 실행 준비 상태", scheduler_operations_html)
         self.assertNotIn("schema_version", scheduler_operations_html)
+        self.assertEqual(source_refresh_brief_payload["schema_version"], "source_refresh_brief.v1")
+        self.assertIn(source_refresh_brief_payload["status"], {"local_ready", "no_refresh_needed", "approval_required", "preflight_required", "ready_to_execute", "executed", "blocked"})
+        self.assertFalse(source_refresh_brief_payload["external_effect_performed"])
+        self.assertFalse(source_refresh_brief_payload["host_write_performed"])
+        self.assertEqual(validate_source_refresh_brief_payload(source_refresh_brief_payload), [])
+        self.assertIn("오늘 근거 새로고침 판단", source_refresh_brief_html)
+        self.assertNotIn("schema_version", source_refresh_brief_html)
         self.assertTrue(script_exists)
         self.assertTrue(plist_exists)
         self.assertEqual(morning_payload["schema_version"], "morning_control_packet.v1")
@@ -892,6 +915,8 @@ class LocalApplianceTests(unittest.TestCase):
             agenda_errors = validate_daily_brief_agenda_file(root / "reports" / "daily" / "brief-agenda.json")
             readiness_payload = json.loads((root / "reports" / "runtime" / "daily-readiness.json").read_text(encoding="utf-8"))
             readiness_errors = validate_daily_readiness_file(root / "reports" / "runtime" / "daily-readiness.json")
+            source_refresh_brief_payload = json.loads((root / "reports" / "runtime" / "source-refresh-brief.json").read_text(encoding="utf-8"))
+            source_refresh_brief_errors = validate_source_refresh_brief_file(root / "reports" / "runtime" / "source-refresh-brief.json")
             scheduler_operations_payload = json.loads((root / "reports" / "runtime" / "scheduler-operations.json").read_text(encoding="utf-8"))
             scheduler_operations_errors = validate_scheduler_operations_file(root / "reports" / "runtime" / "scheduler-operations.json")
             manifest_payload = json.loads((root / "reports" / "archive" / "2026-06-05" / "manifest.json").read_text(encoding="utf-8"))
@@ -899,6 +924,7 @@ class LocalApplianceTests(unittest.TestCase):
             morning_html = (root / "reports" / "product" / "morning.html").read_text(encoding="utf-8")
             agenda_html = (root / "reports" / "product" / "daily-agenda.html").read_text(encoding="utf-8")
             readiness_html = (root / "reports" / "product" / "readiness.html").read_text(encoding="utf-8")
+            source_refresh_html = (root / "reports" / "product" / "source-refresh.html").read_text(encoding="utf-8")
             scheduler_html = (root / "reports" / "product" / "scheduler.html").read_text(encoding="utf-8")
             vault_html = (root / "reports" / "product" / "vault.html").read_text(encoding="utf-8")
 
@@ -913,6 +939,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("agenda", morning_payload["phone_links"])
         self.assertIn("readiness", morning_payload["phone_links"])
         self.assertIn("scheduler", morning_payload["phone_links"])
+        self.assertIn("source_refresh", morning_payload["phone_links"])
         self.assertEqual(agenda_payload["schema_version"], "daily_brief_agenda.v1")
         self.assertEqual(agenda_errors, [])
         self.assertEqual(validate_daily_brief_agenda_payload(agenda_payload), [])
@@ -925,8 +952,15 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertFalse(readiness_payload["external_effect_performed"])
         self.assertIn(readiness_payload["status"], {"ready", "review", "stale", "blocked"})
         self.assertTrue(any(item["name"] == "daily_agenda" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "source_refresh_brief" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "scheduler_operations" for item in readiness_payload["artifacts"]))
+        self.assertIn("source_refresh", readiness_payload["phone_links"])
         self.assertIn("scheduler", readiness_payload["phone_links"])
+        self.assertEqual(source_refresh_brief_payload["schema_version"], "source_refresh_brief.v1")
+        self.assertEqual(source_refresh_brief_errors, [])
+        self.assertFalse(source_refresh_brief_payload["external_effect_performed"])
+        self.assertFalse(source_refresh_brief_payload["host_write_performed"])
+        self.assertIn(source_refresh_brief_payload["status"], {"local_ready", "approval_required", "preflight_required", "ready_to_execute", "executed", "blocked", "no_refresh_needed"})
         self.assertEqual(scheduler_operations_payload["schema_version"], "local_scheduler_operations.v1")
         self.assertEqual(scheduler_operations_errors, [])
         self.assertFalse(scheduler_operations_payload["external_effect_performed"])
@@ -938,6 +972,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("daily_agenda_surface", manifest_payload["artifacts"])
         self.assertIn("daily_readiness", manifest_payload["artifacts"])
         self.assertIn("daily_readiness_surface", manifest_payload["artifacts"])
+        self.assertIn("source_refresh_brief", manifest_payload["artifacts"])
+        self.assertIn("source_refresh_brief_surface", manifest_payload["artifacts"])
         self.assertIn("scheduler_operations", manifest_payload["artifacts"])
         self.assertIn("scheduler_operations_surface", manifest_payload["artifacts"])
         self.assertIn("오늘 20분 agenda", today_html)
@@ -946,10 +982,13 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("아직 결론내리면 안 되는 이유", agenda_html)
         self.assertIn("오늘 브리프 준비 상태", readiness_html)
         self.assertIn("Artifact freshness", readiness_html)
+        self.assertIn("오늘 근거 새로고침 판단", source_refresh_html)
+        self.assertIn("Source actions", source_refresh_html)
         self.assertIn("자동 실행 준비 상태", scheduler_html)
         self.assertIn("운영 증거", scheduler_html)
         self.assertIn("vault", morning_html)
         self.assertIn("readiness", morning_html)
+        self.assertIn("source_refresh", morning_html)
         self.assertIn("scheduler", morning_html)
         self.assertIn("컴파일된 리서치 노트", vault_html)
 

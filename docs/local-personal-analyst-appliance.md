@@ -120,6 +120,7 @@ PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --p
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --vault-raw-dir research-vault/raw --vault-wiki-dir research-vault/wiki --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
 PYTHONPATH=src python3 -m mybroker appliance agenda
+PYTHONPATH=src python3 -m mybroker appliance source-refresh
 PYTHONPATH=src python3 -m mybroker appliance readiness --freshness-hours 24
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
@@ -144,6 +145,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/journal.html`: phone-readable daily analyst journal with today's focus, role notes, evidence gaps, and tomorrow's questions.
 - `reports/daily/brief-agenda.json`: machine-readable 20-minute study agenda from scout, evidence, memory, vault, and refresh plan.
 - `reports/product/daily-agenda.html`: phone-readable agenda with reading order, source fan-out, weak evidence, role work, and follow-up questions.
+- `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
+- `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
 - `reports/runtime/daily-readiness.json`: machine-readable freshness/readiness proof for required daily artifacts.
 - `reports/product/readiness.html`: phone-readable control page that says whether today's brief is fresh enough, what is stale or missing, and what local run command to use next.
 - `reports/runtime/scheduler-operations.json`: machine-readable summary of scheduler assets, local run-once proof, activation preflight, activation verification, and runtime doctor state.

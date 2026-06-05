@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-05T16:07:15.674362+00:00",
+  "generated_at": "2026-06-05T16:26:21.033635+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -41,8 +41,30 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.641779+00:00",
+      "generated_at": "2026-06-05T16:26:21.005375+00:00",
       "schema_version": "daily_brief_agenda.v1"
+    },
+    {
+      "name": "source_refresh_brief",
+      "path": "reports/runtime/source-refresh-brief.json",
+      "kind": "control_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T16:26:21.004741+00:00",
+      "schema_version": "source_refresh_brief.v1"
+    },
+    {
+      "name": "source_refresh_surface",
+      "path": "reports/product/source-refresh.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
     },
     {
       "name": "morning_control",
@@ -52,7 +74,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.673766+00:00",
+      "generated_at": "2026-06-05T16:26:21.033304+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -74,7 +96,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.640455+00:00",
+      "generated_at": "2026-06-05T16:26:21.003365+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -85,7 +107,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.639543+00:00",
+      "generated_at": "2026-06-05T16:26:21.002471+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -96,7 +118,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.639863+00:00",
+      "generated_at": "2026-06-05T16:26:21.002775+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -107,7 +129,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.642896+00:00",
+      "generated_at": "2026-06-05T16:26:21.006227+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -118,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.642896+00:00",
+      "generated_at": "2026-06-05T16:26:21.006227+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -129,7 +151,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.651571+00:00",
+      "generated_at": "2026-06-05T16:26:21.013577+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -139,7 +161,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 8.63,
+      "age_hours": 8.94,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -151,7 +173,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.671755+00:00",
+      "generated_at": "2026-06-05T16:26:21.030800+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -162,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T16:07:15.672306+00:00",
+      "generated_at": "2026-06-05T16:26:21.031189+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -210,6 +232,7 @@
     "readiness": "reports/product/readiness.html",
     "morning": "reports/product/morning.html",
     "scheduler": "reports/product/scheduler.html",
+    "source_refresh": "reports/product/source-refresh.html",
     "today": "reports/product/today.html",
     "agenda": "reports/product/daily-agenda.html",
     "memory": "reports/product/memory.html",
