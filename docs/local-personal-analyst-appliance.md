@@ -145,6 +145,7 @@ PYTHONPATH=src python3 -m mybroker appliance handoff
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance council
+PYTHONPATH=src python3 -m mybroker appliance pattern-dry-run
 PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'more "Semiconductors" "council: source freshness를 더 확인하고 싶다"'
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
@@ -183,6 +184,8 @@ The local loop now writes three memory-facing surfaces:
   response handoff.
 - `reports/runtime/agent-pattern-radar.json`: machine-readable record of which external agentic workflow patterns are adopted, partially adopted, or rejected for the local daily analyst loop.
 - `reports/product/pattern-radar.html`: phone-readable workflow evolution radar for the next safe slice and safety guardrails.
+- `reports/runtime/pattern-dry-run-proof.json`: machine-readable proof that local-only workflow pattern candidates have validated artifacts and surfaces before deeper adoption.
+- `reports/product/pattern-dry-run.html`: phone-readable proof surface for which queued workflow patterns are safe to promote, approval-gated, or blocked.
 - `reports/runtime/daily-run-ledger.json`: machine-readable heartbeat ledger for canonical daily run, duplicate same-day runs, archive link, scheduler status, and external-effect proof.
 - `reports/product/run-ledger.html`: phone-readable run ledger that answers which run to trust when scheduled, manual, and validation runs all happened today.
 - `reports/runtime/daily-handoff.json`: machine-readable cross-day continuity proof for carried questions, feedback, task states, council warnings, memory risks, and today's reflection status.
@@ -268,6 +271,13 @@ New external agent or research patterns do not become product behavior directly.
 through the radar's dry-run queue first: local proof command, expected artifact, validator,
 operator-facing explanation, and explicit approval scope. Browser/scraper/live-source patterns
 remain gated until source-refresh approval and preflight prove the boundary.
+
+`pattern-dry-run` writes `pattern_dry_run_proof.v1` and
+`reports/product/pattern-dry-run.html`. It does not run the queued proof commands. It reads the
+existing local proof artifacts such as `personal_memory_audit.v1` and `local_run_trace.v1`, checks
+their validators, confirms their phone surfaces exist, and marks only local-only candidates as
+`adopted_proof_ready`. Live network, browser/scraper, host-write, credential, account, or order
+patterns remain `approval_required` or `blocked`.
 
 `source-refresh` writes `source_refresh_brief.v1` and `reports/product/source-refresh.html`. It
 shows source actions, weak evidence, and a source freshness scorecard. The scorecard separates

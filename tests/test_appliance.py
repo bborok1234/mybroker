@@ -15,6 +15,7 @@ from mybroker.appliance import (
     record_daily_review_response,
     record_task_status_response,
     write_agent_pattern_radar,
+    write_pattern_dry_run_proof,
     write_analyst_journal,
     write_analyst_council,
     write_analyst_task_queue,
@@ -53,6 +54,7 @@ from mybroker.appliance import (
     validate_memory_audit_file,
     validate_run_trace_file,
     validate_agent_pattern_radar_file,
+    validate_pattern_dry_run_proof_file,
     validate_daily_brief_agenda_file,
     validate_daily_brief_agenda_payload,
     validate_daily_operator_home_file,
@@ -1091,6 +1093,8 @@ class LocalApplianceTests(unittest.TestCase):
             source_refresh_brief_errors = validate_source_refresh_brief_file(root / "reports" / "runtime" / "source-refresh-brief.json")
             pattern_radar_payload = json.loads((root / "reports" / "runtime" / "agent-pattern-radar.json").read_text(encoding="utf-8"))
             pattern_radar_errors = validate_agent_pattern_radar_file(root / "reports" / "runtime" / "agent-pattern-radar.json")
+            pattern_proof_payload = json.loads((root / "reports" / "runtime" / "pattern-dry-run-proof.json").read_text(encoding="utf-8"))
+            pattern_proof_errors = validate_pattern_dry_run_proof_file(root / "reports" / "runtime" / "pattern-dry-run-proof.json")
             run_trace_payload = json.loads((root / "reports" / "runtime" / "run-trace.json").read_text(encoding="utf-8"))
             run_trace_errors = validate_run_trace_file(root / "reports" / "runtime" / "run-trace.json")
             run_ledger_payload = json.loads((root / "reports" / "runtime" / "daily-run-ledger.json").read_text(encoding="utf-8"))
@@ -1116,6 +1120,7 @@ class LocalApplianceTests(unittest.TestCase):
             access_verify_html = (root / "reports" / "product" / "phone-access.html").read_text(encoding="utf-8")
             source_refresh_html = (root / "reports" / "product" / "source-refresh.html").read_text(encoding="utf-8")
             pattern_radar_html = (root / "reports" / "product" / "pattern-radar.html").read_text(encoding="utf-8")
+            pattern_proof_html = (root / "reports" / "product" / "pattern-dry-run.html").read_text(encoding="utf-8")
             run_trace_html = (root / "reports" / "product" / "run-trace.html").read_text(encoding="utf-8")
             run_ledger_html = (root / "reports" / "product" / "run-ledger.html").read_text(encoding="utf-8")
             handoff_html = (root / "reports" / "product" / "handoff.html").read_text(encoding="utf-8")
@@ -1231,6 +1236,17 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(case["source"] == "TraceAgent" for case in pattern_radar_payload["cases"]))
         self.assertTrue(any(case["source"] == "TaskWeaver" and case["decision"] == "defer" for case in pattern_radar_payload["cases"]))
         self.assertTrue(any(case["decision"] == "reject" for case in pattern_radar_payload["cases"]))
+        self.assertEqual(pattern_proof_payload["schema_version"], "pattern_dry_run_proof.v1")
+        self.assertEqual(pattern_proof_errors, [])
+        self.assertFalse(pattern_proof_payload["external_effect_performed"])
+        self.assertFalse(pattern_proof_payload["host_write_performed"])
+        self.assertGreaterEqual(pattern_proof_payload["summary"]["passed_count"], 1)
+        self.assertTrue(any(row["candidate_id"] == "pattern-memory-recall-quality" and row["proof_status"] == "passed" for row in pattern_proof_payload["candidate_results"]))
+        self.assertTrue(any(row["candidate_id"] == "pattern-run-trace-observability" and row["proof_status"] == "passed" for row in pattern_proof_payload["candidate_results"]))
+        self.assertTrue(any(row["candidate_id"] == "pattern-live-source-browser-gateway" and row["proof_status"] == "approval_required" for row in pattern_proof_payload["candidate_results"]))
+        self.assertTrue(any(row["candidate_id"] == "pattern-code-analytics-sandbox" and row["proof_status"] == "blocked" for row in pattern_proof_payload["candidate_results"]))
+        self.assertTrue(any(item["decision"] == "adopted_proof_ready" for item in pattern_proof_payload["promotion_decisions"]))
+        self.assertIn("does_not_execute_candidate_commands", pattern_proof_payload["safety_boundary"])
         self.assertEqual(run_trace_payload["schema_version"], "local_run_trace.v1")
         self.assertEqual(run_trace_errors, [])
         self.assertFalse(run_trace_payload["external_effect_performed"])
@@ -1268,7 +1284,9 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(daily_home_payload["phone_links"]["today"], "reports/product/today.html")
         self.assertEqual(daily_home_payload["phone_links"]["daily_home"], "reports/product/daily-home.html")
         self.assertEqual(daily_home_payload["phone_links"]["phone_access"], "reports/product/phone-access.html")
+        self.assertEqual(daily_home_payload["phone_links"]["pattern_dry_run"], "reports/product/pattern-dry-run.html")
         self.assertGreaterEqual(len(daily_home_payload["daily_route"]), 6)
+        self.assertTrue(any(step["title"] == "pattern dry-run proof" for step in daily_home_payload["daily_route"]))
         self.assertEqual(access_verify_payload["schema_version"], "phone_access_verify.v1")
         self.assertEqual(access_verify_errors, [])
         self.assertEqual(access_verify_payload["status"], "ready")
@@ -1322,6 +1340,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("memory_audit_surface", manifest_payload["artifacts"])
         self.assertIn("agent_pattern_radar", manifest_payload["artifacts"])
         self.assertIn("agent_pattern_radar_surface", manifest_payload["artifacts"])
+        self.assertIn("pattern_dry_run_proof", manifest_payload["artifacts"])
+        self.assertIn("pattern_dry_run_proof_surface", manifest_payload["artifacts"])
         self.assertIn("run_trace", manifest_payload["artifacts"])
         self.assertIn("run_trace_surface", manifest_payload["artifacts"])
         self.assertIn("daily_run_ledger", manifest_payload["artifacts"])
@@ -1369,6 +1389,10 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("work-buddy", pattern_radar_html)
         self.assertIn("TraceAgent", pattern_radar_html)
         self.assertNotIn("schema_version", pattern_radar_html)
+        self.assertIn("새 에이전트 패턴을 실제 루프에 넣어도 되는가", pattern_proof_html)
+        self.assertIn("후보별 dry-run 증거", pattern_proof_html)
+        self.assertIn("승격 가능한 후보", pattern_proof_html)
+        self.assertNotIn("schema_version", pattern_proof_html)
         self.assertIn("오늘 실행 근거 추적", run_trace_html)
         self.assertIn("단계별 trace", run_trace_html)
         self.assertNotIn("schema_version", run_trace_html)
@@ -1399,6 +1423,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("council", morning_html)
         self.assertIn("memory_audit", morning_html)
         self.assertIn("pattern_radar", morning_html)
+        self.assertIn("pattern_dry_run", morning_html)
         self.assertIn("scheduler", morning_html)
         self.assertIn("개인 애널리스트 메모리 감사", memory_audit_html)
         self.assertIn("오늘 브리프 읽기 전 analyst council", council_html)

@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-05T21:53:41.497104+00:00",
+  "generated_at": "2026-06-05T22:08:54.499615+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -71,6 +71,14 @@
       "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
       "href": "reports/product/memory-audit.html",
       "status": "ready"
+    },
+    {
+      "step": 8,
+      "label": "새 작업 방식 증거 확인",
+      "title": "pattern dry-run proof",
+      "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
+      "href": "reports/product/pattern-dry-run.html",
+      "status": "proof_ready"
     }
   ],
   "autonomous_scout": {
@@ -297,6 +305,7 @@
     "review_effect": "reports/product/review-effect.html",
     "memory": "reports/product/memory.html",
     "memory_audit": "reports/product/memory-audit.html",
+    "pattern_dry_run": "reports/product/pattern-dry-run.html",
     "scheduler": "reports/product/scheduler.html",
     "phone_access": "reports/product/phone-access.html",
     "phone_access_plan": "reports/runtime/phone-access.json",
@@ -320,7 +329,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T21:53:41.428716+00:00"
+      "generated_at": "2026-06-05T22:08:54.451213+00:00"
     },
     {
       "name": "agenda",
@@ -328,7 +337,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T21:53:41.431752+00:00"
+      "generated_at": "2026-06-05T22:08:54.453441+00:00"
     },
     {
       "name": "morning",
@@ -336,7 +345,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-05T21:53:41.483865+00:00"
+      "generated_at": "2026-06-05T22:08:54.486649+00:00"
     },
     {
       "name": "readiness",
@@ -344,7 +353,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T21:53:41.494672+00:00"
+      "generated_at": "2026-06-05T22:08:54.497178+00:00"
     },
     {
       "name": "handoff",
@@ -352,7 +361,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-05T21:53:41.489490+00:00"
+      "generated_at": "2026-06-05T22:08:54.492014+00:00"
     },
     {
       "name": "handoff_apply",
@@ -368,7 +377,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T21:53:41.488878+00:00"
+      "generated_at": "2026-06-05T22:08:54.491445+00:00"
     },
     {
       "name": "scheduler",
@@ -376,7 +385,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-05T21:53:41.478170+00:00"
+      "generated_at": "2026-06-05T22:08:54.479861+00:00"
     },
     {
       "name": "phone_access",
@@ -384,7 +393,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T21:53:34.841346+00:00"
+      "generated_at": "2026-06-05T22:08:54.448491+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -392,7 +401,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T21:53:41.494192+00:00"
+      "generated_at": "2026-06-05T22:08:54.496606+00:00"
     },
     {
       "name": "notification",
@@ -400,7 +409,15 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-05T21:53:41.467857+00:00"
+      "generated_at": "2026-06-05T22:08:54.474175+00:00"
+    },
+    {
+      "name": "pattern_dry_run_proof",
+      "path": "reports/runtime/pattern-dry-run-proof.json",
+      "exists": true,
+      "schema_version": "pattern_dry_run_proof.v1",
+      "status": "proof_ready",
+      "generated_at": "2026-06-05T22:08:54.484546+00:00"
     }
   ],
   "external_effect_performed": false,
