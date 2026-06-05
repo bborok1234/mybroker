@@ -25,6 +25,7 @@ from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT, DEFAULT_VAULT_SURFACE_O
 
 
 TODAY_SURFACE_SCHEMA_VERSION = "today_surface.v1"
+DAILY_BRIEF_AGENDA_SCHEMA_VERSION = "daily_brief_agenda.v1"
 NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
@@ -47,6 +48,8 @@ SCHEDULER_ACTIVATION_VERIFY_SCHEMA_VERSION = "local_scheduler_activation_verify.
 LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
+DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT = Path("reports/daily/brief-agenda.json")
+DEFAULT_DAILY_BRIEF_AGENDA_SURFACE = Path("reports/product/daily-agenda.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
@@ -751,6 +754,234 @@ def write_operator_decision_apply(
     return write_json(payload, output_path)
 
 
+def build_daily_brief_agenda(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
+    refresh_plan_path: str | Path = DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    scout = _load_optional_json(scout_path)
+    evidence = _load_optional_json(evidence_path)
+    memory = _load_optional_json(memory_path)
+    vault = _load_optional_json(vault_path)
+    refresh_plan = _load_optional_json(refresh_plan_path)
+    recommendations = scout.get("recommendations", []) if scout.get("schema_version") == "daily_scout.v1" else []
+    source_rows = evidence.get("source_status", []) if evidence.get("schema_version") == "public_evidence_catalog.v1" else []
+    evidence_items = evidence.get("items", []) if evidence.get("schema_version") == "public_evidence_catalog.v1" else []
+    memory_by_id = {row.get("topic_id"): row for row in memory.get("topics", [])}
+    vault_notes = vault.get("compiled_notes", []) if vault.get("schema_version") == "knowledge_vault_compile.v1" else []
+    top_cards = [
+        _agenda_topic_card(
+            recommendation=recommendation,
+            evidence_items=evidence_items,
+            source_rows=source_rows,
+            memory_topic=memory_by_id.get(recommendation.get("topic_id"), {}),
+            vault_notes=vault_notes,
+        )
+        for recommendation in recommendations[:3]
+    ]
+    primary = top_cards[0] if top_cards else {}
+    weak_points = _agenda_weak_points(top_cards=top_cards, source_rows=source_rows, evidence=evidence)
+    role_brief = _agenda_role_brief(primary=primary, weak_points=weak_points, refresh_plan=refresh_plan)
+    payload = {
+        "schema_version": DAILY_BRIEF_AGENDA_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "run_id": scout.get("run_id", ""),
+        "mode": "phone_first_local_personal_analyst",
+        "operator_time_budget_minutes": 20,
+        "primary_topic": primary,
+        "study_sequence": _agenda_study_sequence(primary=primary, weak_points=weak_points),
+        "topic_cards": top_cards,
+        "source_fanout": _agenda_source_fanout(source_rows=source_rows, top_cards=top_cards),
+        "role_brief": role_brief,
+        "copy_ready_questions": _agenda_questions(primary=primary, weak_points=weak_points),
+        "weak_points": weak_points,
+        "external_effect_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "local_artifact_generation_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "no_account_access",
+            "no_live_trading",
+            "no_discretionary_management",
+            "no_unsupported_personalized_recommendations",
+        ],
+        "inputs": {
+            "scout": Path(scout_path).as_posix(),
+            "evidence": Path(evidence_path).as_posix(),
+            "memory": Path(memory_path).as_posix(),
+            "vault": Path(vault_path).as_posix(),
+            "refresh_plan": Path(refresh_plan_path).as_posix(),
+        },
+    }
+    return payload
+
+
+def write_daily_brief_agenda(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
+    refresh_plan_path: str | Path = DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
+) -> Path:
+    payload = build_daily_brief_agenda(
+        scout_path=scout_path,
+        evidence_path=evidence_path,
+        memory_path=memory_path,
+        vault_path=vault_path,
+        refresh_plan_path=refresh_plan_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_daily_brief_agenda(payload), encoding="utf-8")
+    return target
+
+
+def validate_daily_brief_agenda_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != DAILY_BRIEF_AGENDA_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if not payload.get("primary_topic"):
+        errors.append("primary_topic must not be empty")
+    if not payload.get("study_sequence"):
+        errors.append("study_sequence must not be empty")
+    if not payload.get("topic_cards"):
+        errors.append("topic_cards must not be empty")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    for index, step in enumerate(payload.get("study_sequence", [])):
+        for field in ["step", "minutes", "title", "operator_action", "stop_condition"]:
+            if field not in step:
+                errors.append(f"study_sequence[{index}] missing {field}")
+    return errors
+
+
+def validate_daily_brief_agenda_file(path: str | Path) -> list[str]:
+    return validate_daily_brief_agenda_payload(load_json(path))
+
+
+def render_daily_brief_agenda(payload: dict[str, Any]) -> str:
+    primary = payload.get("primary_topic", {})
+    sequence_cards = "".join(
+        "<article class='step'>"
+        f"<span>{esc(step.get('minutes', ''))}분 · step {esc(step.get('step', ''))}</span>"
+        f"<strong>{esc(step.get('title', ''))}</strong>"
+        f"<p>{esc(step.get('operator_action', ''))}</p>"
+        f"<small>멈춤 기준: {esc(step.get('stop_condition', ''))}</small>"
+        "</article>"
+        for step in payload.get("study_sequence", [])
+    )
+    topic_cards = "".join(
+        "<article class='card'>"
+        f"<span>#{esc(card.get('priority_rank', ''))} · {esc(card.get('action', 'monitor'))} · {esc(card.get('confidence', ''))}</span>"
+        f"<strong>{esc(card.get('name', ''))}</strong>"
+        f"<p>{esc(card.get('why_today', ''))}</p>"
+        f"<small>근거 {esc(card.get('evidence_count', 0))}개 · source {esc(card.get('source_family_count', 0))}개 · vault {esc(card.get('vault_note_count', 0))}개</small>"
+        "</article>"
+        for card in payload.get("topic_cards", [])
+    )
+    source_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(row.get('freshness_status', 'unknown'))} · {esc(row.get('relevance_label', 'unscored'))}</span>"
+        f"<strong>{esc(row.get('source_name', 'source'))}</strong>"
+        f"<p>{esc(row.get('role', '오늘 주제 근거 확인'))}</p>"
+        "</article>"
+        for row in payload.get("source_fanout", [])
+    )
+    role_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(role.get('role', 'analyst'))}</span>"
+        f"<strong>{esc(role.get('task', '오늘 근거 점검'))}</strong>"
+        f"<p>{esc(role.get('success_condition', ''))}</p>"
+        "</article>"
+        for role in payload.get("role_brief", [])
+    )
+    weak_items = "".join(f"<li>{esc(item)}</li>" for item in payload.get("weak_points", [])) or "<li>오늘 기록된 약한 근거가 없습니다.</li>"
+    questions = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in payload.get("copy_ready_questions", []))
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Agenda</title>
+<style>
+:root {{ --bg:#f6f7f2; --ink:#18212b; --muted:#63707c; --line:#d9dfd5; --panel:#fffefa; --accent:#1f5f8b; --green:#1e6b52; --warn:#93651a; }}
+* {{ box-sizing:border-box; }}
+html,body {{ max-width:100%; overflow-x:hidden; }}
+body {{ margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:430px; min-width:0; padding:14px; }}
+.eyebrow {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 12px; font-size:32px; line-height:1.1; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p {{ margin:0; color:var(--muted); }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:12px 0; }}
+.hero strong {{ display:block; margin:8px 0; font-size:25px; line-height:1.15; }}
+.stack {{ display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }}
+.step,.card,.question {{ min-width:0; border:1px solid var(--line); border-radius:8px; background:white; padding:13px; }}
+.step span,.card span {{ display:block; margin-bottom:7px; color:var(--accent); font-size:12px; font-weight:900; }}
+.step strong,.card strong {{ display:block; margin-bottom:6px; }}
+.step p,.step small,.card p,.card small,.question p {{ overflow-wrap:anywhere; word-break:break-word; }}
+.step small,.card small {{ display:block; color:var(--ink); }}
+ul {{ margin:0; padding-left:18px; color:var(--muted); }}
+.boundary {{ border-left:4px solid var(--green); }}
+@media (max-width:520px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Daily Agenda · {esc(_short_date(payload.get('generated_at', '')))}</span>
+<h1>오늘 20분 시장 공부 순서</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">오늘의 첫 주제</span>
+<strong>{esc(primary.get('name', '오늘 추천 주제 없음'))}</strong>
+<p>{esc(primary.get('why_today', 'Scout와 근거를 먼저 생성하세요.'))}</p>
+</section>
+<section class="section">
+<h2>읽는 순서</h2>
+<div class="stack">{sequence_cards}</div>
+</section>
+<section class="section">
+<h2>오늘 볼 주제 후보</h2>
+<div class="stack">{topic_cards}</div>
+</section>
+<section class="section">
+<h2>근거 fan-out</h2>
+<div class="stack">{source_cards}</div>
+</section>
+<section class="section">
+<h2>에이전트 역할별 다음 일</h2>
+<div class="stack">{role_cards}</div>
+</section>
+<section class="section">
+<h2>아직 결론내리면 안 되는 이유</h2>
+<ul>{weak_items}</ul>
+</section>
+<section class="section">
+<h2>오늘 물어볼 질문</h2>
+<div class="stack">{questions}</div>
+</section>
+<section class="section boundary">
+<h2>안전 경계</h2>
+<p>이 agenda는 교육/리서치/시뮬레이션용입니다. 계좌 접근, 주문, 투자 일임, 개인화 매수/매도 지시는 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
 def write_today_surface(
     *,
     scenario_path: str | Path,
@@ -765,6 +996,8 @@ def write_today_surface(
     refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
     refresh_live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
     refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
+    agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
+    agenda_surface_path: str | Path | None = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -783,6 +1016,7 @@ def write_today_surface(
     refresh_live_gate = load_json(refresh_live_gate_path) if Path(refresh_live_gate_path).exists() else {}
     refresh_live_run = load_json(refresh_live_run_path) if Path(refresh_live_run_path).exists() else {}
     refresh_live_preflight = load_json(refresh_live_preflight_path) if Path(refresh_live_preflight_path).exists() else {}
+    agenda = load_json(agenda_path) if Path(agenda_path).exists() else {}
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
@@ -798,7 +1032,9 @@ def write_today_surface(
             refresh_live_gate=refresh_live_gate,
             refresh_live_run=refresh_live_run,
             refresh_live_preflight=refresh_live_preflight,
+            agenda=agenda,
             brief_path=Path(brief_path),
+            agenda_surface_path=Path(agenda_surface_path) if agenda_surface_path else None,
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
             journal_surface_path=Path(journal_surface_path) if journal_surface_path else None,
@@ -823,7 +1059,9 @@ def render_today_surface(
     refresh_live_gate: dict[str, Any],
     refresh_live_run: dict[str, Any],
     refresh_live_preflight: dict[str, Any],
+    agenda: dict[str, Any],
     brief_path: Path,
+    agenda_surface_path: Path | None = None,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
     journal_surface_path: Path | None = None,
@@ -843,6 +1081,16 @@ def render_today_surface(
     live_gate_decisions = refresh_live_gate.get("decisions", []) if refresh_live_gate.get("schema_version") == "source_refresh_live_gate.v1" else []
     live_run_execution = refresh_live_run.get("execution", {}) if refresh_live_run.get("schema_version") == "source_refresh_live_run.v1" else {}
     live_preflight_requested = refresh_live_preflight.get("requested_execution", {}) if refresh_live_preflight.get("schema_version") == "source_refresh_live_preflight.v1" else {}
+    agenda_primary = agenda.get("primary_topic", {}) if agenda.get("schema_version") == DAILY_BRIEF_AGENDA_SCHEMA_VERSION else {}
+    agenda_steps = agenda.get("study_sequence", []) if agenda.get("schema_version") == DAILY_BRIEF_AGENDA_SCHEMA_VERSION else []
+    agenda_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(step.get('minutes', ''))}분 · step {esc(step.get('step', ''))}</span>"
+        f"<strong>{esc(step.get('title', ''))}</strong>"
+        f"<p>{esc(step.get('operator_action', ''))}</p>"
+        "</article>"
+        for step in agenda_steps[:4]
+    ) or "<p>오늘 agenda가 아직 없습니다.</p>"
     scout_cards = "".join(
         "<article class='card'>"
         f"<span>{esc(item.get('action', 'monitor'))} · #{esc(item.get('priority_rank', ''))}</span>"
@@ -962,6 +1210,11 @@ def render_today_surface(
         if task_ledger_surface_path
         else "<span>Task ledger 없음</span>"
     )
+    agenda_link = (
+        f"<a href='{esc(_relative_href(agenda_surface_path))}'>오늘 20분 agenda</a>"
+        if agenda_surface_path
+        else "<span>오늘 agenda 없음</span>"
+    )
     questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
@@ -1018,6 +1271,17 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <div class="stack">{scout_cards}</div>
 </section>
 <section class="section">
+<h2>오늘 20분 agenda</h2>
+<div class="stack">
+<article class="card">
+<span>{esc(agenda_primary.get('readiness', 'agenda'))}</span>
+<strong>{esc(agenda_primary.get('name', '오늘 agenda 없음'))}</strong>
+<p>{esc(agenda_primary.get('why_today', 'Scout 추천을 먼저 생성하세요.'))}</p>
+</article>
+{agenda_cards}
+</div>
+</section>
+<section class="section">
 <h2>오늘 새로고침 계획</h2>
 <div class="stack">{refresh_cards}</div>
 </section>
@@ -1069,6 +1333,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <h2>연결된 산출물</h2>
 <div class="links">
 <a href="{esc(_relative_href(brief_path))}">상세 시장 브리프</a>
+{agenda_link}
 {journal_link}
 {task_queue_link}
 {task_ledger_link}
@@ -1105,6 +1370,8 @@ def archive_daily_run(
     task_ledger_path: str | Path | None = None,
     vault_compile_path: str | Path | None = None,
     vault_surface_path: str | Path | None = None,
+    agenda_path: str | Path | None = None,
+    agenda_surface_path: str | Path | None = None,
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
 ) -> Path:
     timestamp = datetime.now(timezone.utc)
@@ -1126,6 +1393,8 @@ def archive_daily_run(
         "task_ledger": task_ledger_path,
         "vault_compile": vault_compile_path,
         "vault": vault_surface_path,
+        "daily_agenda": agenda_path,
+        "daily_agenda_surface": agenda_surface_path,
         "brief": brief_path,
         "today": today_path,
     }.items():
@@ -1876,6 +2145,8 @@ def build_morning_control_packet(
     runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
     vault_surface_path: str | Path = DEFAULT_VAULT_SURFACE_OUTPUT,
+    agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
+    agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
     task_queue_surface_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
@@ -1891,7 +2162,9 @@ def build_morning_control_packet(
     preflight = _load_optional_json(refresh_live_preflight_path)
     notification = _load_optional_json(notification_path)
     doctor = _load_optional_json(runtime_doctor_path)
+    agenda = _load_optional_json(agenda_path)
     recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    agenda_primary = agenda.get("primary_topic", {}) if agenda.get("schema_version") == DAILY_BRIEF_AGENDA_SCHEMA_VERSION else {}
     focus = journal.get("today_focus", {})
     ledger_summary = ledger.get("summary", {})
     pending_decisions = _morning_pending_decisions(live_gate=live_gate, live_run=live_run, preflight=preflight)
@@ -1907,11 +2180,11 @@ def build_morning_control_packet(
         "status": status,
         "run_id": journal.get("run_id", scout.get("run_id", "")),
         "read_first": {
-            "title": focus.get("title", recommended.get("name", "오늘 브리프 먼저 확인")),
-            "reason": focus.get("rationale", recommended.get("why", "")),
-            "recommended_topic": recommended.get("name", focus.get("recommended_topic", "")),
-            "confidence": recommended.get("confidence", focus.get("confidence", "")),
-            "next_question": recommended.get("next_question", ""),
+            "title": agenda_primary.get("name", focus.get("title", recommended.get("name", "오늘 브리프 먼저 확인"))),
+            "reason": agenda_primary.get("why_today", focus.get("rationale", recommended.get("why", ""))),
+            "recommended_topic": agenda_primary.get("name", recommended.get("name", focus.get("recommended_topic", ""))),
+            "confidence": agenda_primary.get("confidence", recommended.get("confidence", focus.get("confidence", ""))),
+            "next_question": agenda_primary.get("next_question", recommended.get("next_question", "")),
         },
         "task_state": {
             "total": ledger.get("entry_count", queue.get("task_count", 0)),
@@ -1927,6 +2200,7 @@ def build_morning_control_packet(
         "phone_links": {
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "today": Path(today_path).as_posix(),
+            "agenda": Path(agenda_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
             "journal": Path(journal_surface_path).as_posix(),
             "tasks": Path(task_queue_surface_path).as_posix(),
@@ -1950,6 +2224,7 @@ def build_morning_control_packet(
             "source_refresh_live_preflight": Path(refresh_live_preflight_path).as_posix(),
             "notification": Path(notification_path).as_posix(),
             "runtime_doctor": Path(runtime_doctor_path).as_posix(),
+            "agenda": Path(agenda_path).as_posix(),
         },
         "external_effect_performed": False,
         "host_write_performed": False,
@@ -1978,6 +2253,8 @@ def write_morning_control_packet(
     refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
+    agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
+    agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
 ) -> Path:
@@ -1991,6 +2268,8 @@ def write_morning_control_packet(
         refresh_live_preflight_path=refresh_live_preflight_path,
         notification_path=notification_path,
         runtime_doctor_path=runtime_doctor_path,
+        agenda_path=agenda_path,
+        agenda_surface_path=agenda_surface_path,
     )
     write_json(payload, artifact_output_path)
     target = Path(surface_output_path)
@@ -3732,6 +4011,221 @@ def _latest_archive_manifest(archive_root: Path) -> Path | None:
 def _file_age_hours(path: Path) -> float:
     modified = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
     return (datetime.now(timezone.utc) - modified).total_seconds() / 3600
+
+
+def _agenda_topic_card(
+    *,
+    recommendation: dict[str, Any],
+    evidence_items: list[dict[str, Any]],
+    source_rows: list[dict[str, Any]],
+    memory_topic: dict[str, Any],
+    vault_notes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    latest_titles = set(recommendation.get("latest_titles", []))
+    source_names = set(recommendation.get("source_names", []))
+    supporting = [
+        item
+        for item in evidence_items
+        if item.get("title") in latest_titles or item.get("source_name") in source_names
+    ][:5]
+    linked_vault = recommendation.get("linked_vault_notes", [])
+    if not linked_vault:
+        linked_vault = [
+            {
+                "title": note.get("title", ""),
+                "source_path": note.get("source_path", ""),
+                "wiki_path": note.get("wiki_path", ""),
+            }
+            for note in vault_notes
+            if note.get("topic_id") == recommendation.get("topic_id")
+        ][:3]
+    source_family_count = len(source_names)
+    weak_points = list(dict.fromkeys(recommendation.get("missing_evidence", []) + memory_topic.get("collection_gaps", [])))
+    return {
+        "topic_id": recommendation.get("topic_id", ""),
+        "name": recommendation.get("name", ""),
+        "priority_rank": recommendation.get("priority_rank", 0),
+        "action": recommendation.get("action", "monitor"),
+        "confidence": recommendation.get("confidence", ""),
+        "why_today": recommendation.get("why", ""),
+        "beginner_focus": recommendation.get("beginner_focus", ""),
+        "next_question": recommendation.get("next_question", ""),
+        "evidence_count": len(supporting),
+        "source_family_count": source_family_count,
+        "vault_note_count": len(linked_vault),
+        "supporting_evidence": [
+            {
+                "source_name": item.get("source_name", ""),
+                "title": item.get("title", ""),
+                "freshness_status": item.get("freshness_status", ""),
+                "entities": item.get("entities", [])[:5],
+            }
+            for item in supporting
+        ],
+        "source_status": [
+            row
+            for row in source_rows
+            if row.get("source_name") in source_names
+        ],
+        "linked_vault_notes": linked_vault,
+        "weak_points": weak_points,
+        "readiness": _agenda_readiness(
+            source_family_count=source_family_count,
+            evidence_count=len(supporting),
+            weak_points=weak_points,
+        ),
+    }
+
+
+def _agenda_readiness(*, source_family_count: int, evidence_count: int, weak_points: list[str]) -> str:
+    if source_family_count >= 3 and evidence_count >= 3 and not weak_points:
+        return "meaningful"
+    if source_family_count >= 2 and evidence_count >= 2:
+        return "useful_but_verify"
+    if evidence_count:
+        return "weak"
+    return "blocked"
+
+
+def _agenda_weak_points(
+    *,
+    top_cards: list[dict[str, Any]],
+    source_rows: list[dict[str, Any]],
+    evidence: dict[str, Any],
+) -> list[str]:
+    weak: list[str] = []
+    for card in top_cards:
+        weak.extend(card.get("weak_points", []))
+        if card.get("readiness") in {"weak", "blocked"}:
+            weak.append(f"{card.get('name', 'topic')} 근거 다양성이 약합니다.")
+    weak.extend(evidence.get("collection_gaps", []))
+    if len(source_rows) < 3:
+        weak.append("source family가 3개 미만입니다.")
+    if any(row.get("freshness_status") == "sample_cache" for row in source_rows):
+        weak.append("일부 근거는 sample cache라 최신 시장 판단으로 바로 쓰면 안 됩니다.")
+    return list(dict.fromkeys(weak))[:8]
+
+
+def _agenda_study_sequence(*, primary: dict[str, Any], weak_points: list[str]) -> list[dict[str, Any]]:
+    primary_name = primary.get("name", "오늘 추천 주제")
+    return [
+        {
+            "step": 1,
+            "minutes": 4,
+            "title": f"{primary_name}를 왜 먼저 보는지 확인",
+            "operator_action": primary.get("why_today", "Scout 추천 이유를 읽고 오늘의 질문을 하나 고릅니다."),
+            "stop_condition": "왜 이 주제가 오늘 첫 번째인지 한 문장으로 설명할 수 있으면 다음으로 이동합니다.",
+        },
+        {
+            "step": 2,
+            "minutes": 6,
+            "title": "근거가 서로 다른 출처에서 왔는지 확인",
+            "operator_action": "GDELT/공시/가격/Vault 중 어떤 source family가 실제로 영향을 줬는지 봅니다.",
+            "stop_condition": "출처가 하나뿐이거나 sample cache뿐이면 결론을 보류합니다.",
+        },
+        {
+            "step": 3,
+            "minutes": 6,
+            "title": "시나리오를 낙관/base/downside로 나눠 읽기",
+            "operator_action": "상승/기본/하락 경로를 비교하고, 어느 근거가 각 경로를 밀어주는지 체크합니다.",
+            "stop_condition": "한쪽 시나리오만 강하게 보이면 skeptic task를 먼저 실행합니다.",
+        },
+        {
+            "step": 4,
+            "minutes": 4,
+            "title": "오늘 남길 메모와 다음 질문 정하기",
+            "operator_action": (weak_points[0] if weak_points else primary.get("next_question", "내일 다시 확인할 질문을 하나 남깁니다.")),
+            "stop_condition": "매수/매도 결론이 아니라 다음 확인 질문으로 끝냅니다.",
+        },
+    ]
+
+
+def _agenda_source_fanout(*, source_rows: list[dict[str, Any]], top_cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    top_source_names = {
+        source.get("source_name", "")
+        for card in top_cards
+        for source in card.get("source_status", [])
+    }
+    rows = []
+    for row in source_rows:
+        source_name = row.get("source_name", "")
+        rows.append({
+            "source_name": source_name,
+            "freshness_status": row.get("freshness_status", ""),
+            "relevance_label": row.get("relevance_label", ""),
+            "item_count": row.get("item_count", "0"),
+            "role": _agenda_source_role(source_name=source_name),
+            "influenced_top_topics": source_name in top_source_names,
+        })
+    return rows
+
+
+def _agenda_source_role(*, source_name: str) -> str:
+    roles = {
+        "GDELT": "뉴스/이벤트 서사가 과열인지, 실제 사건인지 확인합니다.",
+        "SEC EDGAR": "기업 공시로 서사가 실제 사업/위험 언어에 닿는지 확인합니다.",
+        "Stooq": "가격 흐름이 서사와 같은 방향인지 넓은 시장 맥락을 확인합니다.",
+    }
+    return roles.get(source_name, "오늘 주제의 보조 근거로 사용합니다.")
+
+
+def _agenda_role_brief(
+    *,
+    primary: dict[str, Any],
+    weak_points: list[str],
+    refresh_plan: dict[str, Any],
+) -> list[dict[str, Any]]:
+    primary_name = primary.get("name", "오늘 주제")
+    blocked_refresh = [
+        action.get("source_name", "")
+        for action in refresh_plan.get("actions", [])
+        if action.get("priority") == "high"
+    ]
+    return [
+        {
+            "role": "source_scout",
+            "task": f"{primary_name}에 필요한 최신 근거 후보를 확인",
+            "success_condition": "새 근거가 없으면 sample cache 기반이라는 점을 agenda에 남깁니다.",
+        },
+        {
+            "role": "evidence_curator",
+            "task": "근거 출처군, freshness, 중복 가능성을 점검",
+            "success_condition": "source family와 weak point가 분리되어 표시됩니다.",
+        },
+        {
+            "role": "market_mapper",
+            "task": "주제-엔티티-이벤트가 어떤 market map을 만드는지 읽기 쉽게 정리",
+            "success_condition": "초보자가 왜 이 주제가 시장 흐름과 연결되는지 이해합니다.",
+        },
+        {
+            "role": "skeptic",
+            "task": weak_points[0] if weak_points else "오늘 근거가 과도하게 한 방향으로 쏠렸는지 확인",
+            "success_condition": "약한 근거가 있으면 투자 행동 후보가 아니라 추가 질문으로 남깁니다.",
+        },
+        {
+            "role": "publisher",
+            "task": "폰에서 읽을 순서와 다음 질문만 남기기",
+            "success_condition": "오늘 output은 실행 지시가 아니라 학습/리서치 루틴으로 끝납니다.",
+        },
+        {
+            "role": "refresh_gate",
+            "task": f"필요한 live refresh 후보: {', '.join(blocked_refresh) or '없음'}",
+            "success_condition": "live network refresh는 별도 승인 없이는 실행되지 않습니다.",
+        },
+    ]
+
+
+def _agenda_questions(*, primary: dict[str, Any], weak_points: list[str]) -> list[str]:
+    name = primary.get("name", "오늘 주제")
+    question = primary.get("next_question") or f"오늘 {name}에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?"
+    questions = [
+        question,
+        f"{name}의 낙관/base/downside 경로를 가르는 핵심 근거는 무엇인가요?",
+        "오늘 근거 중 sample cache 또는 stale 가능성이 있는 것은 무엇인가요?",
+    ]
+    if weak_points:
+        questions.append(f"약한 근거 점검: {weak_points[0]}")
+    return questions
 
 
 def _gap_label(value: str) -> str:

@@ -26,6 +26,7 @@ The product surface is the daily brief, not the server.
 | MiroFish | GraphRAG-style market map, personas, counterfactual scenarios | market map, persona views, optimistic/base/downside paths |
 | TradingAgents / FinRobot | Role-specialized analyst debate and risk review | source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor |
 | Obsidian research vault workflows | File-based knowledge that compounds | archive manifests, topic memory, source-linked daily artifacts |
+| Yutori/Hermes scout-worker loops | Always-on scout recommends what matters, workers produce auditable next work | daily scout, 20-minute agenda, role-based analyst tasks, explicit weak-evidence warnings |
 
 ## Local Runtime Shape
 
@@ -38,6 +39,7 @@ launchd
   -> topic_memory.v1
   -> daily_scout.v1
   -> source_refresh_plan.v1
+  -> daily_brief_agenda.v1 + /daily-agenda phone surface
   -> scenario_report.v1 + market_verdict.v1
   -> product brief + /today mobile surface
   -> /memory accumulated research surface
@@ -115,6 +117,7 @@ PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --vault-raw-dir research-vault/raw --vault-wiki-dir research-vault/wiki --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
+PYTHONPATH=src python3 -m mybroker appliance agenda
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
 PYTHONPATH=src python3 -m mybroker appliance tasks
@@ -136,6 +139,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/memory.html`: phone-readable accumulated research notebook.
 - `reports/memory/analyst-journal.json`: machine-readable daily analyst work log.
 - `reports/product/journal.html`: phone-readable daily analyst journal with today's focus, role notes, evidence gaps, and tomorrow's questions.
+- `reports/daily/brief-agenda.json`: machine-readable 20-minute study agenda from scout, evidence, memory, vault, and refresh plan.
+- `reports/product/daily-agenda.html`: phone-readable agenda with reading order, source fan-out, weak evidence, role work, and follow-up questions.
 - `reports/memory/analyst-task-queue.json`: machine-readable role-based task queue.
 - `reports/product/tasks.html`: phone-readable analyst task board for the next local work loop.
 - `reports/memory/analyst-task-ledger.json`: machine-readable task state history.
@@ -182,6 +187,13 @@ can challenge its latest evidence against accumulated raw notes.
 configured interests with source breadth, memory changes, evidence gaps, and linked vault notes.
 `appliance run` creates this artifact automatically, and `appliance today` renders it as "오늘 Scout
 추천" so the first phone screen explains what to inspect first and why.
+
+`appliance agenda` is the phone-first work-shaping step. It writes
+`reports/daily/brief-agenda.json` and `reports/product/daily-agenda.html` from the current scout,
+evidence, memory, vault, and refresh plan. The agenda translates the top scout topic into a
+20-minute reading sequence, source fan-out, weak-evidence warnings, role-specific analyst work,
+and follow-up questions. It does not fetch live data or make investment decisions; it helps the
+operator study the right thing first and stop before overclaiming weak evidence.
 
 `source-refresh-plan` is the no-execution source cadence step. It writes
 `reports/daily/source-refresh-plan.json` with dry-run-only actions such as GDELT live, Stooq live,
