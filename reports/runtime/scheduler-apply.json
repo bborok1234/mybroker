@@ -1,0 +1,97 @@
+{
+  "schema_version": "local_scheduler_apply.v1",
+  "generated_at": "2026-06-05T07:00:40.174021+00:00",
+  "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
+  "label": "com.mybroker.daily-analyst",
+  "dry_run": true,
+  "host_write_performed": false,
+  "requested": {
+    "install": true,
+    "load": true,
+    "start_now": true,
+    "unload": false,
+    "uninstall": false
+  },
+  "actions": [
+    {
+      "name": "install",
+      "kind": "copy_plist",
+      "source": "/Users/mirlim/sidejob/mybroker/mybroker/ops/local/com.mybroker.daily-analyst.plist",
+      "target": "/Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+      "command": "mkdir -p /Users/mirlim/Library/LaunchAgents && cp /Users/mirlim/sidejob/mybroker/mybroker/ops/local/com.mybroker.daily-analyst.plist /Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "name": "load",
+      "kind": "launchctl",
+      "command": "launchctl bootstrap gui/501 /Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "name": "start_now",
+      "kind": "launchctl",
+      "command": "launchctl kickstart -k gui/501/com.mybroker.daily-analyst",
+      "status": "planned",
+      "executed": false
+    }
+  ],
+  "post_status_path": "reports/runtime/scheduler-status.json",
+  "post_status": {
+    "schema_version": "local_scheduler_status.v1",
+    "generated_at": "2026-06-05T07:00:40.173513+00:00",
+    "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
+    "label": "com.mybroker.daily-analyst",
+    "host_write_performed": false,
+    "status": "assets_ready",
+    "source_assets": {
+      "script": "/Users/mirlim/sidejob/mybroker/mybroker/ops/local/run-daily-analyst.sh",
+      "script_exists": true,
+      "script_executable": true,
+      "plist": "/Users/mirlim/sidejob/mybroker/mybroker/ops/local/com.mybroker.daily-analyst.plist",
+      "plist_exists": true
+    },
+    "installed_plist": {
+      "path": "/Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+      "exists": false
+    },
+    "launchd": {
+      "loaded": false,
+      "command": "launchctl print gui/501/com.mybroker.daily-analyst",
+      "returncode": 113,
+      "stdout_excerpt": "",
+      "stderr_excerpt": "Bad request.\nCould not find service \"com.mybroker.daily-analyst\" in domain for user gui: 501\n"
+    },
+    "logs": {
+      "paths": {
+        "stdout": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/daily-analyst.out.log",
+        "stderr": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/daily-analyst.err.log"
+      },
+      "stdout_exists": false,
+      "stderr_exists": false
+    },
+    "commands": {
+      "prepare_assets": "PYTHONPATH=src python3 -m mybroker appliance init --project-root .",
+      "install": "mkdir -p ~/Library/LaunchAgents && cp /Users/mirlim/sidejob/mybroker/mybroker/ops/local/com.mybroker.daily-analyst.plist /Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+      "load": "launchctl bootstrap gui/$(id -u) /Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+      "start_now": "launchctl kickstart -k gui/$(id -u)/com.mybroker.daily-analyst",
+      "status": "launchctl print gui/$(id -u)/com.mybroker.daily-analyst",
+      "unload": "launchctl bootout gui/$(id -u)/com.mybroker.daily-analyst",
+      "uninstall": "rm /Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist"
+    },
+    "next_actions": [
+      "Review reports/runtime/scheduler-status.json, then run the install and load commands if you want the daily schedule active."
+    ],
+    "policy": "research_only"
+  },
+  "safety": {
+    "requires_confirm_host_write": true,
+    "default_behavior": "dry_run",
+    "notes": [
+      "Dry-run records planned host-level commands without changing launchd state.",
+      "Actual install/load/start/unload/uninstall requires --confirm-host-write."
+    ]
+  },
+  "policy": "research_only"
+}

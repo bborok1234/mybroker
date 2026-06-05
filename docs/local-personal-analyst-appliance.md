@@ -42,6 +42,7 @@ launchd
   -> /memory-query local recall surface
   -> local_runtime_doctor.v1
   -> local_scheduler_status.v1
+  -> local_scheduler_apply.v1
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -98,6 +99,7 @@ PYTHONPATH=src python3 -m mybroker appliance init --project-root .
 PYTHONPATH=src python3 -m mybroker appliance access
 PYTHONPATH=src python3 -m mybroker appliance doctor
 PYTHONPATH=src python3 -m mybroker appliance scheduler status
+PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
@@ -137,6 +139,12 @@ when validating an installed daily setup.
 or load anything. It records whether the source runner assets exist, whether a plist is installed
 under `~/Library/LaunchAgents`, whether launchd reports the job as loaded, where logs will land,
 and the exact install/load/start/status/unload/uninstall commands for review.
+
+`appliance scheduler apply --install --load --start-now` writes
+`reports/runtime/scheduler-apply.json`. By default it is a dry-run plan and records
+`host_write_performed=false`. To actually install, load, or start the LaunchAgent, the operator
+must add `--confirm-host-write`; that host-level action should be treated as a separate explicit
+operation with fresh status and doctor evidence afterward.
 
 ## Safety Boundary
 
