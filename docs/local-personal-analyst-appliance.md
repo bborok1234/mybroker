@@ -43,6 +43,7 @@ launchd
   -> source_refresh_plan.v1
   -> daily_brief_agenda.v1 + /daily-agenda phone surface
   -> daily_readiness.v1 + /readiness phone surface
+  -> daily_operator_home.v1 + /daily-home phone entrypoint
   -> scenario_report.v1 + market_verdict.v1
   -> product brief + /today mobile surface
   -> /memory accumulated research surface
@@ -126,6 +127,7 @@ PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile
 PYTHONPATH=src python3 -m mybroker appliance agenda
 PYTHONPATH=src python3 -m mybroker appliance source-refresh
 PYTHONPATH=src python3 -m mybroker appliance readiness --freshness-hours 24
+PYTHONPATH=src python3 -m mybroker appliance home
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
 PYTHONPATH=src python3 -m mybroker appliance tasks
@@ -184,6 +186,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
 - `reports/runtime/daily-readiness.json`: machine-readable freshness/readiness proof for required daily artifacts.
 - `reports/product/readiness.html`: phone-readable control page that says whether today's brief is fresh enough, what is stale or missing, and what local run command to use next.
+- `reports/runtime/daily-home.json`: machine-readable phone entrypoint over existing daily artifacts.
+- `reports/product/daily-home.html`: phone-first daily home that says what to open first, what is trustworthy or blocked, which continuity proof matters, and which safe local response commands are available.
 - `reports/runtime/scheduler-operations.json`: machine-readable summary of scheduler assets, local run-once proof, activation preflight, activation verification, and runtime doctor state.
 - `reports/product/scheduler.html`: phone-readable scheduler operations page that says whether automation is inactive, locally proven, activation-ready, active, or blocked.
 - `reports/memory/analyst-task-queue.json`: machine-readable role-based task queue.
@@ -293,6 +297,13 @@ local artifacts only. It marks required phone surfaces and machine artifacts as 
 missing, reports scheduler status if available, links the phone surfaces, and shows the next local
 `appliance run --dry-run` command. It does not refresh sources, send notifications, install
 schedulers, or perform host/network effects.
+
+`appliance home` is the first phone surface to open each day. It writes
+`daily_operator_home.v1` and `reports/product/daily-home.html` by reading existing today, morning,
+readiness, handoff, handoff-response-apply, run-ledger, scheduler operations, phone access,
+notification, and memory audit artifacts. It does not render project progress, fetch live data,
+send notifications, write host state, or make recommendations; it only orders the existing local
+surfaces and safe response commands.
 
 `appliance trace` is the local observability proof. It writes `local_run_trace.v1` and
 `reports/product/run-trace.html` by reading the existing playbook, pattern radar, scout, evidence,

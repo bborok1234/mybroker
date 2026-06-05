@@ -20,6 +20,8 @@ from mybroker.appliance import (
     DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
+    DEFAULT_DAILY_HOME_OUTPUT,
+    DEFAULT_DAILY_HOME_SURFACE,
     DEFAULT_DAILY_READINESS_OUTPUT,
     DEFAULT_DAILY_READINESS_SURFACE,
     DEFAULT_DAILY_HANDOFF_OUTPUT,
@@ -84,6 +86,7 @@ from mybroker.appliance import (
     write_analyst_task_queue,
     write_analyst_task_ledger,
     write_daily_brief_agenda,
+    write_daily_operator_home,
     write_daily_readiness,
     write_daily_handoff,
     write_daily_review,
@@ -123,6 +126,7 @@ from mybroker.appliance import (
     validate_analyst_task_ledger_file,
     validate_agent_pattern_radar_file,
     validate_daily_brief_agenda_file,
+    validate_daily_operator_home_file,
     validate_daily_readiness_file,
     validate_daily_handoff_file,
     validate_daily_review_file,
@@ -336,6 +340,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_scout_parser.add_argument("scout_path")
     validate_agenda_parser = subcommands.add_parser("validate-daily-agenda", help="Validate a daily_brief_agenda.v1 artifact.")
     validate_agenda_parser.add_argument("agenda_path")
+    validate_daily_home_parser = subcommands.add_parser("validate-daily-home", help="Validate a daily_operator_home.v1 artifact.")
+    validate_daily_home_parser.add_argument("daily_home_path")
     validate_readiness_parser = subcommands.add_parser("validate-daily-readiness", help="Validate a daily_readiness.v1 artifact.")
     validate_readiness_parser.add_argument("readiness_path")
     validate_refresh_plan_parser = subcommands.add_parser("validate-source-refresh-plan", help="Validate a source_refresh_plan.v1 artifact.")
@@ -501,6 +507,19 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--journal-surface")
     appliance_today_parser.add_argument("--task-queue-surface")
     appliance_today_parser.add_argument("--task-ledger-surface")
+    appliance_home_parser = appliance_subcommands.add_parser("home", help="Render the phone-first daily operating home from existing local artifacts.")
+    appliance_home_parser.add_argument("--today", default=DEFAULT_TODAY_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--morning", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--readiness", default=DEFAULT_DAILY_READINESS_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--handoff", default=DEFAULT_DAILY_HANDOFF_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--handoff-apply", default=DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--run-ledger", default=DEFAULT_DAILY_RUN_LEDGER_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--scheduler-operations", default=DEFAULT_SCHEDULER_OPERATIONS_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--phone-access", default=DEFAULT_PHONE_ACCESS_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_HOME_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--output", default=DEFAULT_DAILY_HOME_SURFACE.as_posix())
     appliance_agenda_parser = appliance_subcommands.add_parser("agenda", help="Render the phone-first daily study agenda from scout and evidence artifacts.")
     appliance_agenda_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     appliance_agenda_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
@@ -1061,6 +1080,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-daily-home":
+        errors = validate_daily_operator_home_file(args.daily_home_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-daily-readiness":
         errors = validate_daily_readiness_file(args.readiness_path)
         if errors:
@@ -1531,6 +1557,29 @@ def main(argv: list[str] | None = None) -> int:
                 task_ledger_surface_path=args.task_ledger_surface,
             )
             print(json.dumps({"today": path.as_posix()}, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "home":
+            path = write_daily_operator_home(
+                today_path=args.today,
+                morning_path=args.morning,
+                readiness_path=args.readiness,
+                handoff_path=args.handoff,
+                handoff_apply_path=args.handoff_apply,
+                run_ledger_path=args.run_ledger,
+                scheduler_operations_path=args.scheduler_operations,
+                phone_access_path=args.phone_access,
+                notification_path=args.notification,
+                memory_audit_path=args.memory_audit,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "daily_home": args.artifact_output,
+                "daily_home_surface": path.as_posix(),
+                "status": payload["status"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "agenda":
             path = write_daily_brief_agenda(
@@ -2392,6 +2441,8 @@ def main(argv: list[str] | None = None) -> int:
             source_refresh_brief_surface_path = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE
             scheduler_operations_artifact_path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT
             scheduler_operations_surface_path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE
+            daily_home_artifact_path = DEFAULT_DAILY_HOME_OUTPUT
+            daily_home_surface_path = DEFAULT_DAILY_HOME_SURFACE
             memory_audit_artifact_path = DEFAULT_MEMORY_AUDIT_OUTPUT
             memory_audit_surface_path = DEFAULT_MEMORY_AUDIT_SURFACE
             analyst_council_artifact_path = DEFAULT_ANALYST_COUNCIL_OUTPUT
@@ -2399,6 +2450,7 @@ def main(argv: list[str] | None = None) -> int:
             vault_compile_path = Path(args.vault_output)
             vault_surface_path = Path(args.vault_surface_output)
             playbook_path = write_runtime_playbook(args.playbook_output)
+            phone_access_path = write_phone_access_plan(output_path=DEFAULT_PHONE_ACCESS_OUTPUT)
             written_pattern_radar = write_agent_pattern_radar(
                 playbook_path=playbook_path,
                 artifact_output_path=pattern_radar_artifact_path,
@@ -2818,9 +2870,45 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=readiness_artifact_path,
                 surface_output_path=readiness_surface_path,
             )
+            written_daily_home = write_daily_operator_home(
+                artifact_output_path=daily_home_artifact_path,
+                surface_output_path=daily_home_surface_path,
+                today_path=written_today,
+                morning_path=morning_artifact_path,
+                readiness_path=readiness_artifact_path,
+                handoff_path=handoff_artifact_path,
+                handoff_apply_path=DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT,
+                run_ledger_path=run_ledger_artifact_path,
+                scheduler_operations_path=scheduler_operations_artifact_path,
+                phone_access_path=phone_access_path,
+                notification_path=notification_path,
+                memory_audit_path=memory_audit_artifact_path,
+            )
+            written_readiness = write_daily_readiness(
+                project_root=".",
+                artifact_output_path=readiness_artifact_path,
+                surface_output_path=readiness_surface_path,
+            )
+            written_daily_home = write_daily_operator_home(
+                artifact_output_path=daily_home_artifact_path,
+                surface_output_path=daily_home_surface_path,
+                today_path=written_today,
+                morning_path=morning_artifact_path,
+                readiness_path=readiness_artifact_path,
+                handoff_path=handoff_artifact_path,
+                handoff_apply_path=DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT,
+                run_ledger_path=run_ledger_artifact_path,
+                scheduler_operations_path=scheduler_operations_artifact_path,
+                phone_access_path=phone_access_path,
+                notification_path=notification_path,
+                memory_audit_path=memory_audit_artifact_path,
+            )
             add_archive_artifacts(
                 manifest_path=archive_manifest,
                 artifacts={
+                    "daily_home": daily_home_artifact_path,
+                    "daily_home_surface": written_daily_home,
+                    "phone_access": phone_access_path,
                     "source_refresh_brief": source_refresh_brief_artifact_path,
                     "source_refresh_brief_surface": written_source_refresh_brief,
                     "scheduler_operations": scheduler_operations_artifact_path,
@@ -2850,6 +2938,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(json.dumps({
                 "playbook": playbook_path.as_posix(),
+                "phone_access": phone_access_path.as_posix(),
                 "topics": topics_path,
                 "research_plan": plan_path.as_posix(),
                 "daily_scout": scout_path.as_posix(),
@@ -2860,25 +2949,27 @@ def main(argv: list[str] | None = None) -> int:
                 "source_refresh_live_preflight": refresh_live_preflight_path.as_posix(),
                 "daily_agenda": agenda_artifact_path.as_posix(),
                 "daily_agenda_surface": written_agenda.as_posix(),
+                "daily_home": daily_home_artifact_path.as_posix(),
+                "daily_home_surface": written_daily_home.as_posix(),
                 "daily_readiness": readiness_artifact_path.as_posix(),
                 "daily_readiness_surface": written_readiness.as_posix(),
-                    "daily_review": review_artifact_path.as_posix(),
-                    "daily_review_surface": written_review.as_posix(),
-                    "review_prompt": review_prompt_artifact_path.as_posix(),
-                    "review_prompt_surface": written_review_prompt.as_posix(),
-                    "review_effect": review_effect_artifact_path.as_posix(),
-                    "review_effect_surface": written_review_effect.as_posix(),
-                    "agent_pattern_radar": pattern_radar_artifact_path.as_posix(),
-                    "agent_pattern_radar_surface": written_pattern_radar.as_posix(),
-                    "run_trace": run_trace_artifact_path.as_posix(),
-                    "run_trace_surface": written_run_trace.as_posix(),
-                    "daily_run_ledger": run_ledger_artifact_path.as_posix(),
-                    "daily_run_ledger_surface": written_run_ledger.as_posix(),
-                    "daily_handoff": handoff_artifact_path.as_posix(),
-                    "daily_handoff_surface": written_handoff.as_posix(),
-                    "drift_review": drift_review_artifact_path.as_posix(),
-                    "drift_review_surface": written_drift_review.as_posix(),
-                    "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),
+                "daily_review": review_artifact_path.as_posix(),
+                "daily_review_surface": written_review.as_posix(),
+                "review_prompt": review_prompt_artifact_path.as_posix(),
+                "review_prompt_surface": written_review_prompt.as_posix(),
+                "review_effect": review_effect_artifact_path.as_posix(),
+                "review_effect_surface": written_review_effect.as_posix(),
+                "agent_pattern_radar": pattern_radar_artifact_path.as_posix(),
+                "agent_pattern_radar_surface": written_pattern_radar.as_posix(),
+                "run_trace": run_trace_artifact_path.as_posix(),
+                "run_trace_surface": written_run_trace.as_posix(),
+                "daily_run_ledger": run_ledger_artifact_path.as_posix(),
+                "daily_run_ledger_surface": written_run_ledger.as_posix(),
+                "daily_handoff": handoff_artifact_path.as_posix(),
+                "daily_handoff_surface": written_handoff.as_posix(),
+                "drift_review": drift_review_artifact_path.as_posix(),
+                "drift_review_surface": written_drift_review.as_posix(),
+                "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),
                 "source_refresh_brief_surface": written_source_refresh_brief.as_posix(),
                 "scheduler_operations": scheduler_operations_artifact_path.as_posix(),
                 "scheduler_operations_surface": written_scheduler_operations.as_posix(),
