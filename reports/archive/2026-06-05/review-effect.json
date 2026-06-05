@@ -1,6 +1,6 @@
 {
   "schema_version": "operator_review_effect.v1",
-  "generated_at": "2026-06-05T18:27:55.849866+00:00",
+  "generated_at": "2026-06-05T18:45:58.899112+00:00",
   "status": "no_feedback",
   "summary": {
     "response_count": 0,
@@ -15,7 +15,7 @@
     {
       "label": "피드백 남기기",
       "why": "오늘 읽은 주제에 대해 가장 가까운 응답을 하나 남기면 다음 run에서 scout score에 반영됩니다.",
-      "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'read \"Semiconductors\" \"Semiconductors을 읽었다\"'",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'read \"Semiconductors\" \"Semiconductors을 읽었다\"'",
       "external_effect_performed": false
     }
   ],

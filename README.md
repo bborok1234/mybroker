@@ -38,7 +38,7 @@ PYTHONPATH=src python3 -m mybroker topics list --config config/topics.json
 PYTHONPATH=src python3 -m mybroker research-plan --topics config/topics.json --output reports/daily/research-plan.json --run-id daily-research
 PYTHONPATH=src python3 -m mybroker collect-evidence --topics config/topics.json --plan reports/daily/research-plan.json --output reports/evidence/daily-evidence-catalog.json --memory-output reports/memory/topic-memory.json
 PYTHONPATH=src python3 -m mybroker daily-scout --topics config/topics.json --plan reports/daily/research-plan.json --evidence reports/evidence/daily-evidence-catalog.json --memory reports/memory/topic-memory.json --vault reports/vault/compile.json --output reports/daily/scout.json
-PYTHONPATH=src python3 -m mybroker appliance review-response 'more "Semiconductors" "내일도 메모리 업황을 더 보고 싶다"'
+PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more "Semiconductors" "내일도 메모리 업황을 더 보고 싶다"'
 PYTHONPATH=src python3 -m mybroker appliance review
 PYTHONPATH=src python3 -m mybroker source-refresh-plan --scout reports/daily/scout.json --evidence reports/evidence/daily-evidence-catalog.json --vault reports/vault/compile.json --output reports/daily/source-refresh-plan.json
 PYTHONPATH=src python3 -m mybroker source-refresh-apply --refresh-plan reports/daily/source-refresh-plan.json --output reports/daily/source-refresh-apply.json
@@ -223,6 +223,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/product/today.html`: a mobile-first `/today` surface for the phone;
 - `reports/daily/scout.json`: local scout recommendations for what to inspect first;
 - `reports/memory/daily-review.json` and `reports/product/review.html`: local operator feedback about what was read, skipped, confusing, or worth seeing more often; the next scout can use this as a review signal;
+- `reports/runtime/review-response-apply.json` and `reports/product/review-response-apply.html`: one-command local proof that a copied review response was recorded, daily review was regenerated, scout read the updated review, and review effect was refreshed;
 - `reports/runtime/agent-pattern-radar.json` and `reports/product/pattern-radar.html`: local workflow evolution radar that records which Hermes/OpenClaw/MiroFish/TradingAgents/work-buddy/Dexter/TaskWeaver/TraceAgent/Obsidian-style patterns are adopted, partially adopted, deferred, or rejected before they shape the daily analyst loop;
 - `reports/runtime/run-trace.json` and `reports/product/run-trace.html`: compact local proof of which daily steps and artifacts shaped today's phone brief, memory, task queue, and control surfaces;
 - `reports/runtime/drift-review.json` and `reports/product/drift-review.html`: trace-backed local direction review that recommends continue, inspect, defer, or approval-needed next branches before the loop widens authority;
@@ -256,12 +257,13 @@ This follows the Obsidian-vault pattern: each daily run remains a local artifact
 `task-response` and `task-status-apply` let the operator mark local task status with short
 responses such as `AT-001 complete "checked source freshness"`; this updates ledger state without
 executing tasks or external effects.
-`review-response` and `review` let the operator record reading feedback with short responses such
-as `more "Semiconductors" "메모리 업황을 더 보고 싶다"`. This writes local review memory only. The
-next `daily-scout` reads `reports/memory/daily-review.json` and adds an `operator_review` score
-factor, so the daily analyst loop gradually follows what the operator actually studies.
+`review-response-apply` lets the operator paste one short response such as
+`more "Semiconductors" "메모리 업황을 더 보고 싶다"`. It writes local review memory, regenerates
+`daily_review`, refreshes `daily_scout`, refreshes `review_prompt`, and writes `review_effect` plus
+`review-response-apply` proof. It does not fetch live data, send notifications, write scheduler
+state, or use credentials.
 `review-prompt` writes `reports/runtime/review-prompt.json` and
-`reports/product/review-prompt.html`. It suggests copy-ready `review-response` commands for the
+`reports/product/review-prompt.html`. It suggests copy-ready `review-response-apply` commands for the
 current scout topics, so a phone user can leave useful feedback without editing JSON or remembering
 the response grammar.
 `review-effect` writes `reports/runtime/review-effect.json` and

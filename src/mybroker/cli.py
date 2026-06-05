@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 from mybroker.appliance import (
@@ -29,6 +30,9 @@ from mybroker.appliance import (
     DEFAULT_REVIEW_PROMPT_SURFACE,
     DEFAULT_REVIEW_EFFECT_OUTPUT,
     DEFAULT_REVIEW_EFFECT_SURFACE,
+    DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT,
+    DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE,
+    OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
@@ -56,6 +60,7 @@ from mybroker.appliance import (
     DEFAULT_TODAY_OUTPUT,
     add_archive_artifacts,
     archive_daily_run,
+    parse_daily_review_response,
     send_notification_payload,
     write_agent_pattern_radar,
     write_launchd_assets,
@@ -68,6 +73,7 @@ from mybroker.appliance import (
     write_drift_review,
     write_operator_review_prompt,
     write_operator_review_effect,
+    write_operator_review_response_apply,
     build_task_status_apply,
     record_daily_review_response,
     record_task_status_response,
@@ -99,6 +105,7 @@ from mybroker.appliance import (
     validate_drift_review_file,
     validate_operator_review_prompt_file,
     validate_operator_review_effect_file,
+    validate_operator_review_response_apply_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
     validate_run_trace_file,
@@ -321,6 +328,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_review_prompt_parser.add_argument("review_prompt_path")
     validate_review_effect_parser = subcommands.add_parser("validate-review-effect", help="Validate an operator_review_effect.v1 artifact.")
     validate_review_effect_parser.add_argument("review_effect_path")
+    validate_review_response_apply_parser = subcommands.add_parser("validate-review-response-apply", help="Validate an operator_review_response_apply.v1 artifact.")
+    validate_review_response_apply_parser.add_argument("review_response_apply_path")
     validate_pattern_radar_parser = subcommands.add_parser("validate-agent-pattern-radar", help="Validate an agent_pattern_radar.v1 artifact.")
     validate_pattern_radar_parser.add_argument("pattern_radar_path")
     validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
@@ -529,6 +538,25 @@ def main(argv: list[str] | None = None) -> int:
     appliance_review_response_parser = appliance_subcommands.add_parser("review-response", help="Record one local daily review response for tomorrow's scout scoring.")
     appliance_review_response_parser.add_argument("response", help='Example: more "Semiconductors" "memory cycle is useful"')
     appliance_review_response_parser.add_argument("--responses", default=DEFAULT_DAILY_REVIEW_RESPONSES.as_posix())
+    appliance_review_response_apply_parser = appliance_subcommands.add_parser("review-response-apply", help="Record one local review response and refresh review/scout/effect proof.")
+    appliance_review_response_apply_parser.add_argument("response", help='Example: more "Semiconductors" "memory cycle is useful"')
+    appliance_review_response_apply_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
+    appliance_review_response_apply_parser.add_argument("--plan", default=DEFAULT_RESEARCH_PLAN_OUTPUT.as_posix())
+    appliance_review_response_apply_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_review_response_apply_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_review_response_apply_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    appliance_review_response_apply_parser.add_argument("--task-status-apply", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
+    appliance_review_response_apply_parser.add_argument("--responses", default=DEFAULT_DAILY_REVIEW_RESPONSES.as_posix())
+    appliance_review_response_apply_parser.add_argument("--run-id", default="daily-research")
+    appliance_review_response_apply_parser.add_argument("--daily-review-output", default=DEFAULT_DAILY_REVIEW_OUTPUT.as_posix())
+    appliance_review_response_apply_parser.add_argument("--daily-review-surface", default=DEFAULT_DAILY_REVIEW_SURFACE.as_posix())
+    appliance_review_response_apply_parser.add_argument("--scout-output", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_review_response_apply_parser.add_argument("--review-prompt-output", default=DEFAULT_REVIEW_PROMPT_OUTPUT.as_posix())
+    appliance_review_response_apply_parser.add_argument("--review-prompt-surface", default=DEFAULT_REVIEW_PROMPT_SURFACE.as_posix())
+    appliance_review_response_apply_parser.add_argument("--review-effect-output", default=DEFAULT_REVIEW_EFFECT_OUTPUT.as_posix())
+    appliance_review_response_apply_parser.add_argument("--review-effect-surface", default=DEFAULT_REVIEW_EFFECT_SURFACE.as_posix())
+    appliance_review_response_apply_parser.add_argument("--artifact-output", default=DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT.as_posix())
+    appliance_review_response_apply_parser.add_argument("--output", default=DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE.as_posix())
     appliance_review_parser = appliance_subcommands.add_parser("review", help="Render daily review memory and scout scoring signals.")
     appliance_review_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     appliance_review_parser.add_argument("--task-status-apply", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
@@ -978,6 +1006,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-review-effect":
         errors = validate_operator_review_effect_file(args.review_effect_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-review-response-apply":
+        errors = validate_operator_review_response_apply_file(args.review_response_apply_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1509,6 +1544,99 @@ def main(argv: list[str] | None = None) -> int:
             path = record_daily_review_response(response=args.response, responses_path=args.responses)
             print(json.dumps({
                 "daily_review_responses": path.as_posix(),
+                "external_effect_performed": False,
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "review-response-apply":
+            parsed_response = parse_daily_review_response(args.response)
+            responses_path = record_daily_review_response(response=args.response, responses_path=args.responses)
+            written_review = write_daily_review(
+                scout_path=args.scout_output,
+                task_status_apply_path=args.task_status_apply,
+                responses_path=responses_path,
+                artifact_output_path=args.daily_review_output,
+                surface_output_path=args.daily_review_surface,
+            )
+            scout_payload = build_daily_scout(
+                topics_path=args.topics,
+                plan_path=args.plan,
+                evidence_path=args.evidence,
+                memory_path=args.memory,
+                vault_path=args.vault,
+                review_path=args.daily_review_output,
+                output_path=args.scout_output,
+                run_id=args.run_id,
+            )
+            written_prompt = write_operator_review_prompt(
+                scout_path=args.scout_output,
+                daily_review_path=args.daily_review_output,
+                artifact_output_path=args.review_prompt_output,
+                surface_output_path=args.review_prompt_surface,
+            )
+            written_effect = write_operator_review_effect(
+                scout_path=args.scout_output,
+                daily_review_path=args.daily_review_output,
+                review_prompt_path=args.review_prompt_output,
+                artifact_output_path=args.review_effect_output,
+                surface_output_path=args.review_effect_surface,
+            )
+            review_payload = json.loads(Path(args.daily_review_output).read_text(encoding="utf-8"))
+            effect_payload = json.loads(Path(args.review_effect_output).read_text(encoding="utf-8"))
+            apply_payload = {
+                "schema_version": OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "status": "applied" if effect_payload.get("status") == "applied" else "blocked",
+                "operator_response": args.response,
+                "parsed_response": parsed_response,
+                "responses_path": Path(responses_path).as_posix(),
+                "daily_review": {
+                    "path": args.daily_review_output,
+                    "surface": written_review.as_posix(),
+                    "response_count": review_payload.get("summary", {}).get("response_count", 0),
+                    "signal_count": review_payload.get("summary", {}).get("signal_count", 0),
+                },
+                "daily_scout": {
+                    "path": args.scout_output,
+                    "recommended_topic": scout_payload.get("recommended_topic", {}).get("name", ""),
+                    "review_response_count": scout_payload.get("review_context", {}).get("response_count", 0),
+                    "review_signal_count": scout_payload.get("review_context", {}).get("signal_count", 0),
+                },
+                "review_prompt": {
+                    "path": args.review_prompt_output,
+                    "surface": written_prompt.as_posix(),
+                },
+                "review_effect": {
+                    "path": args.review_effect_output,
+                    "surface": written_effect.as_posix(),
+                    "status": effect_payload.get("status", ""),
+                    "applied_topic_count": effect_payload.get("summary", {}).get("applied_topic_count", 0),
+                },
+                "next_action": "피드백이 scout score에 반영됐습니다. review-effect 화면에서 topic-level 증거를 확인하세요." if effect_payload.get("status") == "applied" else "응답은 기록됐지만 effect proof가 applied가 아닙니다. review-effect 화면의 다음 행동을 확인하세요.",
+                "external_effect_performed": False,
+                "host_write_performed": False,
+                "policy": "research_only",
+                "safety_boundary": [
+                    "local_review_response_apply_only",
+                    "does_not_fetch_live_network",
+                    "does_not_send_notifications",
+                    "does_not_write_host_scheduler",
+                    "does_not_use_credentials",
+                    "no_account_access",
+                    "no_live_trading",
+                ],
+            }
+            written_apply = write_operator_review_response_apply(
+                payload=apply_payload,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            print(json.dumps({
+                "review_response_apply": args.artifact_output,
+                "review_response_apply_surface": written_apply.as_posix(),
+                "daily_review": args.daily_review_output,
+                "daily_scout": args.scout_output,
+                "review_effect": args.review_effect_output,
+                "effect_status": effect_payload.get("status", ""),
                 "external_effect_performed": False,
             }, indent=2, ensure_ascii=False))
             return 0

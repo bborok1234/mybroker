@@ -1,13 +1,13 @@
 {
   "schema_version": "agent_pattern_radar.v1",
-  "generated_at": "2026-06-05T18:27:48.356055+00:00",
+  "generated_at": "2026-06-05T18:45:49.091915+00:00",
   "status": "ready",
   "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
   "playbook_source": "reports/runtime/local-analyst-playbook.json",
-  "playbook_pattern_count": 5,
+  "playbook_pattern_count": 6,
   "summary": {
-    "case_count": 13,
-    "adopted_count": 10,
+    "case_count": 14,
+    "adopted_count": 11,
     "deferred_count": 1,
     "rejected_count": 2,
     "top_next_pattern": "pattern freshness audit before adding new runtime authority"
@@ -77,6 +77,17 @@
       "why": "A personal analyst becomes useful when research compounds across days.",
       "risk": "stale or biased notes can dominate later runs",
       "guardrail": "surface source paths, freshness, and review feedback; do not delete raw notes automatically",
+      "priority": "high"
+    },
+    {
+      "source": "Claude Code finance research appliance workflow",
+      "source_url": "https://x.com/leopardracer/status/2058949350315667829",
+      "observed_pattern": "plain-language research operator, local knowledge base, browser automation, scraper gateway, and four verbs: clip, compile, query, audit",
+      "decision": "adopt",
+      "mybroker_translation": "keep the phone as a command/review surface while the laptop loop records local memory, compiles vault notes, asks for short feedback, and proves whether feedback shaped the next scout",
+      "why": "The useful personal analyst pattern is not a hosted app first; it is a disciplined local research appliance whose memory compounds and whose operator handoffs are short.",
+      "risk": "browser/scraper access can quietly expand authority or pull weak sources into memory",
+      "guardrail": "live network, host writes, notifications, credentials, and paid/API operations stay behind scoped gates; copied feedback uses review-response-apply only",
       "priority": "high"
     },
     {
@@ -193,6 +204,12 @@
       "priority": "high",
       "translation": "compile local raw notes into reports/vault/wiki and feed scout, memory, today, and archive",
       "guardrail": "surface source paths, freshness, and review feedback; do not delete raw notes automatically"
+    },
+    {
+      "source": "Claude Code finance research appliance workflow",
+      "priority": "high",
+      "translation": "keep the phone as a command/review surface while the laptop loop records local memory, compiles vault notes, asks for short feedback, and proves whether feedback shaped the next scout",
+      "guardrail": "live network, host writes, notifications, credentials, and paid/API operations stay behind scoped gates; copied feedback uses review-response-apply only"
     },
     {
       "source": "work-buddy",

@@ -148,9 +148,12 @@ The local loop now writes three memory-facing surfaces:
 - `reports/memory/daily-review.json`: machine-readable local operator review signals for what was read, skipped, confusing, or worth seeing more often.
 - `reports/product/review.html`: phone-readable review memory surface and copy-ready response example.
 - `reports/product/review-prompt.html`: phone-readable prompt surface that suggests copy-ready
-  `review-response` commands for current scout topics before the next run.
+  `review-response-apply` commands for current scout topics before the next run.
 - `reports/product/review-effect.html`: phone-readable proof surface that shows whether local
   review feedback was read by scout and applied as an `operator_review` score factor.
+- `reports/product/review-response-apply.html`: phone-readable handoff proof after a copied
+  feedback command records review memory, regenerates review/scout/prompt/effect artifacts, and
+  confirms whether the same local run applied the response.
 - `reports/runtime/agent-pattern-radar.json`: machine-readable record of which external agentic workflow patterns are adopted, partially adopted, or rejected for the local daily analyst loop.
 - `reports/product/pattern-radar.html`: phone-readable workflow evolution radar for the next safe slice and safety guardrails.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
@@ -182,14 +185,15 @@ carried from an earlier run, blocked by approval, or no longer present in the cu
 `task-response` appends a local JSONL response, and `task-status-apply` validates those responses
 against the current ledger. Supported actions are `complete`, `carry`, `defer`, and `block`.
 The apply artifact records `external_effect_performed: false`; it updates status only.
-`review-response` appends a local daily review response such as
-`more "Semiconductors" "메모리 업황을 더 보고 싶다"`, and `review` turns those responses into
-`daily_review.v1`. The next `daily-scout` reads that artifact and adds an `operator_review` score
-factor. This is local memory only: it does not execute tasks, fetch live data, or send notifications.
+`review-response-apply` appends a local daily review response such as
+`more "Semiconductors" "메모리 업황을 더 보고 싶다"`, regenerates `daily_review.v1`, reruns
+`daily-scout` against the updated review artifact, refreshes the prompt/effect proof, and writes a
+handoff surface. This is local memory only: it does not execute tasks, fetch live data, send
+notifications, write scheduler state, or use credentials.
 `review-prompt` turns the current scout, review memory, drift review, and task ledger into
 `operator_review_prompt.v1` plus `reports/product/review-prompt.html`. It is a phone-first helper
 for leaving better feedback; it does not change topic scores until the operator actually records a
-`review-response`.
+`review-response-apply`.
 `review-effect` turns the current scout, review memory, and review prompt into
 `operator_review_effect.v1` plus `reports/product/review-effect.html`. It is the proof step: if no
 feedback exists, it points back to the prompt; if feedback exists but scout did not read the same

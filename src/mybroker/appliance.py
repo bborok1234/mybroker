@@ -46,6 +46,7 @@ ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION = "personal_analyst_task_status_apply.v
 DAILY_REVIEW_SCHEMA_VERSION = "daily_review.v1"
 OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION = "operator_review_prompt.v1"
 OPERATOR_REVIEW_EFFECT_SCHEMA_VERSION = "operator_review_effect.v1"
+OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION = "operator_review_response_apply.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUN_TRACE_SCHEMA_VERSION = "local_run_trace.v1"
 DRIFT_REVIEW_SCHEMA_VERSION = "local_drift_review.v1"
@@ -91,6 +92,8 @@ DEFAULT_REVIEW_PROMPT_OUTPUT = Path("reports/runtime/review-prompt.json")
 DEFAULT_REVIEW_PROMPT_SURFACE = Path("reports/product/review-prompt.html")
 DEFAULT_REVIEW_EFFECT_OUTPUT = Path("reports/runtime/review-effect.json")
 DEFAULT_REVIEW_EFFECT_SURFACE = Path("reports/product/review-effect.html")
+DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/review-response-apply.json")
+DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE = Path("reports/product/review-response-apply.html")
 DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
 DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
 DEFAULT_RUN_TRACE_OUTPUT = Path("reports/runtime/run-trace.json")
@@ -154,6 +157,11 @@ def write_runtime_playbook(output_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OU
                 "source": "Obsidian research vault workflows",
                 "pattern": "local markdown/file memory that compounds over time",
                 "mybroker_translation": "archive manifests, topic memory, source-linked artifacts, daily brief history",
+            },
+            {
+                "source": "Claude Code finance research appliance workflows",
+                "pattern": "plain-language operator commands, Obsidian-style memory, browser/scraper tools, recurring compile/query/audit loops",
+                "mybroker_translation": "phone copy-ready commands, local vault compile, deterministic recall, review-response-apply handoff, and explicit no-external-effect proof",
             },
         ],
         "recommended_runtime": {
@@ -255,6 +263,17 @@ def build_agent_pattern_radar(
             "why": "A personal analyst becomes useful when research compounds across days.",
             "risk": "stale or biased notes can dominate later runs",
             "guardrail": "surface source paths, freshness, and review feedback; do not delete raw notes automatically",
+            "priority": "high",
+        },
+        {
+            "source": "Claude Code finance research appliance workflow",
+            "source_url": "https://x.com/leopardracer/status/2058949350315667829",
+            "observed_pattern": "plain-language research operator, local knowledge base, browser automation, scraper gateway, and four verbs: clip, compile, query, audit",
+            "decision": "adopt",
+            "mybroker_translation": "keep the phone as a command/review surface while the laptop loop records local memory, compiles vault notes, asks for short feedback, and proves whether feedback shaped the next scout",
+            "why": "The useful personal analyst pattern is not a hosted app first; it is a disciplined local research appliance whose memory compounds and whose operator handoffs are short.",
+            "risk": "browser/scraper access can quietly expand authority or pull weak sources into memory",
+            "guardrail": "live network, host writes, notifications, credentials, and paid/API operations stay behind scoped gates; copied feedback uses review-response-apply only",
             "priority": "high",
         },
         {
@@ -4172,7 +4191,7 @@ code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; backgrou
 </header>
 <section class="hero">
 <p>이 화면은 오늘의 로컬 피드백을 내일 scout 점수에 반영하기 위한 메모리 표면입니다. 외부 호출이나 실행은 하지 않습니다.</p>
-<code>PYTHONPATH=src python3 -m mybroker appliance review-response 'more "Semiconductors" "메모리 업황을 더 보고 싶다"'</code>
+<code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more "Semiconductors" "메모리 업황을 더 보고 싶다"'</code>
 </section>
 <section class="section">
 <div class="metrics">
@@ -4232,7 +4251,7 @@ def build_operator_review_prompt(
         },
         "why_this_exists": "다음 scout와 방향 점검이 실제 사용자 피드백을 근거로 조정되도록, 오늘 남길 수 있는 짧은 응답을 제안합니다.",
         "prompt_cards": cards,
-        "next_agent_effect": "review-response를 남기고 appliance run을 다시 실행하면 daily_review가 갱신되고 다음 scout score에 operator_review가 반영됩니다.",
+        "next_agent_effect": "review-response-apply를 남기면 daily_review, daily_scout, review_prompt, review_effect가 같은 local run에서 갱신되고 operator_review 반영 여부가 증명됩니다.",
         "input_artifacts": {
             "scout": Path(scout_path).as_posix(),
             "daily_review": Path(daily_review_path).as_posix(),
@@ -4310,8 +4329,8 @@ def validate_operator_review_prompt_payload(payload: dict[str, Any]) -> list[str
             errors.append(f"prompt_cards[{index}] copy_ready_commands must not be empty")
         for command_index, command in enumerate(commands):
             command_text = command.get("command", "")
-            if "review-response" not in command_text:
-                errors.append(f"prompt_cards[{index}].copy_ready_commands[{command_index}] must call review-response")
+            if "review-response-apply" not in command_text:
+                errors.append(f"prompt_cards[{index}].copy_ready_commands[{command_index}] must call review-response-apply")
             if command.get("external_effect_performed") is not False:
                 errors.append(f"prompt_cards[{index}].copy_ready_commands[{command_index}] external_effect_performed must be false")
     return errors
@@ -4456,7 +4475,7 @@ def _review_prompt_command(action: str, topic: str, label: str, why: str) -> dic
     return {
         "action": action,
         "label": label,
-        "command": f"PYTHONPATH=src python3 -m mybroker appliance review-response {shlex.quote(response)}",
+        "command": f"PYTHONPATH=src python3 -m mybroker appliance review-response-apply {shlex.quote(response)}",
         "why": why,
         "external_effect_performed": False,
     }
@@ -4590,6 +4609,120 @@ def validate_operator_review_effect_payload(payload: dict[str, Any]) -> list[str
 
 def validate_operator_review_effect_file(path: str | Path) -> list[str]:
     return validate_operator_review_effect_payload(load_json(path))
+
+
+def write_operator_review_response_apply(
+    *,
+    payload: dict[str, Any],
+    artifact_output_path: str | Path = DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE,
+) -> Path:
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_operator_review_response_apply(payload), encoding="utf-8")
+    return target
+
+
+def validate_operator_review_response_apply_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"applied", "blocked"}:
+        errors.append("status must be applied or blocked")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if "local_review_response_apply_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include local_review_response_apply_only")
+    for field in ["operator_response", "responses_path", "daily_review", "daily_scout", "review_prompt", "review_effect"]:
+        if field not in payload:
+            errors.append(f"missing {field}")
+    effect = payload.get("review_effect", {})
+    if effect.get("status") not in {"applied", "no_feedback", "not_applied", "missing_inputs"}:
+        errors.append("review_effect.status is invalid")
+    if not payload.get("next_action"):
+        errors.append("next_action must not be empty")
+    return errors
+
+
+def validate_operator_review_response_apply_file(path: str | Path) -> list[str]:
+    return validate_operator_review_response_apply_payload(load_json(path))
+
+
+def render_operator_review_response_apply(payload: dict[str, Any]) -> str:
+    effect = payload.get("review_effect", {})
+    review = payload.get("daily_review", {})
+    scout = payload.get("daily_scout", {})
+    status_label = {
+        "applied": "응답 적용됨",
+        "blocked": "응답 적용 차단됨",
+    }.get(payload.get("status", ""), payload.get("status", "unknown"))
+    effect_label = {
+        "applied": "피드백 반영됨",
+        "no_feedback": "아직 피드백 없음",
+        "not_applied": "피드백 미반영",
+        "missing_inputs": "입력 누락",
+    }.get(effect.get("status", ""), effect.get("status", "unknown"))
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Review Response Apply</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+.eyebrow,.metric span {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small {{ color:var(--muted); }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics,.links {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Review Apply · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>피드백 응답 적용</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('next_action', ''))}</p>
+<code>{esc(payload.get('operator_response', ''))}</code>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Review responses</span><strong>{esc(review.get('response_count', 0))}</strong></article>
+<article class="metric"><span>Scout read</span><strong>{esc(scout.get('review_response_count', 0))}</strong></article>
+<article class="metric"><span>Effect</span><strong>{esc(effect_label)}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>갱신된 파일</h2>
+<div class="links">
+<a href="{esc(_relative_href(DEFAULT_DAILY_REVIEW_SURFACE))}">review</a>
+<a href="{esc(_relative_href(DEFAULT_REVIEW_PROMPT_SURFACE))}">review_prompt</a>
+<a href="{esc(_relative_href(DEFAULT_REVIEW_EFFECT_SURFACE))}">review_effect</a>
+</div>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def render_operator_review_effect(payload: dict[str, Any]) -> str:
@@ -4737,7 +4870,7 @@ def _operator_review_effect_interpretation(*, status: str) -> str:
     return {
         "no_feedback": "아직 기록된 review-response가 없어 scout가 개인 피드백을 반영할 수 없습니다.",
         "applied": "daily_review의 topic signal이 현재 scout score_factors에 operator_review로 반영됐습니다.",
-        "not_applied": "review-response는 있으나 현재 scout가 같은 응답 수나 delta를 반영하지 못했습니다. appliance run을 다시 실행해 확인해야 합니다.",
+        "not_applied": "review-response는 있으나 현재 scout가 같은 응답 수나 delta를 반영하지 못했습니다. review-response-apply로 같은 local run에서 다시 확인해야 합니다.",
         "missing_inputs": "daily_scout 또는 daily_review artifact가 없거나 schema가 맞지 않아 반영 여부를 판단할 수 없습니다.",
     }.get(status, "피드백 반영 상태를 확인해야 합니다.")
 
@@ -4754,8 +4887,8 @@ def _operator_review_effect_next_actions(*, status: str, prompt: dict[str, Any])
     if status == "not_applied":
         return [{
             "label": "로컬 run 재생성",
-            "why": "review-response가 기록된 뒤 daily_review와 daily_scout를 같은 run에서 다시 생성해야 반영 여부가 맞춰집니다.",
-            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --dry-run",
+            "why": "review-response-apply는 daily_review와 daily_scout를 같은 local run에서 다시 생성해 반영 여부를 맞춥니다.",
+            "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more \"Semiconductors\" \"내일도 이어서 보고 싶다\"'",
             "external_effect_performed": False,
         }]
     if status == "missing_inputs":
