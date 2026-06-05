@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from io import BytesIO
 from pathlib import Path
+from unittest.mock import patch
 
 from mybroker.public_evidence import (
     SOURCE_MATRIX,
@@ -48,6 +50,45 @@ class PublicEvidenceTests(unittest.TestCase):
         errors = validate_public_evidence_catalog_payload({"schema_version": "public_evidence_catalog.v1"})
 
         self.assertTrue(any("missing required public evidence catalog fields" in error for error in errors))
+
+    def test_live_gdelt_adapter_normalizes_api_articles(self) -> None:
+        body = (
+            b'{"articles":[{"title":"AI chip demand lifts semiconductor narrative",'
+            b'"url":"https://example.com/article","seendate":"20260605T010000Z",'
+            b'"domain":"example.com","sourceCountry":"US","language":"English"}]}'
+        )
+
+        with patch("urllib.request.urlopen", return_value=_Response(body)):
+            catalog = build_public_evidence_catalog(["gdelt-live", "stooq-sample"])
+
+        self.assertIn(catalog["mode"], {"live", "live_with_cache_fallback"})
+        gdelt_items = [item for item in catalog["items"] if item["source_name"] == "GDELT"]
+        self.assertEqual(gdelt_items[0]["freshness_status"], "live")
+        self.assertIn("semiconductors", gdelt_items[0]["topics"])
+
+    def test_live_adapters_fall_back_to_sample_cache_on_network_error(self) -> None:
+        with patch("urllib.request.urlopen", side_effect=TimeoutError("offline")):
+            catalog = build_public_evidence_catalog(["gdelt-live", "stooq-live"])
+
+        self.assertEqual(catalog["mode"], "live_with_cache_fallback")
+        self.assertGreaterEqual(len(catalog["items"]), 2)
+        self.assertTrue(any(item["freshness_status"] == "live_error_fallback_sample" for item in catalog["items"]))
+
+
+class _Response:
+    status = 200
+
+    def __init__(self, body: bytes) -> None:
+        self.body = BytesIO(body)
+
+    def __enter__(self) -> "_Response":
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self.body.read()
 
 
 if __name__ == "__main__":

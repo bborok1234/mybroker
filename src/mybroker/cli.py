@@ -9,11 +9,14 @@ from mybroker.appliance import (
     DEFAULT_ARCHIVE_ROOT,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_NOTIFICATION_OUTPUT,
+    DEFAULT_PHONE_ACCESS_OUTPUT,
     DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
     DEFAULT_TODAY_OUTPUT,
     archive_daily_run,
+    send_notification_payload,
     write_launchd_assets,
     write_notification_payload,
+    write_phone_access_plan,
     write_runtime_playbook,
     write_today_surface,
 )
@@ -159,6 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     daily_parser.add_argument("--dashboard-output", default="reports/dashboard.html")
     daily_parser.add_argument("--rollup-output", default="reports/report-rollup.json")
     daily_parser.add_argument("--brief-output", default="reports/product/market-brief.html")
+    daily_parser.add_argument("--source", action="append", help="Public evidence adapter id. Use gdelt-live/stooq-live for no-key live refresh with cache fallback.")
 
     appliance_parser = subcommands.add_parser("appliance", help="Run MyBroker as a local personal analyst appliance.")
     appliance_subcommands = appliance_parser.add_subparsers(dest="appliance_command", required=True)
@@ -170,6 +174,10 @@ def main(argv: list[str] | None = None) -> int:
     appliance_init_parser.add_argument("--hour", type=int, default=7)
     appliance_init_parser.add_argument("--minute", type=int, default=30)
     appliance_init_parser.add_argument("--python", default="python3")
+    appliance_access_parser = appliance_subcommands.add_parser("access", help="Write private phone access guidance for local /today.")
+    appliance_access_parser.add_argument("--output", default=DEFAULT_PHONE_ACCESS_OUTPUT.as_posix())
+    appliance_access_parser.add_argument("--port", type=int, default=8787)
+    appliance_access_parser.add_argument("--tailnet-host", default="mybroker-mac")
     appliance_today_parser = appliance_subcommands.add_parser("today", help="Render the mobile-first /today product surface.")
     appliance_today_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
     appliance_today_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
@@ -186,6 +194,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_notify_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
     appliance_notify_parser.add_argument("--output", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
     appliance_notify_parser.add_argument("--dry-run", action="store_true", default=True)
+    appliance_notify_parser.add_argument("--send", action="store_true", help="Send using provider environment variables instead of dry-run.")
     appliance_run_parser = appliance_subcommands.add_parser("run", help="Run the daily analyst loop, archive it, render /today, and prepare notification.")
     appliance_run_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
     appliance_run_parser.add_argument("--profile", help="Optional beginner profile JSON.")
@@ -193,6 +202,8 @@ def main(argv: list[str] | None = None) -> int:
     appliance_run_parser.add_argument("--today-url", default="http://localhost:8787/reports/product/today.html")
     appliance_run_parser.add_argument("--notification-provider", choices=["telegram", "pushover"], default="telegram")
     appliance_run_parser.add_argument("--dry-run", action="store_true", default=True)
+    appliance_run_parser.add_argument("--send", action="store_true", help="Send notification after writing payload. Requires provider environment variables.")
+    appliance_run_parser.add_argument("--source", action="append", help="Public evidence adapter id. Use gdelt-live/stooq-live for no-key live refresh with cache fallback.")
     appliance_run_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
     appliance_run_parser.add_argument("--playbook-output", default=DEFAULT_RUNTIME_PLAYBOOK_OUTPUT.as_posix())
 
@@ -388,6 +399,7 @@ def main(argv: list[str] | None = None) -> int:
             plan_path=args.plan_output,
             output_path=args.evidence_output,
             memory_path=args.memory_output,
+            source_ids=args.source,
         )
         report = run_market_simulation(
             seed_sources=["examples/seeds"],
@@ -430,6 +442,10 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(json.dumps(assets, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "access":
+            path = write_phone_access_plan(output_path=args.output, port=args.port, tailnet_host=args.tailnet_host)
+            print(json.dumps({"phone_access": path.as_posix()}, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "today":
             path = write_today_surface(
                 scenario_path=args.scenario,
@@ -450,9 +466,12 @@ def main(argv: list[str] | None = None) -> int:
                 scenario_path=args.scenario,
                 verdict_path=args.verdict,
                 output_path=args.output,
-                dry_run=args.dry_run,
+                dry_run=not args.send,
             )
-            print(json.dumps({"notification": path.as_posix(), "dry_run": args.dry_run}, indent=2, ensure_ascii=False))
+            result = {"notification": path.as_posix(), "dry_run": not args.send}
+            if args.send:
+                result["send_result"] = send_notification_payload(path).get("send_result", {})
+            print(json.dumps(result, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "run":
             topics_path = args.topics
@@ -474,6 +493,7 @@ def main(argv: list[str] | None = None) -> int:
                 plan_path=plan_path,
                 output_path=evidence_path,
                 memory_path=memory_path,
+                source_ids=args.source,
             )
             report = run_market_simulation(
                 seed_sources=["examples/seeds"],
@@ -520,8 +540,11 @@ def main(argv: list[str] | None = None) -> int:
                 today_path=written_today,
                 scenario_path=written_scenario,
                 verdict_path=written_verdict,
-                dry_run=args.dry_run,
+                dry_run=not args.send,
             )
+            notification_status = "dry_run_ready"
+            if args.send:
+                notification_status = send_notification_payload(notification_path).get("delivery_status", "unknown")
             print(json.dumps({
                 "playbook": playbook_path.as_posix(),
                 "topics": topics_path,
@@ -536,6 +559,7 @@ def main(argv: list[str] | None = None) -> int:
                 "today": written_today.as_posix(),
                 "archive_manifest": archive_manifest.as_posix(),
                 "notification": notification_path.as_posix(),
+                "notification_status": notification_status,
                 "topic_count": len(plan["plan_items"]),
                 "evidence_items": len(catalog["items"]),
             }, indent=2, ensure_ascii=False))

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import csv
 import json
+import urllib.parse
+import urllib.request
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,6 +13,7 @@ from typing import Any, Protocol
 PUBLIC_EVIDENCE_SCHEMA_VERSION = "public_evidence_catalog.v1"
 DEFAULT_PUBLIC_EVIDENCE_OUTPUT = Path("reports/evidence/public-evidence-catalog.json")
 DEFAULT_CACHE_ROOT = Path(__file__).resolve().parents[2] / "examples" / "public-evidence"
+DEFAULT_USER_AGENT = "MyBroker local research appliance contact@example.com"
 
 
 SOURCE_MATRIX: list[dict[str, str]] = [
@@ -217,10 +220,87 @@ class SecCachedAdapter:
         return items
 
 
+class GdeltLiveAdapter:
+    adapter_id = "gdelt_live_v1"
+    source_name = "GDELT"
+
+    def __init__(
+        self,
+        query: str = '("artificial intelligence" OR semiconductor OR rates OR inflation OR consumer)',
+        max_records: int = 10,
+        timeout: int = 15,
+    ) -> None:
+        self.query = query
+        self.max_records = max_records
+        self.timeout = timeout
+
+    def load_items(self) -> list[PublicEvidenceItem]:
+        params = urllib.parse.urlencode({
+            "query": self.query,
+            "mode": "artlist",
+            "format": "json",
+            "maxrecords": str(self.max_records),
+            "sort": "hybridrel",
+        })
+        url = f"https://api.gdeltproject.org/api/v2/doc/doc?{params}"
+        try:
+            payload = _fetch_json(url, timeout=self.timeout)
+            articles = payload.get("articles", [])
+            items = []
+            for index, article in enumerate(articles[: self.max_records], start=1):
+                title = article.get("title") or f"GDELT live article {index}"
+                domain = article.get("domain") or ""
+                text = " ".join([title, domain, article.get("sourceCountry", ""), article.get("language", "")]).strip()
+                items.append(
+                    PublicEvidenceItem(
+                        item_id=f"gdelt-live-{_slug(title)[:48] or index}",
+                        source_name=self.source_name,
+                        evidence_type="news_narrative",
+                        title=title,
+                        published_at=article.get("seendate", ""),
+                        url=article.get("url", "https://www.gdeltproject.org/"),
+                        text=text,
+                        topics=_detect_topics(text),
+                        entities=[value for value in [domain, article.get("sourceCountry", "")] if value],
+                        freshness_status="live",
+                    )
+                )
+            if items:
+                return items
+        except Exception:
+            pass
+        return _with_freshness(GdeltCachedAdapter().load_items(), "live_error_fallback_sample")
+
+
+class StooqLiveAdapter:
+    adapter_id = "stooq_live_v1"
+    source_name = "Stooq"
+
+    def __init__(self, symbol: str = "spy.us", timeout: int = 15) -> None:
+        self.symbol = symbol
+        self.timeout = timeout
+
+    def load_items(self) -> list[PublicEvidenceItem]:
+        params = urllib.parse.urlencode({"s": self.symbol, "i": "d"})
+        url = f"https://stooq.com/q/d/l/?{params}"
+        try:
+            with urllib.request.urlopen(url, timeout=self.timeout) as response:
+                text = response.read().decode("utf-8")
+            rows = list(csv.DictReader(text.splitlines()))
+            item = _stooq_rows_to_item(rows, symbol=self.symbol.upper(), url=url, freshness_status="live")
+            if item:
+                return [item]
+        except Exception:
+            pass
+        return _with_freshness(StooqCachedAdapter().load_items(), "live_error_fallback_sample")
+
+
 ADAPTERS = {
     "gdelt-sample": GdeltCachedAdapter,
     "stooq-sample": StooqCachedAdapter,
     "sec-sample": SecCachedAdapter,
+    "gdelt-live": GdeltLiveAdapter,
+    "stooq-live": StooqLiveAdapter,
 }
 
 
@@ -234,18 +314,19 @@ def build_public_evidence_catalog(source_ids: list[str] | None = None) -> dict[s
         adapter = ADAPTERS[source_id]()
         adapter_items = adapter.load_items()
         items.extend(adapter_items)
+        freshness = _source_freshness(adapter_items)
         source_status.append({
             "source_id": source_id,
             "source_name": adapter.source_name,
             "adapter_id": adapter.adapter_id,
             "item_count": str(len(adapter_items)),
-            "freshness_status": "sample_cache",
+            "freshness_status": freshness,
         })
     graph = build_public_evidence_graph(items)
     return {
         "schema_version": PUBLIC_EVIDENCE_SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "mode": "sample_cache",
+        "mode": _catalog_mode(selected, items),
         "source_status": source_status,
         "source_matrix": SOURCE_MATRIX,
         "items": [asdict(item) for item in items],
@@ -347,3 +428,77 @@ def _detect_topics(text: str) -> list[str]:
     }
     topics = [topic for topic, keywords in mapping.items() if any(keyword in lowered for keyword in keywords)]
     return topics or ["risk"]
+
+
+def _fetch_json(url: str, timeout: int = 15) -> dict[str, Any]:
+    request = urllib.request.Request(url, headers={"User-Agent": DEFAULT_USER_AGENT})
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _stooq_rows_to_item(rows: list[dict[str, str]], *, symbol: str, url: str, freshness_status: str) -> PublicEvidenceItem | None:
+    valid_rows = [row for row in rows if row.get("Close") and row.get("Date")]
+    if len(valid_rows) < 2:
+        return None
+    first = valid_rows[0]
+    last = valid_rows[-1]
+    first_close = float(first["Close"])
+    last_close = float(last["Close"])
+    change = ((last_close - first_close) / first_close) * 100
+    direction = "상승" if change >= 0 else "하락"
+    text = (
+        f"{symbol} market proxy moved {direction} {change:.2f}% from {first.get('Date')} to {last.get('Date')}. "
+        "This price evidence helps test whether narratives align with broad market risk appetite, rates pressure, and volatility."
+    )
+    return PublicEvidenceItem(
+        item_id=f"stooq-{symbol.lower().replace('.', '-')}-trend",
+        source_name="Stooq",
+        evidence_type="market_price_context",
+        title=f"{symbol} broad market trend",
+        published_at=last.get("Date", ""),
+        url=url,
+        text=text,
+        topics=_detect_topics(text),
+        entities=[symbol, "broad market"],
+        freshness_status=freshness_status,
+    )
+
+
+def _with_freshness(items: list[PublicEvidenceItem], freshness_status: str) -> list[PublicEvidenceItem]:
+    return [
+        PublicEvidenceItem(
+            item_id=item.item_id,
+            source_name=item.source_name,
+            evidence_type=item.evidence_type,
+            title=item.title,
+            published_at=item.published_at,
+            url=item.url,
+            text=item.text,
+            topics=item.topics,
+            entities=item.entities,
+            freshness_status=freshness_status,
+        )
+        for item in items
+    ]
+
+
+def _source_freshness(items: list[PublicEvidenceItem]) -> str:
+    statuses = {item.freshness_status for item in items}
+    if "live" in statuses:
+        return "live"
+    if "live_error_fallback_sample" in statuses:
+        return "live_error_fallback_sample"
+    if statuses:
+        return sorted(statuses)[0]
+    return "empty"
+
+
+def _catalog_mode(source_ids: list[str], items: list[PublicEvidenceItem]) -> str:
+    if any(source_id.endswith("-live") for source_id in source_ids):
+        return "live_with_cache_fallback" if any(item.freshness_status != "live" for item in items) else "live"
+    return "sample_cache"
+
+
+def _slug(value: str) -> str:
+    lowered = value.lower()
+    return "".join(character if character.isalnum() else "-" for character in lowered).strip("-")

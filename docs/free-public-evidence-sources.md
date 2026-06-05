@@ -26,3 +26,11 @@ implementation prioritizes no-key, local-cache friendly sources so runs are repr
 The proof slice uses cached SEC, GDELT, and Stooq-shaped artifacts. This proves the
 normalization and simulation path without relying on API keys, live network availability,
 or paid data. Live connectors can reuse the same `public_evidence_catalog.v1` schema.
+
+The local appliance can opt into no-key live refresh for:
+
+- `gdelt-live`: GDELT DOC 2.0 article-list JSON, with sample-cache fallback.
+- `stooq-live`: Stooq CSV download, with sample-cache fallback.
+
+The fallback status is recorded as `live_error_fallback_sample`, so the morning loop can keep
+running while weak or stale evidence remains visible in artifacts and the `/today` surface.

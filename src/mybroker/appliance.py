@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import shutil
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -12,11 +15,13 @@ TODAY_SURFACE_SCHEMA_VERSION = "today_surface.v1"
 NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
+PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
+DEFAULT_PHONE_ACCESS_OUTPUT = Path("reports/runtime/phone-access.json")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -90,6 +95,47 @@ def write_runtime_playbook(output_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OU
             "no_discretionary_management",
             "no_unsupported_personalized_recommendations",
             "paid_or_credentialed_sources_require_explicit_approval",
+        ],
+    }
+    return write_json(payload, output_path)
+
+
+def write_phone_access_plan(
+    *,
+    output_path: str | Path = DEFAULT_PHONE_ACCESS_OUTPUT,
+    port: int = 8787,
+    tailnet_host: str = "mybroker-mac",
+) -> Path:
+    payload = {
+        "schema_version": PHONE_ACCESS_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "recommended_path": "tailscale_serve_private",
+        "local_url": f"http://localhost:{port}/reports/product/today.html",
+        "private_phone_url": f"https://{tailnet_host}/reports/product/today.html",
+        "commands": [
+            {
+                "purpose": "serve local MyBroker artifacts",
+                "command": f"cd <mybroker-repo> && python3 -m http.server {port}",
+            },
+            {
+                "purpose": "share the local server only inside the tailnet",
+                "command": f"tailscale serve --bg {port}",
+            },
+            {
+                "purpose": "stop private serving",
+                "command": "tailscale serve reset",
+            },
+        ],
+        "do_not_default_to": [
+            "public_tunnel",
+            "funnel",
+            "unauthenticated_public_hosting",
+        ],
+        "operator_checklist": [
+            "MacBook remains powered and awake enough for scheduled jobs.",
+            "Phone is on the same tailnet or private LAN.",
+            "No secret values are committed to the repository.",
+            "Notification sender is tested with dry-run before --send.",
         ],
     }
     return write_json(payload, output_path)
@@ -321,6 +367,23 @@ def write_notification_payload(
     return write_json(payload, output_path)
 
 
+def send_notification_payload(path: str | Path) -> dict[str, Any]:
+    payload = load_json(path)
+    provider = payload.get("provider", "")
+    if provider == "telegram":
+        result = _send_telegram(payload)
+    elif provider == "pushover":
+        result = _send_pushover(payload)
+    else:
+        raise ValueError(f"unsupported notification provider: {provider}")
+    payload["dry_run"] = False
+    payload["delivery_status"] = "sent" if result.get("ok") else "send_failed"
+    payload["sent_at"] = _now()
+    payload["send_result"] = result
+    write_json(payload, path)
+    return payload
+
+
 def write_launchd_assets(
     *,
     project_root: str | Path,
@@ -342,6 +405,7 @@ mkdir -p reports/runtime
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src {python_bin} -m mybroker appliance run \\
   --topics config/topics.json \\
   --profile examples/profiles/beginner-conservative.json \\
+  ${{MYBROKER_EVIDENCE_SOURCES:-}} \\
   --today-url "${{MYBROKER_TODAY_URL:-http://localhost:8787/reports/product/today.html}}" \\
   --notification-provider "${{MYBROKER_NOTIFICATION_PROVIDER:-telegram}}" \\
   --dry-run
@@ -384,6 +448,48 @@ def _provider_env(provider: str) -> list[str]:
     if provider == "telegram":
         return ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]
     return []
+
+
+def _send_telegram(payload: dict[str, Any]) -> dict[str, Any]:
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        raise RuntimeError("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are required")
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    data = urllib.parse.urlencode({
+        "chat_id": chat_id,
+        "text": f"{payload.get('title')}\n{payload.get('message')}\n{payload.get('url')}",
+        "disable_web_page_preview": "true",
+    }).encode("utf-8")
+    return _post_form(url, data)
+
+
+def _send_pushover(payload: dict[str, Any]) -> dict[str, Any]:
+    user_key = os.environ.get("PUSHOVER_USER_KEY")
+    app_token = os.environ.get("PUSHOVER_APP_TOKEN")
+    if not user_key or not app_token:
+        raise RuntimeError("PUSHOVER_USER_KEY and PUSHOVER_APP_TOKEN are required")
+    data = urllib.parse.urlencode({
+        "token": app_token,
+        "user": user_key,
+        "title": payload.get("title", "MyBroker"),
+        "message": payload.get("message", ""),
+        "url": payload.get("url", ""),
+    }).encode("utf-8")
+    return _post_form("https://api.pushover.net/1/messages.json", data)
+
+
+def _post_form(url: str, data: bytes) -> dict[str, Any]:
+    request = urllib.request.Request(url, data=data, method="POST")
+    request.add_header("Content-Type", "application/x-www-form-urlencoded")
+    with urllib.request.urlopen(request, timeout=15) as response:
+        body = response.read().decode("utf-8")
+    try:
+        parsed = json.loads(body)
+    except json.JSONDecodeError:
+        parsed = {"body": body}
+    parsed.setdefault("ok", 200 <= getattr(response, "status", 200) < 300)
+    return parsed
 
 
 def _daily_questions(memory_topics: list[dict[str, Any]], evidence: dict[str, Any]) -> list[str]:
