@@ -23,11 +23,13 @@ RESEARCH_PLAN_SCHEMA_VERSION = "daily_research_plan.v1"
 TOPIC_MEMORY_SCHEMA_VERSION = "topic_memory.v1"
 DAILY_SCOUT_SCHEMA_VERSION = "daily_scout.v1"
 SOURCE_REFRESH_PLAN_SCHEMA_VERSION = "source_refresh_plan.v1"
+SOURCE_REFRESH_APPLY_SCHEMA_VERSION = "source_refresh_apply.v1"
 
 DEFAULT_TOPICS_PATH = Path("config/topics.json")
 DEFAULT_RESEARCH_PLAN_OUTPUT = Path("reports/daily/research-plan.json")
 DEFAULT_DAILY_SCOUT_OUTPUT = Path("reports/daily/scout.json")
 DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT = Path("reports/daily/source-refresh-plan.json")
+DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT = Path("reports/daily/source-refresh-apply.json")
 DEFAULT_TOPIC_MEMORY_OUTPUT = Path("reports/memory/topic-memory.json")
 DEFAULT_DAILY_EVIDENCE_OUTPUT = Path("reports/evidence/daily-evidence-catalog.json")
 
@@ -389,6 +391,84 @@ def validate_source_refresh_plan_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_source_refresh_plan_file(path: str | Path) -> list[str]:
     return validate_source_refresh_plan_payload(load_json(path))
+
+
+def build_source_refresh_apply(
+    *,
+    refresh_plan_path: str | Path = DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
+    output_path: str | Path = DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
+) -> dict[str, Any]:
+    plan = load_json(refresh_plan_path)
+    plan_errors = validate_source_refresh_plan_payload(plan)
+    if plan_errors:
+        raise ValueError("; ".join(plan_errors))
+    results = [_refresh_apply_result(index, action) for index, action in enumerate(plan.get("actions", []), start=1)]
+    blocked_count = sum(1 for result in results if result["decision"] == "blocked")
+    ready_count = sum(1 for result in results if result["decision"] == "ready")
+    payload = {
+        "schema_version": SOURCE_REFRESH_APPLY_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "inputs": {
+            "refresh_plan_path": Path(refresh_plan_path).as_posix(),
+        },
+        "execution_mode": "dry_run",
+        "external_effect_performed": False,
+        "summary": {
+            "action_count": len(results),
+            "ready_count": ready_count,
+            "blocked_count": blocked_count,
+            "skipped_count": sum(1 for result in results if result["decision"] == "skipped"),
+        },
+        "results": results,
+        "policy": _research_only_policy(),
+        "next_step": "operator_review_before_live_or_host_effect",
+    }
+    return write_json(payload, output_path)
+
+
+def validate_source_refresh_apply_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != SOURCE_REFRESH_APPLY_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("execution_mode") != "dry_run":
+        errors.append("execution_mode must be dry_run")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if not payload.get("results"):
+        errors.append("results must not be empty")
+    for index, result in enumerate(payload.get("results", [])):
+        for field in [
+            "action_index",
+            "source_name",
+            "adapter_id",
+            "decision",
+            "status",
+            "will_execute",
+            "approval_required",
+            "reason",
+            "command",
+            "expected_artifact",
+        ]:
+            if field not in result:
+                errors.append(f"results[{index}] missing {field}")
+        if result.get("decision") not in {"ready", "blocked", "skipped"}:
+            errors.append(f"results[{index}] invalid decision")
+        if result.get("will_execute") is not False:
+            errors.append(f"results[{index}] will_execute must be false in dry-run mode")
+        command = result.get("command", "")
+        if any(blocked in command for blocked in ["--send", "--confirm-host-write", "launchctl", "tailscale serve --bg"]):
+            errors.append(f"results[{index}] command crosses external-effect boundary")
+    summary = payload.get("summary", {})
+    if summary.get("action_count") != len(payload.get("results", [])):
+        errors.append("summary.action_count must equal results length")
+    policy = payload.get("policy", {})
+    if policy.get("output_boundary") != "research_only":
+        errors.append("policy.output_boundary must be research_only")
+    return errors
+
+
+def validate_source_refresh_apply_file(path: str | Path) -> list[str]:
+    return validate_source_refresh_apply_payload(load_json(path))
 
 
 def collect_topic_evidence(
@@ -770,6 +850,40 @@ def _refresh_action(*, source_name: str, adapter_id: str, cadence: str, priority
         "command": command,
         "dry_run_only": True,
         "expected_artifact": _expected_refresh_artifact(adapter_id),
+    }
+
+
+def _refresh_apply_result(index: int, action: dict[str, Any]) -> dict[str, Any]:
+    adapter_id = action.get("adapter_id", "")
+    source_name = action.get("source_name", "")
+    command = action.get("command", "")
+    expected_artifact = action.get("expected_artifact", _expected_refresh_artifact(adapter_id))
+    if adapter_id in {"gdelt-live", "stooq-live"}:
+        decision = "blocked"
+        status = "needs_live_network_gate"
+        approval_required = "live_network_refresh"
+        reason = f"{source_name} 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다."
+    elif adapter_id in {"vault-compile", "sample-cache", "sec-sample"}:
+        decision = "ready"
+        status = "dry_run_ready"
+        approval_required = "none"
+        reason = f"{source_name} 작업은 로컬/샘플 캐시 경계 안에서 다음 dry-run 검증 대상으로 사용할 수 있습니다."
+    else:
+        decision = "skipped"
+        status = "unknown_adapter"
+        approval_required = "operator_review"
+        reason = f"{source_name} adapter 경계가 아직 정의되지 않아 실행하지 않습니다."
+    return {
+        "action_index": index,
+        "source_name": source_name,
+        "adapter_id": adapter_id,
+        "decision": decision,
+        "status": status,
+        "will_execute": False,
+        "approval_required": approval_required,
+        "reason": reason,
+        "command": command,
+        "expected_artifact": expected_artifact,
     }
 
 

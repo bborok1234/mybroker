@@ -26,7 +26,7 @@ from mybroker.appliance import (
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
 from mybroker.scenario import run_market_simulation, write_scenario_report, write_verdict
-from mybroker.topics import build_daily_scout, build_research_plan, build_source_refresh_plan, collect_topic_evidence, init_topic_config
+from mybroker.topics import build_daily_scout, build_research_plan, build_source_refresh_apply, build_source_refresh_plan, collect_topic_evidence, init_topic_config
 from mybroker.vault import compile_knowledge_vault, init_knowledge_vault, validate_knowledge_vault_compile_file
 
 
@@ -74,6 +74,11 @@ class LocalApplianceTests(unittest.TestCase):
             )
             refresh_plan_path = root / "source-refresh-plan.json"
             refresh_plan_path.write_text('{"schema_version":"source_refresh_plan.v1","actions":[]}', encoding="utf-8")
+            refresh_apply_path = root / "source-refresh-apply.json"
+            refresh_apply_path.write_text(
+                '{"schema_version":"source_refresh_apply.v1","results":[{"decision":"ready","status":"dry_run_ready","source_name":"Local cache","adapter_id":"sample-cache","will_execute":false,"reason":"ready"}]}',
+                encoding="utf-8",
+            )
             manifest = archive_daily_run(
                 run_id="daily-test",
                 scenario_path=scenario_path,
@@ -83,6 +88,7 @@ class LocalApplianceTests(unittest.TestCase):
                 brief_path=brief_path,
                 today_path=today,
                 refresh_plan_path=refresh_plan_path,
+                refresh_apply_path=refresh_apply_path,
                 archive_root=root / "archive",
             )
             today = write_today_surface(
@@ -94,6 +100,7 @@ class LocalApplianceTests(unittest.TestCase):
                 vault_path=root / "missing-vault.json",
                 scout_path=root / "missing-scout.json",
                 refresh_plan_path=root / "missing-refresh-plan.json",
+                refresh_apply_path=root / "missing-refresh-apply.json",
                 output_path=today_path,
                 archive_manifest_path=manifest,
             )
@@ -177,6 +184,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("tailscale serve --bg 8787", {item["command"] for item in access_payload["commands"]})
         self.assertEqual(manifest_payload["schema_version"], "daily_archive.v1")
         self.assertIn("source_refresh_plan", manifest_payload["artifacts"])
+        self.assertIn("source_refresh_apply", manifest_payload["artifacts"])
         self.assertIn("Hermes Agent", {item["source"] for item in playbook_payload["absorbed_patterns"]})
         self.assertEqual(doctor_payload["schema_version"], "local_runtime_doctor.v1")
         self.assertEqual(doctor_payload["status"], "ready")
@@ -579,6 +587,11 @@ class LocalApplianceTests(unittest.TestCase):
                 vault_path=output,
                 output_path=refresh_plan_path,
             )
+            refresh_apply_path = root / "reports" / "daily" / "source-refresh-apply.json"
+            refresh_apply = build_source_refresh_apply(
+                refresh_plan_path=refresh_plan_path,
+                output_path=refresh_apply_path,
+            )
             memory_surface = write_memory_surface(
                 memory_path=memory_path,
                 archive_root=root / "reports" / "archive",
@@ -611,6 +624,7 @@ class LocalApplianceTests(unittest.TestCase):
                 vault_path=output,
                 scout_path=scout_path,
                 refresh_plan_path=refresh_plan_path,
+                refresh_apply_path=refresh_apply_path,
                 output_path=root / "reports" / "product" / "today.html",
             )
             memory_index = json.loads((root / "reports" / "memory" / "index.json").read_text(encoding="utf-8"))
@@ -629,6 +643,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(plan["schema_version"], "daily_research_plan.v1")
         self.assertEqual(scout["schema_version"], "daily_scout.v1")
         self.assertEqual(refresh_plan["schema_version"], "source_refresh_plan.v1")
+        self.assertEqual(refresh_apply["schema_version"], "source_refresh_apply.v1")
+        self.assertFalse(refresh_apply["external_effect_performed"])
         self.assertEqual(note["title"], "Semiconductor cycle note")
         self.assertIn("AI demand is lifting chip suppliers.", note["key_takeaways"])
         self.assertTrue(wiki_note_exists)
@@ -641,6 +657,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("관련 Vault 노트", query_surface_html)
         self.assertIn("오늘 Scout 추천", today_surface_html)
         self.assertIn("오늘 새로고침 계획", today_surface_html)
+        self.assertIn("오늘 실행 판정", today_surface_html)
         self.assertIn("Vault에서 다시 볼 원천 노트", today_surface_html)
         self.assertIn("Semiconductor cycle note", today_surface_html)
         self.assertIn("Vault 노트 &#x27;Semiconductor cycle note&#x27;가 오늘 근거와 같은 방향", today_surface_html)
