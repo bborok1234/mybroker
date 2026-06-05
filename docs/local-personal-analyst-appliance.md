@@ -145,6 +145,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/journal.html`: phone-readable daily analyst journal with today's focus, role notes, evidence gaps, and tomorrow's questions.
 - `reports/daily/brief-agenda.json`: machine-readable 20-minute study agenda from scout, evidence, memory, vault, and refresh plan.
 - `reports/product/daily-agenda.html`: phone-readable agenda with reading order, source fan-out, weak evidence, role work, and follow-up questions.
+- `reports/memory/daily-review.json`: machine-readable local operator review signals for what was read, skipped, confusing, or worth seeing more often.
+- `reports/product/review.html`: phone-readable review memory surface and copy-ready response example.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
 - `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
 - `reports/runtime/daily-readiness.json`: machine-readable freshness/readiness proof for required daily artifacts.
@@ -172,6 +174,10 @@ carried from an earlier run, blocked by approval, or no longer present in the cu
 `task-response` appends a local JSONL response, and `task-status-apply` validates those responses
 against the current ledger. Supported actions are `complete`, `carry`, `defer`, and `block`.
 The apply artifact records `external_effect_performed: false`; it updates status only.
+`review-response` appends a local daily review response such as
+`more "Semiconductors" "메모리 업황을 더 보고 싶다"`, and `review` turns those responses into
+`daily_review.v1`. The next `daily-scout` reads that artifact and adds an `operator_review` score
+factor. This is local memory only: it does not execute tasks, fetch live data, or send notifications.
 
 The local vault is the raw inbox side of the same pattern:
 
@@ -194,7 +200,8 @@ notes in the phone-readable daily brief and adds source-linked inspection questi
 can challenge its latest evidence against accumulated raw notes.
 
 `daily-scout` is the local topic-selection step. It writes `reports/daily/scout.json` by ranking
-configured interests with source breadth, memory changes, evidence gaps, and linked vault notes.
+configured interests with source breadth, memory changes, evidence gaps, linked vault notes, and
+local operator review signals.
 `appliance run` creates this artifact automatically, and `appliance today` renders it as "오늘 Scout
 추천" so the first phone screen explains what to inspect first and why.
 

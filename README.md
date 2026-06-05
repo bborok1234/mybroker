@@ -38,6 +38,8 @@ PYTHONPATH=src python3 -m mybroker topics list --config config/topics.json
 PYTHONPATH=src python3 -m mybroker research-plan --topics config/topics.json --output reports/daily/research-plan.json --run-id daily-research
 PYTHONPATH=src python3 -m mybroker collect-evidence --topics config/topics.json --plan reports/daily/research-plan.json --output reports/evidence/daily-evidence-catalog.json --memory-output reports/memory/topic-memory.json
 PYTHONPATH=src python3 -m mybroker daily-scout --topics config/topics.json --plan reports/daily/research-plan.json --evidence reports/evidence/daily-evidence-catalog.json --memory reports/memory/topic-memory.json --vault reports/vault/compile.json --output reports/daily/scout.json
+PYTHONPATH=src python3 -m mybroker appliance review-response 'more "Semiconductors" "내일도 메모리 업황을 더 보고 싶다"'
+PYTHONPATH=src python3 -m mybroker appliance review
 PYTHONPATH=src python3 -m mybroker source-refresh-plan --scout reports/daily/scout.json --evidence reports/evidence/daily-evidence-catalog.json --vault reports/vault/compile.json --output reports/daily/source-refresh-plan.json
 PYTHONPATH=src python3 -m mybroker source-refresh-apply --refresh-plan reports/daily/source-refresh-plan.json --output reports/daily/source-refresh-apply.json
 PYTHONPATH=src python3 -m mybroker source-refresh-live-gate --refresh-apply reports/daily/source-refresh-apply.json --output reports/daily/source-refresh-live-gate.json
@@ -52,6 +54,7 @@ PYTHONPATH=src python3 -m mybroker daily-research --topics config/topics.json --
 PYTHONPATH=src python3 -m mybroker validate-scenario reports/scenarios/beginner-market-sim.json
 PYTHONPATH=src python3 -m mybroker validate-verdict reports/scenarios/verdict.json
 PYTHONPATH=src python3 -m mybroker validate-daily-scout reports/daily/scout.json
+PYTHONPATH=src python3 -m mybroker validate-daily-review reports/memory/daily-review.json
 PYTHONPATH=src python3 -m mybroker validate-daily-agenda reports/daily/brief-agenda.json
 PYTHONPATH=src python3 -m mybroker validate-daily-readiness reports/runtime/daily-readiness.json
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-plan reports/daily/source-refresh-plan.json
@@ -217,6 +220,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/vault/compile.json` and `reports/product/vault.html`: deterministic local compile proof and phone-readable vault note list when `research-vault/raw` exists;
 - `reports/product/today.html`: a mobile-first `/today` surface for the phone;
 - `reports/daily/scout.json`: local scout recommendations for what to inspect first;
+- `reports/memory/daily-review.json` and `reports/product/review.html`: local operator feedback about what was read, skipped, confusing, or worth seeing more often; the next scout can use this as a review signal;
 - `reports/daily/brief-agenda.json` and `reports/product/daily-agenda.html`: the phone-first daily study agenda that says what to read first, which sources influenced it, what is weak, and what the analyst roles should do next;
 - `reports/daily/source-refresh-plan.json`: dry-run source refresh actions for the scout recommendation;
 - `reports/daily/source-refresh-apply.json`: dry-run execution-readiness decisions for those refresh actions;
@@ -247,6 +251,10 @@ This follows the Obsidian-vault pattern: each daily run remains a local artifact
 `task-response` and `task-status-apply` let the operator mark local task status with short
 responses such as `AT-001 complete "checked source freshness"`; this updates ledger state without
 executing tasks or external effects.
+`review-response` and `review` let the operator record reading feedback with short responses such
+as `more "Semiconductors" "메모리 업황을 더 보고 싶다"`. This writes local review memory only. The
+next `daily-scout` reads `reports/memory/daily-review.json` and adds an `operator_review` score
+factor, so the daily analyst loop gradually follows what the operator actually studies.
 `morning.html` is the morning control surface: it is not the market brief, and it does not render
 market-map conclusions. It reads existing artifacts, highlights pending gates, and shows copy-ready
 local responses so the operator can decide the next step from a phone.

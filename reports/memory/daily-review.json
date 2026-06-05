@@ -1,0 +1,31 @@
+{
+  "schema_version": "daily_review.v1",
+  "generated_at": "2026-06-05T16:58:09.402977+00:00",
+  "inputs": {
+    "scout_path": "reports/daily/scout.json",
+    "task_status_apply_path": "reports/memory/analyst-task-status-apply.json",
+    "responses_path": "reports/memory/daily-review-responses.jsonl"
+  },
+  "summary": {
+    "response_count": 0,
+    "applied_response_count": 0,
+    "ignored_response_count": 0,
+    "completed_task_count": 0,
+    "signal_count": 0
+  },
+  "topic_signals": [],
+  "ignored_responses": [],
+  "task_feedback": {
+    "completed_task_count": 0,
+    "completed_tasks": []
+  },
+  "external_effect_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "local_review_memory_only",
+    "does_not_fetch_live_network",
+    "does_not_write_host_scheduler",
+    "does_not_send_notification"
+  ],
+  "next_step": "rerun_daily_scout_with_review_signal"
+}

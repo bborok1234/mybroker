@@ -1,13 +1,14 @@
 {
   "schema_version": "daily_scout.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T16:26:21.003365+00:00",
+  "generated_at": "2026-06-05T16:58:09.386554+00:00",
   "inputs": {
     "topics_path": "config/topics.json",
     "plan_path": "reports/daily/research-plan.json",
     "evidence_path": "reports/evidence/daily-evidence-catalog.json",
     "memory_path": "reports/memory/topic-memory.json",
-    "vault_path": "reports/vault/compile.json"
+    "vault_path": "reports/vault/compile.json",
+    "review_path": "reports/memory/daily-review.json"
   },
   "recommendation_count": 5,
   "recommended_topic": {
@@ -37,6 +38,7 @@
         "wiki_path": "reports/vault/wiki/semiconductors/semiconductor-cycle-learning-note.md"
       }
     ],
+    "review_signal": {},
     "missing_evidence": [
       "deduplication",
       "live_refresh"
@@ -92,6 +94,7 @@
           "wiki_path": "reports/vault/wiki/semiconductors/semiconductor-cycle-learning-note.md"
         }
       ],
+      "review_signal": {},
       "missing_evidence": [
         "deduplication",
         "live_refresh"
@@ -142,6 +145,7 @@
         "Apple Inc. 8-K"
       ],
       "linked_vault_notes": [],
+      "review_signal": {},
       "missing_evidence": [
         "deduplication",
         "live_refresh"
@@ -187,6 +191,7 @@
         "Apple Inc. 8-K"
       ],
       "linked_vault_notes": [],
+      "review_signal": {},
       "missing_evidence": [
         "deduplication",
         "live_refresh"
@@ -230,6 +235,7 @@
         "Apple Inc. 8-K"
       ],
       "linked_vault_notes": [],
+      "review_signal": {},
       "missing_evidence": [
         "deduplication",
         "live_refresh"
@@ -271,6 +277,7 @@
         "SPY broad market trend sample"
       ],
       "linked_vault_notes": [],
+      "review_signal": {},
       "missing_evidence": [
         "deduplication",
         "live_refresh"
@@ -301,6 +308,11 @@
       "source_license_review_pending"
     ],
     "mode": "sample_cache_topic_research"
+  },
+  "review_context": {
+    "schema_version": "",
+    "response_count": 0,
+    "signal_count": 0
   },
   "policy": {
     "output_boundary": "research_only",

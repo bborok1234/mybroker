@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Review</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:760px; margin:0 auto; padding:16px; }
+.eyebrow,.card span { color:var(--green); font-size:12px; font-weight:900; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 10px; font-size:20px; }
+p,small { color:var(--muted); }
+.hero,.section,.card { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:16px; margin:14px 0; }
+.metrics,.stack { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.metric,.card { background:white; padding:14px; min-width:0; }
+.metric strong { display:block; font-size:26px; }
+.card strong { display:block; margin:5px 0; }
+.card p,.card small { overflow-wrap:anywhere; }
+code { display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.stack { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Daily Review · 2026-06-06 local</span>
+<h1>오늘 읽은 것과 내일 더 볼 것</h1>
+</header>
+<section class="hero">
+<p>이 화면은 오늘의 로컬 피드백을 내일 scout 점수에 반영하기 위한 메모리 표면입니다. 외부 호출이나 실행은 하지 않습니다.</p>
+<code>PYTHONPATH=src python3 -m mybroker appliance review-response 'more "Semiconductors" "메모리 업황을 더 보고 싶다"'</code>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Responses</span><strong>0</strong></article>
+<article class="metric"><span>Signals</span><strong>0</strong></article>
+<article class="metric"><span>Applied</span><strong>0</strong></article>
+<article class="metric"><span>Completed tasks</span><strong>0</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>내일 scout에 반영될 신호</h2>
+<div class="stack"><p>아직 오늘의 review signal이 없습니다.</p></div>
+</section>
+<section class="section">
+<h2>무시된 응답</h2>
+<div class="stack"><p>무시된 응답이 없습니다.</p></div>
+</section>
+</main>
+</body>
+</html>
