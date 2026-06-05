@@ -39,6 +39,7 @@ OPERATOR_DECISION_PACKET_SCHEMA_VERSION = "operator_decision_packet.v1"
 OPERATOR_DECISION_APPLY_SCHEMA_VERSION = "operator_decision_apply.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
+MEMORY_AUDIT_SCHEMA_VERSION = "personal_memory_audit.v1"
 ANALYST_JOURNAL_SCHEMA_VERSION = "personal_analyst_journal.v1"
 ANALYST_TASK_QUEUE_SCHEMA_VERSION = "personal_analyst_task_queue.v1"
 ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
@@ -78,6 +79,8 @@ DEFAULT_MEMORY_INDEX_OUTPUT = Path("reports/memory/index.json")
 DEFAULT_MEMORY_OUTPUT = Path("reports/product/memory.html")
 DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
 DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
+DEFAULT_MEMORY_AUDIT_OUTPUT = Path("reports/memory/audit.json")
+DEFAULT_MEMORY_AUDIT_SURFACE = Path("reports/product/memory-audit.html")
 DEFAULT_ANALYST_JOURNAL_OUTPUT = Path("reports/product/journal.html")
 DEFAULT_ANALYST_JOURNAL_ARTIFACT = Path("reports/memory/analyst-journal.json")
 DEFAULT_ANALYST_TASK_QUEUE_OUTPUT = Path("reports/product/tasks.html")
@@ -1656,6 +1659,8 @@ def build_daily_readiness(
         ("scheduler_surface", DEFAULT_SCHEDULER_OPERATIONS_SURFACE, "phone_surface", False),
         ("vault_surface", DEFAULT_VAULT_SURFACE_OUTPUT, "phone_surface", False),
         ("memory_surface", DEFAULT_MEMORY_OUTPUT, "phone_surface", False),
+        ("memory_audit", DEFAULT_MEMORY_AUDIT_OUTPUT, "memory_artifact", False),
+        ("memory_audit_surface", DEFAULT_MEMORY_AUDIT_SURFACE, "phone_surface", False),
     ]
     artifacts = [
         _readiness_artifact_check(
@@ -1793,6 +1798,7 @@ def build_run_trace(
     daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
     review_prompt_path: str | Path = DEFAULT_REVIEW_PROMPT_OUTPUT,
     review_effect_path: str | Path = DEFAULT_REVIEW_EFFECT_OUTPUT,
+    memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
     scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
     generated_at: datetime | None = None,
@@ -1815,6 +1821,7 @@ def build_run_trace(
         ("daily_review", daily_review_path, "feedback", "Records what the operator read, skipped, or wants more of.", False),
         ("review_prompt", review_prompt_path, "feedback", "Suggests copy-ready responses so operator feedback can shape the next run.", False),
         ("review_effect", review_effect_path, "feedback", "Proves whether recorded review feedback actually shaped scout scoring.", False),
+        ("memory_audit", memory_audit_path, "memory", "Audits accumulated memory, vault notes, archives, source posture, and review feedback.", False),
         ("scheduler_operations", scheduler_operations_path, "ops", "Shows automation readiness without host writes.", False),
         ("today_surface", today_path, "publish", "Renders the phone-readable daily entry point.", True),
     ]
@@ -1852,6 +1859,7 @@ def build_run_trace(
             "daily_review",
             "review_prompt",
             "review_effect",
+            "memory_audit",
         ],
         "phone_links": {
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
@@ -1862,6 +1870,7 @@ def build_run_trace(
             "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
             "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
+            "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
         },
@@ -5009,6 +5018,7 @@ def build_morning_control_packet(
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
     review_effect_surface_path: str | Path = DEFAULT_REVIEW_EFFECT_SURFACE,
+    memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
@@ -5072,6 +5082,7 @@ def build_morning_control_packet(
             "review": Path(review_surface_path).as_posix(),
             "review_prompt": Path(review_prompt_surface_path).as_posix(),
             "review_effect": Path(review_effect_surface_path).as_posix(),
+            "memory_audit": Path(memory_audit_surface_path).as_posix(),
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
             "trace": Path(run_trace_surface_path).as_posix(),
             "drift_review": Path(drift_review_surface_path).as_posix(),
@@ -5135,6 +5146,7 @@ def write_morning_control_packet(
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
     review_effect_surface_path: str | Path = DEFAULT_REVIEW_EFFECT_SURFACE,
+    memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
@@ -5159,6 +5171,7 @@ def write_morning_control_packet(
         review_surface_path=review_surface_path,
         review_prompt_surface_path=review_prompt_surface_path,
         review_effect_surface_path=review_effect_surface_path,
+        memory_audit_surface_path=memory_audit_surface_path,
         pattern_radar_surface_path=pattern_radar_surface_path,
         run_trace_surface_path=run_trace_surface_path,
         drift_review_surface_path=drift_review_surface_path,
@@ -5661,6 +5674,344 @@ def write_memory_query(
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render_memory_query_surface(payload), encoding="utf-8")
     return target
+
+
+def build_memory_audit(
+    *,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
+    daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    index = build_memory_index(memory_path=memory_path, archive_root=archive_root, evidence_path=evidence_path, vault_path=vault_path)
+    review = _load_optional_json(daily_review_path)
+    risks = _memory_audit_risks(index=index, review=review)
+    high_count = sum(1 for risk in risks if risk.get("severity") == "high")
+    medium_count = sum(1 for risk in risks if risk.get("severity") == "medium")
+    status = "blocked" if high_count else ("needs_attention" if medium_count else "ready")
+    return {
+        "schema_version": MEMORY_AUDIT_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "status": status,
+        "audit_mode": "local_memory_and_vault_audit",
+        "summary": {
+            "topic_count": index.get("topic_count", 0),
+            "run_count": index.get("run_count", 0),
+            "archive_count": len(index.get("archives", [])),
+            "vault_note_count": len(index.get("vault_notes", [])),
+            "source_count": len(index.get("source_relevance", [])),
+            "risk_count": len(risks),
+            "high_risk_count": high_count,
+            "medium_risk_count": medium_count,
+            "review_response_count": int(review.get("summary", {}).get("response_count", 0) or 0),
+        },
+        "coverage": _memory_audit_coverage(index=index),
+        "risks": risks,
+        "next_questions": _memory_audit_next_questions(index=index, risks=risks),
+        "operator_reading_order": [
+            "summary",
+            "risks",
+            "coverage",
+            "next_questions",
+            "linked_surfaces",
+        ],
+        "linked_surfaces": {
+            "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
+            "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
+            "vault": DEFAULT_VAULT_SURFACE_OUTPUT.as_posix(),
+            "review": DEFAULT_DAILY_REVIEW_SURFACE.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+        },
+        "inputs": {
+            "memory": Path(memory_path).as_posix(),
+            "archive_root": Path(archive_root).as_posix(),
+            "evidence": Path(evidence_path).as_posix(),
+            "vault": Path(vault_path).as_posix(),
+            "daily_review": Path(daily_review_path).as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_live_trading",
+            "no_discretionary_management",
+        ],
+    }
+
+
+def write_memory_audit(
+    *,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
+    daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    output_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
+) -> Path:
+    payload = build_memory_audit(
+        memory_path=memory_path,
+        archive_root=archive_root,
+        evidence_path=evidence_path,
+        vault_path=vault_path,
+        daily_review_path=daily_review_path,
+    )
+    write_json(payload, output_path)
+    target = Path(surface_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_memory_audit_surface(payload), encoding="utf-8")
+    return target
+
+
+def validate_memory_audit_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != MEMORY_AUDIT_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"ready", "needs_attention", "blocked"}:
+        errors.append("status must be ready, needs_attention, or blocked")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if not payload.get("coverage"):
+        errors.append("coverage must not be empty")
+    if not payload.get("next_questions"):
+        errors.append("next_questions must not be empty")
+    for index, risk in enumerate(payload.get("risks", [])):
+        for field in ["risk_id", "severity", "title", "evidence", "recommended_local_action"]:
+            if field not in risk:
+                errors.append(f"risks[{index}] missing {field}")
+        if risk.get("severity") not in {"high", "medium", "low"}:
+            errors.append(f"risks[{index}] invalid severity")
+    if "reads_local_artifacts_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include reads_local_artifacts_only")
+    return errors
+
+
+def validate_memory_audit_file(path: str | Path) -> list[str]:
+    return validate_memory_audit_payload(load_json(path))
+
+
+def _memory_audit_coverage(index: dict[str, Any]) -> list[dict[str, Any]]:
+    source_rows = index.get("source_relevance", [])
+    topics = index.get("topics", [])
+    vault_notes = index.get("vault_notes", [])
+    archives = index.get("archives", [])
+    covered_topics = [topic for topic in topics if topic.get("source_names")]
+    changed_topics = [topic for topic in topics if topic.get("changed_since_previous")]
+    return [
+        {
+            "name": "topic_source_coverage",
+            "status": "ready" if len(covered_topics) == len(topics) and topics else "needs_attention",
+            "value": f"{len(covered_topics)}/{len(topics)} topics have source names",
+            "why_it_matters": "초보자용 브리프가 특정 주제를 반복할 때 어떤 원천이 받치는지 보여야 합니다.",
+        },
+        {
+            "name": "vault_compounding",
+            "status": "ready" if vault_notes else "needs_attention",
+            "value": f"{len(vault_notes)} compiled vault notes",
+            "why_it_matters": "개인 애널리스트는 매일 새로 시작하지 않고 원천 노트가 누적돼야 합니다.",
+        },
+        {
+            "name": "archive_history",
+            "status": "ready" if archives else "needs_attention",
+            "value": f"{len(archives)} archive manifests",
+            "why_it_matters": "과거 브리프와 판단이 남아야 같은 결론을 반복하는지 감사할 수 있습니다.",
+        },
+        {
+            "name": "source_freshness",
+            "status": "needs_attention" if any(row.get("freshness_status") in {"stale", "unknown"} for row in source_rows) else "ready",
+            "value": f"{len(source_rows)} source rows",
+            "why_it_matters": "오래된 근거가 매일 브리프를 지배하면 개인화가 아니라 편향 누적이 됩니다.",
+        },
+        {
+            "name": "change_detection",
+            "status": "ready" if changed_topics else "needs_attention",
+            "value": f"{len(changed_topics)} changed topics",
+            "why_it_matters": "매일 무엇이 달라졌는지 보여야 시장 공부 루프가 누적됩니다.",
+        },
+    ]
+
+
+def _memory_audit_risks(*, index: dict[str, Any], review: dict[str, Any]) -> list[dict[str, Any]]:
+    risks: list[dict[str, Any]] = []
+    topics = index.get("topics", [])
+    source_rows = index.get("source_relevance", [])
+    vault_notes = index.get("vault_notes", [])
+    archives = index.get("archives", [])
+    if not vault_notes:
+        risks.append({
+            "risk_id": "MA-001",
+            "severity": "medium",
+            "title": "vault 원천 노트가 아직 누적되지 않았습니다",
+            "evidence": "compiled vault note count is 0",
+            "recommended_local_action": "research-vault/raw에 읽은 자료를 넣고 appliance vault compile 또는 appliance run을 실행합니다.",
+        })
+    no_source_topics = [topic.get("name", "") for topic in topics if not topic.get("source_names")]
+    if no_source_topics:
+        risks.append({
+            "risk_id": "MA-002",
+            "severity": "medium",
+            "title": "일부 주제가 source 이름 없이 반복됩니다",
+            "evidence": ", ".join(no_source_topics[:4]),
+            "recommended_local_action": "source-refresh-plan과 evidence catalog를 읽어 주제별 원천 누락을 확인합니다.",
+        })
+    weak_sources = [
+        row.get("source_name", "source")
+        for row in source_rows
+        if row.get("freshness_status") in {"stale", "unknown"} or row.get("relevance_label") in {"weak", "unscored"}
+    ]
+    if weak_sources:
+        risks.append({
+            "risk_id": "MA-003",
+            "severity": "medium",
+            "title": "약하거나 오래된 source가 남아 있습니다",
+            "evidence": ", ".join(weak_sources[:5]),
+            "recommended_local_action": "live 실행 전에는 source-refresh 화면에서 승인 필요 항목과 dry-run 항목을 분리해 읽습니다.",
+        })
+    if not archives:
+        risks.append({
+            "risk_id": "MA-004",
+            "severity": "high",
+            "title": "archive manifest가 없어 과거 판단을 추적할 수 없습니다",
+            "evidence": "archive manifest count is 0",
+            "recommended_local_action": "appliance run을 실행해 오늘 산출물과 archive manifest를 생성합니다.",
+        })
+    if int(review.get("summary", {}).get("response_count", 0) or 0) == 0:
+        risks.append({
+            "risk_id": "MA-005",
+            "severity": "low",
+            "title": "operator review가 없어 다음 주제 선택이 개인 피드백을 거의 반영하지 못합니다",
+            "evidence": "daily review response count is 0",
+            "recommended_local_action": "review-prompt에서 복사한 review-response-apply 한 줄을 남깁니다.",
+        })
+    if not risks:
+        risks.append({
+            "risk_id": "MA-000",
+            "severity": "low",
+            "title": "치명적인 memory audit risk는 보이지 않습니다",
+            "evidence": "vault, archive, source rows, review inputs are present enough for local study",
+            "recommended_local_action": "오늘 브리프를 읽고 review-response-apply로 다음 루프 피드백을 남깁니다.",
+        })
+    return risks
+
+
+def _memory_audit_next_questions(*, index: dict[str, Any], risks: list[dict[str, Any]]) -> list[str]:
+    topics = index.get("topics", [])
+    top_topic = topics[0].get("name", "오늘 주제") if topics else "오늘 주제"
+    questions = [
+        f"{top_topic}에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?",
+        "오늘 브리프의 가장 약한 source는 무엇이고 왜 약한가?",
+        "vault 원천 노트와 오늘 evidence가 서로 보강하는가, 아니면 충돌하는가?",
+    ]
+    if any(risk.get("risk_id") == "MA-005" for risk in risks):
+        questions.insert(0, "내가 오늘 실제로 읽은 주제는 무엇이며 내일 더 보고 싶은가?")
+    return questions[:4]
+
+
+def render_memory_audit_surface(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    risk_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(risk.get('risk_id', 'MA'))} · {esc(risk.get('severity', 'low'))}</span>"
+        f"<h2>{esc(risk.get('title', ''))}</h2>"
+        f"<p>{esc(risk.get('evidence', ''))}</p>"
+        f"<small>{esc(risk.get('recommended_local_action', ''))}</small>"
+        "</article>"
+        for risk in payload.get("risks", [])
+    )
+    coverage_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(row.get('status', ''))}</span>"
+        f"<h2>{esc(row.get('name', ''))}</h2>"
+        f"<p>{esc(row.get('value', ''))}</p>"
+        f"<small>{esc(row.get('why_it_matters', ''))}</small>"
+        "</article>"
+        for row in payload.get("coverage", [])
+    )
+    questions = "".join(f"<li>{esc(question)}</li>" for question in payload.get("next_questions", []))
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("linked_surfaces", {}).items()
+        if path
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Memory Audit</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:18px; }}
+a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
+header {{ padding:28px 0 16px; }}
+.eyebrow,.card span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:18px; }}
+p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.card {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.metrics,.grid,.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.metric,.card,.links a {{ background:white; border:1px solid var(--line); border-radius:8px; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:26px; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Memory Audit · {esc(_short_date(payload.get('generated_at', '')))}</span>
+<h1>개인 애널리스트 메모리 감사</h1>
+<p>매일 쌓이는 메모리, vault, archive, source 상태가 신뢰 가능한 공부 루프를 만들고 있는지 점검합니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<h2>{esc(payload.get('status', 'needs_attention'))}</h2>
+<div class="metrics">
+<article class="metric"><span>Runs</span><strong>{esc(summary.get('run_count', 0))}</strong></article>
+<article class="metric"><span>Vault</span><strong>{esc(summary.get('vault_note_count', 0))}</strong></article>
+<article class="metric"><span>Archives</span><strong>{esc(summary.get('archive_count', 0))}</strong></article>
+<article class="metric"><span>Risks</span><strong>{esc(summary.get('risk_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>감사 리스크</h2>
+<div class="grid">{risk_cards}</div>
+</section>
+<section class="section">
+<h2>커버리지</h2>
+<div class="grid">{coverage_cards}</div>
+</section>
+<section class="section">
+<h2>내일 확인할 질문</h2>
+<ul>{questions}</ul>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 감사는 로컬 산출물만 읽습니다. live network, 알림 전송, host write, credential, 계좌 접근, 주문 실행을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def render_memory_surface(index: dict[str, Any]) -> str:

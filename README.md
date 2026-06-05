@@ -92,9 +92,11 @@ PYTHONPATH=src python3 -m mybroker appliance task-status-apply
 PYTHONPATH=src python3 -m mybroker appliance pattern-radar
 PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
+PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
 PYTHONPATH=src python3 -m mybroker validate-vault reports/vault/compile.json
+PYTHONPATH=src python3 -m mybroker validate-memory-audit reports/memory/audit.json
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
 ```
@@ -241,6 +243,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/product/morning.html` and `reports/runtime/morning-control.json`: an operator-facing morning control packet that says what to read first, what is blocked, which short responses can close carried tasks, and which phone links are ready;
 - `reports/product/memory.html` and `reports/memory/index.json`: accumulated topic memory, source relevance, and archive history;
 - `reports/product/memory-query.html` and `reports/memory/latest-query.json`: deterministic recall over accumulated memory and archives;
+- `reports/memory/audit.json` and `reports/product/memory-audit.html`: local memory audit for coverage gaps, weak/stale sources, vault/archive compounding, review feedback, and next inspection questions;
 - `reports/notifications/latest.json`: a dry-run notification payload for Telegram or Pushover;
 - `reports/archive/<date>/manifest.json`: a daily archive manifest with copied artifacts;
 - `ops/local/run-daily-analyst.sh` and `ops/local/com.mybroker.daily-analyst.plist` from
@@ -278,6 +281,11 @@ query` is the librarian step: it searches accumulated topic memory and archive m
 writes a reproducible query artifact, and renders a phone-readable recall page for the next
 question to inspect. The artifact also records recall quality, evidence bundles, weak spots, and
 a suggested reading order so the operator can inspect local context before trusting a conclusion.
+`appliance audit` is the recurring audit step from the same Obsidian-style loop. It reads local
+memory, archive manifests, compiled vault notes, source posture, and review feedback, then writes
+`personal_memory_audit.v1` plus `reports/product/memory-audit.html`. It highlights stale or weak
+coverage before the daily loop widens authority, and it performs no live network, credential,
+notification, host-write, account, or execution action.
 
 `appliance vault init` creates a local `research-vault/raw`, `research-vault/wiki`, and
 `research-vault/output` structure. `appliance vault compile` files local markdown/text notes from

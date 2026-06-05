@@ -1,0 +1,99 @@
+{
+  "schema_version": "personal_memory_audit.v1",
+  "generated_at": "2026-06-05T19:02:45.800647+00:00",
+  "status": "ready",
+  "audit_mode": "local_memory_and_vault_audit",
+  "summary": {
+    "topic_count": 5,
+    "run_count": 42,
+    "archive_count": 1,
+    "vault_note_count": 1,
+    "source_count": 3,
+    "risk_count": 1,
+    "high_risk_count": 0,
+    "medium_risk_count": 0,
+    "review_response_count": 0
+  },
+  "coverage": [
+    {
+      "name": "topic_source_coverage",
+      "status": "ready",
+      "value": "5/5 topics have source names",
+      "why_it_matters": "초보자용 브리프가 특정 주제를 반복할 때 어떤 원천이 받치는지 보여야 합니다."
+    },
+    {
+      "name": "vault_compounding",
+      "status": "ready",
+      "value": "1 compiled vault notes",
+      "why_it_matters": "개인 애널리스트는 매일 새로 시작하지 않고 원천 노트가 누적돼야 합니다."
+    },
+    {
+      "name": "archive_history",
+      "status": "ready",
+      "value": "1 archive manifests",
+      "why_it_matters": "과거 브리프와 판단이 남아야 같은 결론을 반복하는지 감사할 수 있습니다."
+    },
+    {
+      "name": "source_freshness",
+      "status": "ready",
+      "value": "3 source rows",
+      "why_it_matters": "오래된 근거가 매일 브리프를 지배하면 개인화가 아니라 편향 누적이 됩니다."
+    },
+    {
+      "name": "change_detection",
+      "status": "needs_attention",
+      "value": "0 changed topics",
+      "why_it_matters": "매일 무엇이 달라졌는지 보여야 시장 공부 루프가 누적됩니다."
+    }
+  ],
+  "risks": [
+    {
+      "risk_id": "MA-005",
+      "severity": "low",
+      "title": "operator review가 없어 다음 주제 선택이 개인 피드백을 거의 반영하지 못합니다",
+      "evidence": "daily review response count is 0",
+      "recommended_local_action": "review-prompt에서 복사한 review-response-apply 한 줄을 남깁니다."
+    }
+  ],
+  "next_questions": [
+    "내가 오늘 실제로 읽은 주제는 무엇이며 내일 더 보고 싶은가?",
+    "AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?",
+    "오늘 브리프의 가장 약한 source는 무엇이고 왜 약한가?",
+    "vault 원천 노트와 오늘 evidence가 서로 보강하는가, 아니면 충돌하는가?"
+  ],
+  "operator_reading_order": [
+    "summary",
+    "risks",
+    "coverage",
+    "next_questions",
+    "linked_surfaces"
+  ],
+  "linked_surfaces": {
+    "memory": "reports/product/memory.html",
+    "memory_query": "reports/product/memory-query.html",
+    "vault": "reports/product/vault.html",
+    "review": "reports/product/review.html",
+    "review_prompt": "reports/product/review-prompt.html",
+    "today": "reports/product/today.html"
+  },
+  "inputs": {
+    "memory": "reports/memory/topic-memory.json",
+    "archive_root": "reports/archive",
+    "evidence": "reports/evidence/daily-evidence-catalog.json",
+    "vault": "reports/vault/compile.json",
+    "daily_review": "reports/memory/daily-review.json"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "reads_local_artifacts_only",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_live_trading",
+    "no_discretionary_management"
+  ]
+}

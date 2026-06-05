@@ -20,6 +20,7 @@ from mybroker.appliance import (
     write_launchd_assets,
     write_morning_control_packet,
     write_memory_query,
+    write_memory_audit,
     write_memory_surface,
     write_notification_payload,
     write_operator_decision_apply,
@@ -41,6 +42,7 @@ from mybroker.appliance import (
     write_source_refresh_brief,
     write_today_surface,
     validate_morning_control_packet_file,
+    validate_memory_audit_file,
     validate_run_trace_file,
     validate_agent_pattern_radar_file,
     validate_daily_brief_agenda_file,
@@ -827,6 +829,15 @@ class LocalApplianceTests(unittest.TestCase):
                 output_path=root / "reports" / "memory" / "latest-query.json",
                 surface_path=root / "reports" / "product" / "memory-query.html",
             )
+            audit_surface = write_memory_audit(
+                memory_path=memory_path,
+                archive_root=root / "reports" / "archive",
+                evidence_path=daily_evidence_path,
+                vault_path=output,
+                daily_review_path=root / "missing-review.json",
+                output_path=root / "reports" / "memory" / "audit.json",
+                surface_path=root / "reports" / "product" / "memory-audit.html",
+            )
             scenario_report = run_market_simulation(seed_sources=["examples/seeds"], run_id="vault-today")
             scenario_path = write_scenario_report(scenario_report, root / "reports" / "scenario.json")
             verdict_path = write_verdict(scenario_report, root / "reports" / "verdict.json")
@@ -850,8 +861,11 @@ class LocalApplianceTests(unittest.TestCase):
             )
             memory_index = json.loads((root / "reports" / "memory" / "index.json").read_text(encoding="utf-8"))
             query_payload = json.loads((root / "reports" / "memory" / "latest-query.json").read_text(encoding="utf-8"))
+            audit_payload = json.loads((root / "reports" / "memory" / "audit.json").read_text(encoding="utf-8"))
+            audit_errors = validate_memory_audit_file(root / "reports" / "memory" / "audit.json")
             memory_surface_html = memory_surface.read_text(encoding="utf-8")
             query_surface_html = query_surface.read_text(encoding="utf-8")
+            audit_surface_html = audit_surface.read_text(encoding="utf-8")
             today_surface_html = today_surface.read_text(encoding="utf-8")
 
         self.assertEqual(init_payload["schema_version"], "knowledge_vault_init.v1")
@@ -881,7 +895,13 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("Vault 원천 노트", memory_surface_html)
         self.assertEqual(query_payload["matched_vault_note_count"], 1)
         self.assertEqual(query_payload["matched_vault_notes"][0]["title"], "Semiconductor cycle note")
+        self.assertEqual(audit_payload["schema_version"], "personal_memory_audit.v1")
+        self.assertEqual(audit_errors, [])
+        self.assertGreaterEqual(audit_payload["summary"]["vault_note_count"], 1)
+        self.assertIn(audit_payload["status"], {"ready", "needs_attention", "blocked"})
         self.assertIn("관련 Vault 노트", query_surface_html)
+        self.assertIn("개인 애널리스트 메모리 감사", audit_surface_html)
+        self.assertIn("감사 리스크", audit_surface_html)
         self.assertIn("오늘 Scout 추천", today_surface_html)
         self.assertIn("오늘 새로고침 계획", today_surface_html)
         self.assertIn("오늘 실행 판정", today_surface_html)
@@ -933,6 +953,8 @@ class LocalApplianceTests(unittest.TestCase):
             vault_payload = json.loads((root / "reports" / "vault" / "compile.json").read_text(encoding="utf-8"))
             scout_payload = json.loads((root / "reports" / "daily" / "scout.json").read_text(encoding="utf-8"))
             memory_index = json.loads((root / "reports" / "memory" / "index.json").read_text(encoding="utf-8"))
+            memory_audit_payload = json.loads((root / "reports" / "memory" / "audit.json").read_text(encoding="utf-8"))
+            memory_audit_errors = validate_memory_audit_file(root / "reports" / "memory" / "audit.json")
             journal_payload = json.loads((root / "reports" / "memory" / "analyst-journal.json").read_text(encoding="utf-8"))
             morning_payload = json.loads((root / "reports" / "runtime" / "morning-control.json").read_text(encoding="utf-8"))
             agenda_payload = json.loads((root / "reports" / "daily" / "brief-agenda.json").read_text(encoding="utf-8"))
@@ -968,6 +990,7 @@ class LocalApplianceTests(unittest.TestCase):
             review_prompt_html = (root / "reports" / "product" / "review-prompt.html").read_text(encoding="utf-8")
             review_effect_html = (root / "reports" / "product" / "review-effect.html").read_text(encoding="utf-8")
             scheduler_html = (root / "reports" / "product" / "scheduler.html").read_text(encoding="utf-8")
+            memory_audit_html = (root / "reports" / "product" / "memory-audit.html").read_text(encoding="utf-8")
             vault_html = (root / "reports" / "product" / "vault.html").read_text(encoding="utf-8")
 
         self.assertEqual(result, 0)
@@ -988,6 +1011,12 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("review", morning_payload["phone_links"])
         self.assertIn("review_prompt", morning_payload["phone_links"])
         self.assertIn("review_effect", morning_payload["phone_links"])
+        self.assertIn("memory_audit", morning_payload["phone_links"])
+        self.assertEqual(memory_audit_payload["schema_version"], "personal_memory_audit.v1")
+        self.assertEqual(memory_audit_errors, [])
+        self.assertFalse(memory_audit_payload["external_effect_performed"])
+        self.assertFalse(memory_audit_payload["host_write_performed"])
+        self.assertGreaterEqual(memory_audit_payload["summary"]["vault_note_count"], 1)
         self.assertEqual(agenda_payload["schema_version"], "daily_brief_agenda.v1")
         self.assertEqual(agenda_errors, [])
         self.assertEqual(validate_daily_brief_agenda_payload(agenda_payload), [])
@@ -1008,6 +1037,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("drift_review", readiness_payload["phone_links"])
         self.assertIn("review_prompt", readiness_payload["phone_links"])
         self.assertIn("review_effect", readiness_payload["phone_links"])
+        self.assertTrue(any(item["name"] == "memory_audit" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "memory_audit_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "run_trace" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "drift_review" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "review_prompt" for item in readiness_payload["artifacts"]))
@@ -1034,6 +1065,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertFalse(run_trace_payload["host_write_performed"])
         self.assertGreaterEqual(run_trace_payload["summary"]["step_count"], 10)
         self.assertTrue(any(step["name"] == "daily_scout" for step in run_trace_payload["trace_steps"]))
+        self.assertTrue(any(step["name"] == "memory_audit" for step in run_trace_payload["trace_steps"]))
         self.assertTrue(any(step["name"] == "today_surface" for step in run_trace_payload["trace_steps"]))
         self.assertEqual(drift_review_payload["schema_version"], "local_drift_review.v1")
         self.assertEqual(drift_review_errors, [])
@@ -1073,6 +1105,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("review_prompt_surface", manifest_payload["artifacts"])
         self.assertIn("review_effect", manifest_payload["artifacts"])
         self.assertIn("review_effect_surface", manifest_payload["artifacts"])
+        self.assertIn("memory_audit", manifest_payload["artifacts"])
+        self.assertIn("memory_audit_surface", manifest_payload["artifacts"])
         self.assertIn("agent_pattern_radar", manifest_payload["artifacts"])
         self.assertIn("agent_pattern_radar_surface", manifest_payload["artifacts"])
         self.assertIn("run_trace", manifest_payload["artifacts"])
@@ -1120,8 +1154,10 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("drift_review", morning_html)
         self.assertIn("review_prompt", morning_html)
         self.assertIn("review_effect", morning_html)
+        self.assertIn("memory_audit", morning_html)
         self.assertIn("pattern_radar", morning_html)
         self.assertIn("scheduler", morning_html)
+        self.assertIn("개인 애널리스트 메모리 감사", memory_audit_html)
         self.assertIn("컴파일된 리서치 노트", vault_html)
 
     def test_task_status_response_apply_updates_ledger_locally(self) -> None:

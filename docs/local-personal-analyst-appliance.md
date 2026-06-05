@@ -130,6 +130,7 @@ PYTHONPATH=src python3 -m mybroker appliance task-response 'AT-001 complete "che
 PYTHONPATH=src python3 -m mybroker appliance task-status-apply
 PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
+PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
@@ -168,6 +169,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/task-ledger.html`: phone-readable task ledger for ready, carried, blocked, and retired work.
 - `reports/memory/latest-query.json`: machine-readable recall result for one operator question.
 - `reports/product/memory-query.html`: phone-readable recall page that links the question to matching topics, archives, and next inspection questions.
+- `reports/memory/audit.json`: machine-readable memory audit over topic memory, archives, vault notes, source posture, and review feedback.
+- `reports/product/memory-audit.html`: phone-readable audit page for stale/weak coverage, compounding gaps, and next inspection questions.
 
 This is the Obsidian vault pattern in product form: every run is still a plain local artifact,
 but the daily user surface can link back to what MyBroker has learned over time. `journal.html`
@@ -177,6 +180,11 @@ deterministic local retrieval first; a later LLM summary can sit on top of the s
 without hiding source context. The query artifact includes recall quality, evidence bundles, weak
 spots, and a suggested reading order so the operator can inspect source context before relying on
 the recall.
+`appliance audit` is the recurring audit verb: it does not answer a market question. It checks
+whether the accumulated memory itself is becoming trustworthy enough for tomorrow's analyst loop.
+It flags missing archive history, weak or stale source rows, no compiled vault notes, missing source
+names, and absent operator review feedback. It remains local-only and does not fetch, notify,
+write host state, use credentials, or execute anything.
 `tasks.html` translates that journal into queued work for source_scout, market_mapper, skeptic,
 beginner_tutor, memory_librarian, and publisher roles. It does not execute commands; live network,
 host writes, notification send, credentials, and trading remain behind separate approval gates.

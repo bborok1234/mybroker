@@ -1,6 +1,6 @@
 {
   "schema_version": "public_evidence_catalog.v1",
-  "generated_at": "2026-06-05T18:45:58.855945+00:00",
+  "generated_at": "2026-06-05T19:01:58.396021+00:00",
   "mode": "sample_cache_topic_research",
   "source_status": [
     {
@@ -661,7 +661,7 @@
   ],
   "research_plan": {
     "run_id": "daily-research",
-    "generated_at": "2026-06-05T18:45:49.092676+00:00",
+    "generated_at": "2026-06-05T19:01:45.680042+00:00",
     "topic_count": 5,
     "next_step": "collect_free_public_evidence"
   },
@@ -671,7 +671,7 @@
   ],
   "topic_memory_snapshot": {
     "memory_path": "reports/memory/topic-memory.json",
-    "run_count": 41,
+    "run_count": 42,
     "topics": [
       {
         "topic_id": "ai-infrastructure",
