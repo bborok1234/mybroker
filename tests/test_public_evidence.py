@@ -33,6 +33,8 @@ class PublicEvidenceTests(unittest.TestCase):
         self.assertEqual(catalog["mode"], "sample_cache")
         self.assertGreaterEqual(len(catalog["source_status"]), 3)
         self.assertGreaterEqual(len(catalog["items"]), 4)
+        self.assertIn("relevance", catalog["items"][0])
+        self.assertIn("relevance_label", catalog["source_status"][0])
         self.assertEqual(catalog["feasibility"]["status"], "meaningful")
         self.assertGreaterEqual(len(catalog["graph"]["nodes"]), 3)
         self.assertGreaterEqual(len(catalog["graph"]["edges"]), 3)

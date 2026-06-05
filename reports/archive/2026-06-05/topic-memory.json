@@ -1,7 +1,7 @@
 {
   "schema_version": "topic_memory.v1",
-  "generated_at": "2026-06-05T06:06:25.311080+00:00",
-  "run_count": 5,
+  "generated_at": "2026-06-05T06:20:19.028261+00:00",
+  "run_count": 6,
   "topics": [
     {
       "topic_id": "ai-infrastructure",
@@ -229,6 +229,13 @@
       "run_id": "daily-research",
       "generated_at": "2026-06-05T06:06:25.311077+00:00",
       "evidence_catalog": "2026-06-05T06:06:25.310681+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
+      "generated_at": "2026-06-05T06:20:19.028252+00:00",
+      "evidence_catalog": "2026-06-05T06:20:19.027770+00:00",
       "topic_count": 5,
       "changed_topics": []
     }

@@ -1,6 +1,6 @@
 {
   "schema_version": "public_evidence_catalog.v1",
-  "generated_at": "2026-06-05T06:06:25.310681+00:00",
+  "generated_at": "2026-06-05T06:20:19.027770+00:00",
   "mode": "sample_cache_topic_research",
   "source_status": [
     {
@@ -8,21 +8,27 @@
       "source_name": "GDELT",
       "adapter_id": "sample_cache_topic_research",
       "item_count": "2",
-      "freshness_status": "live_error_fallback_sample"
+      "freshness_status": "live_error_fallback_sample",
+      "relevance_score": "0.98",
+      "relevance_label": "strong"
     },
     {
       "source_id": "sec-edgar",
       "source_name": "SEC EDGAR",
       "adapter_id": "sample_cache_topic_research",
       "item_count": "2",
-      "freshness_status": "sample_cache"
+      "freshness_status": "sample_cache",
+      "relevance_score": "0.98",
+      "relevance_label": "strong"
     },
     {
       "source_id": "stooq",
       "source_name": "Stooq",
       "adapter_id": "sample_cache_topic_research",
       "item_count": "1",
-      "freshness_status": "live_error_fallback_sample"
+      "freshness_status": "live_error_fallback_sample",
+      "relevance_score": "0.81",
+      "relevance_label": "strong"
     }
   ],
   "source_matrix": [
@@ -120,6 +126,16 @@
         "cloud"
       ],
       "freshness_status": "live_error_fallback_sample",
+      "relevance": {
+        "score": 0.97,
+        "label": "strong",
+        "reasons": [
+          "fallback sample",
+          "source URL",
+          "context text",
+          "news_narrative"
+        ]
+      },
       "matched_interests": [
         "ai-infrastructure",
         "semiconductors",
@@ -148,6 +164,16 @@
         "consumer demand"
       ],
       "freshness_status": "live_error_fallback_sample",
+      "relevance": {
+        "score": 1.0,
+        "label": "strong",
+        "reasons": [
+          "fallback sample",
+          "source URL",
+          "context text",
+          "news_narrative"
+        ]
+      },
       "matched_interests": [
         "ai-infrastructure",
         "semiconductors",
@@ -173,6 +199,16 @@
         "broad market"
       ],
       "freshness_status": "live_error_fallback_sample",
+      "relevance": {
+        "score": 0.81,
+        "label": "strong",
+        "reasons": [
+          "fallback sample",
+          "source URL",
+          "context text",
+          "market_price_context"
+        ]
+      },
       "matched_interests": [
         "us-rates",
         "consumer-weakness",
@@ -198,6 +234,16 @@
         "10-Q"
       ],
       "freshness_status": "sample_cache",
+      "relevance": {
+        "score": 0.98,
+        "label": "strong",
+        "reasons": [
+          "cached sample",
+          "source URL",
+          "context text",
+          "company_filing"
+        ]
+      },
       "matched_interests": [
         "ai-infrastructure",
         "semiconductors",
@@ -224,6 +270,16 @@
         "8-K"
       ],
       "freshness_status": "sample_cache",
+      "relevance": {
+        "score": 0.98,
+        "label": "strong",
+        "reasons": [
+          "cached sample",
+          "source URL",
+          "context text",
+          "company_filing"
+        ]
+      },
       "matched_interests": [
         "ai-infrastructure",
         "semiconductors",
@@ -605,7 +661,7 @@
   ],
   "research_plan": {
     "run_id": "daily-research",
-    "generated_at": "2026-06-05T06:06:15.320406+00:00",
+    "generated_at": "2026-06-05T06:20:07.224681+00:00",
     "topic_count": 5,
     "next_step": "collect_free_public_evidence"
   },
@@ -615,7 +671,7 @@
   ],
   "topic_memory_snapshot": {
     "memory_path": "reports/memory/topic-memory.json",
-    "run_count": 5,
+    "run_count": 6,
     "topics": [
       {
         "topic_id": "ai-infrastructure",
