@@ -525,6 +525,42 @@ class LocalApplianceTests(unittest.TestCase):
             wiki_note_exists = Path(note["wiki_path"]).exists()
             surface_exists = surface.exists()
             surface_html = surface.read_text(encoding="utf-8")
+            memory_path = root / "reports" / "memory" / "topic-memory.json"
+            memory_path.parent.mkdir(parents=True, exist_ok=True)
+            memory_path.write_text(
+                json.dumps({
+                    "schema_version": "topic_memory.v1",
+                    "generated_at": "2026-06-05T00:00:00+00:00",
+                    "run_count": 0,
+                    "topics": [],
+                    "runs": [],
+                }),
+                encoding="utf-8",
+            )
+            evidence_path = root / "reports" / "evidence" / "daily-evidence-catalog.json"
+            evidence_path.parent.mkdir(parents=True, exist_ok=True)
+            evidence_path.write_text(json.dumps({"source_status": []}), encoding="utf-8")
+            memory_surface = write_memory_surface(
+                memory_path=memory_path,
+                archive_root=root / "reports" / "archive",
+                evidence_path=evidence_path,
+                vault_path=output,
+                index_output_path=root / "reports" / "memory" / "index.json",
+                output_path=root / "reports" / "product" / "memory.html",
+            )
+            query_surface = write_memory_query(
+                query="memory pricing",
+                memory_path=memory_path,
+                archive_root=root / "reports" / "archive",
+                evidence_path=evidence_path,
+                vault_path=output,
+                output_path=root / "reports" / "memory" / "latest-query.json",
+                surface_path=root / "reports" / "product" / "memory-query.html",
+            )
+            memory_index = json.loads((root / "reports" / "memory" / "index.json").read_text(encoding="utf-8"))
+            query_payload = json.loads((root / "reports" / "memory" / "latest-query.json").read_text(encoding="utf-8"))
+            memory_surface_html = memory_surface.read_text(encoding="utf-8")
+            query_surface_html = query_surface.read_text(encoding="utf-8")
 
         self.assertEqual(init_payload["schema_version"], "knowledge_vault_init.v1")
         self.assertEqual(topics["schema_version"], "topic_config.v1")
@@ -538,6 +574,11 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(wiki_note_exists)
         self.assertTrue(surface_exists)
         self.assertIn("컴파일된 리서치 노트", surface_html)
+        self.assertEqual(memory_index["vault_notes"][0]["title"], "Semiconductor cycle note")
+        self.assertIn("Vault 원천 노트", memory_surface_html)
+        self.assertEqual(query_payload["matched_vault_note_count"], 1)
+        self.assertEqual(query_payload["matched_vault_notes"][0]["title"], "Semiconductor cycle note")
+        self.assertIn("관련 Vault 노트", query_surface_html)
 
 
 if __name__ == "__main__":

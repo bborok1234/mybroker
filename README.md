@@ -179,6 +179,9 @@ question to inspect.
 raw into deterministic wiki notes, `_master-index.md`, `reports/vault/compile.json`, and
 `reports/product/vault.html`. Raw files are not deleted or moved. This keeps the Obsidian-style
 inbox and librarian workflow separate from generated daily market artifacts.
+`appliance memory` and `appliance query` read `reports/vault/compile.json` by default, so compiled
+raw notes appear alongside topic memory and can be retrieved by the same deterministic local query
+surface.
 
 Run `appliance doctor` before installing host-level scheduling. It does not install launchd by
 default; it writes a readiness proof with pass/warn/fail checks and manual install/uninstall

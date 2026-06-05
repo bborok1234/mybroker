@@ -142,6 +142,8 @@ The local vault is the raw inbox side of the same pattern:
 `appliance vault compile` does not delete or move raw files. It classifies notes against configured
 interests when possible, writes wiki notes with source paths and hashes, and keeps the result
 research-only.
+`appliance memory` and `appliance query` read the compile artifact by default, so raw-source notes
+are visible in the same accumulated memory and recall surfaces as generated daily artifacts.
 
 The launchd assets are written under `ops/local/`:
 

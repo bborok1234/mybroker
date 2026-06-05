@@ -265,6 +265,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_memory_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
     appliance_memory_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_memory_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--index-output", default=DEFAULT_MEMORY_INDEX_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--output", default=DEFAULT_MEMORY_OUTPUT.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
@@ -272,6 +273,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_query_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     appliance_query_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
     appliance_query_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_query_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
     appliance_query_parser.add_argument("--output", default=DEFAULT_MEMORY_QUERY_OUTPUT.as_posix())
     appliance_query_parser.add_argument("--surface-output", default=DEFAULT_MEMORY_QUERY_SURFACE.as_posix())
     appliance_query_parser.add_argument("--limit", type=int, default=5)
@@ -692,6 +694,7 @@ def main(argv: list[str] | None = None) -> int:
                 memory_path=args.memory,
                 archive_root=args.archive_root,
                 evidence_path=args.evidence,
+                vault_path=args.vault,
                 index_output_path=args.index_output,
                 output_path=args.output,
             )
@@ -703,6 +706,7 @@ def main(argv: list[str] | None = None) -> int:
                 memory_path=args.memory,
                 archive_root=args.archive_root,
                 evidence_path=args.evidence,
+                vault_path=args.vault,
                 output_path=args.output,
                 surface_path=args.surface_output,
                 limit=args.limit,
