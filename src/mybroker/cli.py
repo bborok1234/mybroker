@@ -5,6 +5,18 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+from mybroker.appliance import (
+    DEFAULT_ARCHIVE_ROOT,
+    DEFAULT_LOCAL_OPS_DIR,
+    DEFAULT_NOTIFICATION_OUTPUT,
+    DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
+    DEFAULT_TODAY_OUTPUT,
+    archive_daily_run,
+    write_launchd_assets,
+    write_notification_payload,
+    write_runtime_playbook,
+    write_today_surface,
+)
 from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
 from mybroker.policy import classify_action
@@ -147,6 +159,42 @@ def main(argv: list[str] | None = None) -> int:
     daily_parser.add_argument("--dashboard-output", default="reports/dashboard.html")
     daily_parser.add_argument("--rollup-output", default="reports/report-rollup.json")
     daily_parser.add_argument("--brief-output", default="reports/product/market-brief.html")
+
+    appliance_parser = subcommands.add_parser("appliance", help="Run MyBroker as a local personal analyst appliance.")
+    appliance_subcommands = appliance_parser.add_subparsers(dest="appliance_command", required=True)
+    appliance_plan_parser = appliance_subcommands.add_parser("playbook", help="Write the local analyst runtime playbook artifact.")
+    appliance_plan_parser.add_argument("--output", default=DEFAULT_RUNTIME_PLAYBOOK_OUTPUT.as_posix())
+    appliance_init_parser = appliance_subcommands.add_parser("init", help="Write launchd-compatible local runner assets.")
+    appliance_init_parser.add_argument("--project-root", default=".")
+    appliance_init_parser.add_argument("--output-dir", default=DEFAULT_LOCAL_OPS_DIR.as_posix())
+    appliance_init_parser.add_argument("--hour", type=int, default=7)
+    appliance_init_parser.add_argument("--minute", type=int, default=30)
+    appliance_init_parser.add_argument("--python", default="python3")
+    appliance_today_parser = appliance_subcommands.add_parser("today", help="Render the mobile-first /today product surface.")
+    appliance_today_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
+    appliance_today_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
+    appliance_today_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_today_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_today_parser.add_argument("--brief", default="reports/product/market-brief.html")
+    appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
+    appliance_today_parser.add_argument("--archive-manifest")
+    appliance_notify_parser = appliance_subcommands.add_parser("notify", help="Prepare a phone notification payload. Dry-run by default.")
+    appliance_notify_parser.add_argument("--provider", choices=["telegram", "pushover"], default="telegram")
+    appliance_notify_parser.add_argument("--today-url", default="http://localhost:8787/reports/product/today.html")
+    appliance_notify_parser.add_argument("--today", default=DEFAULT_TODAY_OUTPUT.as_posix())
+    appliance_notify_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
+    appliance_notify_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
+    appliance_notify_parser.add_argument("--output", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
+    appliance_notify_parser.add_argument("--dry-run", action="store_true", default=True)
+    appliance_run_parser = appliance_subcommands.add_parser("run", help="Run the daily analyst loop, archive it, render /today, and prepare notification.")
+    appliance_run_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
+    appliance_run_parser.add_argument("--profile", help="Optional beginner profile JSON.")
+    appliance_run_parser.add_argument("--run-id", default="daily-research")
+    appliance_run_parser.add_argument("--today-url", default="http://localhost:8787/reports/product/today.html")
+    appliance_run_parser.add_argument("--notification-provider", choices=["telegram", "pushover"], default="telegram")
+    appliance_run_parser.add_argument("--dry-run", action="store_true", default=True)
+    appliance_run_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
+    appliance_run_parser.add_argument("--playbook-output", default=DEFAULT_RUNTIME_PLAYBOOK_OUTPUT.as_posix())
 
     quality_parser = subcommands.add_parser("quality", help="Inspect local price dataset quality without writing a research report.")
     quality_parser.add_argument("--source", action="append", help="Local price CSV file or directory. Repeat for multiple CSV files. Defaults to the bundled sample data.")
@@ -367,6 +415,131 @@ def main(argv: list[str] | None = None) -> int:
             "evidence_items": len(catalog["items"]),
         }, indent=2, ensure_ascii=False))
         return 0
+    if args.command == "appliance":
+        if args.appliance_command == "playbook":
+            path = write_runtime_playbook(args.output)
+            print(json.dumps({"playbook": path.as_posix()}, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "init":
+            assets = write_launchd_assets(
+                project_root=args.project_root,
+                output_dir=args.output_dir,
+                hour=args.hour,
+                minute=args.minute,
+                python_bin=args.python,
+            )
+            print(json.dumps(assets, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "today":
+            path = write_today_surface(
+                scenario_path=args.scenario,
+                verdict_path=args.verdict,
+                memory_path=args.memory,
+                evidence_path=args.evidence,
+                brief_path=args.brief,
+                output_path=args.output,
+                archive_manifest_path=args.archive_manifest,
+            )
+            print(json.dumps({"today": path.as_posix()}, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "notify":
+            path = write_notification_payload(
+                provider=args.provider,
+                today_url=args.today_url,
+                today_path=args.today,
+                scenario_path=args.scenario,
+                verdict_path=args.verdict,
+                output_path=args.output,
+                dry_run=args.dry_run,
+            )
+            print(json.dumps({"notification": path.as_posix(), "dry_run": args.dry_run}, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "run":
+            topics_path = args.topics
+            if not Path(topics_path).exists():
+                init_topic_config(topics_path)
+            plan_path = DEFAULT_RESEARCH_PLAN_OUTPUT
+            evidence_path = DEFAULT_DAILY_EVIDENCE_OUTPUT
+            memory_path = DEFAULT_TOPIC_MEMORY_OUTPUT
+            scenario_path = Path("reports/scenarios/daily-research-sim.json")
+            verdict_path = Path("reports/scenarios/daily-research-verdict.json")
+            dashboard_path = Path("reports/dashboard.html")
+            rollup_path = Path("reports/report-rollup.json")
+            brief_path = Path("reports/product/market-brief.html")
+            today_path = DEFAULT_TODAY_OUTPUT
+            playbook_path = write_runtime_playbook(args.playbook_output)
+            plan = build_research_plan(topics_path=topics_path, output_path=plan_path, run_id=args.run_id)
+            catalog = collect_topic_evidence(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                output_path=evidence_path,
+                memory_path=memory_path,
+            )
+            report = run_market_simulation(
+                seed_sources=["examples/seeds"],
+                profile_path=args.profile,
+                evidence_catalog_path=evidence_path,
+                run_id=args.run_id,
+            )
+            written_scenario = write_scenario_report(report, scenario_path)
+            written_verdict = write_verdict(report, verdict_path)
+            rollup = build_report_rollup("reports/runs")
+            written_dashboard = write_dashboard(rollup, dashboard_path)
+            written_rollup = write_rollup(rollup, rollup_path)
+            written_brief = write_product_brief(written_scenario, written_verdict, brief_path)
+            provisional_today = write_today_surface(
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                brief_path=written_brief,
+                output_path=today_path,
+            )
+            archive_manifest = archive_daily_run(
+                run_id=args.run_id,
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                brief_path=written_brief,
+                today_path=provisional_today,
+                archive_root=args.archive_root,
+            )
+            written_today = write_today_surface(
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                brief_path=written_brief,
+                output_path=today_path,
+                archive_manifest_path=archive_manifest,
+            )
+            notification_path = write_notification_payload(
+                provider=args.notification_provider,
+                today_url=args.today_url,
+                today_path=written_today,
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                dry_run=args.dry_run,
+            )
+            print(json.dumps({
+                "playbook": playbook_path.as_posix(),
+                "topics": topics_path,
+                "research_plan": plan_path.as_posix(),
+                "evidence_catalog": evidence_path.as_posix(),
+                "topic_memory": memory_path.as_posix(),
+                "scenario_report": written_scenario.as_posix(),
+                "verdict": written_verdict.as_posix(),
+                "dashboard": written_dashboard.as_posix(),
+                "rollup": written_rollup.as_posix(),
+                "product_brief": written_brief.as_posix(),
+                "today": written_today.as_posix(),
+                "archive_manifest": archive_manifest.as_posix(),
+                "notification": notification_path.as_posix(),
+                "topic_count": len(plan["plan_items"]),
+                "evidence_items": len(catalog["items"]),
+            }, indent=2, ensure_ascii=False))
+            return 0
     if args.command == "validate-profile":
         errors = validate_profile_file(args.profile_path)
         if errors:

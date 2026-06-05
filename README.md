@@ -42,6 +42,11 @@ PYTHONPATH=src python3 -m mybroker validate-scenario reports/scenarios/beginner-
 PYTHONPATH=src python3 -m mybroker validate-verdict reports/scenarios/verdict.json
 PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output reports/dashboard.html --rollup-output reports/report-rollup.json
 PYTHONPATH=src python3 -m mybroker brief --scenario reports/scenarios/public-evidence-sim.json --verdict reports/scenarios/public-evidence-verdict.json --output reports/product/market-brief.html
+PYTHONPATH=src python3 -m mybroker appliance playbook
+PYTHONPATH=src python3 -m mybroker appliance init --project-root .
+PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --dry-run
+PYTHONPATH=src python3 -m mybroker appliance today
+PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
 ```
 
@@ -116,6 +121,22 @@ brief.
 
 Manual source ingestion can be added later, but it is not the primary beginner UX. The default
 path is AI-initiated research from user interests.
+
+## Local Personal Analyst Appliance
+
+The next operating shape is a local appliance rather than a hosted investment app. `mybroker
+appliance run` uses the existing daily research loop, then writes:
+
+- `reports/runtime/local-analyst-playbook.json`: the runtime pattern MyBroker is following;
+- `reports/product/today.html`: a mobile-first `/today` surface for the phone;
+- `reports/notifications/latest.json`: a dry-run notification payload for Telegram or Pushover;
+- `reports/archive/<date>/manifest.json`: a daily archive manifest with copied artifacts;
+- `ops/local/run-daily-analyst.sh` and `ops/local/com.mybroker.daily-analyst.plist` from
+  `appliance init` for launchd-compatible local scheduling.
+
+The recommended access path is private first: Tailscale Serve, private LAN, or local file. Public
+deployment is a later decision after access control and secret boundaries are reviewed. See
+`docs/local-personal-analyst-appliance.md`.
 
 ## First Pipeline Slice
 

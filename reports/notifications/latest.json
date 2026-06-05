@@ -1,0 +1,17 @@
+{
+  "schema_version": "notification_delivery.v1",
+  "generated_at": "2026-06-05T05:48:24.486861+00:00",
+  "provider": "telegram",
+  "dry_run": true,
+  "title": "MyBroker 오늘의 시장 브리프",
+  "message": "먼저 시장 흐름을 학습",
+  "url": "http://localhost:8787/reports/product/today.html",
+  "local_path": "reports/product/today.html",
+  "required_env": [
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_CHAT_ID"
+  ],
+  "run_id": "daily-research",
+  "policy": "research_only",
+  "delivery_status": "dry_run_ready"
+}
