@@ -14,6 +14,7 @@ from mybroker.appliance import (
     write_analyst_task_queue,
     write_analyst_task_ledger,
     write_launchd_assets,
+    write_morning_control_packet,
     write_memory_query,
     write_memory_surface,
     write_notification_payload,
@@ -28,6 +29,7 @@ from mybroker.appliance import (
     write_scheduler_apply,
     write_scheduler_run_once,
     write_today_surface,
+    validate_morning_control_packet_file,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
 from mybroker.scenario import run_market_simulation, write_scenario_report, write_verdict
@@ -240,6 +242,22 @@ class LocalApplianceTests(unittest.TestCase):
             scheduler_apply_payload = json.loads(scheduler_apply.read_text(encoding="utf-8"))
             script_exists = Path(assets["script"]).exists()
             plist_exists = Path(assets["plist"]).exists()
+            morning = write_morning_control_packet(
+                scout_path=root / "missing-scout.json",
+                journal_path=journal_artifact_path,
+                task_queue_path=tasks_artifact_path,
+                task_ledger_path=ledger_artifact_path,
+                refresh_live_gate_path=refresh_live_gate_path,
+                refresh_live_run_path=refresh_live_run_path,
+                refresh_live_preflight_path=refresh_live_preflight_path,
+                notification_path=notification,
+                runtime_doctor_path=doctor,
+                artifact_output_path=root / "morning.json",
+                surface_output_path=root / "morning.html",
+            )
+            morning_payload = json.loads((root / "morning.json").read_text(encoding="utf-8"))
+            morning_html = morning.read_text(encoding="utf-8")
+            morning_errors = validate_morning_control_packet_file(root / "morning.json")
 
         self.assertIn("MyBroker Today", html)
         self.assertIn("오늘 시장 5분 브리프", html)
@@ -306,6 +324,18 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(scheduler_apply_payload["post_status_path"].startswith(root.resolve().as_posix()))
         self.assertTrue(script_exists)
         self.assertTrue(plist_exists)
+        self.assertEqual(morning_payload["schema_version"], "morning_control_packet.v1")
+        self.assertFalse(morning_payload["external_effect_performed"])
+        self.assertFalse(morning_payload["host_write_performed"])
+        self.assertIn(morning_payload["status"], {"ready", "operator_review"})
+        self.assertIn("today", morning_payload["phone_links"])
+        self.assertGreaterEqual(len(morning_payload["command_bar"]), 1)
+        self.assertEqual(morning_errors, [])
+        self.assertIn("MyBroker Morning Control", morning_html)
+        self.assertIn("아침 analyst 관제판", morning_html)
+        self.assertIn("복사 가능한 응답", morning_html)
+        self.assertNotIn("schema_version", morning_html)
+        self.assertNotIn("--send", morning_html)
 
     def test_scheduler_run_once_executes_local_runner_without_host_write(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

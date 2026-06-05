@@ -74,6 +74,7 @@ PYTHONPATH=src python3 -m mybroker appliance tasks
 PYTHONPATH=src python3 -m mybroker appliance task-ledger
 PYTHONPATH=src python3 -m mybroker appliance task-response 'AT-001 complete "checked source freshness"'
 PYTHONPATH=src python3 -m mybroker appliance task-status-apply
+PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
@@ -204,6 +205,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/product/journal.html` and `reports/memory/analyst-journal.json`: the daily analyst work log with today's focus, role notes, weak evidence, and follow-up questions;
 - `reports/product/tasks.html` and `reports/memory/analyst-task-queue.json`: role-based analyst task queue for source scout, market mapper, skeptic, tutor, librarian, and publisher work;
 - `reports/product/task-ledger.html` and `reports/memory/analyst-task-ledger.json`: task status history for ready, carried, blocked, and retired analyst work;
+- `reports/product/morning.html` and `reports/runtime/morning-control.json`: an operator-facing morning control packet that says what to read first, what is blocked, which short responses can close carried tasks, and which phone links are ready;
 - `reports/product/memory.html` and `reports/memory/index.json`: accumulated topic memory, source relevance, and archive history;
 - `reports/product/memory-query.html` and `reports/memory/latest-query.json`: deterministic recall over accumulated memory and archives;
 - `reports/notifications/latest.json`: a dry-run notification payload for Telegram or Pushover;
@@ -222,6 +224,9 @@ This follows the Obsidian-vault pattern: each daily run remains a local artifact
 `task-response` and `task-status-apply` let the operator mark local task status with short
 responses such as `AT-001 complete "checked source freshness"`; this updates ledger state without
 executing tasks or external effects.
+`morning.html` is the morning control surface: it is not the market brief, and it does not render
+market-map conclusions. It reads existing artifacts, highlights pending gates, and shows copy-ready
+local responses so the operator can decide the next step from a phone.
 `memory.html` gives the phone-readable view of what has accumulated across runs. `appliance
 query` is the librarian step: it searches accumulated topic memory and archive manifests,
 writes a reproducible query artifact, and renders a phone-readable recall page for the next

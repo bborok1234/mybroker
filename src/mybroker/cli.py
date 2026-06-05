@@ -23,6 +23,8 @@ from mybroker.appliance import (
     DEFAULT_NOTIFICATION_OUTPUT,
     DEFAULT_OPERATOR_DECISION_APPLY_OUTPUT,
     DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT,
+    DEFAULT_MORNING_CONTROL_OUTPUT,
+    DEFAULT_MORNING_CONTROL_SURFACE,
     DEFAULT_PHONE_ACCESS_OUTPUT,
     DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
     DEFAULT_RUNTIME_DOCTOR_OUTPUT,
@@ -40,6 +42,7 @@ from mybroker.appliance import (
     write_analyst_task_ledger,
     build_task_status_apply,
     record_task_status_response,
+    write_morning_control_packet,
     write_memory_query,
     write_memory_surface,
     write_notification_payload,
@@ -58,6 +61,7 @@ from mybroker.appliance import (
     validate_analyst_task_queue_file,
     validate_analyst_task_ledger_file,
     validate_task_status_apply_file,
+    validate_morning_control_packet_file,
 )
 from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
@@ -271,6 +275,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_task_ledger_parser.add_argument("task_ledger_path")
     validate_task_apply_parser = subcommands.add_parser("validate-analyst-task-status-apply", help="Validate a personal_analyst_task_status_apply.v1 artifact.")
     validate_task_apply_parser.add_argument("task_status_apply_path")
+    validate_morning_parser = subcommands.add_parser("validate-morning-control", help="Validate a morning_control_packet.v1 artifact.")
+    validate_morning_parser.add_argument("morning_control_path")
 
     brief_parser = subcommands.add_parser("brief", help="Build a user-facing MyBroker product brief from scenario and verdict artifacts.")
     brief_parser.add_argument("--scenario", required=True, help="scenario_report.v1 artifact path.")
@@ -408,6 +414,18 @@ def main(argv: list[str] | None = None) -> int:
     appliance_task_apply_parser.add_argument("--ledger", default=DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT.as_posix())
     appliance_task_apply_parser.add_argument("--responses", default=DEFAULT_ANALYST_TASK_RESPONSES.as_posix())
     appliance_task_apply_parser.add_argument("--output", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
+    appliance_morning_parser = appliance_subcommands.add_parser("morning", help="Render the morning analyst control packet from existing daily artifacts.")
+    appliance_morning_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_morning_parser.add_argument("--journal", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
+    appliance_morning_parser.add_argument("--task-queue", default=DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT.as_posix())
+    appliance_morning_parser.add_argument("--task-ledger", default=DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT.as_posix())
+    appliance_morning_parser.add_argument("--refresh-live-gate", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
+    appliance_morning_parser.add_argument("--refresh-live-run", default=DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix())
+    appliance_morning_parser.add_argument("--refresh-live-preflight", default=DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix())
+    appliance_morning_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
+    appliance_morning_parser.add_argument("--runtime-doctor", default=DEFAULT_RUNTIME_DOCTOR_OUTPUT.as_posix())
+    appliance_morning_parser.add_argument("--artifact-output", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
+    appliance_morning_parser.add_argument("--output", default=DEFAULT_MORNING_CONTROL_SURFACE.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
     appliance_query_parser.add_argument("query")
     appliance_query_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
@@ -803,6 +821,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-morning-control":
+        errors = validate_morning_control_packet_file(args.morning_control_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-vault":
         errors = validate_knowledge_vault_compile_file(args.vault_path)
         if errors:
@@ -1137,6 +1162,29 @@ def main(argv: list[str] | None = None) -> int:
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "morning":
+            path = write_morning_control_packet(
+                scout_path=args.scout,
+                journal_path=args.journal,
+                task_queue_path=args.task_queue,
+                task_ledger_path=args.task_ledger,
+                refresh_live_gate_path=args.refresh_live_gate,
+                refresh_live_run_path=args.refresh_live_run,
+                refresh_live_preflight_path=args.refresh_live_preflight,
+                notification_path=args.notification,
+                runtime_doctor_path=args.runtime_doctor,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "morning": path.as_posix(),
+                "artifact": args.artifact_output,
+                "status": payload["status"],
+                "pending_decision_count": len(payload["pending_decisions"]),
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "query":
             path = write_memory_query(
                 query=args.query,
@@ -1217,6 +1265,8 @@ def main(argv: list[str] | None = None) -> int:
             task_ledger_path = DEFAULT_ANALYST_TASK_LEDGER_OUTPUT
             task_ledger_artifact_path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT
             task_status_apply_path = DEFAULT_ANALYST_TASK_STATUS_APPLY
+            morning_path = DEFAULT_MORNING_CONTROL_SURFACE
+            morning_artifact_path = DEFAULT_MORNING_CONTROL_OUTPUT
             playbook_path = write_runtime_playbook(args.playbook_output)
             plan = build_research_plan(topics_path=topics_path, output_path=plan_path, run_id=args.run_id)
             catalog = collect_topic_evidence(
@@ -1393,6 +1443,19 @@ def main(argv: list[str] | None = None) -> int:
             notification_status = "dry_run_ready"
             if args.send:
                 notification_status = send_notification_payload(notification_path).get("delivery_status", "unknown")
+            written_morning = write_morning_control_packet(
+                scout_path=scout_path,
+                journal_path=journal_artifact_path,
+                task_queue_path=task_queue_artifact_path,
+                task_ledger_path=task_ledger_artifact_path,
+                refresh_live_gate_path=refresh_live_gate_path,
+                refresh_live_run_path=refresh_live_run_path,
+                refresh_live_preflight_path=refresh_live_preflight_path,
+                notification_path=notification_path,
+                runtime_doctor_path=DEFAULT_RUNTIME_DOCTOR_OUTPUT,
+                artifact_output_path=morning_artifact_path,
+                surface_output_path=morning_path,
+            )
             print(json.dumps({
                 "playbook": playbook_path.as_posix(),
                 "topics": topics_path,
@@ -1419,6 +1482,8 @@ def main(argv: list[str] | None = None) -> int:
                 "today": written_today.as_posix(),
                 "memory_surface": written_memory.as_posix(),
                 "memory_index": DEFAULT_MEMORY_INDEX_OUTPUT.as_posix(),
+                "morning_control": written_morning.as_posix(),
+                "morning_control_artifact": morning_artifact_path.as_posix(),
                 "archive_manifest": archive_manifest.as_posix(),
                 "notification": notification_path.as_posix(),
                 "notification_status": notification_status,

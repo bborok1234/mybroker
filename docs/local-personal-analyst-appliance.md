@@ -50,6 +50,7 @@ launchd
   -> local_scheduler_run_once.v1
   -> local_scheduler_activation_preflight.v1
   -> local_scheduler_activation_verify.v1
+  -> morning_control_packet.v1 + /morning control surface
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -119,6 +120,7 @@ PYTHONPATH=src python3 -m mybroker appliance tasks
 PYTHONPATH=src python3 -m mybroker appliance task-ledger
 PYTHONPATH=src python3 -m mybroker appliance task-response 'AT-001 complete "checked source freshness"'
 PYTHONPATH=src python3 -m mybroker appliance task-status-apply
+PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
