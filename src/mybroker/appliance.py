@@ -17,6 +17,7 @@ ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
 PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
+MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
@@ -25,6 +26,8 @@ DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.j
 DEFAULT_PHONE_ACCESS_OUTPUT = Path("reports/runtime/phone-access.json")
 DEFAULT_MEMORY_INDEX_OUTPUT = Path("reports/memory/index.json")
 DEFAULT_MEMORY_OUTPUT = Path("reports/product/memory.html")
+DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
+DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -427,6 +430,105 @@ def write_memory_surface(
     return target
 
 
+def build_memory_query(
+    *,
+    query: str,
+    memory_path: str | Path = "reports/memory/topic-memory.json",
+    archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
+    evidence_path: str | Path = "reports/evidence/daily-evidence-catalog.json",
+    limit: int = 5,
+) -> dict[str, Any]:
+    index = build_memory_index(memory_path=memory_path, archive_root=archive_root, evidence_path=evidence_path)
+    tokens = _query_tokens(query)
+    matched_topics = []
+    for topic in index.get("topics", []):
+        haystacks = [
+            topic.get("name", ""),
+            topic.get("latest_summary", ""),
+            " ".join(topic.get("daily_questions", [])),
+            " ".join(topic.get("latest_titles", [])),
+            " ".join(topic.get("source_names", [])),
+            " ".join(topic.get("collection_gaps", [])),
+        ]
+        score = _match_score(tokens, haystacks)
+        if score > 0:
+            matched_topics.append({
+                "topic_id": topic.get("topic_id", ""),
+                "name": topic.get("name", ""),
+                "score": round(score, 3),
+                "summary": topic.get("latest_summary", ""),
+                "source_names": topic.get("source_names", []),
+                "latest_titles": topic.get("latest_titles", [])[:5],
+                "questions": topic.get("daily_questions", [])[:4],
+                "why_matched": _match_reasons(tokens, haystacks),
+            })
+    matched_topics.sort(key=lambda row: (-row["score"], row["name"]))
+
+    matched_archives = []
+    for manifest in index.get("archives", []):
+        haystacks = [
+            manifest.get("run_id", ""),
+            manifest.get("generated_at", ""),
+            " ".join(str(value) for value in manifest.get("artifacts", {}).values()),
+        ]
+        score = _match_score(tokens, haystacks)
+        if score > 0 or matched_topics:
+            matched_archives.append({
+                "run_id": manifest.get("run_id", ""),
+                "generated_at": manifest.get("generated_at", ""),
+                "score": round(score, 3),
+                "archive_dir": manifest.get("archive_dir", ""),
+                "artifacts": manifest.get("artifacts", {}),
+            })
+    matched_archives.sort(key=lambda row: (row["score"], row.get("generated_at", "")), reverse=True)
+
+    selected_topics = matched_topics[:limit]
+    selected_archives = matched_archives[:limit]
+    status = "matched" if selected_topics or selected_archives else "no_direct_match"
+    next_questions = _query_next_questions(query=query, topics=selected_topics, status=status)
+    return {
+        "schema_version": MEMORY_QUERY_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "query": query,
+        "status": status,
+        "matched_topic_count": len(selected_topics),
+        "matched_archive_count": len(selected_archives),
+        "matched_topics": selected_topics,
+        "matched_archives": selected_archives,
+        "source_relevance": index.get("source_relevance", []),
+        "next_questions": next_questions,
+        "policy": "research_only",
+        "limitations": [
+            "This is deterministic local retrieval, not a model-generated answer.",
+            "Use the linked artifacts to inspect original context before relying on a conclusion.",
+        ],
+    }
+
+
+def write_memory_query(
+    *,
+    query: str,
+    memory_path: str | Path = "reports/memory/topic-memory.json",
+    archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
+    evidence_path: str | Path = "reports/evidence/daily-evidence-catalog.json",
+    output_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
+    surface_path: str | Path = DEFAULT_MEMORY_QUERY_SURFACE,
+    limit: int = 5,
+) -> Path:
+    payload = build_memory_query(
+        query=query,
+        memory_path=memory_path,
+        archive_root=archive_root,
+        evidence_path=evidence_path,
+        limit=limit,
+    )
+    write_json(payload, output_path)
+    target = Path(surface_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_memory_query_surface(payload), encoding="utf-8")
+    return target
+
+
 def render_memory_surface(index: dict[str, Any]) -> str:
     topic_cards = "".join(
         "<article class='card'>"
@@ -518,6 +620,95 @@ ul {{ padding-left:18px; }}
 <section class="section">
 <h2>아카이브</h2>
 <div class="grid">{archive_cards}</div>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def render_memory_query_surface(payload: dict[str, Any]) -> str:
+    topic_cards = "".join(
+        "<article class='card'>"
+        f"<span>관련도 {esc(topic.get('score', 0))}</span>"
+        f"<h3>{esc(topic.get('name', ''))}</h3>"
+        f"<p>{esc(topic.get('summary', ''))}</p>"
+        f"<small>{esc(', '.join(topic.get('why_matched', [])) or 'matched context')}</small>"
+        "</article>"
+        for topic in payload.get("matched_topics", [])
+    ) or "<p>직접 매칭된 주제 기억이 없습니다. 질문을 더 넓게 바꾸거나 오늘 브리프를 먼저 실행하세요.</p>"
+    archive_cards = "".join(
+        "<article class='archive'>"
+        f"<strong>{esc(archive.get('generated_at', '')[:10])}</strong>"
+        f"<span>{esc(archive.get('run_id', ''))}</span>"
+        f"<a href='{esc(archive.get('artifacts', {}).get('today', ''))}'>today</a>"
+        f"<a href='{esc(archive.get('artifacts', {}).get('brief', ''))}'>brief</a>"
+        "</article>"
+        for archive in payload.get("matched_archives", [])
+    ) or "<p>연결할 아카이브가 아직 없습니다.</p>"
+    questions = "".join(f"<li>{esc(question)}</li>" for question in payload.get("next_questions", []))
+    source_rows = "".join(
+        "<tr>"
+        f"<td>{esc(row.get('source_name', ''))}</td>"
+        f"<td>{esc(row.get('relevance_label', 'unscored'))}</td>"
+        f"<td>{esc(row.get('freshness_status', 'unknown'))}</td>"
+        "</tr>"
+        for row in payload.get("source_relevance", [])[:6]
+    ) or "<tr><td colspan='3'>source context 없음</td></tr>"
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Memory Query</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ max-width:860px; margin:0 auto; padding:18px; }}
+a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
+header {{ padding:26px 0 16px; }}
+.eyebrow {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:32px; line-height:1.1; }}
+h2 {{ margin:0 0 12px; font-size:20px; }}
+h3 {{ margin:0 0 8px; font-size:17px; }}
+p,small,li {{ color:var(--muted); }}
+.section,.card,.archive {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.section {{ margin:14px 0; padding:16px; }}
+.grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.card,.archive {{ padding:14px; background:white; }}
+.card span,.archive span {{ display:block; color:var(--blue); font-size:12px; font-weight:900; }}
+table {{ width:100%; border-collapse:collapse; }}
+td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:28px; }} .grid {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Memory Query · {esc(payload.get('generated_at', '')[:10])}</span>
+<h1>{esc(payload.get('query', ''))}</h1>
+<p>누적 메모리와 아카이브에서 다시 꺼내본 맥락입니다. 결론이 아니라 다음 탐색의 출발점입니다.</p>
+</header>
+<section class="section">
+<h2>연결된 주제 기억</h2>
+<div class="grid">{topic_cards}</div>
+</section>
+<section class="section">
+<h2>다음에 확인할 질문</h2>
+<ul>{questions}</ul>
+</section>
+<section class="section">
+<h2>관련 아카이브</h2>
+<div class="grid">{archive_cards}</div>
+</section>
+<section class="section">
+<h2>자료 상태</h2>
+<table><thead><tr><th>Source</th><th>Relevance</th><th>Freshness</th></tr></thead><tbody>{source_rows}</tbody></table>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 화면은 교육과 리서치, 시뮬레이션용입니다. 계좌 연결, 주문 실행, 일임 운용, 근거 없는 개인화 추천을 하지 않습니다.</p>
 </section>
 </main>
 </body>
@@ -689,6 +880,52 @@ def _daily_questions(memory_topics: list[dict[str, Any]], evidence: dict[str, An
     if evidence.get("collection_gaps"):
         questions.append("오늘 부족한 근거가 결론의 강도를 얼마나 낮추나요?")
     questions.append("이 브리프가 틀렸다고 판단할 가장 빠른 반대 신호는 무엇인가요?")
+    return questions[:5]
+
+
+def _query_tokens(query: str) -> list[str]:
+    normalized = "".join(ch.lower() if ch.isalnum() else " " for ch in query)
+    tokens = [token for token in normalized.split() if len(token) >= 2]
+    compact = normalized.replace(" ", "")
+    if compact and compact not in tokens:
+        tokens.append(compact)
+    return tokens or [query.strip().lower()]
+
+
+def _match_score(tokens: list[str], haystacks: list[str]) -> float:
+    text = " ".join(haystacks).lower()
+    if not text:
+        return 0.0
+    hits = 0
+    weighted = 0.0
+    for token in tokens:
+        if token and token in text:
+            hits += 1
+            weighted += min(1.0, max(0.2, len(token) / 12))
+    if not tokens:
+        return 0.0
+    coverage = hits / len(tokens)
+    return min(1.0, (coverage * 0.65) + (weighted / max(1, len(tokens)) * 0.35))
+
+
+def _match_reasons(tokens: list[str], haystacks: list[str]) -> list[str]:
+    text = " ".join(haystacks).lower()
+    reasons = [f"'{token}' 포함" for token in tokens if token and token in text]
+    return reasons[:5]
+
+
+def _query_next_questions(*, query: str, topics: list[dict[str, Any]], status: str) -> list[str]:
+    if status == "no_direct_match":
+        return [
+            f"'{query}'를 더 넓은 주제명이나 쉬운 키워드로 다시 물어볼까요?",
+            "오늘 브리프를 먼저 실행해 최신 메모리를 만든 뒤 다시 검색할까요?",
+            "이 질문에 필요한 무료 공개 자료원이 무엇인지 먼저 확인할까요?",
+        ]
+    questions = []
+    for topic in topics:
+        questions.extend(topic.get("questions", [])[:2])
+    questions.append(f"'{query}'에 대해 최근 아카이브의 설명이 오늘도 유효한지 확인할까요?")
+    questions.append("반대 근거가 쌓인 source가 있는지 먼저 볼까요?")
     return questions[:5]
 
 
