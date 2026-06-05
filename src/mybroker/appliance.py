@@ -15,6 +15,7 @@ from mybroker.topics import (
     DEFAULT_DAILY_SCOUT_OUTPUT,
     DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
     DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
     DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
     DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
 )
@@ -746,6 +747,7 @@ def write_today_surface(
     refresh_apply_path: str | Path = DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
     refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
     refresh_live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -760,6 +762,7 @@ def write_today_surface(
     refresh_apply = load_json(refresh_apply_path) if Path(refresh_apply_path).exists() else {}
     refresh_live_gate = load_json(refresh_live_gate_path) if Path(refresh_live_gate_path).exists() else {}
     refresh_live_run = load_json(refresh_live_run_path) if Path(refresh_live_run_path).exists() else {}
+    refresh_live_preflight = load_json(refresh_live_preflight_path) if Path(refresh_live_preflight_path).exists() else {}
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
@@ -774,6 +777,7 @@ def write_today_surface(
             refresh_apply=refresh_apply,
             refresh_live_gate=refresh_live_gate,
             refresh_live_run=refresh_live_run,
+            refresh_live_preflight=refresh_live_preflight,
             brief_path=Path(brief_path),
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
@@ -795,6 +799,7 @@ def render_today_surface(
     refresh_apply: dict[str, Any],
     refresh_live_gate: dict[str, Any],
     refresh_live_run: dict[str, Any],
+    refresh_live_preflight: dict[str, Any],
     brief_path: Path,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
@@ -811,6 +816,7 @@ def render_today_surface(
     refresh_results = refresh_apply.get("results", []) if refresh_apply.get("schema_version") == "source_refresh_apply.v1" else []
     live_gate_decisions = refresh_live_gate.get("decisions", []) if refresh_live_gate.get("schema_version") == "source_refresh_live_gate.v1" else []
     live_run_execution = refresh_live_run.get("execution", {}) if refresh_live_run.get("schema_version") == "source_refresh_live_run.v1" else {}
+    live_preflight_requested = refresh_live_preflight.get("requested_execution", {}) if refresh_live_preflight.get("schema_version") == "source_refresh_live_preflight.v1" else {}
     scout_cards = "".join(
         "<article class='card'>"
         f"<span>{esc(item.get('action', 'monitor'))} · #{esc(item.get('priority_rank', ''))}</span>"
@@ -856,6 +862,16 @@ def render_today_surface(
         "</article>"
         if refresh_live_run.get("schema_version") == "source_refresh_live_run.v1"
         else "<p>오늘 live refresh run proof가 아직 없습니다.</p>"
+    )
+    live_preflight_cards = (
+        "<article class='card'>"
+        f"<span>{esc(refresh_live_preflight.get('status', 'unknown'))} · execute intent: {esc('yes' if live_preflight_requested.get('intend_execute') else 'no')}</span>"
+        "<strong>라이브 실행 사전점검</strong>"
+        f"<p>{esc(refresh_live_preflight.get('next_step', '아직 live refresh preflight proof가 없습니다.'))}</p>"
+        f"<small>external effect: {esc('yes' if refresh_live_preflight.get('external_effect_performed') else 'no')} · blockers: {esc(', '.join(refresh_live_preflight.get('blockers', [])) or 'none')}</small>"
+        "</article>"
+        if refresh_live_preflight.get("schema_version") == "source_refresh_live_preflight.v1"
+        else "<p>오늘 live refresh preflight proof가 아직 없습니다.</p>"
     )
     theme_cards = "".join(
         "<article class='card'>"
@@ -977,6 +993,10 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <div class="stack">{live_run_cards}</div>
 </section>
 <section class="section">
+<h2>라이브 실행 사전점검</h2>
+<div class="stack">{live_preflight_cards}</div>
+</section>
+<section class="section">
 <h2>오늘의 주제 기억</h2>
 <div class="stack">{theme_cards}</div>
 </section>
@@ -1035,6 +1055,7 @@ def archive_daily_run(
     refresh_apply_path: str | Path | None = None,
     refresh_live_gate_path: str | Path | None = None,
     refresh_live_run_path: str | Path | None = None,
+    refresh_live_preflight_path: str | Path | None = None,
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
 ) -> Path:
     timestamp = datetime.now(timezone.utc)
@@ -1050,6 +1071,7 @@ def archive_daily_run(
         "source_refresh_apply": refresh_apply_path,
         "source_refresh_live_gate": refresh_live_gate_path,
         "source_refresh_live_run": refresh_live_run_path,
+        "source_refresh_live_preflight": refresh_live_preflight_path,
         "brief": brief_path,
         "today": today_path,
     }.items():

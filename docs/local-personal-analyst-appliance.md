@@ -182,6 +182,14 @@ an actual live network refresh still requires explicit execution and live-networ
 flags. `appliance run` creates the proof automatically, and `appliance today` renders it as
 "라이브 실행 증거".
 
+`source-refresh-live-preflight` is the final no-network proof before approved source execution. It
+reads `reports/daily/source-refresh-live-run.json` and checks the exact approval state, live-run
+readiness, explicit execution intent, live-network confirmation, source ids, evidence output path,
+and forbidden external-effect commands. With the default appliance run it remains blocked and
+records `external_effect_performed: false`. If the operator later supplies an approved live-run
+proof and explicit preflight intent, it can pass without calling the network. `appliance today`
+renders it as "라이브 실행 사전점검".
+
 The launchd assets are written under `ops/local/`:
 
 - `run-daily-analyst.sh`
