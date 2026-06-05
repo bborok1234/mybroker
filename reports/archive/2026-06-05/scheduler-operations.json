@@ -1,0 +1,153 @@
+{
+  "schema_version": "local_scheduler_operations.v1",
+  "generated_at": "2026-06-05T16:07:15.672306+00:00",
+  "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
+  "status": "activation_ready",
+  "freshness_hours": 24,
+  "install_state": {
+    "source_assets_status": "assets_ready",
+    "script_ready": true,
+    "plist_ready": true,
+    "installed": false,
+    "loaded": false,
+    "installed_path": "/Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist"
+  },
+  "local_run": {
+    "status": "passed",
+    "returncode": 0,
+    "duration_seconds": 0.098,
+    "host_write_performed": false,
+    "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-run-once.json"
+  },
+  "activation_preflight": {
+    "status": "ready",
+    "blockers": [],
+    "warnings": [],
+    "next_action": "Operator may decide whether to run scheduler apply --install --load --start-now --confirm-host-write.",
+    "host_write_performed": false,
+    "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-preflight.json"
+  },
+  "activation_verify": {
+    "status": "blocked",
+    "blockers": [
+      "Required condition not met: LaunchAgent is loaded for the current user.",
+      "Required condition not met: LaunchAgent plist is installed under ~/Library/LaunchAgents.",
+      "Required condition not met: Installed plist matches the source scheduler asset.",
+      "Required condition not met: Runtime doctor passes with launchd loaded required."
+    ],
+    "warnings": [
+      "Scheduler log files do not exist yet. This is expected before the first launchd-triggered run."
+    ],
+    "next_action": "Run activation-preflight, then perform the separate confirmed host-level activation before running verify again.",
+    "host_write_performed": false,
+    "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-verify.json"
+  },
+  "runtime": {
+    "doctor_status": "ready",
+    "fail_count": 0,
+    "warn_count": 1,
+    "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/local-runtime-doctor.json"
+  },
+  "proof_artifacts": [
+    {
+      "name": "scheduler_status",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-status.json",
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "schema_version": "local_scheduler_status.v1",
+      "summary_status": "assets_ready",
+      "host_write_performed": false
+    },
+    {
+      "name": "run_once",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-run-once.json",
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 8.86,
+      "schema_version": "local_scheduler_run_once.v1",
+      "summary_status": "passed",
+      "host_write_performed": false
+    },
+    {
+      "name": "activation_preflight",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-preflight.json",
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 8.28,
+      "schema_version": "local_scheduler_activation_preflight.v1",
+      "summary_status": "ready",
+      "host_write_performed": false
+    },
+    {
+      "name": "activation_verify",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-verify.json",
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 8.28,
+      "schema_version": "local_scheduler_activation_verify.v1",
+      "summary_status": "blocked",
+      "host_write_performed": false
+    },
+    {
+      "name": "runtime_doctor",
+      "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/local-runtime-doctor.json",
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 8.63,
+      "schema_version": "local_runtime_doctor.v1",
+      "summary_status": "ready",
+      "host_write_performed": false
+    }
+  ],
+  "operator_next_action": "수동 run-once와 preflight가 통과했습니다. host scheduler 활성화는 별도 확인과 승인 후에만 진행하세요.",
+  "copy_ready_commands": [
+    {
+      "label": "scheduler assets 생성",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance init --project-root .",
+      "why": "runner script와 LaunchAgent plist를 로컬 repo 안에 생성합니다.",
+      "requires_separate_approval": false,
+      "external_effect_performed": false
+    },
+    {
+      "label": "수동 run-once proof",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance scheduler run-once",
+      "why": "host scheduler 설치 없이 같은 runner를 한 번 실행합니다.",
+      "requires_separate_approval": false,
+      "external_effect_performed": false
+    },
+    {
+      "label": "activation preflight",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight",
+      "why": "host write 전에 필요한 proof가 충분한지 다시 검사합니다.",
+      "requires_separate_approval": false,
+      "external_effect_performed": false
+    },
+    {
+      "label": "별도 승인 후 활성화",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now --confirm-host-write",
+      "why": "현재 macOS 사용자 LaunchAgent를 설치/load/start합니다. 별도 승인 없이는 실행하지 않습니다.",
+      "requires_separate_approval": true,
+      "external_effect_performed": false
+    }
+  ],
+  "phone_links": {
+    "scheduler": "reports/product/scheduler.html",
+    "readiness": "reports/product/readiness.html",
+    "morning": "reports/product/morning.html",
+    "today": "reports/product/today.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "reads_local_artifacts_only",
+    "does_not_install_or_load_scheduler",
+    "does_not_start_scheduler",
+    "does_not_send_notifications",
+    "does_not_fetch_live_network",
+    "no_account_access",
+    "no_order_execution",
+    "host_writes_require_separate_confirmation"
+  ]
+}
