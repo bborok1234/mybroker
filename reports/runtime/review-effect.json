@@ -1,0 +1,47 @@
+{
+  "schema_version": "operator_review_effect.v1",
+  "generated_at": "2026-06-05T18:27:55.849866+00:00",
+  "status": "no_feedback",
+  "summary": {
+    "response_count": 0,
+    "scout_response_count": 0,
+    "review_signal_count": 0,
+    "applied_topic_count": 0,
+    "prompt_count": 3
+  },
+  "interpretation": "아직 기록된 review-response가 없어 scout가 개인 피드백을 반영할 수 없습니다.",
+  "topic_effects": [],
+  "next_actions": [
+    {
+      "label": "피드백 남기기",
+      "why": "오늘 읽은 주제에 대해 가장 가까운 응답을 하나 남기면 다음 run에서 scout score에 반영됩니다.",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'read \"Semiconductors\" \"Semiconductors을 읽었다\"'",
+      "external_effect_performed": false
+    }
+  ],
+  "input_artifacts": {
+    "scout": "reports/daily/scout.json",
+    "daily_review": "reports/memory/daily-review.json",
+    "review_prompt": "reports/runtime/review-prompt.json"
+  },
+  "phone_links": {
+    "today": "reports/product/today.html",
+    "review": "reports/product/review.html",
+    "review_prompt": "reports/product/review-prompt.html",
+    "review_effect": "reports/product/review-effect.html",
+    "morning": "reports/product/morning.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "local_review_effect_proof_only",
+    "reads_existing_local_artifacts_only",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_live_trading"
+  ]
+}
