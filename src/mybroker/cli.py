@@ -37,6 +37,8 @@ from mybroker.appliance import (
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
     DEFAULT_MEMORY_QUERY_SURFACE,
+    DEFAULT_MEMORY_AUDIT_OUTPUT,
+    DEFAULT_MEMORY_AUDIT_SURFACE,
     DEFAULT_MEMORY_OUTPUT,
     DEFAULT_NOTIFICATION_OUTPUT,
     DEFAULT_OPERATOR_DECISION_APPLY_OUTPUT,
@@ -79,6 +81,7 @@ from mybroker.appliance import (
     record_task_status_response,
     write_morning_control_packet,
     write_memory_query,
+    write_memory_audit,
     write_memory_surface,
     write_notification_payload,
     write_operator_decision_apply,
@@ -108,6 +111,7 @@ from mybroker.appliance import (
     validate_operator_review_response_apply_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
+    validate_memory_audit_file,
     validate_run_trace_file,
     validate_scheduler_operations_file,
     validate_source_refresh_brief_file,
@@ -330,6 +334,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_review_effect_parser.add_argument("review_effect_path")
     validate_review_response_apply_parser = subcommands.add_parser("validate-review-response-apply", help="Validate an operator_review_response_apply.v1 artifact.")
     validate_review_response_apply_parser.add_argument("review_response_apply_path")
+    validate_memory_audit_parser = subcommands.add_parser("validate-memory-audit", help="Validate a personal_memory_audit.v1 artifact.")
+    validate_memory_audit_parser.add_argument("memory_audit_path")
     validate_pattern_radar_parser = subcommands.add_parser("validate-agent-pattern-radar", help="Validate an agent_pattern_radar.v1 artifact.")
     validate_pattern_radar_parser.add_argument("pattern_radar_path")
     validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
@@ -612,6 +618,14 @@ def main(argv: list[str] | None = None) -> int:
     appliance_query_parser.add_argument("--output", default=DEFAULT_MEMORY_QUERY_OUTPUT.as_posix())
     appliance_query_parser.add_argument("--surface-output", default=DEFAULT_MEMORY_QUERY_SURFACE.as_posix())
     appliance_query_parser.add_argument("--limit", type=int, default=5)
+    appliance_audit_parser = appliance_subcommands.add_parser("audit", help="Audit local memory, vault, archives, source posture, and review feedback.")
+    appliance_audit_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_audit_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
+    appliance_audit_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_audit_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    appliance_audit_parser.add_argument("--daily-review", default=DEFAULT_DAILY_REVIEW_OUTPUT.as_posix())
+    appliance_audit_parser.add_argument("--output", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
+    appliance_audit_parser.add_argument("--surface-output", default=DEFAULT_MEMORY_AUDIT_SURFACE.as_posix())
     appliance_notify_parser = appliance_subcommands.add_parser("notify", help="Prepare a phone notification payload. Dry-run by default.")
     appliance_notify_parser.add_argument("--provider", choices=["telegram", "pushover"], default="telegram")
     appliance_notify_parser.add_argument("--today-url", default="http://localhost:8787/reports/product/today.html")
@@ -1013,6 +1027,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-review-response-apply":
         errors = validate_operator_review_response_apply_file(args.review_response_apply_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-memory-audit":
+        errors = validate_memory_audit_file(args.memory_audit_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1780,6 +1801,25 @@ def main(argv: list[str] | None = None) -> int:
                 "query_surface": path.as_posix(),
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "audit":
+            path = write_memory_audit(
+                memory_path=args.memory,
+                archive_root=args.archive_root,
+                evidence_path=args.evidence,
+                vault_path=args.vault,
+                daily_review_path=args.daily_review,
+                output_path=args.output,
+                surface_path=args.surface_output,
+            )
+            artifact = json.loads(Path(args.output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "memory_audit": args.output,
+                "memory_audit_surface": path.as_posix(),
+                "status": artifact.get("status", ""),
+                "risk_count": artifact.get("summary", {}).get("risk_count", 0),
+                "external_effect_performed": artifact.get("external_effect_performed", False),
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "notify":
             path = write_notification_payload(
                 provider=args.provider,
@@ -1865,6 +1905,8 @@ def main(argv: list[str] | None = None) -> int:
             source_refresh_brief_surface_path = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE
             scheduler_operations_artifact_path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT
             scheduler_operations_surface_path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE
+            memory_audit_artifact_path = DEFAULT_MEMORY_AUDIT_OUTPUT
+            memory_audit_surface_path = DEFAULT_MEMORY_AUDIT_SURFACE
             vault_compile_path = Path(args.vault_output)
             vault_surface_path = Path(args.vault_surface_output)
             playbook_path = write_runtime_playbook(args.playbook_output)
@@ -2071,6 +2113,15 @@ def main(argv: list[str] | None = None) -> int:
                 index_output_path=DEFAULT_MEMORY_INDEX_OUTPUT,
                 output_path=memory_surface_path,
             )
+            written_memory_audit = write_memory_audit(
+                memory_path=memory_path,
+                archive_root=args.archive_root,
+                evidence_path=evidence_path,
+                vault_path=active_vault_path,
+                daily_review_path=review_artifact_path,
+                output_path=memory_audit_artifact_path,
+                surface_path=memory_audit_surface_path,
+            )
             written_journal = write_analyst_journal(
                 scenario_path=written_scenario,
                 verdict_path=written_verdict,
@@ -2170,6 +2221,7 @@ def main(argv: list[str] | None = None) -> int:
                 today_path=written_today,
                 review_prompt_path=review_prompt_artifact_path,
                 review_effect_path=review_effect_artifact_path,
+                memory_audit_path=memory_audit_artifact_path,
                 scheduler_operations_path=scheduler_operations_artifact_path,
             )
             written_drift_review = write_drift_review(
@@ -2199,6 +2251,7 @@ def main(argv: list[str] | None = None) -> int:
                 review_surface_path=written_review,
                 review_prompt_surface_path=written_review_prompt,
                 review_effect_surface_path=written_review_effect,
+                memory_audit_surface_path=written_memory_audit,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=written_run_trace,
                 drift_review_surface_path=written_drift_review,
@@ -2250,6 +2303,8 @@ def main(argv: list[str] | None = None) -> int:
                     "review_prompt_surface": written_review_prompt,
                     "review_effect": review_effect_artifact_path,
                     "review_effect_surface": written_review_effect,
+                    "memory_audit": memory_audit_artifact_path,
+                    "memory_audit_surface": written_memory_audit,
                     "run_trace": run_trace_artifact_path,
                     "run_trace_surface": written_run_trace,
                     "drift_review": drift_review_artifact_path,
@@ -2303,6 +2358,8 @@ def main(argv: list[str] | None = None) -> int:
                 "today": written_today.as_posix(),
                 "memory_surface": written_memory.as_posix(),
                 "memory_index": DEFAULT_MEMORY_INDEX_OUTPUT.as_posix(),
+                "memory_audit": memory_audit_artifact_path.as_posix(),
+                "memory_audit_surface": written_memory_audit.as_posix(),
                 "vault_compile": active_vault_path.as_posix(),
                 "vault_surface": active_vault_surface.as_posix(),
                 "vault_compiled_count": vault_compile["compiled_count"] if vault_compile else 0,
