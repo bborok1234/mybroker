@@ -21,7 +21,7 @@ from mybroker.topics import (
     DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
     DEFAULT_TOPIC_MEMORY_OUTPUT,
 )
-from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT
+from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT, DEFAULT_VAULT_SURFACE_OUTPUT
 
 
 TODAY_SURFACE_SCHEMA_VERSION = "today_surface.v1"
@@ -1103,6 +1103,8 @@ def archive_daily_run(
     journal_path: str | Path | None = None,
     task_queue_path: str | Path | None = None,
     task_ledger_path: str | Path | None = None,
+    vault_compile_path: str | Path | None = None,
+    vault_surface_path: str | Path | None = None,
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
 ) -> Path:
     timestamp = datetime.now(timezone.utc)
@@ -1122,6 +1124,8 @@ def archive_daily_run(
         "journal": journal_path,
         "tasks": task_queue_path,
         "task_ledger": task_ledger_path,
+        "vault_compile": vault_compile_path,
+        "vault": vault_surface_path,
         "brief": brief_path,
         "today": today_path,
     }.items():
@@ -1871,6 +1875,7 @@ def build_morning_control_packet(
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
+    vault_surface_path: str | Path = DEFAULT_VAULT_SURFACE_OUTPUT,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
     task_queue_surface_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
@@ -1922,6 +1927,7 @@ def build_morning_control_packet(
         "phone_links": {
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "today": Path(today_path).as_posix(),
+            "vault": Path(vault_surface_path).as_posix(),
             "journal": Path(journal_surface_path).as_posix(),
             "tasks": Path(task_queue_surface_path).as_posix(),
             "task_ledger": Path(task_ledger_surface_path).as_posix(),

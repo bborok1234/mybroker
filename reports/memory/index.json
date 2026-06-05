@@ -1,9 +1,9 @@
 {
   "schema_version": "personal_memory_index.v1",
-  "generated_at": "2026-06-05T14:26:01.935006+00:00",
+  "generated_at": "2026-06-05T14:37:49.583570+00:00",
   "memory_path": "reports/memory/topic-memory.json",
   "archive_root": "reports/archive",
-  "run_count": 25,
+  "run_count": 26,
   "topic_count": 5,
   "topics": [
     {
@@ -140,6 +140,13 @@
   "recent_runs": [
     {
       "run_id": "daily-research",
+      "generated_at": "2026-06-05T14:37:49.573873+00:00",
+      "evidence_catalog": "2026-06-05T14:37:49.573741+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
       "generated_at": "2026-06-05T14:26:01.925547+00:00",
       "evidence_catalog": "2026-06-05T14:26:01.925405+00:00",
       "topic_count": 5,
@@ -200,20 +207,13 @@
       "evidence_catalog": "2026-06-05T09:58:56.675665+00:00",
       "topic_count": 5,
       "changed_topics": []
-    },
-    {
-      "run_id": "daily-research",
-      "generated_at": "2026-06-05T09:42:36.884756+00:00",
-      "evidence_catalog": "2026-06-05T09:42:36.884616+00:00",
-      "topic_count": 5,
-      "changed_topics": []
     }
   ],
   "archives": [
     {
       "schema_version": "daily_archive.v1",
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T14:26:01.932540+00:00",
+      "generated_at": "2026-06-05T14:37:49.580859+00:00",
       "archive_dir": "reports/archive/2026-06-05",
       "artifacts": {
         "scenario": "reports/archive/2026-06-05/daily-research-sim.json",
@@ -228,6 +228,8 @@
         "journal": "reports/archive/2026-06-05/journal.html",
         "tasks": "reports/archive/2026-06-05/tasks.html",
         "task_ledger": "reports/archive/2026-06-05/task-ledger.html",
+        "vault_compile": "reports/archive/2026-06-05/compile.json",
+        "vault": "reports/archive/2026-06-05/vault.html",
         "brief": "reports/archive/2026-06-05/market-brief.html",
         "today": "reports/archive/2026-06-05/today.html"
       },

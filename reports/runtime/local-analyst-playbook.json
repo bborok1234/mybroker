@@ -1,6 +1,6 @@
 {
   "schema_version": "personal_analyst_runtime_playbook.v1",
-  "generated_at": "2026-06-05T14:26:01.924415+00:00",
+  "generated_at": "2026-06-05T14:37:49.571521+00:00",
   "goal": "Run MyBroker as a local personal analyst appliance, not as a generic web app.",
   "absorbed_patterns": [
     {
