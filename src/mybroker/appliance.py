@@ -26,6 +26,7 @@ from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT, DEFAULT_VAULT_SURFACE_O
 
 TODAY_SURFACE_SCHEMA_VERSION = "today_surface.v1"
 DAILY_BRIEF_AGENDA_SCHEMA_VERSION = "daily_brief_agenda.v1"
+DAILY_READINESS_SCHEMA_VERSION = "daily_readiness.v1"
 NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
@@ -50,6 +51,8 @@ LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
 DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT = Path("reports/daily/brief-agenda.json")
 DEFAULT_DAILY_BRIEF_AGENDA_SURFACE = Path("reports/product/daily-agenda.html")
+DEFAULT_DAILY_READINESS_OUTPUT = Path("reports/runtime/daily-readiness.json")
+DEFAULT_DAILY_READINESS_SURFACE = Path("reports/product/readiness.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
@@ -870,6 +873,242 @@ def validate_daily_brief_agenda_file(path: str | Path) -> list[str]:
     return validate_daily_brief_agenda_payload(load_json(path))
 
 
+def build_daily_readiness(
+    *,
+    project_root: str | Path = ".",
+    freshness_hours: int = 24,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    root = Path(project_root).resolve()
+    generated = generated_at or datetime.now(timezone.utc)
+    artifact_specs = [
+        ("today_surface", DEFAULT_TODAY_OUTPUT, "phone_surface", True),
+        ("daily_agenda_surface", DEFAULT_DAILY_BRIEF_AGENDA_SURFACE, "phone_surface", True),
+        ("daily_agenda", DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT, "machine_artifact", True),
+        ("morning_control", DEFAULT_MORNING_CONTROL_OUTPUT, "control_artifact", True),
+        ("morning_surface", DEFAULT_MORNING_CONTROL_SURFACE, "phone_surface", True),
+        ("daily_scout", DEFAULT_DAILY_SCOUT_OUTPUT, "machine_artifact", True),
+        ("daily_evidence", DEFAULT_DAILY_EVIDENCE_OUTPUT, "machine_artifact", True),
+        ("topic_memory", DEFAULT_TOPIC_MEMORY_OUTPUT, "memory_artifact", True),
+        ("scenario_report", Path("reports/scenarios/daily-research-sim.json"), "machine_artifact", True),
+        ("market_verdict", Path("reports/scenarios/daily-research-verdict.json"), "machine_artifact", True),
+        ("archive_manifest", _latest_archive_manifest(root / DEFAULT_ARCHIVE_ROOT) or DEFAULT_ARCHIVE_ROOT / "missing" / "manifest.json", "archive", True),
+        ("runtime_doctor", DEFAULT_RUNTIME_DOCTOR_OUTPUT, "runtime_artifact", False),
+        ("scheduler_status", DEFAULT_SCHEDULER_STATUS_OUTPUT, "runtime_artifact", False),
+        ("vault_surface", DEFAULT_VAULT_SURFACE_OUTPUT, "phone_surface", False),
+        ("memory_surface", DEFAULT_MEMORY_OUTPUT, "phone_surface", False),
+    ]
+    artifacts = [
+        _readiness_artifact_check(
+            root=root,
+            name=name,
+            path=path,
+            kind=kind,
+            required=required,
+            freshness_hours=freshness_hours,
+            now=generated,
+        )
+        for name, path, kind, required in artifact_specs
+    ]
+    required = [item for item in artifacts if item["required"]]
+    missing_required = [item for item in required if item["freshness_status"] == "missing"]
+    stale_required = [item for item in required if item["freshness_status"] == "stale"]
+    warn_artifacts = [item for item in artifacts if item["freshness_status"] in {"missing", "stale"} and not item["required"]]
+    scheduler = _readiness_scheduler_state(root / DEFAULT_SCHEDULER_STATUS_OUTPUT)
+    status = _readiness_status(missing_required=missing_required, stale_required=stale_required)
+    next_actions = _readiness_next_actions(
+        status=status,
+        missing_required=missing_required,
+        stale_required=stale_required,
+        scheduler=scheduler,
+    )
+    payload = {
+        "schema_version": DAILY_READINESS_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": status,
+        "freshness_hours": freshness_hours,
+        "summary": {
+            "required_count": len(required),
+            "fresh_required_count": sum(1 for item in required if item["freshness_status"] == "fresh"),
+            "missing_required_count": len(missing_required),
+            "stale_required_count": len(stale_required),
+            "warning_count": len(warn_artifacts),
+        },
+        "artifacts": artifacts,
+        "scheduler": scheduler,
+        "phone_links": {
+            "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
+            "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
+            "vault": DEFAULT_VAULT_SURFACE_OUTPUT.as_posix(),
+        },
+        "next_actions": next_actions,
+        "recommended_local_run": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --dry-run",
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "no_account_access",
+            "no_order_execution",
+            "external_effects_require_separate_gate",
+        ],
+    }
+    return payload
+
+
+def write_daily_readiness(
+    *,
+    project_root: str | Path = ".",
+    freshness_hours: int = 24,
+    artifact_output_path: str | Path = DEFAULT_DAILY_READINESS_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_DAILY_READINESS_SURFACE,
+) -> Path:
+    payload = build_daily_readiness(project_root=project_root, freshness_hours=freshness_hours)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_daily_readiness(payload), encoding="utf-8")
+    return target
+
+
+def validate_daily_readiness_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != DAILY_READINESS_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"ready", "review", "stale", "blocked"}:
+        errors.append("status must be ready, review, stale, or blocked")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if not payload.get("artifacts"):
+        errors.append("artifacts must not be empty")
+    if not payload.get("next_actions"):
+        errors.append("next_actions must not be empty")
+    required_names = {item.get("name") for item in payload.get("artifacts", []) if item.get("required")}
+    for name in ["today_surface", "daily_agenda", "daily_scout", "daily_evidence", "archive_manifest"]:
+        if name not in required_names:
+            errors.append(f"required artifact missing from readiness checks: {name}")
+    for index, item in enumerate(payload.get("artifacts", [])):
+        for field in ["name", "path", "kind", "required", "exists", "freshness_status"]:
+            if field not in item:
+                errors.append(f"artifacts[{index}] missing {field}")
+        if item.get("freshness_status") not in {"fresh", "stale", "missing"}:
+            errors.append(f"artifacts[{index}] invalid freshness_status")
+    return errors
+
+
+def validate_daily_readiness_file(path: str | Path) -> list[str]:
+    return validate_daily_readiness_payload(load_json(path))
+
+
+def render_daily_readiness(payload: dict[str, Any]) -> str:
+    status = payload.get("status", "review")
+    summary = payload.get("summary", {})
+    status_label = {
+        "ready": "오늘 읽어도 됨",
+        "review": "확인 필요",
+        "stale": "다시 실행 권장",
+        "blocked": "먼저 생성 필요",
+    }.get(status, status)
+    artifact_rows = "".join(
+        "<tr>"
+        f"<td><strong>{esc(item.get('name', ''))}</strong><span>{esc(item.get('kind', ''))}</span></td>"
+        f"<td><span class='pill {esc(_readiness_css(item.get('freshness_status', 'missing')))}'>{esc(item.get('freshness_status', ''))}</span></td>"
+        f"<td>{esc(item.get('age_hours', ''))}</td>"
+        f"<td>{esc(item.get('path', ''))}</td>"
+        "</tr>"
+        for item in payload.get("artifacts", [])
+    )
+    actions = "".join(f"<li>{esc(action)}</li>" for action in payload.get("next_actions", []))
+    links = "".join(
+        f"<a href='{esc(path)}'>{esc(name)}</a>"
+        for name, path in payload.get("phone_links", {}).items()
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Readiness</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }}
+* {{ box-sizing:border-box; }}
+html,body {{ max-width:100%; overflow-x:hidden; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+.eyebrow {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,li,td span {{ color:var(--muted); }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
+.metric strong {{ display:block; font-size:24px; }}
+table {{ width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }}
+td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }}
+td strong,td span {{ display:block; }}
+.pill {{ display:inline-block; border-radius:999px; padding:2px 8px; font-size:12px; font-weight:900; }}
+.fresh {{ background:#e7f5ee; color:var(--green); }}
+.stale {{ background:#fff3d8; color:var(--warn); }}
+.missing {{ background:#ffe2e2; color:var(--bad); }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+code {{ display:block; padding:12px; border-radius:8px; background:#f1f5f9; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.links {{ grid-template-columns:1fr; }} table {{ font-size:13px; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Daily Readiness · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>오늘 브리프 준비 상태</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>전체 daily run을 다시 돌리기 전에도, 지금 폰에서 볼 산출물이 충분히 최신인지 확인합니다.</p>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>필수</span><strong>{esc(summary.get('required_count', 0))}</strong></article>
+<article class="metric"><span>Fresh</span><strong>{esc(summary.get('fresh_required_count', 0))}</strong></article>
+<article class="metric"><span>Stale</span><strong>{esc(summary.get('stale_required_count', 0))}</strong></article>
+<article class="metric"><span>Missing</span><strong>{esc(summary.get('missing_required_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>다음 행동</h2>
+<ul>{actions}</ul>
+<code>{esc(payload.get('recommended_local_run', ''))}</code>
+</section>
+<section class="section">
+<h2>폰 링크</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>Artifact freshness</h2>
+<table><thead><tr><th>Artifact</th><th>Freshness</th><th>Age hours</th><th>Path</th></tr></thead><tbody>{artifact_rows}</tbody></table>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 화면은 로컬 파일만 읽습니다. live source refresh, 알림 전송, host scheduler 쓰기, 계좌 접근, 주문 실행은 별도 승인 없이 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
 def render_daily_brief_agenda(payload: dict[str, Any]) -> str:
     primary = payload.get("primary_topic", {})
     sequence_cards = "".join(
@@ -1414,6 +1653,25 @@ def archive_daily_run(
         "policy": "research_only",
     }
     return write_json(manifest, archive_dir / "manifest.json")
+
+
+def add_archive_artifacts(
+    *,
+    manifest_path: str | Path,
+    artifacts: dict[str, str | Path],
+) -> Path:
+    manifest = load_json(manifest_path)
+    archive_dir = Path(manifest.get("archive_dir", Path(manifest_path).parent))
+    copied = dict(manifest.get("artifacts", {}))
+    for label, source in artifacts.items():
+        source_path = Path(source)
+        if source_path.exists():
+            target = archive_dir / source_path.name
+            shutil.copy2(source_path, target)
+            copied[label] = target.as_posix()
+    manifest["artifacts"] = copied
+    manifest["updated_at"] = _now()
+    return write_json(manifest, manifest_path)
 
 
 def build_analyst_journal(
@@ -2144,6 +2402,7 @@ def build_morning_control_packet(
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
+    readiness_surface_path: str | Path = DEFAULT_DAILY_READINESS_SURFACE,
     vault_surface_path: str | Path = DEFAULT_VAULT_SURFACE_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
@@ -2199,6 +2458,7 @@ def build_morning_control_packet(
         "command_bar": command_bar,
         "phone_links": {
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "readiness": Path(readiness_surface_path).as_posix(),
             "today": Path(today_path).as_posix(),
             "agenda": Path(agenda_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
@@ -2253,6 +2513,7 @@ def write_morning_control_packet(
     refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
+    readiness_surface_path: str | Path = DEFAULT_DAILY_READINESS_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
@@ -2268,6 +2529,7 @@ def write_morning_control_packet(
         refresh_live_preflight_path=refresh_live_preflight_path,
         notification_path=notification_path,
         runtime_doctor_path=runtime_doctor_path,
+        readiness_surface_path=readiness_surface_path,
         agenda_path=agenda_path,
         agenda_surface_path=agenda_surface_path,
     )
@@ -4228,6 +4490,119 @@ def _agenda_questions(*, primary: dict[str, Any], weak_points: list[str]) -> lis
     return questions
 
 
+def _readiness_artifact_check(
+    *,
+    root: Path,
+    name: str,
+    path: Path,
+    kind: str,
+    required: bool,
+    freshness_hours: int,
+    now: datetime,
+) -> dict[str, Any]:
+    full_path = path if path.is_absolute() else root / path
+    exists = full_path.exists()
+    payload: dict[str, Any] = {}
+    age_hours: float | None = None
+    if exists:
+        if full_path.suffix == ".json":
+            try:
+                payload = load_json(full_path)
+            except json.JSONDecodeError:
+                payload = {}
+        age_hours = _readiness_age_hours(full_path, payload=payload, now=now)
+    freshness_status = "missing"
+    if exists and age_hours is not None:
+        freshness_status = "fresh" if age_hours <= freshness_hours else "stale"
+    display_path = full_path.as_posix()
+    try:
+        display_path = full_path.relative_to(root).as_posix()
+    except ValueError:
+        pass
+    return {
+        "name": name,
+        "path": display_path,
+        "kind": kind,
+        "required": required,
+        "exists": exists,
+        "freshness_status": freshness_status,
+        "age_hours": round(age_hours, 2) if age_hours is not None else None,
+        "generated_at": payload.get("generated_at", "") if payload else "",
+        "schema_version": payload.get("schema_version", "") if payload else "",
+    }
+
+
+def _readiness_age_hours(path: Path, *, payload: dict[str, Any], now: datetime) -> float:
+    generated_at = payload.get("generated_at")
+    if isinstance(generated_at, str) and generated_at:
+        try:
+            generated = datetime.fromisoformat(generated_at)
+            if generated.tzinfo is None:
+                generated = generated.replace(tzinfo=timezone.utc)
+            return (now - generated.astimezone(timezone.utc)).total_seconds() / 3600
+        except ValueError:
+            pass
+    modified = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+    return (now - modified).total_seconds() / 3600
+
+
+def _readiness_scheduler_state(status_path: Path) -> dict[str, Any]:
+    if not status_path.exists():
+        return {
+            "status": "missing",
+            "loaded": False,
+            "installed": False,
+            "path": status_path.as_posix(),
+            "message": "Scheduler status artifact is missing.",
+        }
+    payload = load_json(status_path)
+    return {
+        "status": payload.get("status", "unknown"),
+        "loaded": bool(payload.get("launchd", {}).get("loaded")),
+        "installed": bool(payload.get("installed_plist", {}).get("exists")),
+        "path": status_path.as_posix(),
+        "message": payload.get("next_actions", [""])[0] if payload.get("next_actions") else "",
+    }
+
+
+def _readiness_status(
+    *,
+    missing_required: list[dict[str, Any]],
+    stale_required: list[dict[str, Any]],
+) -> str:
+    if missing_required:
+        return "blocked"
+    if stale_required:
+        return "stale"
+    return "ready"
+
+
+def _readiness_next_actions(
+    *,
+    status: str,
+    missing_required: list[dict[str, Any]],
+    stale_required: list[dict[str, Any]],
+    scheduler: dict[str, Any],
+) -> list[str]:
+    actions: list[str] = []
+    if missing_required:
+        names = ", ".join(item["name"] for item in missing_required)
+        actions.append(f"필수 artifact가 없습니다: {names}. `appliance run --dry-run`을 먼저 실행하세요.")
+    if stale_required:
+        names = ", ".join(item["name"] for item in stale_required)
+        actions.append(f"필수 artifact가 오래됐습니다: {names}. daily run을 다시 생성하세요.")
+    if status == "ready":
+        actions.append("필수 산출물은 freshness 기준을 통과했습니다. morning, today, agenda 순서로 읽어도 됩니다.")
+    if not scheduler.get("loaded"):
+        actions.append("자동 실행은 아직 활성 확인이 안 됐습니다. 필요하면 scheduler status와 activation-preflight를 검토하세요.")
+    actions.append("외부 효과가 필요한 source refresh, 알림 전송, host scheduler 쓰기는 별도 승인 게이트에서만 실행하세요.")
+    return actions
+
+
+def _readiness_css(status: str) -> str:
+    return status if status in {"fresh", "stale", "missing"} else "missing"
+
+
 def _gap_label(value: str) -> str:
     labels = {
         "live_refresh_not_enabled": "실시간 새로고침은 아직 연결되지 않았습니다.",
@@ -4246,6 +4621,18 @@ def _relative_href(path: Path | None) -> str:
 
 def _short_date(value: str) -> str:
     return value[:10] if value else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _local_date_label(value: str) -> str:
+    if not value:
+        return datetime.now().astimezone().strftime("%Y-%m-%d local")
+    try:
+        parsed = datetime.fromisoformat(value)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone().strftime("%Y-%m-%d local")
+    except ValueError:
+        return _short_date(value)
 
 
 def _now() -> str:

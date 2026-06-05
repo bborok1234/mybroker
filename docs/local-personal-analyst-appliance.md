@@ -40,6 +40,7 @@ launchd
   -> daily_scout.v1
   -> source_refresh_plan.v1
   -> daily_brief_agenda.v1 + /daily-agenda phone surface
+  -> daily_readiness.v1 + /readiness phone surface
   -> scenario_report.v1 + market_verdict.v1
   -> product brief + /today mobile surface
   -> /memory accumulated research surface
@@ -118,6 +119,7 @@ PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --p
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --vault-raw-dir research-vault/raw --vault-wiki-dir research-vault/wiki --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
 PYTHONPATH=src python3 -m mybroker appliance agenda
+PYTHONPATH=src python3 -m mybroker appliance readiness --freshness-hours 24
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
 PYTHONPATH=src python3 -m mybroker appliance tasks
@@ -141,6 +143,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/journal.html`: phone-readable daily analyst journal with today's focus, role notes, evidence gaps, and tomorrow's questions.
 - `reports/daily/brief-agenda.json`: machine-readable 20-minute study agenda from scout, evidence, memory, vault, and refresh plan.
 - `reports/product/daily-agenda.html`: phone-readable agenda with reading order, source fan-out, weak evidence, role work, and follow-up questions.
+- `reports/runtime/daily-readiness.json`: machine-readable freshness/readiness proof for required daily artifacts.
+- `reports/product/readiness.html`: phone-readable control page that says whether today's brief is fresh enough, what is stale or missing, and what local run command to use next.
 - `reports/memory/analyst-task-queue.json`: machine-readable role-based task queue.
 - `reports/product/tasks.html`: phone-readable analyst task board for the next local work loop.
 - `reports/memory/analyst-task-ledger.json`: machine-readable task state history.
@@ -194,6 +198,13 @@ evidence, memory, vault, and refresh plan. The agenda translates the top scout t
 20-minute reading sequence, source fan-out, weak-evidence warnings, role-specific analyst work,
 and follow-up questions. It does not fetch live data or make investment decisions; it helps the
 operator study the right thing first and stop before overclaiming weak evidence.
+
+`appliance readiness` is the cross-day trust check. It writes
+`reports/runtime/daily-readiness.json` and `reports/product/readiness.html` by reading existing
+local artifacts only. It marks required phone surfaces and machine artifacts as fresh, stale, or
+missing, reports scheduler status if available, links the phone surfaces, and shows the next local
+`appliance run --dry-run` command. It does not refresh sources, send notifications, install
+schedulers, or perform host/network effects.
 
 `source-refresh-plan` is the no-execution source cadence step. It writes
 `reports/daily/source-refresh-plan.json` with dry-run-only actions such as GDELT live, Stooq live,

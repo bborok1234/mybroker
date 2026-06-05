@@ -17,6 +17,8 @@ from mybroker.appliance import (
     DEFAULT_ANALYST_TASK_STATUS_APPLY,
     DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
+    DEFAULT_DAILY_READINESS_OUTPUT,
+    DEFAULT_DAILY_READINESS_SURFACE,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
@@ -36,6 +38,7 @@ from mybroker.appliance import (
     DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT,
     DEFAULT_SCHEDULER_STATUS_OUTPUT,
     DEFAULT_TODAY_OUTPUT,
+    add_archive_artifacts,
     archive_daily_run,
     send_notification_payload,
     write_launchd_assets,
@@ -43,6 +46,7 @@ from mybroker.appliance import (
     write_analyst_task_queue,
     write_analyst_task_ledger,
     write_daily_brief_agenda,
+    write_daily_readiness,
     build_task_status_apply,
     record_task_status_response,
     write_morning_control_packet,
@@ -64,6 +68,7 @@ from mybroker.appliance import (
     validate_analyst_task_queue_file,
     validate_analyst_task_ledger_file,
     validate_daily_brief_agenda_file,
+    validate_daily_readiness_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
 )
@@ -261,6 +266,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_scout_parser.add_argument("scout_path")
     validate_agenda_parser = subcommands.add_parser("validate-daily-agenda", help="Validate a daily_brief_agenda.v1 artifact.")
     validate_agenda_parser.add_argument("agenda_path")
+    validate_readiness_parser = subcommands.add_parser("validate-daily-readiness", help="Validate a daily_readiness.v1 artifact.")
+    validate_readiness_parser.add_argument("readiness_path")
     validate_refresh_plan_parser = subcommands.add_parser("validate-source-refresh-plan", help="Validate a source_refresh_plan.v1 artifact.")
     validate_refresh_plan_parser.add_argument("refresh_plan_path")
     validate_refresh_apply_parser = subcommands.add_parser("validate-source-refresh-apply", help="Validate a source_refresh_apply.v1 artifact.")
@@ -393,6 +400,11 @@ def main(argv: list[str] | None = None) -> int:
     appliance_agenda_parser.add_argument("--refresh-plan", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
     appliance_agenda_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT.as_posix())
     appliance_agenda_parser.add_argument("--output", default=DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix())
+    appliance_readiness_parser = appliance_subcommands.add_parser("readiness", help="Render daily freshness and next-run readiness for phone review.")
+    appliance_readiness_parser.add_argument("--project-root", default=".")
+    appliance_readiness_parser.add_argument("--freshness-hours", type=int, default=24)
+    appliance_readiness_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_READINESS_OUTPUT.as_posix())
+    appliance_readiness_parser.add_argument("--output", default=DEFAULT_DAILY_READINESS_SURFACE.as_posix())
     appliance_memory_parser = appliance_subcommands.add_parser("memory", help="Render the mobile-friendly accumulated memory and archive surface.")
     appliance_memory_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
@@ -779,6 +791,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-daily-readiness":
+        errors = validate_daily_readiness_file(args.readiness_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-source-refresh-plan":
         errors = validate_source_refresh_plan_file(args.refresh_plan_path)
         if errors:
@@ -1132,6 +1151,24 @@ def main(argv: list[str] | None = None) -> int:
                 "artifact": args.artifact_output,
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "readiness":
+            path = write_daily_readiness(
+                project_root=args.project_root,
+                freshness_hours=args.freshness_hours,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "daily_readiness": path.as_posix(),
+                "artifact": args.artifact_output,
+                "status": payload["status"],
+                "fresh_required_count": payload["summary"]["fresh_required_count"],
+                "stale_required_count": payload["summary"]["stale_required_count"],
+                "missing_required_count": payload["summary"]["missing_required_count"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "memory":
             path = write_memory_surface(
                 memory_path=args.memory,
@@ -1314,6 +1351,8 @@ def main(argv: list[str] | None = None) -> int:
             morning_artifact_path = DEFAULT_MORNING_CONTROL_OUTPUT
             agenda_artifact_path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT
             agenda_surface_path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE
+            readiness_artifact_path = DEFAULT_DAILY_READINESS_OUTPUT
+            readiness_surface_path = DEFAULT_DAILY_READINESS_SURFACE
             vault_compile_path = Path(args.vault_output)
             vault_surface_path = Path(args.vault_surface_output)
             playbook_path = write_runtime_playbook(args.playbook_output)
@@ -1532,10 +1571,23 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_preflight_path=refresh_live_preflight_path,
                 notification_path=notification_path,
                 runtime_doctor_path=DEFAULT_RUNTIME_DOCTOR_OUTPUT,
+                readiness_surface_path=readiness_surface_path,
                 agenda_path=agenda_artifact_path,
                 agenda_surface_path=written_agenda,
                 artifact_output_path=morning_artifact_path,
                 surface_output_path=morning_path,
+            )
+            written_readiness = write_daily_readiness(
+                project_root=".",
+                artifact_output_path=readiness_artifact_path,
+                surface_output_path=readiness_surface_path,
+            )
+            add_archive_artifacts(
+                manifest_path=archive_manifest,
+                artifacts={
+                    "daily_readiness": readiness_artifact_path,
+                    "daily_readiness_surface": written_readiness,
+                },
             )
             print(json.dumps({
                 "playbook": playbook_path.as_posix(),
@@ -1549,6 +1601,8 @@ def main(argv: list[str] | None = None) -> int:
                 "source_refresh_live_preflight": refresh_live_preflight_path.as_posix(),
                 "daily_agenda": agenda_artifact_path.as_posix(),
                 "daily_agenda_surface": written_agenda.as_posix(),
+                "daily_readiness": readiness_artifact_path.as_posix(),
+                "daily_readiness_surface": written_readiness.as_posix(),
                 "evidence_catalog": evidence_path.as_posix(),
                 "topic_memory": memory_path.as_posix(),
                 "scenario_report": written_scenario.as_posix(),

@@ -1,0 +1,213 @@
+{
+  "schema_version": "daily_readiness.v1",
+  "generated_at": "2026-06-05T15:34:48.581755+00:00",
+  "status": "ready",
+  "freshness_hours": 24,
+  "summary": {
+    "required_count": 11,
+    "fresh_required_count": 11,
+    "missing_required_count": 0,
+    "stale_required_count": 0,
+    "warning_count": 0
+  },
+  "artifacts": [
+    {
+      "name": "today_surface",
+      "path": "reports/product/today.html",
+      "kind": "phone_surface",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "daily_agenda_surface",
+      "path": "reports/product/daily-agenda.html",
+      "kind": "phone_surface",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "daily_agenda",
+      "path": "reports/daily/brief-agenda.json",
+      "kind": "machine_artifact",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T15:34:48.569475+00:00",
+      "schema_version": "daily_brief_agenda.v1"
+    },
+    {
+      "name": "morning_control",
+      "path": "reports/runtime/morning-control.json",
+      "kind": "control_artifact",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T15:34:48.581420+00:00",
+      "schema_version": "morning_control_packet.v1"
+    },
+    {
+      "name": "morning_surface",
+      "path": "reports/product/morning.html",
+      "kind": "phone_surface",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "daily_scout",
+      "path": "reports/daily/scout.json",
+      "kind": "machine_artifact",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T15:34:48.568316+00:00",
+      "schema_version": "daily_scout.v1"
+    },
+    {
+      "name": "daily_evidence",
+      "path": "reports/evidence/daily-evidence-catalog.json",
+      "kind": "machine_artifact",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T15:34:48.567621+00:00",
+      "schema_version": "public_evidence_catalog.v1"
+    },
+    {
+      "name": "topic_memory",
+      "path": "reports/memory/topic-memory.json",
+      "kind": "memory_artifact",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T15:34:48.567760+00:00",
+      "schema_version": "topic_memory.v1"
+    },
+    {
+      "name": "scenario_report",
+      "path": "reports/scenarios/daily-research-sim.json",
+      "kind": "machine_artifact",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T15:34:48.570229+00:00",
+      "schema_version": "scenario_report.v1"
+    },
+    {
+      "name": "market_verdict",
+      "path": "reports/scenarios/daily-research-verdict.json",
+      "kind": "machine_artifact",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T15:34:48.570229+00:00",
+      "schema_version": "market_verdict.v1"
+    },
+    {
+      "name": "archive_manifest",
+      "path": "reports/archive/2026-06-05/manifest.json",
+      "kind": "archive",
+      "required": true,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T15:34:48.575313+00:00",
+      "schema_version": "daily_archive.v1"
+    },
+    {
+      "name": "runtime_doctor",
+      "path": "reports/runtime/local-runtime-doctor.json",
+      "kind": "runtime_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 8.08,
+      "generated_at": "2026-06-05T07:29:44.695756+00:00",
+      "schema_version": "local_runtime_doctor.v1"
+    },
+    {
+      "name": "scheduler_status",
+      "path": "reports/runtime/scheduler-status.json",
+      "kind": "runtime_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 8.08,
+      "generated_at": "2026-06-05T07:29:44.691099+00:00",
+      "schema_version": "local_scheduler_status.v1"
+    },
+    {
+      "name": "vault_surface",
+      "path": "reports/product/vault.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "memory_surface",
+      "path": "reports/product/memory.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    }
+  ],
+  "scheduler": {
+    "status": "assets_ready",
+    "loaded": false,
+    "installed": false,
+    "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-status.json",
+    "message": "Review reports/runtime/scheduler-status.json, then run the install and load commands if you want the daily schedule active."
+  },
+  "phone_links": {
+    "readiness": "reports/product/readiness.html",
+    "morning": "reports/product/morning.html",
+    "today": "reports/product/today.html",
+    "agenda": "reports/product/daily-agenda.html",
+    "memory": "reports/product/memory.html",
+    "vault": "reports/product/vault.html"
+  },
+  "next_actions": [
+    "필수 산출물은 freshness 기준을 통과했습니다. morning, today, agenda 순서로 읽어도 됩니다.",
+    "자동 실행은 아직 활성 확인이 안 됐습니다. 필요하면 scheduler status와 activation-preflight를 검토하세요.",
+    "외부 효과가 필요한 source refresh, 알림 전송, host scheduler 쓰기는 별도 승인 게이트에서만 실행하세요."
+  ],
+  "recommended_local_run": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --dry-run",
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "reads_local_artifacts_only",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "no_account_access",
+    "no_order_execution",
+    "external_effects_require_separate_gate"
+  ]
+}
