@@ -11,6 +11,7 @@ from mybroker.topics import (
     build_research_plan,
     build_source_refresh_apply,
     build_source_refresh_live_gate,
+    build_source_refresh_live_preflight,
     build_source_refresh_live_run,
     build_source_refresh_plan,
     collect_topic_evidence,
@@ -19,6 +20,7 @@ from mybroker.topics import (
     validate_research_plan_file,
     validate_source_refresh_apply_file,
     validate_source_refresh_live_gate_file,
+    validate_source_refresh_live_preflight_file,
     validate_source_refresh_live_run_file,
     validate_source_refresh_plan_file,
     validate_topic_config_file,
@@ -92,11 +94,23 @@ class TopicResearchLoopTests(unittest.TestCase):
                 live_gate_path=refresh_live_gate_path,
                 output_path=refresh_live_run_path,
             )
+            refresh_live_preflight_path = root / "source-refresh-live-preflight.json"
+            refresh_live_preflight = build_source_refresh_live_preflight(
+                live_run_path=refresh_live_run_path,
+                output_path=refresh_live_preflight_path,
+            )
             approved_live_run_path = root / "source-refresh-live-run-approved.json"
             approved_live_run = build_source_refresh_live_run(
                 live_gate_path=refresh_live_gate_path,
                 response="approve live_network_refresh live_network_refresh",
                 output_path=approved_live_run_path,
+            )
+            approved_preflight_path = root / "source-refresh-live-preflight-approved.json"
+            approved_preflight = build_source_refresh_live_preflight(
+                live_run_path=approved_live_run_path,
+                output_path=approved_preflight_path,
+                intend_execute=True,
+                confirm_live_network=True,
             )
 
             plan_errors = validate_research_plan_file(plan_path)
@@ -105,7 +119,9 @@ class TopicResearchLoopTests(unittest.TestCase):
             refresh_apply_errors = validate_source_refresh_apply_file(refresh_apply_path)
             refresh_live_gate_errors = validate_source_refresh_live_gate_file(refresh_live_gate_path)
             refresh_live_run_errors = validate_source_refresh_live_run_file(refresh_live_run_path)
+            refresh_live_preflight_errors = validate_source_refresh_live_preflight_file(refresh_live_preflight_path)
             approved_live_run_errors = validate_source_refresh_live_run_file(approved_live_run_path)
+            approved_preflight_errors = validate_source_refresh_live_preflight_file(approved_preflight_path)
             catalog_errors = validate_public_evidence_catalog_payload(catalog)
             memory_errors = validate_topic_memory_file(memory_path)
 
@@ -116,7 +132,9 @@ class TopicResearchLoopTests(unittest.TestCase):
         self.assertEqual(refresh_apply_errors, [])
         self.assertEqual(refresh_live_gate_errors, [])
         self.assertEqual(refresh_live_run_errors, [])
+        self.assertEqual(refresh_live_preflight_errors, [])
         self.assertEqual(approved_live_run_errors, [])
+        self.assertEqual(approved_preflight_errors, [])
         self.assertEqual(catalog_errors, [])
         self.assertEqual(memory_errors, [])
         self.assertEqual(catalog["mode"], "sample_cache_topic_research")
@@ -136,15 +154,23 @@ class TopicResearchLoopTests(unittest.TestCase):
         self.assertFalse(refresh_live_gate["external_effect_performed"])
         self.assertEqual(refresh_live_run["schema_version"], "source_refresh_live_run.v1")
         self.assertFalse(refresh_live_run["external_effect_performed"])
+        self.assertEqual(refresh_live_preflight["schema_version"], "source_refresh_live_preflight.v1")
+        self.assertFalse(refresh_live_preflight["external_effect_performed"])
         if refresh_live_gate["decisions"]:
             self.assertEqual(refresh_live_gate["decisions"][0]["copy_ready_response"], "approve live_network_refresh live_network_refresh")
             self.assertEqual(refresh_live_run["approval_status"], "missing")
             self.assertEqual(refresh_live_run["execution"]["status"], "not_requested")
+            self.assertEqual(refresh_live_preflight["status"], "blocked")
+            self.assertIn("approval_not_approved", refresh_live_preflight["blockers"])
             self.assertEqual(approved_live_run["approval_status"], "approved")
             self.assertEqual(approved_live_run["execution"]["status"], "ready_to_execute")
             self.assertFalse(approved_live_run["external_effect_performed"])
+            self.assertEqual(approved_preflight["status"], "passed")
+            self.assertEqual(approved_preflight["blockers"], [])
+            self.assertFalse(approved_preflight["external_effect_performed"])
         else:
             self.assertEqual(refresh_live_run["approval_status"], "not_required")
+            self.assertEqual(refresh_live_preflight["status"], "not_required")
         self.assertGreaterEqual(len(catalog["items"]), 2)
 
 

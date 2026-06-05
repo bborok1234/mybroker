@@ -42,6 +42,7 @@ PYTHONPATH=src python3 -m mybroker source-refresh-plan --scout reports/daily/sco
 PYTHONPATH=src python3 -m mybroker source-refresh-apply --refresh-plan reports/daily/source-refresh-plan.json --output reports/daily/source-refresh-apply.json
 PYTHONPATH=src python3 -m mybroker source-refresh-live-gate --refresh-apply reports/daily/source-refresh-apply.json --output reports/daily/source-refresh-live-gate.json
 PYTHONPATH=src python3 -m mybroker source-refresh-live-run --live-gate reports/daily/source-refresh-live-gate.json --response "" --output reports/daily/source-refresh-live-run.json
+PYTHONPATH=src python3 -m mybroker source-refresh-live-preflight --live-run reports/daily/source-refresh-live-run.json --output reports/daily/source-refresh-live-preflight.json
 PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --profile examples/profiles/beginner-conservative.json --evidence-catalog reports/evidence/public-evidence-catalog.json --run-id public-evidence-sim --output reports/scenarios/public-evidence-sim.json --verdict-output reports/scenarios/public-evidence-verdict.json
 PYTHONPATH=src python3 -m mybroker daily-research --topics config/topics.json --profile examples/profiles/beginner-conservative.json --run-id daily-research
 PYTHONPATH=src python3 -m mybroker validate-scenario reports/scenarios/beginner-market-sim.json
@@ -51,6 +52,7 @@ PYTHONPATH=src python3 -m mybroker validate-source-refresh-plan reports/daily/so
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-apply reports/daily/source-refresh-apply.json
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-live-gate reports/daily/source-refresh-live-gate.json
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-live-run reports/daily/source-refresh-live-run.json
+PYTHONPATH=src python3 -m mybroker validate-source-refresh-live-preflight reports/daily/source-refresh-live-preflight.json
 PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output reports/dashboard.html --rollup-output reports/report-rollup.json
 PYTHONPATH=src python3 -m mybroker brief --scenario reports/scenarios/public-evidence-sim.json --verdict reports/scenarios/public-evidence-verdict.json --output reports/product/market-brief.html
 PYTHONPATH=src python3 -m mybroker appliance playbook
@@ -161,8 +163,12 @@ brief.
    `reports/daily/source-refresh-live-run.json`. By default it records missing approval and does
    not call the network. A later live call requires both the exact copy-ready response and explicit
    live-network execution flags.
-10. `daily-research` runs the local loop end to end: plan, collect, memory, scout, refresh plan,
-   refresh apply packet, live gate packet, live run proof, scenario, verdict, ops dashboard, rollup, and product
+10. `source-refresh-live-preflight` writes `source_refresh_live_preflight.v1` under
+   `reports/daily/source-refresh-live-preflight.json`. It checks approval, execution intent,
+   confirmation, source ids, output path, and forbidden external-effect commands without calling
+   the network.
+11. `daily-research` runs the local loop end to end: plan, collect, memory, scout, refresh plan,
+   refresh apply packet, live gate packet, live run proof, live preflight proof, scenario, verdict, ops dashboard, rollup, and product
    brief.
 
 Manual source ingestion can be added later, but it is not the primary beginner UX. The default
@@ -189,6 +195,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/daily/source-refresh-apply.json`: dry-run execution-readiness decisions for those refresh actions;
 - `reports/daily/source-refresh-live-gate.json`: scoped approval packet for blocked live-network refresh candidates;
 - `reports/daily/source-refresh-live-run.json`: approval/execute proof for the live-network gate, with no network call unless explicitly approved and confirmed;
+- `reports/daily/source-refresh-live-preflight.json`: no-network preflight proof before any approved live source execution;
 - `reports/product/memory.html` and `reports/memory/index.json`: accumulated topic memory, source relevance, and archive history;
 - `reports/product/memory-query.html` and `reports/memory/latest-query.json`: deterministic recall over accumulated memory and archives;
 - `reports/notifications/latest.json`: a dry-run notification payload for Telegram or Pushover;
@@ -233,6 +240,9 @@ When `reports/daily/source-refresh-live-run.json` exists, `/today` also shows "�
 the operator can see whether the gate is missing approval, ready after an exact approval response,
 blocked, or executed. The default daily loop writes this proof with `external_effect_performed:
 false`.
+When `reports/daily/source-refresh-live-preflight.json` exists, `/today` also shows "라이브 실행
+사전점검". This is the final no-network proof before an approved live source refresh: it must pass
+approval, execution intent, confirmation, source id, output path, and forbidden-command checks.
 `appliance memory` and `appliance query` read `reports/vault/compile.json` by default, so compiled
 raw notes appear alongside topic memory and can be retrieved by the same deterministic local query
 surface.

@@ -27,6 +27,7 @@ SOURCE_REFRESH_PLAN_SCHEMA_VERSION = "source_refresh_plan.v1"
 SOURCE_REFRESH_APPLY_SCHEMA_VERSION = "source_refresh_apply.v1"
 SOURCE_REFRESH_LIVE_GATE_SCHEMA_VERSION = "source_refresh_live_gate.v1"
 SOURCE_REFRESH_LIVE_RUN_SCHEMA_VERSION = "source_refresh_live_run.v1"
+SOURCE_REFRESH_LIVE_PREFLIGHT_SCHEMA_VERSION = "source_refresh_live_preflight.v1"
 
 DEFAULT_TOPICS_PATH = Path("config/topics.json")
 DEFAULT_RESEARCH_PLAN_OUTPUT = Path("reports/daily/research-plan.json")
@@ -35,6 +36,7 @@ DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT = Path("reports/daily/source-refresh-plan.jso
 DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT = Path("reports/daily/source-refresh-apply.json")
 DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT = Path("reports/daily/source-refresh-live-gate.json")
 DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT = Path("reports/daily/source-refresh-live-run.json")
+DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT = Path("reports/daily/source-refresh-live-preflight.json")
 DEFAULT_TOPIC_MEMORY_OUTPUT = Path("reports/memory/topic-memory.json")
 DEFAULT_DAILY_EVIDENCE_OUTPUT = Path("reports/evidence/daily-evidence-catalog.json")
 DEFAULT_LIVE_EVIDENCE_OUTPUT = Path("reports/evidence/live-evidence-catalog.json")
@@ -683,6 +685,110 @@ def validate_source_refresh_live_run_file(path: str | Path) -> list[str]:
     return validate_source_refresh_live_run_payload(load_json(path))
 
 
+def build_source_refresh_live_preflight(
+    *,
+    live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    output_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
+    intend_execute: bool = False,
+    confirm_live_network: bool = False,
+) -> dict[str, Any]:
+    live_run = load_json(live_run_path)
+    live_run_errors = validate_source_refresh_live_run_payload(live_run)
+    if live_run_errors:
+        raise ValueError("; ".join(live_run_errors))
+    execution = live_run.get("execution", {})
+    source_ids = list(execution.get("source_ids", []))
+    proposed_commands = list(execution.get("proposed_commands", []))
+    blockers: list[str] = []
+    warnings: list[str] = []
+    if live_run.get("approval_status") == "not_required":
+        status = "not_required"
+    else:
+        status = "blocked"
+        if live_run.get("approval_status") != "approved":
+            blockers.append("approval_not_approved")
+        if execution.get("status") != "ready_to_execute":
+            blockers.append(f"live_run_status_{execution.get('status', 'unknown')}")
+        if not intend_execute:
+            blockers.append("execute_intent_missing")
+        if not confirm_live_network:
+            blockers.append("confirm_live_network_missing")
+        if live_run.get("external_effect_performed") is True:
+            blockers.append("live_run_already_executed")
+        if not source_ids:
+            blockers.append("no_live_sources")
+        if any(_forbidden_live_preflight_command(command) for command in proposed_commands):
+            blockers.append("forbidden_external_effect_command")
+        evidence_output = str(live_run.get("inputs", {}).get("evidence_output_path", ""))
+        if not evidence_output:
+            blockers.append("missing_evidence_output_path")
+        elif not evidence_output.startswith("reports/evidence/"):
+            warnings.append("evidence_output_path_outside_default_reports_evidence")
+        if not blockers:
+            status = "passed"
+    payload = {
+        "schema_version": SOURCE_REFRESH_LIVE_PREFLIGHT_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "inputs": {
+            "live_run_path": Path(live_run_path).as_posix(),
+            "live_gate_path": live_run.get("inputs", {}).get("live_gate_path", ""),
+            "evidence_output_path": live_run.get("inputs", {}).get("evidence_output_path", ""),
+        },
+        "status": status,
+        "approval_status": live_run.get("approval_status", ""),
+        "live_run_status": execution.get("status", ""),
+        "requested_execution": {
+            "intend_execute": intend_execute,
+            "confirm_live_network": confirm_live_network,
+        },
+        "source_ids": source_ids,
+        "proposed_commands": proposed_commands,
+        "blockers": blockers,
+        "warnings": warnings,
+        "external_effect_performed": False,
+        "policy": _research_only_policy(),
+        "next_step": _live_preflight_next_step(status, blockers),
+    }
+    return write_json(payload, output_path)
+
+
+def validate_source_refresh_live_preflight_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != SOURCE_REFRESH_LIVE_PREFLIGHT_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"passed", "blocked", "not_required"}:
+        errors.append("status must be passed, blocked, or not_required")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if not isinstance(payload.get("blockers", []), list):
+        errors.append("blockers must be a list")
+    if not isinstance(payload.get("warnings", []), list):
+        errors.append("warnings must be a list")
+    requested = payload.get("requested_execution", {})
+    if payload.get("status") == "passed":
+        if payload.get("approval_status") != "approved":
+            errors.append("passed preflight requires approval_status approved")
+        if payload.get("live_run_status") != "ready_to_execute":
+            errors.append("passed preflight requires live_run_status ready_to_execute")
+        if requested.get("intend_execute") is not True or requested.get("confirm_live_network") is not True:
+            errors.append("passed preflight requires intend_execute and confirm_live_network")
+        if not payload.get("source_ids"):
+            errors.append("passed preflight requires source_ids")
+        if payload.get("blockers"):
+            errors.append("passed preflight must not include blockers")
+    for command in payload.get("proposed_commands", []):
+        if _forbidden_live_preflight_command(command):
+            errors.append("proposed command crosses non-network external-effect boundary")
+    policy = payload.get("policy", {})
+    if policy.get("output_boundary") != "research_only":
+        errors.append("policy.output_boundary must be research_only")
+    return errors
+
+
+def validate_source_refresh_live_preflight_file(path: str | Path) -> list[str]:
+    return validate_source_refresh_live_preflight_payload(load_json(path))
+
+
 def collect_topic_evidence(
     *,
     topics_path: str | Path = DEFAULT_TOPICS_PATH,
@@ -1128,6 +1234,25 @@ def _live_run_next_step(execution_status: str, approval_status: str) -> str:
     if approval_status in {"missing", "invalid"}:
         return "provide_copy_ready_live_network_refresh_approval"
     return "review_live_refresh_gate"
+
+
+def _live_preflight_next_step(status: str, blockers: list[str]) -> str:
+    if status == "passed":
+        return "operator_may_execute_live_refresh_with_current_proof"
+    if status == "not_required":
+        return "no_live_refresh_execution_needed"
+    if "approval_not_approved" in blockers:
+        return "provide_copy_ready_live_network_refresh_approval"
+    if "execute_intent_missing" in blockers or "confirm_live_network_missing" in blockers:
+        return "rerun_preflight_with_explicit_execute_intent_and_live_network_confirmation"
+    return "fix_live_refresh_preflight_blockers"
+
+
+def _forbidden_live_preflight_command(command: str) -> bool:
+    return any(
+        blocked in command
+        for blocked in ["--send", "--confirm-host-write", "launchctl", "tailscale serve --bg"]
+    )
 
 
 def _needs_news_refresh(recommendations: list[dict[str, Any]], source_status: dict[str, dict[str, Any]]) -> bool:

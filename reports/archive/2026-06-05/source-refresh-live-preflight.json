@@ -1,0 +1,43 @@
+{
+  "schema_version": "source_refresh_live_preflight.v1",
+  "generated_at": "2026-06-05T13:04:32.867172+00:00",
+  "inputs": {
+    "live_run_path": "reports/daily/source-refresh-live-run.json",
+    "live_gate_path": "reports/daily/source-refresh-live-gate.json",
+    "evidence_output_path": "reports/evidence/live-evidence-catalog.json"
+  },
+  "status": "blocked",
+  "approval_status": "missing",
+  "live_run_status": "not_requested",
+  "requested_execution": {
+    "intend_execute": false,
+    "confirm_live_network": false
+  },
+  "source_ids": [
+    "gdelt-live",
+    "stooq-live",
+    "sec-sample"
+  ],
+  "proposed_commands": [
+    "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json"
+  ],
+  "blockers": [
+    "approval_not_approved",
+    "live_run_status_not_requested",
+    "execute_intent_missing",
+    "confirm_live_network_missing"
+  ],
+  "warnings": [],
+  "external_effect_performed": false,
+  "policy": {
+    "output_boundary": "research_only",
+    "disallowed": [
+      "paid_api_operations",
+      "account_credentials",
+      "live_trading",
+      "discretionary_management",
+      "unsupported_personalized_recommendations"
+    ]
+  },
+  "next_step": "provide_copy_ready_live_network_refresh_approval"
+}
