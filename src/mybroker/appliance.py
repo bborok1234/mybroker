@@ -7452,6 +7452,7 @@ def build_daily_operator_home(
     handoff_path: str | Path = DEFAULT_DAILY_HANDOFF_OUTPUT,
     handoff_apply_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT,
     run_ledger_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
+    run_trace_path: str | Path = DEFAULT_RUN_TRACE_OUTPUT,
     scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
     phone_access_path: str | Path = DEFAULT_PHONE_ACCESS_OUTPUT,
     phone_access_verify_path: str | Path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT,
@@ -7469,6 +7470,7 @@ def build_daily_operator_home(
     handoff = _load_optional_json(handoff_path)
     handoff_apply = _load_optional_json(handoff_apply_path)
     run_ledger = _load_optional_json(run_ledger_path)
+    run_trace = _load_optional_json(run_trace_path)
     scheduler = _load_optional_json(scheduler_operations_path)
     phone_access = _load_optional_json(phone_access_path)
     phone_access_verify = _load_optional_json(phone_access_verify_path)
@@ -7506,6 +7508,14 @@ def build_daily_operator_home(
         ),
         {},
     )
+    trace_proof = next(
+        (
+            row for row in pattern_proof.get("candidate_results", [])
+            if row.get("candidate_id") == "pattern-run-trace-observability"
+        ),
+        {},
+    )
+    trace_summary = run_trace.get("summary", {}) if run_trace.get("schema_version") == RUN_TRACE_SCHEMA_VERSION else {}
     if required_missing or morning.get("status") == "blocked" or readiness.get("status") == "blocked":
         status = "blocked"
     elif unresolved_count or pending_decision_count or required_stale or morning.get("status") == "operator_review":
@@ -7526,6 +7536,7 @@ def build_daily_operator_home(
         "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
         "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
         "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
+        "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
         "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
         "phone_access": DEFAULT_PHONE_ACCESS_VERIFY_SURFACE.as_posix(),
         "phone_access_plan": Path(phone_access_path).as_posix(),
@@ -7558,6 +7569,14 @@ def build_daily_operator_home(
         },
         {
             "step": 4,
+            "label": "오늘 결과 영향 경로 확인",
+            "title": "run trace",
+            "why": "오늘 scout, 근거, memory, review, pattern gate 중 무엇이 결과를 만들었는지 compact trace로 확인합니다.",
+            "href": links["trace"],
+            "status": run_trace.get("status", "missing"),
+        },
+        {
+            "step": 5,
             "label": "운영 상태 확인",
             "title": "morning control",
             "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -7565,7 +7584,7 @@ def build_daily_operator_home(
             "status": morning.get("status", "missing"),
         },
         {
-            "step": 5,
+            "step": 6,
             "label": "신뢰도 확인",
             "title": "readiness",
             "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -7573,7 +7592,7 @@ def build_daily_operator_home(
             "status": readiness.get("status", "missing"),
         },
         {
-            "step": 6,
+            "step": 7,
             "label": "전날 맥락 닫기",
             "title": "handoff",
             "why": f"남은 항목 {unresolved_count}개를 보고 필요한 응답을 복사합니다.",
@@ -7581,7 +7600,7 @@ def build_daily_operator_home(
             "status": handoff.get("status", "missing"),
         },
         {
-            "step": 7,
+            "step": 8,
             "label": "응답 반영 확인",
             "title": "handoff apply proof",
             "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -7589,7 +7608,7 @@ def build_daily_operator_home(
             "status": handoff_apply.get("status", "missing"),
         },
         {
-            "step": 8,
+            "step": 9,
             "label": "기억 품질 확인",
             "title": "memory audit",
             "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -7597,7 +7616,7 @@ def build_daily_operator_home(
             "status": memory_audit.get("status", "missing"),
         },
         {
-            "step": 9,
+            "step": 10,
             "label": "새 작업 방식 증거 확인",
             "title": "pattern dry-run proof",
             "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -7624,6 +7643,9 @@ def build_daily_operator_home(
             "scout_operator_input_required": scout.get("autonomous_start", {}).get("operator_input_required", False),
             "memory_recall_quality": recall_quality.get("level", "missing"),
             "memory_recall_matches": int(memory_query.get("matched_topic_count", 0) or 0) + int(memory_query.get("matched_archive_count", 0) or 0) + int(memory_query.get("matched_vault_note_count", 0) or 0),
+            "trace_status": run_trace.get("status", "missing"),
+            "trace_fresh_count": trace_summary.get("fresh_count", 0),
+            "trace_weak_spot_count": len(run_trace.get("weak_spots", [])),
         },
         "daily_route": daily_route,
         "autonomous_scout": {
@@ -7661,6 +7683,23 @@ def build_daily_operator_home(
             "surface": links["memory_query"],
             "external_effect_performed": False,
         },
+        "trace_observability_adoption": {
+            "pattern_candidate_id": "pattern-run-trace-observability",
+            "proof_status": trace_proof.get("proof_status", "missing"),
+            "status": run_trace.get("status", "missing"),
+            "run_id": run_trace.get("run_id", "missing"),
+            "step_count": trace_summary.get("step_count", 0),
+            "fresh_count": trace_summary.get("fresh_count", 0),
+            "missing_required_count": trace_summary.get("missing_required_count", 0),
+            "stale_count": trace_summary.get("stale_count", 0),
+            "external_effect_flag_count": trace_summary.get("external_effect_flag_count", 0),
+            "what_shaped_today": run_trace.get("what_shaped_today", [])[:6],
+            "weak_spots": run_trace.get("weak_spots", [])[:4],
+            "debug_order": run_trace.get("operator_debug_order", [])[:8],
+            "surface": links["trace"],
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        },
         "copy_ready_commands": _daily_home_commands(payloads=payloads),
         "phone_links": links,
         "access": {
@@ -7682,6 +7721,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="handoff", path=handoff_path, payload=handoff),
             _daily_home_artifact_status(name="handoff_apply", path=handoff_apply_path, payload=handoff_apply),
             _daily_home_artifact_status(name="run_ledger", path=run_ledger_path, payload=run_ledger),
+            _daily_home_artifact_status(name="run_trace", path=run_trace_path, payload=run_trace),
             _daily_home_artifact_status(name="scheduler", path=scheduler_operations_path, payload=scheduler),
             _daily_home_artifact_status(name="phone_access", path=phone_access_path, payload=phone_access),
             _daily_home_artifact_status(name="phone_access_verify", path=phone_access_verify_path, payload=phone_access_verify),
@@ -7748,7 +7788,19 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(f"memory_recall_adoption missing {field}")
     if recall.get("external_effect_performed") is not False:
         errors.append("memory_recall_adoption.external_effect_performed must be false")
-    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "memory_query"]:
+    trace = payload.get("trace_observability_adoption", {})
+    for field in ["pattern_candidate_id", "proof_status", "status", "run_id", "step_count", "what_shaped_today", "surface", "external_effect_performed", "host_write_performed"]:
+        if field not in trace:
+            errors.append(f"trace_observability_adoption missing {field}")
+    if trace.get("external_effect_performed") is not False:
+        errors.append("trace_observability_adoption.external_effect_performed must be false")
+    if trace.get("host_write_performed") is not False:
+        errors.append("trace_observability_adoption.host_write_performed must be false")
+    if trace.get("status") not in {"ready", "review", "blocked", "missing"}:
+        errors.append("trace_observability_adoption.status must be ready, review, blocked, or missing")
+    if trace.get("step_count", 0) and not trace.get("what_shaped_today"):
+        errors.append("trace_observability_adoption.what_shaped_today must not be empty when trace exists")
+    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "memory_query", "trace"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
     if "daily_home_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
@@ -7777,6 +7829,7 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
     summary = payload.get("summary", {})
     autonomous = payload.get("autonomous_scout", {})
     recall = payload.get("memory_recall_adoption", {})
+    trace = payload.get("trace_observability_adoption", {})
     status_label = {
         "ready": "오늘 읽기 준비됨",
         "operator_review": "사람 확인 필요",
@@ -7823,6 +7876,15 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
     )
     recall_weak_items = "".join(f"<li>{esc(item)}</li>" for item in recall.get("weak_spots", [])) or "<li>오늘 회상에서 즉시 막힌 약점은 없습니다.</li>"
     recall_question_items = "".join(f"<li>{esc(item)}</li>" for item in recall.get("next_questions", [])) or "<li>오늘 주제와 연결된 질문이 아직 없습니다.</li>"
+    trace_influence_items = "".join(
+        "<li>"
+        f"<strong>{esc(item.get('label', 'influence'))}</strong>: {esc(item.get('value', ''))}"
+        f"<span> · {esc(item.get('source', ''))}</span>"
+        "</li>"
+        for item in trace.get("what_shaped_today", [])
+    ) or "<li>아직 오늘 결과를 만든 trace influence가 없습니다.</li>"
+    trace_weak_items = "".join(f"<li>{esc(item)}</li>" for item in trace.get("weak_spots", [])) or "<li>trace에서 즉시 막힌 약점은 없습니다.</li>"
+    trace_debug_items = "".join(f"<li>{esc(item)}</li>" for item in trace.get("debug_order", [])) or "<li>debug 순서가 아직 없습니다.</li>"
     artifact_rows = "".join(
         "<tr>"
         f"<td><strong>{esc(item.get('name', ''))}</strong><span>{esc(item.get('path', ''))}</span></td>"
@@ -7909,6 +7971,24 @@ td strong,td span {{ display:block; }}
 <ul>{recall_weak_items}</ul>
 <h2>이어갈 질문</h2>
 <ul>{recall_question_items}</ul>
+</section>
+<section class="section">
+<h2>오늘 결과를 만든 경로</h2>
+<p><strong>{esc(trace.get('status', 'missing'))} · run {esc(trace.get('run_id', 'missing'))}</strong></p>
+<p>TraceAgent식 관측 패턴을 daily loop에 채택한 요약입니다. 오늘 결과를 만든 입력, 빠진 단계, 오래된 단계, 외부효과 flag를 한 화면에서 먼저 봅니다.</p>
+<div class="metrics">
+<article class="metric"><span>Proof</span><strong>{esc(trace.get('proof_status', 'missing'))}</strong></article>
+<article class="metric"><span>Steps</span><strong>{esc(trace.get('step_count', 0))}</strong></article>
+<article class="metric"><span>Fresh</span><strong>{esc(trace.get('fresh_count', 0))}</strong></article>
+<article class="metric"><span>Flags</span><strong>{esc(trace.get('external_effect_flag_count', 0))}</strong></article>
+</div>
+<p><a href="{esc(_relative_href(Path(trace.get('surface', 'reports/product/run-trace.html'))))}">run trace 열기</a></p>
+<h2>영향 요약</h2>
+<ul>{trace_influence_items}</ul>
+<h2>약한 부분</h2>
+<ul>{trace_weak_items}</ul>
+<h2>문제 확인 순서</h2>
+<ul>{trace_debug_items}</ul>
 </section>
 <section class="section">
 <h2>오늘 볼 순서</h2>

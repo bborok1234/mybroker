@@ -1,6 +1,6 @@
 {
   "schema_version": "source_refresh_plan.v1",
-  "generated_at": "2026-06-05T22:38:50.236876+00:00",
+  "generated_at": "2026-06-05T22:51:41.296641+00:00",
   "inputs": {
     "scout_path": "reports/daily/scout.json",
     "evidence_path": "reports/evidence/daily-evidence-catalog.json",

@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-05T22:38:50.303001+00:00",
+  "generated_at": "2026-06-05T22:51:41.361497+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -15,7 +15,10 @@
     "autonomous_reason": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
     "scout_operator_input_required": false,
     "memory_recall_quality": "strong",
-    "memory_recall_matches": 4
+    "memory_recall_matches": 4,
+    "trace_status": "ready",
+    "trace_fresh_count": 21,
+    "trace_weak_spot_count": 0
   },
   "daily_route": [
     {
@@ -44,6 +47,14 @@
     },
     {
       "step": 4,
+      "label": "오늘 결과 영향 경로 확인",
+      "title": "run trace",
+      "why": "오늘 scout, 근거, memory, review, pattern gate 중 무엇이 결과를 만들었는지 compact trace로 확인합니다.",
+      "href": "reports/product/run-trace.html",
+      "status": "ready"
+    },
+    {
+      "step": 5,
       "label": "운영 상태 확인",
       "title": "morning control",
       "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -51,7 +62,7 @@
       "status": "operator_review"
     },
     {
-      "step": 5,
+      "step": 6,
       "label": "신뢰도 확인",
       "title": "readiness",
       "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -59,7 +70,7 @@
       "status": "ready"
     },
     {
-      "step": 6,
+      "step": 7,
       "label": "전날 맥락 닫기",
       "title": "handoff",
       "why": "남은 항목 9개를 보고 필요한 응답을 복사합니다.",
@@ -67,7 +78,7 @@
       "status": "review"
     },
     {
-      "step": 7,
+      "step": 8,
       "label": "응답 반영 확인",
       "title": "handoff apply proof",
       "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -75,7 +86,7 @@
       "status": "applied"
     },
     {
-      "step": 8,
+      "step": 9,
       "label": "기억 품질 확인",
       "title": "memory audit",
       "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -83,7 +94,7 @@
       "status": "ready"
     },
     {
-      "step": 9,
+      "step": 10,
       "label": "새 작업 방식 증거 확인",
       "title": "pattern dry-run proof",
       "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -273,6 +284,58 @@
     "surface": "reports/product/memory-query.html",
     "external_effect_performed": false
   },
+  "trace_observability_adoption": {
+    "pattern_candidate_id": "pattern-run-trace-observability",
+    "proof_status": "passed",
+    "status": "ready",
+    "run_id": "daily-research",
+    "step_count": 21,
+    "fresh_count": 21,
+    "missing_required_count": 0,
+    "stale_count": 0,
+    "external_effect_flag_count": 0,
+    "what_shaped_today": [
+      {
+        "label": "오늘 먼저 볼 주제",
+        "value": "Semiconductors",
+        "source": "daily_scout"
+      },
+      {
+        "label": "근거 개수",
+        "value": "5",
+        "source": "evidence_catalog"
+      },
+      {
+        "label": "누적 실행",
+        "value": "53회",
+        "source": "topic_memory"
+      },
+      {
+        "label": "다음 안전 후보",
+        "value": "pattern freshness audit before adding new runtime authority",
+        "source": "pattern_radar"
+      },
+      {
+        "label": "review 응답",
+        "value": "1개",
+        "source": "daily_review"
+      }
+    ],
+    "weak_spots": [],
+    "debug_order": [
+      "daily_scout",
+      "evidence_catalog",
+      "topic_memory",
+      "scenario_report",
+      "verdict",
+      "source_refresh_brief",
+      "task_ledger",
+      "daily_review"
+    ],
+    "surface": "reports/product/run-trace.html",
+    "external_effect_performed": false,
+    "host_write_performed": false
+  },
   "copy_ready_commands": [
     {
       "source": "handoff",
@@ -338,6 +401,7 @@
     "memory_query": "reports/product/memory-query.html",
     "memory_audit": "reports/product/memory-audit.html",
     "pattern_dry_run": "reports/product/pattern-dry-run.html",
+    "trace": "reports/product/run-trace.html",
     "scheduler": "reports/product/scheduler.html",
     "phone_access": "reports/product/phone-access.html",
     "phone_access_plan": "reports/runtime/phone-access.json",
@@ -361,7 +425,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T22:38:50.236144+00:00"
+      "generated_at": "2026-06-05T22:51:41.296047+00:00"
     },
     {
       "name": "agenda",
@@ -369,7 +433,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T22:38:50.238846+00:00"
+      "generated_at": "2026-06-05T22:51:41.299308+00:00"
     },
     {
       "name": "morning",
@@ -377,7 +441,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-05T22:38:50.286754+00:00"
+      "generated_at": "2026-06-05T22:51:41.343986+00:00"
     },
     {
       "name": "readiness",
@@ -385,7 +449,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T22:38:50.300198+00:00"
+      "generated_at": "2026-06-05T22:51:41.358272+00:00"
     },
     {
       "name": "handoff",
@@ -393,7 +457,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-05T22:38:50.293566+00:00"
+      "generated_at": "2026-06-05T22:51:41.351517+00:00"
     },
     {
       "name": "handoff_apply",
@@ -409,7 +473,15 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T22:38:50.292941+00:00"
+      "generated_at": "2026-06-05T22:51:41.350875+00:00"
+    },
+    {
+      "name": "run_trace",
+      "path": "reports/runtime/run-trace.json",
+      "exists": true,
+      "schema_version": "local_run_trace.v1",
+      "status": "ready",
+      "generated_at": "2026-06-05T22:51:41.338284+00:00"
     },
     {
       "name": "scheduler",
@@ -417,7 +489,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-05T22:38:50.279754+00:00"
+      "generated_at": "2026-06-05T22:51:41.336424+00:00"
     },
     {
       "name": "phone_access",
@@ -425,7 +497,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T22:38:50.233543+00:00"
+      "generated_at": "2026-06-05T22:51:41.292956+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -433,7 +505,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T22:38:50.299560+00:00"
+      "generated_at": "2026-06-05T22:51:41.357410+00:00"
     },
     {
       "name": "notification",
@@ -441,7 +513,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-05T22:38:50.262263+00:00"
+      "generated_at": "2026-06-05T22:51:41.329908+00:00"
     },
     {
       "name": "memory_query",
@@ -449,7 +521,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-05T22:38:50.256828+00:00"
+      "generated_at": "2026-06-05T22:51:41.323681+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -457,7 +529,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-05T22:38:50.284562+00:00"
+      "generated_at": "2026-06-05T22:51:41.341821+00:00"
     }
   ],
   "external_effect_performed": false,
