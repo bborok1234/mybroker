@@ -18,6 +18,7 @@ ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
 PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
 OPERATOR_DECISION_PACKET_SCHEMA_VERSION = "operator_decision_packet.v1"
+OPERATOR_DECISION_APPLY_SCHEMA_VERSION = "operator_decision_apply.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
@@ -34,6 +35,7 @@ DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
 DEFAULT_PHONE_ACCESS_OUTPUT = Path("reports/runtime/phone-access.json")
 DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT = Path("reports/runtime/operator-decision-packet.json")
+DEFAULT_OPERATOR_DECISION_APPLY_OUTPUT = Path("reports/runtime/operator-decision-apply.json")
 DEFAULT_MEMORY_INDEX_OUTPUT = Path("reports/memory/index.json")
 DEFAULT_MEMORY_OUTPUT = Path("reports/product/memory.html")
 DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
@@ -671,6 +673,51 @@ def write_operator_decision_packet(
             "scheduler_activation_requires_confirm_host_write": True,
             "notification_send_requires_provider_secrets": True,
             "private_serving_changes_network_exposure": True,
+        },
+        "policy": "research_only",
+    }
+    return write_json(payload, output_path)
+
+
+def write_operator_decision_apply(
+    *,
+    response: str,
+    project_root: str | Path = ".",
+    packet_path: str | Path = DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT,
+    output_path: str | Path = DEFAULT_OPERATOR_DECISION_APPLY_OUTPUT,
+) -> Path:
+    root = Path(project_root).resolve()
+    packet_file = Path(packet_path)
+    if not packet_file.is_absolute():
+        packet_file = root / packet_file
+    packet = load_json(packet_file)
+    parsed = _parse_operator_approval_response(response)
+    decision = _find_packet_decision(packet=packet, decision_id=parsed.get("decision_id", ""))
+    blockers = _operator_decision_apply_blockers(parsed=parsed, decision=decision)
+    commands = list(decision.get("agent_will_run", [])) if decision and not blockers else []
+    rollback_command = decision.get("rollback_command", "") if decision else ""
+    payload = {
+        "schema_version": OPERATOR_DECISION_APPLY_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "project_root": root.as_posix(),
+        "packet_path": packet_file.as_posix(),
+        "operator_response": response,
+        "parsed_response": parsed,
+        "decision_id": parsed.get("decision_id", ""),
+        "approval_scope": parsed.get("approval_scope", ""),
+        "status": "ready_to_apply" if not blockers else "blocked",
+        "blockers": blockers,
+        "commands": commands,
+        "rollback_command": rollback_command,
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "execution_mode": "dry_run_plan_only",
+        "next_action": _operator_decision_apply_next_action(blockers=blockers, decision=decision),
+        "safety": {
+            "does_not_execute_commands": True,
+            "requires_exact_decision_id": True,
+            "requires_exact_approval_scope": True,
+            "blocked_decisions_do_not_emit_commands": True,
         },
         "policy": "research_only",
     }
@@ -1837,6 +1884,63 @@ def _phone_access_rollback_command(*, phone_access: dict[str, Any]) -> str:
 def _phone_access_command_is_rollback(*, command: str, purpose: str) -> bool:
     normalized = f"{purpose} {command}".lower()
     return "stop" in normalized or "reset" in normalized or "unserve" in normalized
+
+
+def _parse_operator_approval_response(response: str) -> dict[str, str]:
+    parts = response.strip().split()
+    if len(parts) != 3:
+        return {
+            "action": "",
+            "decision_id": "",
+            "approval_scope": "",
+            "parse_status": "invalid",
+            "parse_error": "Expected response shape: approve <decision_id> <approval_scope>",
+        }
+    action, decision_id, approval_scope = parts
+    return {
+        "action": action,
+        "decision_id": decision_id,
+        "approval_scope": approval_scope,
+        "parse_status": "parsed",
+        "parse_error": "",
+    }
+
+
+def _find_packet_decision(*, packet: dict[str, Any], decision_id: str) -> dict[str, Any] | None:
+    for decision in packet.get("decisions", []):
+        if decision.get("id") == decision_id:
+            return decision
+    return None
+
+
+def _operator_decision_apply_blockers(*, parsed: dict[str, str], decision: dict[str, Any] | None) -> list[str]:
+    blockers: list[str] = []
+    if parsed.get("parse_status") != "parsed":
+        blockers.append(parsed.get("parse_error", "operator response could not be parsed"))
+        return blockers
+    if parsed.get("action") != "approve":
+        blockers.append("Only approve responses can create an apply plan.")
+    if decision is None:
+        blockers.append(f"Decision not found in packet: {parsed.get('decision_id', '')}")
+        return blockers
+    if parsed.get("approval_scope") != decision.get("approval_scope"):
+        blockers.append(
+            f"Approval scope mismatch: expected {decision.get('approval_scope')}, got {parsed.get('approval_scope')}"
+        )
+    if decision.get("readiness") != "ready":
+        blockers.append(f"Decision readiness is {decision.get('readiness')}, not ready.")
+    if not decision.get("agent_will_run"):
+        blockers.append("Decision has no runnable command plan.")
+    return blockers
+
+
+def _operator_decision_apply_next_action(*, blockers: list[str], decision: dict[str, Any] | None) -> str:
+    if blockers:
+        return "Fix the blocker or regenerate the operator decision packet before asking the agent to execute anything."
+    return (
+        "Review the commands and rollback_command. The artifact did not execute anything; external execution still requires "
+        f"explicit scoped approval for {decision.get('approval_scope') if decision else 'unknown'}."
+    )
 
 
 def _same_file_contents(left: Path, right: Path) -> bool:

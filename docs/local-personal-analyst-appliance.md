@@ -144,6 +144,12 @@ confirmed scheduler host write, one notification send, and private phone access 
 packet records current readiness, blockers, exact commands, risks, and rollback notes, but it
 does not execute any of those effects.
 
+`appliance decision apply --response "approve <decision_id> <approval_scope>"` validates the short
+operator response against that packet and writes `reports/runtime/operator-decision-apply.json`.
+It emits commands only when the decision exists, the approval scope matches exactly, and readiness
+is `ready`. It is still a dry-run plan: `external_effect_performed=false` and host/network/send
+effects remain separate explicit actions.
+
 `appliance doctor` writes `reports/runtime/local-runtime-doctor.json`. It checks runner assets,
 topic config, artifact freshness, notification payload state, private phone access guidance, and
 whether the `com.mybroker.daily-analyst` LaunchAgent is loaded for the current user. By default,

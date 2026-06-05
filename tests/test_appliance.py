@@ -12,6 +12,7 @@ from mybroker.appliance import (
     write_memory_query,
     write_memory_surface,
     write_notification_payload,
+    write_operator_decision_apply,
     write_operator_decision_packet,
     write_phone_access_plan,
     write_runtime_doctor,
@@ -377,6 +378,74 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("tailscale serve --bg 8787", phone_decision["agent_will_run"])
         self.assertNotIn("tailscale serve reset", phone_decision["agent_will_run"])
         self.assertEqual(phone_decision["rollback_command"], "tailscale serve reset")
+
+    def test_operator_decision_apply_validates_scoped_approvals_without_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet = root / "operator-decision-packet.json"
+            packet.write_text(
+                json.dumps({
+                    "schema_version": "operator_decision_packet.v1",
+                    "decisions": [
+                        {
+                            "id": "private_phone_access",
+                            "approval_scope": "private_network_exposure",
+                            "readiness": "ready",
+                            "agent_will_run": [
+                                "cd <mybroker-repo> && python3 -m http.server 8787",
+                                "tailscale serve --bg 8787",
+                            ],
+                            "rollback_command": "tailscale serve reset",
+                        },
+                        {
+                            "id": "notification_send",
+                            "approval_scope": "send_notification",
+                            "readiness": "blocked",
+                            "agent_will_run": ["PYTHONPATH=src python3 -m mybroker appliance notify --send"],
+                            "rollback_command": "",
+                        },
+                    ],
+                }),
+                encoding="utf-8",
+            )
+
+            valid_output = write_operator_decision_apply(
+                response="approve private_phone_access private_network_exposure",
+                project_root=root,
+                packet_path=packet,
+                output_path=root / "operator-decision-apply.json",
+            )
+            valid_payload = json.loads(valid_output.read_text(encoding="utf-8"))
+            mismatch_output = write_operator_decision_apply(
+                response="approve private_phone_access send_notification",
+                project_root=root,
+                packet_path=packet,
+                output_path=root / "operator-decision-apply-mismatch.json",
+            )
+            mismatch_payload = json.loads(mismatch_output.read_text(encoding="utf-8"))
+            blocked_output = write_operator_decision_apply(
+                response="approve notification_send send_notification",
+                project_root=root,
+                packet_path=packet,
+                output_path=root / "operator-decision-apply-blocked.json",
+            )
+            blocked_payload = json.loads(blocked_output.read_text(encoding="utf-8"))
+
+        self.assertEqual(valid_payload["schema_version"], "operator_decision_apply.v1")
+        self.assertEqual(valid_payload["status"], "ready_to_apply")
+        self.assertFalse(valid_payload["external_effect_performed"])
+        self.assertFalse(valid_payload["host_write_performed"])
+        self.assertEqual(valid_payload["commands"], [
+            "cd <mybroker-repo> && python3 -m http.server 8787",
+            "tailscale serve --bg 8787",
+        ])
+        self.assertEqual(valid_payload["rollback_command"], "tailscale serve reset")
+        self.assertEqual(mismatch_payload["status"], "blocked")
+        self.assertEqual(mismatch_payload["commands"], [])
+        self.assertIn("Approval scope mismatch", mismatch_payload["blockers"][0])
+        self.assertEqual(blocked_payload["status"], "blocked")
+        self.assertEqual(blocked_payload["commands"], [])
+        self.assertIn("Decision readiness is blocked", blocked_payload["blockers"][0])
 
     def test_today_surface_can_use_public_catalog_without_topic_memory_leakage(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
