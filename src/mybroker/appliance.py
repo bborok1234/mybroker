@@ -22,6 +22,7 @@ MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
+SCHEDULER_RUN_ONCE_SCHEMA_VERSION = "local_scheduler_run_once.v1"
 LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
@@ -36,6 +37,7 @@ DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
 DEFAULT_SCHEDULER_APPLY_OUTPUT = Path("reports/runtime/scheduler-apply.json")
+DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT = Path("reports/runtime/scheduler-run-once.json")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -316,6 +318,92 @@ def write_scheduler_apply(
             "notes": [
                 "Dry-run records planned host-level commands without changing launchd state.",
                 "Actual install/load/start/unload/uninstall requires --confirm-host-write.",
+            ],
+        },
+        "policy": "research_only",
+    }
+    return write_json(payload, output_path)
+
+
+def write_scheduler_run_once(
+    *,
+    project_root: str | Path = ".",
+    output_path: str | Path = DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT,
+    timeout_seconds: int = 240,
+) -> Path:
+    root = Path(project_root).resolve()
+    script_path = root / DEFAULT_LOCAL_OPS_DIR / "run-daily-analyst.sh"
+    command = [script_path.as_posix()]
+    started_at = datetime.now(timezone.utc)
+    status = "failed"
+    returncode: int | None = None
+    stdout_excerpt = ""
+    stderr_excerpt = ""
+    error = ""
+
+    if not script_path.exists():
+        error = f"Runner script is missing: {script_path.as_posix()}"
+    elif not os.access(script_path, os.X_OK):
+        error = f"Runner script is not executable: {script_path.as_posix()}"
+    else:
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=root,
+                text=True,
+                capture_output=True,
+                timeout=timeout_seconds,
+                check=False,
+            )
+            returncode = completed.returncode
+            stdout_excerpt = completed.stdout[-2000:]
+            stderr_excerpt = completed.stderr[-2000:]
+            status = "passed" if completed.returncode == 0 else "failed"
+        except subprocess.TimeoutExpired as exc:
+            status = "timeout"
+            returncode = None
+            stdout_excerpt = _timeout_output_excerpt(exc.stdout)
+            stderr_excerpt = _timeout_output_excerpt(exc.stderr)
+            error = f"Runner script exceeded timeout_seconds={timeout_seconds}"
+        except OSError as exc:
+            error = str(exc)
+
+    finished_at = datetime.now(timezone.utc)
+    post_status_path = write_scheduler_status(project_root=root, output_path=root / DEFAULT_SCHEDULER_STATUS_OUTPUT)
+    doctor_path = write_runtime_doctor(project_root=root, output_path=root / DEFAULT_RUNTIME_DOCTOR_OUTPUT)
+    payload = {
+        "schema_version": SCHEDULER_RUN_ONCE_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "project_root": root.as_posix(),
+        "label": LAUNCHD_LABEL,
+        "script_path": script_path.as_posix(),
+        "command": command,
+        "timeout_seconds": timeout_seconds,
+        "started_at": started_at.isoformat(),
+        "finished_at": finished_at.isoformat(),
+        "duration_seconds": round((finished_at - started_at).total_seconds(), 3),
+        "status": status,
+        "returncode": returncode,
+        "stdout_excerpt": stdout_excerpt,
+        "stderr_excerpt": stderr_excerpt,
+        "error": error,
+        "host_write_performed": False,
+        "post_status_path": post_status_path.as_posix(),
+        "doctor_path": doctor_path.as_posix(),
+        "expected_outputs": [
+            DEFAULT_TODAY_OUTPUT.as_posix(),
+            DEFAULT_MEMORY_OUTPUT.as_posix(),
+            DEFAULT_NOTIFICATION_OUTPUT.as_posix(),
+            DEFAULT_ARCHIVE_ROOT.as_posix(),
+        ],
+        "safety": {
+            "launchd_install_performed": False,
+            "launchd_load_performed": False,
+            "notification_send_performed": False,
+            "notes": [
+                "This proof executes the same local runner script launchd would call.",
+                "It does not install, load, start, unload, or uninstall a LaunchAgent.",
+                "The runner uses notification dry-run unless the script is edited by the operator.",
             ],
         },
         "policy": "research_only",
@@ -1321,6 +1409,14 @@ def _execute_scheduler_action(action: dict[str, Any]) -> dict[str, Any]:
         result["status"] = "failed"
         result["error"] = str(exc)
     return result
+
+
+def _timeout_output_excerpt(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")[-2000:]
+    return value[-2000:]
 
 
 def _doctor_next_actions(checks: list[dict[str, Any]]) -> list[str]:

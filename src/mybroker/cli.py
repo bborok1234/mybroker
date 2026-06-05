@@ -17,6 +17,7 @@ from mybroker.appliance import (
     DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
     DEFAULT_RUNTIME_DOCTOR_OUTPUT,
     DEFAULT_SCHEDULER_APPLY_OUTPUT,
+    DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT,
     DEFAULT_SCHEDULER_STATUS_OUTPUT,
     DEFAULT_TODAY_OUTPUT,
     archive_daily_run,
@@ -29,6 +30,7 @@ from mybroker.appliance import (
     write_runtime_doctor,
     write_runtime_playbook,
     write_scheduler_apply,
+    write_scheduler_run_once,
     write_scheduler_status,
     write_today_surface,
 )
@@ -209,6 +211,10 @@ def main(argv: list[str] | None = None) -> int:
     appliance_scheduler_apply_parser.add_argument("--unload", action="store_true")
     appliance_scheduler_apply_parser.add_argument("--uninstall", action="store_true")
     appliance_scheduler_apply_parser.add_argument("--confirm-host-write", action="store_true")
+    appliance_scheduler_run_once_parser = appliance_scheduler_subcommands.add_parser("run-once", help="Execute the local scheduler runner once without host-level launchd writes.")
+    appliance_scheduler_run_once_parser.add_argument("--project-root", default=".")
+    appliance_scheduler_run_once_parser.add_argument("--output", default=DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT.as_posix())
+    appliance_scheduler_run_once_parser.add_argument("--timeout-seconds", type=int, default=240)
     appliance_today_parser = appliance_subcommands.add_parser("today", help="Render the mobile-first /today product surface.")
     appliance_today_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
     appliance_today_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
@@ -536,6 +542,21 @@ def main(argv: list[str] | None = None) -> int:
                     "action_count": len(payload["actions"]),
                 }, indent=2, ensure_ascii=False))
                 return 1 if any(action.get("status") == "failed" for action in payload["actions"]) else 0
+            if args.scheduler_command == "run-once":
+                path = write_scheduler_run_once(
+                    project_root=args.project_root,
+                    output_path=args.output,
+                    timeout_seconds=args.timeout_seconds,
+                )
+                payload = json.loads(Path(path).read_text(encoding="utf-8"))
+                print(json.dumps({
+                    "scheduler_run_once": path.as_posix(),
+                    "status": payload["status"],
+                    "returncode": payload["returncode"],
+                    "host_write_performed": payload["host_write_performed"],
+                    "duration_seconds": payload["duration_seconds"],
+                }, indent=2, ensure_ascii=False))
+                return 0 if payload["status"] == "passed" else 1
         if args.appliance_command == "today":
             path = write_today_surface(
                 scenario_path=args.scenario,

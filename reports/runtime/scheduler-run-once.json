@@ -1,0 +1,39 @@
+{
+  "schema_version": "local_scheduler_run_once.v1",
+  "generated_at": "2026-06-05T07:15:47.060446+00:00",
+  "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
+  "label": "com.mybroker.daily-analyst",
+  "script_path": "/Users/mirlim/sidejob/mybroker/mybroker/ops/local/run-daily-analyst.sh",
+  "command": [
+    "/Users/mirlim/sidejob/mybroker/mybroker/ops/local/run-daily-analyst.sh"
+  ],
+  "timeout_seconds": 240,
+  "started_at": "2026-06-05T07:15:46.953591+00:00",
+  "finished_at": "2026-06-05T07:15:47.051309+00:00",
+  "duration_seconds": 0.098,
+  "status": "passed",
+  "returncode": 0,
+  "stdout_excerpt": "{\n  \"playbook\": \"reports/runtime/local-analyst-playbook.json\",\n  \"topics\": \"config/topics.json\",\n  \"research_plan\": \"reports/daily/research-plan.json\",\n  \"evidence_catalog\": \"reports/evidence/daily-evidence-catalog.json\",\n  \"topic_memory\": \"reports/memory/topic-memory.json\",\n  \"scenario_report\": \"reports/scenarios/daily-research-sim.json\",\n  \"verdict\": \"reports/scenarios/daily-research-verdict.json\",\n  \"dashboard\": \"reports/dashboard.html\",\n  \"rollup\": \"reports/report-rollup.json\",\n  \"product_brief\": \"reports/product/market-brief.html\",\n  \"today\": \"reports/product/today.html\",\n  \"memory_surface\": \"reports/product/memory.html\",\n  \"memory_index\": \"reports/memory/index.json\",\n  \"archive_manifest\": \"reports/archive/2026-06-05/manifest.json\",\n  \"notification\": \"reports/notifications/latest.json\",\n  \"notification_status\": \"dry_run_ready\",\n  \"topic_count\": 5,\n  \"evidence_items\": 5\n}\n",
+  "stderr_excerpt": "",
+  "error": "",
+  "host_write_performed": false,
+  "post_status_path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-status.json",
+  "doctor_path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/local-runtime-doctor.json",
+  "expected_outputs": [
+    "reports/product/today.html",
+    "reports/product/memory.html",
+    "reports/notifications/latest.json",
+    "reports/archive"
+  ],
+  "safety": {
+    "launchd_install_performed": false,
+    "launchd_load_performed": false,
+    "notification_send_performed": false,
+    "notes": [
+      "This proof executes the same local runner script launchd would call.",
+      "It does not install, load, start, unload, or uninstall a LaunchAgent.",
+      "The runner uses notification dry-run unless the script is edited by the operator."
+    ]
+  },
+  "policy": "research_only"
+}

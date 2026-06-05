@@ -17,6 +17,7 @@ from mybroker.appliance import (
     write_runtime_playbook,
     write_scheduler_status,
     write_scheduler_apply,
+    write_scheduler_run_once,
     write_today_surface,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
@@ -178,6 +179,35 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("post_status", scheduler_apply_payload)
         self.assertTrue(script_exists)
         self.assertTrue(plist_exists)
+
+    def test_scheduler_run_once_executes_local_runner_without_host_write(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = root / "ops" / "local" / "run-daily-analyst.sh"
+            script.parent.mkdir(parents=True, exist_ok=True)
+            script.write_text(
+                "#!/bin/sh\n"
+                "set -eu\n"
+                "mkdir -p reports/runtime reports/product reports/archive/test\n"
+                "printf 'runner ok\\n'\n",
+                encoding="utf-8",
+            )
+            script.chmod(0o755)
+
+            output = write_scheduler_run_once(
+                project_root=root,
+                output_path=root / "scheduler-run-once.json",
+                timeout_seconds=5,
+            )
+            payload = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(payload["schema_version"], "local_scheduler_run_once.v1")
+        self.assertEqual(payload["status"], "passed")
+        self.assertEqual(payload["returncode"], 0)
+        self.assertFalse(payload["host_write_performed"])
+        self.assertIn("runner ok", payload["stdout_excerpt"])
+        self.assertTrue(payload["post_status_path"].endswith("reports/runtime/scheduler-status.json"))
+        self.assertTrue(payload["doctor_path"].endswith("reports/runtime/local-runtime-doctor.json"))
 
     def test_today_surface_can_use_public_catalog_without_topic_memory_leakage(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
