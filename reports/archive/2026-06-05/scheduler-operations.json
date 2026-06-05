@@ -1,6 +1,6 @@
 {
   "schema_version": "local_scheduler_operations.v1",
-  "generated_at": "2026-06-05T16:07:15.672306+00:00",
+  "generated_at": "2026-06-05T16:26:21.031189+00:00",
   "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
   "status": "activation_ready",
   "freshness_hours": 24,
@@ -64,7 +64,7 @@
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-run-once.json",
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 8.86,
+      "age_hours": 9.18,
       "schema_version": "local_scheduler_run_once.v1",
       "summary_status": "passed",
       "host_write_performed": false
@@ -74,7 +74,7 @@
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-preflight.json",
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 8.28,
+      "age_hours": 8.6,
       "schema_version": "local_scheduler_activation_preflight.v1",
       "summary_status": "ready",
       "host_write_performed": false
@@ -84,7 +84,7 @@
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-verify.json",
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 8.28,
+      "age_hours": 8.6,
       "schema_version": "local_scheduler_activation_verify.v1",
       "summary_status": "blocked",
       "host_write_performed": false
@@ -94,7 +94,7 @@
       "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/local-runtime-doctor.json",
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 8.63,
+      "age_hours": 8.94,
       "schema_version": "local_runtime_doctor.v1",
       "summary_status": "ready",
       "host_write_performed": false

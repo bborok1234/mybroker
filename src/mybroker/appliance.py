@@ -27,6 +27,7 @@ from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT, DEFAULT_VAULT_SURFACE_O
 TODAY_SURFACE_SCHEMA_VERSION = "today_surface.v1"
 DAILY_BRIEF_AGENDA_SCHEMA_VERSION = "daily_brief_agenda.v1"
 DAILY_READINESS_SCHEMA_VERSION = "daily_readiness.v1"
+SOURCE_REFRESH_BRIEF_SCHEMA_VERSION = "source_refresh_brief.v1"
 NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
@@ -54,6 +55,8 @@ DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT = Path("reports/daily/brief-agenda.json")
 DEFAULT_DAILY_BRIEF_AGENDA_SURFACE = Path("reports/product/daily-agenda.html")
 DEFAULT_DAILY_READINESS_OUTPUT = Path("reports/runtime/daily-readiness.json")
 DEFAULT_DAILY_READINESS_SURFACE = Path("reports/product/readiness.html")
+DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT = Path("reports/runtime/source-refresh-brief.json")
+DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE = Path("reports/product/source-refresh.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
@@ -1209,6 +1212,8 @@ def build_daily_readiness(
         ("today_surface", DEFAULT_TODAY_OUTPUT, "phone_surface", True),
         ("daily_agenda_surface", DEFAULT_DAILY_BRIEF_AGENDA_SURFACE, "phone_surface", True),
         ("daily_agenda", DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT, "machine_artifact", True),
+        ("source_refresh_brief", DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT, "control_artifact", False),
+        ("source_refresh_surface", DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE, "phone_surface", False),
         ("morning_control", DEFAULT_MORNING_CONTROL_OUTPUT, "control_artifact", True),
         ("morning_surface", DEFAULT_MORNING_CONTROL_SURFACE, "phone_surface", True),
         ("daily_scout", DEFAULT_DAILY_SCOUT_OUTPUT, "machine_artifact", True),
@@ -1266,6 +1271,7 @@ def build_daily_readiness(
             "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
+            "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
@@ -1335,6 +1341,281 @@ def validate_daily_readiness_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_daily_readiness_file(path: str | Path) -> list[str]:
     return validate_daily_readiness_payload(load_json(path))
+
+
+def build_source_refresh_brief(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    refresh_plan_path: str | Path = DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
+    refresh_apply_path: str | Path = DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
+    refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    refresh_live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    scout = _load_optional_json(scout_path)
+    evidence = _load_optional_json(evidence_path)
+    refresh_plan = _load_optional_json(refresh_plan_path)
+    refresh_apply = _load_optional_json(refresh_apply_path)
+    live_gate = _load_optional_json(refresh_live_gate_path)
+    live_run = _load_optional_json(refresh_live_run_path)
+    preflight = _load_optional_json(refresh_live_preflight_path)
+    actions = _source_refresh_brief_actions(refresh_plan=refresh_plan, refresh_apply=refresh_apply, live_gate=live_gate)
+    blocked_live = [action for action in actions if action.get("approval_required") == "live_network_refresh"]
+    ready_local = [action for action in actions if action.get("decision") == "ready"]
+    weak_evidence = _source_refresh_weak_evidence(evidence=evidence, scout=scout)
+    status = _source_refresh_brief_status(
+        actions=actions,
+        live_gate=live_gate,
+        live_run=live_run,
+        preflight=preflight,
+    )
+    payload = {
+        "schema_version": SOURCE_REFRESH_BRIEF_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "status": status,
+        "recommended_topic": scout.get("recommended_topic", {}),
+        "summary": {
+            "action_count": len(actions),
+            "ready_local_count": len(ready_local),
+            "blocked_live_count": len(blocked_live),
+            "weak_evidence_count": len(weak_evidence),
+            "gate_status": live_gate.get("status", "missing"),
+            "approval_status": live_run.get("approval_status", "missing"),
+            "live_run_status": live_run.get("execution", {}).get("status", "missing"),
+            "preflight_status": preflight.get("status", "missing"),
+        },
+        "weak_evidence": weak_evidence,
+        "actions": actions,
+        "operator_decision": _source_refresh_operator_decision(live_gate=live_gate, live_run=live_run, preflight=preflight),
+        "next_action": _source_refresh_next_action(status=status, live_gate=live_gate, live_run=live_run, preflight=preflight),
+        "phone_links": {
+            "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+        },
+        "inputs": {
+            "scout": Path(scout_path).as_posix(),
+            "evidence": Path(evidence_path).as_posix(),
+            "refresh_plan": Path(refresh_plan_path).as_posix(),
+            "refresh_apply": Path(refresh_apply_path).as_posix(),
+            "refresh_live_gate": Path(refresh_live_gate_path).as_posix(),
+            "refresh_live_run": Path(refresh_live_run_path).as_posix(),
+            "refresh_live_preflight": Path(refresh_live_preflight_path).as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "no_paid_api",
+            "no_credentials",
+            "no_account_access",
+            "no_order_execution",
+            "live_refresh_requires_separate_approval_and_confirmation",
+        ],
+    }
+    return payload
+
+
+def write_source_refresh_brief(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    refresh_plan_path: str | Path = DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
+    refresh_apply_path: str | Path = DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
+    refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    refresh_live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
+) -> Path:
+    payload = build_source_refresh_brief(
+        scout_path=scout_path,
+        evidence_path=evidence_path,
+        refresh_plan_path=refresh_plan_path,
+        refresh_apply_path=refresh_apply_path,
+        refresh_live_gate_path=refresh_live_gate_path,
+        refresh_live_run_path=refresh_live_run_path,
+        refresh_live_preflight_path=refresh_live_preflight_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_source_refresh_brief(payload), encoding="utf-8")
+    return target
+
+
+def validate_source_refresh_brief_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != SOURCE_REFRESH_BRIEF_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"no_refresh_needed", "local_ready", "approval_required", "preflight_required", "ready_to_execute", "executed", "blocked"}:
+        errors.append("status must be a recognized source refresh brief status")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if not payload.get("next_action"):
+        errors.append("next_action must not be empty")
+    if not payload.get("phone_links", {}).get("source_refresh"):
+        errors.append("phone_links.source_refresh must not be empty")
+    if "does_not_fetch_live_network" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include does_not_fetch_live_network")
+    for index, action in enumerate(payload.get("actions", [])):
+        for field in ["source_name", "adapter_id", "decision", "status", "approval_required", "reason"]:
+            if field not in action:
+                errors.append(f"actions[{index}] missing {field}")
+        command = action.get("command", "")
+        if any(fragment in command for fragment in ["--send", "--confirm-host-write", "launchctl", "tailscale serve --bg"]):
+            errors.append(f"actions[{index}] command crosses non-refresh external-effect boundary")
+    decision = payload.get("operator_decision", {})
+    if decision.get("approval_required") and not decision.get("copy_ready_response"):
+        errors.append("operator_decision with approval_required must include copy_ready_response")
+    return errors
+
+
+def validate_source_refresh_brief_file(path: str | Path) -> list[str]:
+    return validate_source_refresh_brief_payload(load_json(path))
+
+
+def render_source_refresh_brief(payload: dict[str, Any]) -> str:
+    status_label = {
+        "no_refresh_needed": "새로고침 필요 낮음",
+        "local_ready": "로컬 작업 먼저 가능",
+        "approval_required": "승인 필요",
+        "preflight_required": "사전점검 필요",
+        "ready_to_execute": "실행 전 최종 확인",
+        "executed": "실행 증거 있음",
+        "blocked": "차단됨",
+    }.get(payload.get("status", ""), payload.get("status", "unknown"))
+    summary = payload.get("summary", {})
+    topic = payload.get("recommended_topic", {})
+    weak_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(item.get('kind', 'weak'))}</span>"
+        f"<strong>{esc(item.get('title', ''))}</strong>"
+        f"<p>{esc(item.get('why_it_matters', ''))}</p>"
+        "</article>"
+        for item in payload.get("weak_evidence", [])
+    ) or "<p>오늘 기록된 약한 근거가 없습니다.</p>"
+    action_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(action.get('decision', ''))} · {esc(action.get('approval_required', 'none'))}</span>"
+        f"<strong>{esc(action.get('source_name', ''))}</strong>"
+        f"<p>{esc(action.get('reason', ''))}</p>"
+        f"<small>{esc(action.get('expected_artifact', ''))}</small>"
+        "</article>"
+        for action in payload.get("actions", [])
+    ) or "<p>오늘 계획된 source refresh action이 없습니다.</p>"
+    decision = payload.get("operator_decision", {})
+    decision_card = (
+        "<article class='decision'>"
+        f"<span>{esc(decision.get('risk_level', 'medium'))}</span>"
+        f"<strong>{esc(decision.get('title', 'live refresh decision'))}</strong>"
+        f"<p>{esc(decision.get('why', ''))}</p>"
+        f"<code>{esc(decision.get('copy_ready_response', ''))}</code>"
+        f"<small>{esc(decision.get('stale_context_guard', ''))}</small>"
+        "</article>"
+        if decision.get("approval_required")
+        else "<p>지금 승인해야 할 live source refresh 결정은 없습니다.</p>"
+    )
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if label != "source_refresh"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Source Refresh</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+a {{ color:var(--blue); font-weight:900; text-decoration:none; }}
+.eyebrow,.card span,.decision span {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small {{ color:var(--muted); }}
+.hero,.section,.card,.decision {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
+.metric strong {{ display:block; font-size:24px; }}
+.stack {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.card,.decision {{ background:white; padding:14px; min-width:0; }}
+.card strong,.decision strong {{ display:block; margin:5px 0; }}
+.card p,.card small,.decision p,.decision small {{ overflow-wrap:anywhere; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.stack,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Source Refresh · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>오늘 근거 새로고침 판단</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('next_action', ''))}</p>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Actions</span><strong>{esc(summary.get('action_count', 0))}</strong></article>
+<article class="metric"><span>Local</span><strong>{esc(summary.get('ready_local_count', 0))}</strong></article>
+<article class="metric"><span>Live</span><strong>{esc(summary.get('blocked_live_count', 0))}</strong></article>
+<article class="metric"><span>Weak</span><strong>{esc(summary.get('weak_evidence_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>오늘 주제</h2>
+<article class="card">
+<span>{esc(topic.get('confidence', 'unknown'))}</span>
+<strong>{esc(topic.get('name', '오늘 추천 주제 없음'))}</strong>
+<p>{esc(topic.get('why', topic.get('why_today', '')))}</p>
+</article>
+</section>
+<section class="section">
+<h2>약한 근거</h2>
+<div class="stack">{weak_cards}</div>
+</section>
+<section class="section">
+<h2>Source actions</h2>
+<div class="stack">{action_cards}</div>
+</section>
+<section class="section">
+<h2>사람이 결정할 것</h2>
+{decision_card}
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 화면은 로컬 artifact만 읽습니다. live network refresh, paid API, credential use, notification send, host scheduler write, 계좌 접근, 주문 실행은 별도 승인 없이 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def render_daily_readiness(payload: dict[str, Any]) -> str:
@@ -1564,6 +1845,7 @@ def write_today_surface(
     refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     agenda_surface_path: str | Path | None = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
+    source_refresh_surface_path: str | Path | None = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -1601,6 +1883,7 @@ def write_today_surface(
             agenda=agenda,
             brief_path=Path(brief_path),
             agenda_surface_path=Path(agenda_surface_path) if agenda_surface_path else None,
+            source_refresh_surface_path=Path(source_refresh_surface_path) if source_refresh_surface_path else None,
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
             journal_surface_path=Path(journal_surface_path) if journal_surface_path else None,
@@ -1628,6 +1911,7 @@ def render_today_surface(
     agenda: dict[str, Any],
     brief_path: Path,
     agenda_surface_path: Path | None = None,
+    source_refresh_surface_path: Path | None = None,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
     journal_surface_path: Path | None = None,
@@ -1781,6 +2065,11 @@ def render_today_surface(
         if agenda_surface_path
         else "<span>오늘 agenda 없음</span>"
     )
+    source_refresh_link = (
+        f"<a href='{esc(_relative_href(source_refresh_surface_path))}'>근거 새로고침 판단</a>"
+        if source_refresh_surface_path
+        else "<span>근거 새로고침 판단 없음</span>"
+    )
     questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
@@ -1900,6 +2189,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <div class="links">
 <a href="{esc(_relative_href(brief_path))}">상세 시장 브리프</a>
 {agenda_link}
+{source_refresh_link}
 {journal_link}
 {task_queue_link}
 {task_ledger_link}
@@ -2731,6 +3021,7 @@ def build_morning_control_packet(
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
     readiness_surface_path: str | Path = DEFAULT_DAILY_READINESS_SURFACE,
     scheduler_surface_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE,
+    source_refresh_surface_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     vault_surface_path: str | Path = DEFAULT_VAULT_SURFACE_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
@@ -2788,6 +3079,7 @@ def build_morning_control_packet(
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "readiness": Path(readiness_surface_path).as_posix(),
             "scheduler": Path(scheduler_surface_path).as_posix(),
+            "source_refresh": Path(source_refresh_surface_path).as_posix(),
             "today": Path(today_path).as_posix(),
             "agenda": Path(agenda_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
@@ -2844,6 +3136,7 @@ def write_morning_control_packet(
     runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
     readiness_surface_path: str | Path = DEFAULT_DAILY_READINESS_SURFACE,
     scheduler_surface_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE,
+    source_refresh_surface_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
@@ -2861,6 +3154,7 @@ def write_morning_control_packet(
         runtime_doctor_path=runtime_doctor_path,
         readiness_surface_path=readiness_surface_path,
         scheduler_surface_path=scheduler_surface_path,
+        source_refresh_surface_path=source_refresh_surface_path,
         agenda_path=agenda_path,
         agenda_surface_path=agenda_surface_path,
     )
@@ -4875,6 +5169,150 @@ def _readiness_age_hours(path: Path, *, payload: dict[str, Any], now: datetime) 
             pass
     modified = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
     return (now - modified).total_seconds() / 3600
+
+
+def _source_refresh_brief_actions(
+    *,
+    refresh_plan: dict[str, Any],
+    refresh_apply: dict[str, Any],
+    live_gate: dict[str, Any],
+) -> list[dict[str, Any]]:
+    plan_by_adapter = {item.get("adapter_id", ""): item for item in refresh_plan.get("actions", [])}
+    blocked_by_adapter = {item.get("adapter_id", ""): item for item in live_gate.get("blocked_actions", [])}
+    rows = []
+    for result in refresh_apply.get("results", []):
+        adapter_id = result.get("adapter_id", "")
+        plan = plan_by_adapter.get(adapter_id, {})
+        blocked = blocked_by_adapter.get(adapter_id, {})
+        rows.append({
+            "source_name": result.get("source_name", plan.get("source_name", "")),
+            "adapter_id": adapter_id,
+            "decision": result.get("decision", ""),
+            "status": result.get("status", ""),
+            "approval_required": result.get("approval_required", "none"),
+            "reason": result.get("reason", plan.get("reason", "")),
+            "command": result.get("command", plan.get("command", "")),
+            "expected_artifact": result.get("expected_artifact", blocked.get("expected_artifact", "")),
+            "cadence": plan.get("cadence", ""),
+            "priority": plan.get("priority", ""),
+        })
+    if rows:
+        return rows
+    return [
+        {
+            "source_name": item.get("source_name", ""),
+            "adapter_id": item.get("adapter_id", ""),
+            "decision": "planned",
+            "status": "not_applied",
+            "approval_required": "operator_review" if item.get("adapter_id") in {"gdelt-live", "stooq-live"} else "none",
+            "reason": item.get("reason", ""),
+            "command": item.get("command", ""),
+            "expected_artifact": item.get("expected_artifact", ""),
+            "cadence": item.get("cadence", ""),
+            "priority": item.get("priority", ""),
+        }
+        for item in refresh_plan.get("actions", [])
+    ]
+
+
+def _source_refresh_weak_evidence(*, evidence: dict[str, Any], scout: dict[str, Any]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for gap in evidence.get("collection_gaps", [])[:4]:
+        rows.append({
+            "kind": "catalog_gap",
+            "title": _gap_label(gap),
+            "why_it_matters": "브리프 확신도를 낮추는 evidence catalog gap입니다.",
+        })
+    for recommendation in scout.get("recommendations", [])[:3]:
+        missing = recommendation.get("missing_evidence", []) or []
+        for gap in missing[:2]:
+            rows.append({
+                "kind": recommendation.get("name", "topic"),
+                "title": _gap_label(gap),
+                "why_it_matters": recommendation.get("why", "오늘 주제 판단 전에 확인해야 할 약한 근거입니다."),
+            })
+    seen = set()
+    deduped = []
+    for row in rows:
+        key = (row["kind"], row["title"])
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(row)
+    return deduped[:6]
+
+
+def _source_refresh_brief_status(
+    *,
+    actions: list[dict[str, Any]],
+    live_gate: dict[str, Any],
+    live_run: dict[str, Any],
+    preflight: dict[str, Any],
+) -> str:
+    if live_run.get("execution", {}).get("status") == "executed":
+        return "executed"
+    if preflight.get("status") == "passed":
+        return "ready_to_execute"
+    if live_run.get("approval_status") == "approved" and live_run.get("execution", {}).get("status") == "ready_to_execute":
+        return "preflight_required"
+    if live_gate.get("status") == "approval_required":
+        return "approval_required"
+    if any(action.get("decision") == "ready" for action in actions):
+        return "local_ready"
+    if not actions:
+        return "no_refresh_needed"
+    return "blocked"
+
+
+def _source_refresh_operator_decision(
+    *,
+    live_gate: dict[str, Any],
+    live_run: dict[str, Any],
+    preflight: dict[str, Any],
+) -> dict[str, Any]:
+    decision = (live_gate.get("decisions") or [{}])[0]
+    if live_gate.get("status") != "approval_required":
+        return {
+            "approval_required": False,
+            "title": "live source refresh 승인 없음",
+            "why": "현재 live refresh gate가 승인 요구 상태가 아닙니다.",
+        }
+    return {
+        "approval_required": True,
+        "id": decision.get("id", "live_network_refresh"),
+        "title": "free/no-key live source refresh 승인",
+        "why": "GDELT 또는 Stooq 같은 무료 공개 자료 live refresh 후보가 있지만 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.",
+        "approval_scope": decision.get("approval_scope", "live_network_refresh"),
+        "risk_level": decision.get("risk_level", "medium"),
+        "copy_ready_response": decision.get("copy_ready_response", "approve live_network_refresh live_network_refresh"),
+        "stale_context_guard": decision.get("stale_context_guard", "Regenerate refresh artifacts if scout or source plan changed."),
+        "approval_status": live_run.get("approval_status", "missing"),
+        "preflight_status": preflight.get("status", "missing"),
+    }
+
+
+def _source_refresh_next_action(
+    *,
+    status: str,
+    live_gate: dict[str, Any],
+    live_run: dict[str, Any],
+    preflight: dict[str, Any],
+) -> str:
+    if status == "executed":
+        return "live evidence catalog가 생성됐습니다. validator를 통과한 뒤 daily loop를 다시 실행해 브리프에 반영하세요."
+    if status == "ready_to_execute":
+        return "preflight가 통과했습니다. 실제 live network 실행은 별도 최종 확인 후에만 진행하세요."
+    if status == "preflight_required":
+        return "승인 응답은 유효합니다. 실행 전 source-refresh-live-preflight를 실행해 source id, output path, confirmation을 확인하세요."
+    if status == "approval_required":
+        decision = (live_gate.get("decisions") or [{}])[0]
+        return f"필요하면 다음 응답을 검토하세요: {decision.get('copy_ready_response', 'approve live_network_refresh live_network_refresh')}"
+    if status == "local_ready":
+        return "먼저 로컬/샘플/cache 작업을 검증하고, live refresh는 약한 근거가 계속 남을 때만 승인하세요."
+    if status == "no_refresh_needed":
+        return "오늘은 별도 source refresh가 필요하지 않습니다. agenda와 today brief를 먼저 읽으세요."
+    blockers = preflight.get("blockers") or live_run.get("execution", {}).get("blockers", [])
+    return "차단 이유를 먼저 해소하세요: " + (", ".join(blockers[:3]) if blockers else "refresh artifacts를 다시 생성하세요.")
 
 
 def _scheduler_proof_artifact(
