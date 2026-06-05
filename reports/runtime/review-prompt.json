@@ -1,0 +1,155 @@
+{
+  "schema_version": "operator_review_prompt.v1",
+  "generated_at": "2026-06-05T18:14:03.526321+00:00",
+  "status": "needs_feedback",
+  "summary": {
+    "prompt_count": 3,
+    "current_response_count": 0,
+    "applied_response_count": 0,
+    "operator_feedback_signal": "0",
+    "ready_task_count": 0
+  },
+  "why_this_exists": "다음 scout와 방향 점검이 실제 사용자 피드백을 근거로 조정되도록, 오늘 남길 수 있는 짧은 응답을 제안합니다.",
+  "prompt_cards": [
+    {
+      "prompt_id": "RP-001",
+      "topic": "Semiconductors",
+      "feedback_goal": "내일 scout 조정",
+      "why_feedback_matters": "근거 4개 · 출처군 2개 · vault 1개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.",
+      "suggested_question": "Vault 노트 'Semiconductor cycle learning note'가 오늘 근거와 같은 방향을 가리키나요?",
+      "copy_ready_commands": [
+        {
+          "action": "read",
+          "label": "읽었음",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'read \"Semiconductors\" \"Semiconductors을 읽었다\"'",
+          "why": "오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다.",
+          "external_effect_performed": false
+        },
+        {
+          "action": "more",
+          "label": "더 보기",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'more \"Semiconductors\" \"Semiconductors을 내일도 더 보고 싶다\"'",
+          "why": "내일도 이 주제를 더 높은 우선순위로 보게 합니다.",
+          "external_effect_performed": false
+        },
+        {
+          "action": "confusing",
+          "label": "헷갈림",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'confusing \"Semiconductors\" \"Semiconductors 설명이 아직 어렵다\"'",
+          "why": "다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.",
+          "external_effect_performed": false
+        },
+        {
+          "action": "skip",
+          "label": "건너뜀",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'skip \"Semiconductors\" \"Semiconductors은 오늘은 건너뛴다\"'",
+          "why": "이 주제를 당장은 낮은 우선순위로 내리게 합니다.",
+          "external_effect_performed": false
+        }
+      ],
+      "next_agent_effect": "응답은 local review memory에만 저장되고 다음 scout 점수에 반영됩니다."
+    },
+    {
+      "prompt_id": "RP-002",
+      "topic": "Consumer weakness",
+      "feedback_goal": "내일 scout 조정",
+      "why_feedback_matters": "근거 5개 · 출처군 3개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.",
+      "suggested_question": "오늘 Consumer weakness에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+      "copy_ready_commands": [
+        {
+          "action": "read",
+          "label": "읽었음",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'read \"Consumer weakness\" \"Consumer weakness을 읽었다\"'",
+          "why": "오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다.",
+          "external_effect_performed": false
+        },
+        {
+          "action": "more",
+          "label": "더 보기",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'more \"Consumer weakness\" \"Consumer weakness을 내일도 더 보고 싶다\"'",
+          "why": "내일도 이 주제를 더 높은 우선순위로 보게 합니다.",
+          "external_effect_performed": false
+        },
+        {
+          "action": "confusing",
+          "label": "헷갈림",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'confusing \"Consumer weakness\" \"Consumer weakness 설명이 아직 어렵다\"'",
+          "why": "다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.",
+          "external_effect_performed": false
+        },
+        {
+          "action": "skip",
+          "label": "건너뜀",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'skip \"Consumer weakness\" \"Consumer weakness은 오늘은 건너뛴다\"'",
+          "why": "이 주제를 당장은 낮은 우선순위로 내리게 합니다.",
+          "external_effect_performed": false
+        }
+      ],
+      "next_agent_effect": "응답은 local review memory에만 저장되고 다음 scout 점수에 반영됩니다."
+    },
+    {
+      "prompt_id": "RP-003",
+      "topic": "Korea semiconductors",
+      "feedback_goal": "내일 scout 조정",
+      "why_feedback_matters": "근거 5개 · 출처군 3개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.",
+      "suggested_question": "오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+      "copy_ready_commands": [
+        {
+          "action": "read",
+          "label": "읽었음",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'read \"Korea semiconductors\" \"Korea semiconductors을 읽었다\"'",
+          "why": "오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다.",
+          "external_effect_performed": false
+        },
+        {
+          "action": "more",
+          "label": "더 보기",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'more \"Korea semiconductors\" \"Korea semiconductors을 내일도 더 보고 싶다\"'",
+          "why": "내일도 이 주제를 더 높은 우선순위로 보게 합니다.",
+          "external_effect_performed": false
+        },
+        {
+          "action": "confusing",
+          "label": "헷갈림",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'confusing \"Korea semiconductors\" \"Korea semiconductors 설명이 아직 어렵다\"'",
+          "why": "다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.",
+          "external_effect_performed": false
+        },
+        {
+          "action": "skip",
+          "label": "건너뜀",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'skip \"Korea semiconductors\" \"Korea semiconductors은 오늘은 건너뛴다\"'",
+          "why": "이 주제를 당장은 낮은 우선순위로 내리게 합니다.",
+          "external_effect_performed": false
+        }
+      ],
+      "next_agent_effect": "응답은 local review memory에만 저장되고 다음 scout 점수에 반영됩니다."
+    }
+  ],
+  "next_agent_effect": "review-response를 남기고 appliance run을 다시 실행하면 daily_review가 갱신되고 다음 scout score에 operator_review가 반영됩니다.",
+  "input_artifacts": {
+    "scout": "reports/daily/scout.json",
+    "daily_review": "reports/memory/daily-review.json",
+    "drift_review": "reports/runtime/drift-review.json",
+    "task_ledger": "reports/memory/analyst-task-ledger.json"
+  },
+  "phone_links": {
+    "today": "reports/product/today.html",
+    "review": "reports/product/review.html",
+    "review_prompt": "reports/product/review-prompt.html",
+    "drift_review": "reports/product/drift-review.html",
+    "morning": "reports/product/morning.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "local_review_prompt_only",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_live_trading"
+  ]
+}

@@ -44,6 +44,7 @@ ANALYST_TASK_QUEUE_SCHEMA_VERSION = "personal_analyst_task_queue.v1"
 ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
 ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION = "personal_analyst_task_status_apply.v1"
 DAILY_REVIEW_SCHEMA_VERSION = "daily_review.v1"
+OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION = "operator_review_prompt.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUN_TRACE_SCHEMA_VERSION = "local_run_trace.v1"
 DRIFT_REVIEW_SCHEMA_VERSION = "local_drift_review.v1"
@@ -85,6 +86,8 @@ DEFAULT_ANALYST_TASK_RESPONSES = Path("reports/memory/analyst-task-responses.jso
 DEFAULT_ANALYST_TASK_STATUS_APPLY = Path("reports/memory/analyst-task-status-apply.json")
 DEFAULT_DAILY_REVIEW_RESPONSES = Path("reports/memory/daily-review-responses.jsonl")
 DEFAULT_DAILY_REVIEW_SURFACE = Path("reports/product/review.html")
+DEFAULT_REVIEW_PROMPT_OUTPUT = Path("reports/runtime/review-prompt.json")
+DEFAULT_REVIEW_PROMPT_SURFACE = Path("reports/product/review-prompt.html")
 DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
 DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
 DEFAULT_RUN_TRACE_OUTPUT = Path("reports/runtime/run-trace.json")
@@ -1615,6 +1618,8 @@ def build_daily_readiness(
         ("run_trace_surface", DEFAULT_RUN_TRACE_SURFACE, "phone_surface", False),
         ("drift_review", DEFAULT_DRIFT_REVIEW_OUTPUT, "control_artifact", False),
         ("drift_review_surface", DEFAULT_DRIFT_REVIEW_SURFACE, "phone_surface", False),
+        ("review_prompt", DEFAULT_REVIEW_PROMPT_OUTPUT, "control_artifact", False),
+        ("review_prompt_surface", DEFAULT_REVIEW_PROMPT_SURFACE, "phone_surface", False),
         ("daily_scout", DEFAULT_DAILY_SCOUT_OUTPUT, "machine_artifact", True),
         ("daily_evidence", DEFAULT_DAILY_EVIDENCE_OUTPUT, "machine_artifact", True),
         ("topic_memory", DEFAULT_TOPIC_MEMORY_OUTPUT, "memory_artifact", True),
@@ -1673,6 +1678,7 @@ def build_daily_readiness(
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
@@ -1760,6 +1766,7 @@ def build_run_trace(
     task_queue_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
     task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
     daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    review_prompt_path: str | Path = DEFAULT_REVIEW_PROMPT_OUTPUT,
     scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
     generated_at: datetime | None = None,
@@ -1780,6 +1787,7 @@ def build_run_trace(
         ("task_queue", task_queue_path, "queue", "Turns the journal into local analyst tasks.", True),
         ("task_ledger", task_ledger_path, "queue", "Preserves task state across days.", True),
         ("daily_review", daily_review_path, "feedback", "Records what the operator read, skipped, or wants more of.", False),
+        ("review_prompt", review_prompt_path, "feedback", "Suggests copy-ready responses so operator feedback can shape the next run.", False),
         ("scheduler_operations", scheduler_operations_path, "ops", "Shows automation readiness without host writes.", False),
         ("today_surface", today_path, "publish", "Renders the phone-readable daily entry point.", True),
     ]
@@ -1815,12 +1823,14 @@ def build_run_trace(
             "source_refresh_brief",
             "task_ledger",
             "daily_review",
+            "review_prompt",
         ],
         "phone_links": {
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
@@ -1942,6 +1952,7 @@ def build_drift_review(
             "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
             "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
@@ -2700,6 +2711,7 @@ def write_today_surface(
     agenda_surface_path: str | Path | None = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     source_refresh_surface_path: str | Path | None = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     review_surface_path: str | Path | None = DEFAULT_DAILY_REVIEW_SURFACE,
+    review_prompt_surface_path: str | Path | None = DEFAULT_REVIEW_PROMPT_SURFACE,
     pattern_radar_surface_path: str | Path | None = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path | None = DEFAULT_RUN_TRACE_SURFACE,
     drift_review_surface_path: str | Path | None = DEFAULT_DRIFT_REVIEW_SURFACE,
@@ -2742,6 +2754,7 @@ def write_today_surface(
             agenda_surface_path=Path(agenda_surface_path) if agenda_surface_path else None,
             source_refresh_surface_path=Path(source_refresh_surface_path) if source_refresh_surface_path else None,
             review_surface_path=Path(review_surface_path) if review_surface_path else None,
+            review_prompt_surface_path=Path(review_prompt_surface_path) if review_prompt_surface_path else None,
             pattern_radar_surface_path=Path(pattern_radar_surface_path) if pattern_radar_surface_path else None,
             run_trace_surface_path=Path(run_trace_surface_path) if run_trace_surface_path else None,
             drift_review_surface_path=Path(drift_review_surface_path) if drift_review_surface_path else None,
@@ -2774,6 +2787,7 @@ def render_today_surface(
     agenda_surface_path: Path | None = None,
     source_refresh_surface_path: Path | None = None,
     review_surface_path: Path | None = None,
+    review_prompt_surface_path: Path | None = None,
     pattern_radar_surface_path: Path | None = None,
     run_trace_surface_path: Path | None = None,
     drift_review_surface_path: Path | None = None,
@@ -2940,6 +2954,11 @@ def render_today_surface(
         if review_surface_path
         else "<span>오늘 review 없음</span>"
     )
+    review_prompt_link = (
+        f"<a href='{esc(_relative_href(review_prompt_surface_path))}'>오늘 피드백 가이드</a>"
+        if review_prompt_surface_path
+        else "<span>오늘 피드백 가이드 없음</span>"
+    )
     pattern_radar_link = (
         f"<a href='{esc(_relative_href(pattern_radar_surface_path))}'>방식 업데이트 레이더</a>"
         if pattern_radar_surface_path
@@ -3076,6 +3095,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 {agenda_link}
 {source_refresh_link}
 {review_link}
+{review_prompt_link}
 {pattern_radar_link}
 {run_trace_link}
 {drift_review_link}
@@ -3115,6 +3135,8 @@ def archive_daily_run(
     task_ledger_path: str | Path | None = None,
     daily_review_path: str | Path | None = None,
     daily_review_surface_path: str | Path | None = None,
+    review_prompt_path: str | Path | None = None,
+    review_prompt_surface_path: str | Path | None = None,
     pattern_radar_path: str | Path | None = None,
     pattern_radar_surface_path: str | Path | None = None,
     run_trace_path: str | Path | None = None,
@@ -3146,6 +3168,8 @@ def archive_daily_run(
         "task_ledger": task_ledger_path,
         "daily_review": daily_review_path,
         "daily_review_surface": daily_review_surface_path,
+        "review_prompt": review_prompt_path,
+        "review_prompt_surface": review_prompt_surface_path,
         "agent_pattern_radar": pattern_radar_path,
         "agent_pattern_radar_surface": pattern_radar_surface_path,
         "run_trace": run_trace_path,
@@ -4148,6 +4172,282 @@ code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; backgrou
 """
 
 
+def build_operator_review_prompt(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    drift_review_path: str | Path = DEFAULT_DRIFT_REVIEW_OUTPUT,
+    task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    scout = _load_optional_json(scout_path)
+    review = _load_optional_json(daily_review_path)
+    drift = _load_optional_json(drift_review_path)
+    ledger = _load_optional_json(task_ledger_path)
+    recommendations = scout.get("recommendations", []) if scout.get("schema_version") == "daily_scout.v1" else []
+    cards = [
+        _operator_review_prompt_card(index=index, recommendation=recommendation)
+        for index, recommendation in enumerate(recommendations[:3], start=1)
+    ] or [_operator_review_prompt_fallback_card()]
+    review_summary = review.get("summary", {}) if review.get("schema_version") == DAILY_REVIEW_SCHEMA_VERSION else {}
+    drift_signal = next(
+        (signal for signal in drift.get("signals", []) if signal.get("name") == "operator_feedback"),
+        {},
+    )
+    ledger_summary = ledger.get("summary", {}) if ledger.get("schema_version") == ANALYST_TASK_LEDGER_SCHEMA_VERSION else {}
+    payload = {
+        "schema_version": OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "status": "needs_feedback" if int(review_summary.get("response_count", 0) or 0) == 0 else "ready",
+        "summary": {
+            "prompt_count": len(cards),
+            "current_response_count": int(review_summary.get("response_count", 0) or 0),
+            "applied_response_count": int(review_summary.get("applied_response_count", 0) or 0),
+            "operator_feedback_signal": str(drift_signal.get("value", review_summary.get("response_count", 0))),
+            "ready_task_count": int(ledger_summary.get("ready_for_local_work", 0) or 0),
+        },
+        "why_this_exists": "다음 scout와 방향 점검이 실제 사용자 피드백을 근거로 조정되도록, 오늘 남길 수 있는 짧은 응답을 제안합니다.",
+        "prompt_cards": cards,
+        "next_agent_effect": "review-response를 남기고 appliance run을 다시 실행하면 daily_review가 갱신되고 다음 scout score에 operator_review가 반영됩니다.",
+        "input_artifacts": {
+            "scout": Path(scout_path).as_posix(),
+            "daily_review": Path(daily_review_path).as_posix(),
+            "drift_review": Path(drift_review_path).as_posix(),
+            "task_ledger": Path(task_ledger_path).as_posix(),
+        },
+        "phone_links": {
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "review": DEFAULT_DAILY_REVIEW_SURFACE.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+            "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "local_review_prompt_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_live_trading",
+        ],
+    }
+    return payload
+
+
+def write_operator_review_prompt(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    drift_review_path: str | Path = DEFAULT_DRIFT_REVIEW_OUTPUT,
+    task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    artifact_output_path: str | Path = DEFAULT_REVIEW_PROMPT_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
+) -> Path:
+    payload = build_operator_review_prompt(
+        scout_path=scout_path,
+        daily_review_path=daily_review_path,
+        drift_review_path=drift_review_path,
+        task_ledger_path=task_ledger_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_operator_review_prompt(payload), encoding="utf-8")
+    return target
+
+
+def validate_operator_review_prompt_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"needs_feedback", "ready"}:
+        errors.append("status must be needs_feedback or ready")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if "local_review_prompt_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include local_review_prompt_only")
+    cards = payload.get("prompt_cards", [])
+    if not cards:
+        errors.append("prompt_cards must not be empty")
+    for index, card in enumerate(cards):
+        for field in ["prompt_id", "topic", "why_feedback_matters", "copy_ready_commands", "next_agent_effect"]:
+            if field not in card:
+                errors.append(f"prompt_cards[{index}] missing {field}")
+        commands = card.get("copy_ready_commands", [])
+        if not commands:
+            errors.append(f"prompt_cards[{index}] copy_ready_commands must not be empty")
+        for command_index, command in enumerate(commands):
+            command_text = command.get("command", "")
+            if "review-response" not in command_text:
+                errors.append(f"prompt_cards[{index}].copy_ready_commands[{command_index}] must call review-response")
+            if command.get("external_effect_performed") is not False:
+                errors.append(f"prompt_cards[{index}].copy_ready_commands[{command_index}] external_effect_performed must be false")
+    return errors
+
+
+def validate_operator_review_prompt_file(path: str | Path) -> list[str]:
+    return validate_operator_review_prompt_payload(load_json(path))
+
+
+def render_operator_review_prompt(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(card.get('prompt_id', 'RP'))} · {esc(card.get('feedback_goal', 'review'))}</span>"
+        f"<strong>{esc(card.get('topic', '오늘 주제'))}</strong>"
+        f"<p>{esc(card.get('why_feedback_matters', ''))}</p>"
+        f"<small>{esc(card.get('next_agent_effect', ''))}</small>"
+        + "".join(
+            "<div class='command'>"
+            f"<b>{esc(command.get('label', '응답'))}</b>"
+            f"<code>{esc(command.get('command', ''))}</code>"
+            f"<small>{esc(command.get('why', ''))}</small>"
+            "</div>"
+            for command in card.get("copy_ready_commands", [])
+        )
+        + "</article>"
+        for card in payload.get("prompt_cards", [])
+    )
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if label != "review_prompt"
+    )
+    status_label = {
+        "needs_feedback": "피드백 필요",
+        "ready": "피드백 있음",
+    }.get(payload.get("status", ""), payload.get("status", "unknown"))
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Review Prompt</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+.eyebrow,.card span,.command b {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small {{ color:var(--muted); }}
+.hero,.section,.card {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics,.links {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+.metric,.card,.command {{ background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:26px; }}
+.stack {{ display:grid; grid-template-columns:1fr; gap:10px; }}
+.card strong {{ display:block; margin:5px 0; font-size:20px; }}
+.card p,.card small {{ overflow-wrap:anywhere; }}
+.command {{ margin-top:10px; border:1px solid var(--line); border-radius:8px; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Review Prompt · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>오늘 남길 피드백</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('why_this_exists', ''))}</p>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Prompts</span><strong>{esc(summary.get('prompt_count', 0))}</strong></article>
+<article class="metric"><span>Responses</span><strong>{esc(summary.get('current_response_count', 0))}</strong></article>
+<article class="metric"><span>Applied</span><strong>{esc(summary.get('applied_response_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>복사해서 남길 응답</h2>
+<div class="stack">{cards}</div>
+</section>
+<section class="section">
+<h2>다음에 바뀌는 것</h2>
+<p>{esc(payload.get('next_agent_effect', ''))}</p>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def _operator_review_prompt_card(*, index: int, recommendation: dict[str, Any]) -> dict[str, Any]:
+    topic = recommendation.get("name", "오늘 주제")
+    why = recommendation.get("why", recommendation.get("next_question", "오늘 읽은 뒤 더 볼지 판단합니다."))
+    commands = [
+        _review_prompt_command("read", topic, "읽었음", "오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다."),
+        _review_prompt_command("more", topic, "더 보기", "내일도 이 주제를 더 높은 우선순위로 보게 합니다."),
+        _review_prompt_command("confusing", topic, "헷갈림", "다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다."),
+        _review_prompt_command("skip", topic, "건너뜀", "이 주제를 당장은 낮은 우선순위로 내리게 합니다."),
+    ]
+    return {
+        "prompt_id": f"RP-{index:03d}",
+        "topic": topic,
+        "feedback_goal": "내일 scout 조정",
+        "why_feedback_matters": why,
+        "suggested_question": recommendation.get("next_question", f"{topic}을 내일도 더 볼 가치가 있나?"),
+        "copy_ready_commands": commands,
+        "next_agent_effect": "응답은 local review memory에만 저장되고 다음 scout 점수에 반영됩니다.",
+    }
+
+
+def _operator_review_prompt_fallback_card() -> dict[str, Any]:
+    topic = "오늘 브리프"
+    return {
+        "prompt_id": "RP-001",
+        "topic": topic,
+        "feedback_goal": "scout 생성 전 기본 피드백",
+        "why_feedback_matters": "아직 scout 추천이 없으므로 먼저 appliance run을 실행하고, 읽은 뒤 가장 가까운 응답을 남깁니다.",
+        "suggested_question": "오늘 브리프가 이해됐나, 더 볼 주제가 있나?",
+        "copy_ready_commands": [
+            _review_prompt_command("read", topic, "읽었음", "오늘 브리프를 읽었다는 최소 피드백을 남깁니다."),
+            _review_prompt_command("confusing", topic, "헷갈림", "다음 브리프가 더 쉬운 설명을 요구하도록 남깁니다."),
+        ],
+        "next_agent_effect": "다음 run에서 daily_review가 생성되면 가능한 범위에서 scout 판단에 반영됩니다.",
+    }
+
+
+def _review_prompt_command(action: str, topic: str, label: str, why: str) -> dict[str, Any]:
+    response = f'{action} "{topic}" "{_review_prompt_default_note(action=action, topic=topic)}"'
+    return {
+        "action": action,
+        "label": label,
+        "command": f"PYTHONPATH=src python3 -m mybroker appliance review-response {shlex.quote(response)}",
+        "why": why,
+        "external_effect_performed": False,
+    }
+
+
+def _review_prompt_default_note(*, action: str, topic: str) -> str:
+    notes = {
+        "read": f"{topic}을 읽었다",
+        "more": f"{topic}을 내일도 더 보고 싶다",
+        "confusing": f"{topic} 설명이 아직 어렵다",
+        "skip": f"{topic}은 오늘은 건너뛴다",
+    }
+    return notes.get(action, f"{topic} 피드백")
+
+
 def _load_daily_review_responses(path: str | Path) -> list[dict[str, Any]]:
     target = Path(path)
     if not target.exists():
@@ -4241,6 +4541,7 @@ def build_morning_control_packet(
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
+    review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
@@ -4302,6 +4603,7 @@ def build_morning_control_packet(
             "today": Path(today_path).as_posix(),
             "agenda": Path(agenda_surface_path).as_posix(),
             "review": Path(review_surface_path).as_posix(),
+            "review_prompt": Path(review_prompt_surface_path).as_posix(),
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
             "trace": Path(run_trace_surface_path).as_posix(),
             "drift_review": Path(drift_review_surface_path).as_posix(),
@@ -4363,6 +4665,7 @@ def write_morning_control_packet(
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
+    review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
@@ -4385,6 +4688,7 @@ def write_morning_control_packet(
         agenda_path=agenda_path,
         agenda_surface_path=agenda_surface_path,
         review_surface_path=review_surface_path,
+        review_prompt_surface_path=review_prompt_surface_path,
         pattern_radar_surface_path=pattern_radar_surface_path,
         run_trace_surface_path=run_trace_surface_path,
         drift_review_surface_path=drift_review_surface_path,
@@ -5732,7 +6036,7 @@ def _drift_review_next_steps(*, decision: dict[str, str], signals: list[dict[str
     else:
         steps.append("readiness, trace, pattern radar 중 약한 신호를 먼저 확인합니다.")
     if any(signal["name"] == "operator_feedback" and signal["value"] == "0" for signal in signals):
-        steps.append("operator review 응답이 없으므로 다음 daily review surface에서 피드백을 남깁니다.")
+        steps.append("operator review 응답이 없으므로 review prompt에서 복사 가능한 피드백을 남깁니다.")
     return steps
 
 

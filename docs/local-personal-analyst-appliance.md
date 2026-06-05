@@ -147,6 +147,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/daily-agenda.html`: phone-readable agenda with reading order, source fan-out, weak evidence, role work, and follow-up questions.
 - `reports/memory/daily-review.json`: machine-readable local operator review signals for what was read, skipped, confusing, or worth seeing more often.
 - `reports/product/review.html`: phone-readable review memory surface and copy-ready response example.
+- `reports/product/review-prompt.html`: phone-readable prompt surface that suggests copy-ready
+  `review-response` commands for current scout topics before the next run.
 - `reports/runtime/agent-pattern-radar.json`: machine-readable record of which external agentic workflow patterns are adopted, partially adopted, or rejected for the local daily analyst loop.
 - `reports/product/pattern-radar.html`: phone-readable workflow evolution radar for the next safe slice and safety guardrails.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
@@ -182,6 +184,10 @@ The apply artifact records `external_effect_performed: false`; it updates status
 `more "Semiconductors" "메모리 업황을 더 보고 싶다"`, and `review` turns those responses into
 `daily_review.v1`. The next `daily-scout` reads that artifact and adds an `operator_review` score
 factor. This is local memory only: it does not execute tasks, fetch live data, or send notifications.
+`review-prompt` turns the current scout, review memory, drift review, and task ledger into
+`operator_review_prompt.v1` plus `reports/product/review-prompt.html`. It is a phone-first helper
+for leaving better feedback; it does not change topic scores until the operator actually records a
+`review-response`.
 `pattern-radar` writes `agent_pattern_radar.v1` and `reports/product/pattern-radar.html`. It
 keeps Hermes/OpenClaw/MiroFish/TradingAgents/work-buddy/Dexter/TaskWeaver/TraceAgent/Obsidian-style
 lessons explicit: adopted patterns become local surfaces, memory, review, role separation, scenario
