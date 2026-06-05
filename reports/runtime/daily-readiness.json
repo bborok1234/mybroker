@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-05T19:38:11.694880+00:00",
+  "generated_at": "2026-06-05T19:39:26.300951+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.655910+00:00",
+      "generated_at": "2026-06-05T19:39:26.259673+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -52,7 +52,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.655009+00:00",
+      "generated_at": "2026-06-05T19:39:26.258333+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -74,7 +74,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.694411+00:00",
+      "generated_at": "2026-06-05T19:39:26.300475+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -96,7 +96,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.690384+00:00",
+      "generated_at": "2026-06-05T19:39:26.295825+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
@@ -118,7 +118,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.693326+00:00",
+      "generated_at": "2026-06-05T19:39:26.299268+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
@@ -140,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.680643+00:00",
+      "generated_at": "2026-06-05T19:39:26.285510+00:00",
       "schema_version": "operator_review_prompt.v1"
     },
     {
@@ -162,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.681130+00:00",
+      "generated_at": "2026-06-05T19:39:26.286217+00:00",
       "schema_version": "operator_review_effect.v1"
     },
     {
@@ -184,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.678660+00:00",
+      "generated_at": "2026-06-05T19:39:26.283427+00:00",
       "schema_version": "analyst_council.v1"
     },
     {
@@ -206,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.652710+00:00",
+      "generated_at": "2026-06-05T19:39:26.255654+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -217,7 +217,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.650895+00:00",
+      "generated_at": "2026-06-05T19:39:26.253910+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -228,7 +228,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.651300+00:00",
+      "generated_at": "2026-06-05T19:39:26.254229+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -239,7 +239,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.657228+00:00",
+      "generated_at": "2026-06-05T19:39:26.261275+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -250,7 +250,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.657228+00:00",
+      "generated_at": "2026-06-05T19:39:26.261275+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -261,7 +261,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.669421+00:00",
+      "generated_at": "2026-06-05T19:39:26.272235+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -271,7 +271,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 12.14,
+      "age_hours": 12.16,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -283,7 +283,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.688535+00:00",
+      "generated_at": "2026-06-05T19:39:26.294447+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -294,7 +294,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.688991+00:00",
+      "generated_at": "2026-06-05T19:39:26.294907+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -315,7 +315,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 1.62,
+      "age_hours": 1.64,
       "generated_at": "",
       "schema_version": ""
     },
@@ -338,7 +338,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T19:38:11.676893+00:00",
+      "generated_at": "2026-06-05T19:39:26.281601+00:00",
       "schema_version": "personal_memory_audit.v1"
     },
     {

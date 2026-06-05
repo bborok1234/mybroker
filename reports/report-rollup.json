@@ -1,6 +1,6 @@
 {
   "schema_version": "report_rollup.v1",
-  "generated_at": "2026-06-05T19:38:11.662510+00:00",
+  "generated_at": "2026-06-05T19:39:26.264819+00:00",
   "reports_dir": "reports/runs",
   "report_count": 2,
   "latest_report": {
@@ -129,7 +129,7 @@
   "latest_scenario": {
     "path": "reports/scenarios/daily-research-sim.json",
     "run_id": "daily-research",
-    "generated_at": "2026-06-05T19:38:11.657228+00:00",
+    "generated_at": "2026-06-05T19:39:26.261275+00:00",
     "product_mode": "beginner_market_understanding_simulation",
     "seed_sources": [
       {
@@ -340,48 +340,48 @@
       ],
       "research_plan": {
         "run_id": "daily-research",
-        "generated_at": "2026-06-05T19:38:02.628244+00:00",
+        "generated_at": "2026-06-05T19:39:18.426013+00:00",
         "topic_count": 5,
         "next_step": "collect_free_public_evidence"
       },
       "topic_memory_snapshot": {
         "memory_path": "reports/memory/topic-memory.json",
-        "run_count": 45,
+        "run_count": 46,
         "topics": [
           {
             "topic_id": "ai-infrastructure",
             "name": "AI infrastructure",
-            "new_evidence_count": 2,
-            "changed_since_previous": true,
-            "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
           },
           {
             "topic_id": "semiconductors",
             "name": "Semiconductors",
-            "new_evidence_count": 2,
-            "changed_since_previous": true,
-            "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
           },
           {
             "topic_id": "us-rates",
             "name": "US rates",
-            "new_evidence_count": 1,
-            "changed_since_previous": true,
-            "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 1개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음."
           },
           {
             "topic_id": "consumer-weakness",
             "name": "Consumer weakness",
-            "new_evidence_count": 2,
-            "changed_since_previous": true,
-            "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
           },
           {
             "topic_id": "korea-semiconductors",
             "name": "Korea semiconductors",
-            "new_evidence_count": 2,
-            "changed_since_previous": true,
-            "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
           }
         ]
       },
@@ -741,7 +741,7 @@
     {
       "path": "reports/scenarios/daily-research-sim.json",
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T19:38:11.657228+00:00",
+      "generated_at": "2026-06-05T19:39:26.261275+00:00",
       "product_mode": "beginner_market_understanding_simulation",
       "seed_sources": [
         {
@@ -952,48 +952,48 @@
         ],
         "research_plan": {
           "run_id": "daily-research",
-          "generated_at": "2026-06-05T19:38:02.628244+00:00",
+          "generated_at": "2026-06-05T19:39:18.426013+00:00",
           "topic_count": 5,
           "next_step": "collect_free_public_evidence"
         },
         "topic_memory_snapshot": {
           "memory_path": "reports/memory/topic-memory.json",
-          "run_count": 45,
+          "run_count": 46,
           "topics": [
             {
               "topic_id": "ai-infrastructure",
               "name": "AI infrastructure",
-              "new_evidence_count": 2,
-              "changed_since_previous": true,
-              "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개."
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
             },
             {
               "topic_id": "semiconductors",
               "name": "Semiconductors",
-              "new_evidence_count": 2,
-              "changed_since_previous": true,
-              "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개."
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
             },
             {
               "topic_id": "us-rates",
               "name": "US rates",
-              "new_evidence_count": 1,
-              "changed_since_previous": true,
-              "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 1개."
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음."
             },
             {
               "topic_id": "consumer-weakness",
               "name": "Consumer weakness",
-              "new_evidence_count": 2,
-              "changed_since_previous": true,
-              "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개."
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
             },
             {
               "topic_id": "korea-semiconductors",
               "name": "Korea semiconductors",
-              "new_evidence_count": 2,
-              "changed_since_previous": true,
-              "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개."
+              "new_evidence_count": 0,
+              "changed_since_previous": false,
+              "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
             }
           ]
         },
@@ -2562,7 +2562,7 @@
     "plan": {
       "schema_version": "daily_research_plan.v1",
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T19:38:02.628244+00:00",
+      "generated_at": "2026-06-05T19:39:18.426013+00:00",
       "topics_path": "config/topics.json",
       "policy": {
         "output_boundary": "research_only",
@@ -2710,8 +2710,8 @@
     },
     "memory": {
       "schema_version": "topic_memory.v1",
-      "generated_at": "2026-06-05T19:38:11.651300+00:00",
-      "run_count": 45,
+      "generated_at": "2026-06-05T19:39:26.254229+00:00",
+      "run_count": 46,
       "topics": [
         {
           "topic_id": "ai-infrastructure",
@@ -2735,9 +2735,9 @@
             "GDELT",
             "SEC EDGAR"
           ],
-          "new_evidence_count": 2,
-          "changed_since_previous": true,
-          "latest_summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개.",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.",
           "daily_questions": [
             "오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
             "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
@@ -2771,9 +2771,9 @@
             "GDELT",
             "SEC EDGAR"
           ],
-          "new_evidence_count": 2,
-          "changed_since_previous": true,
-          "latest_summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개.",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.",
           "daily_questions": [
             "오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
             "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
@@ -2802,9 +2802,9 @@
             "GDELT",
             "Stooq"
           ],
-          "new_evidence_count": 1,
-          "changed_since_previous": true,
-          "latest_summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 1개.",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음.",
           "daily_questions": [
             "오늘 US rates에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
             "금리와 국채 수익률 변화가 이 테마의 가격 부담을 키우고 있나요?",
@@ -2843,9 +2843,9 @@
             "SEC EDGAR",
             "Stooq"
           ],
-          "new_evidence_count": 2,
-          "changed_since_previous": true,
-          "latest_summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개.",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.",
           "daily_questions": [
             "오늘 Consumer weakness에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
             "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
@@ -2885,9 +2885,9 @@
             "SEC EDGAR",
             "Stooq"
           ],
-          "new_evidence_count": 2,
-          "changed_since_previous": true,
-          "latest_summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개.",
+          "new_evidence_count": 0,
+          "changed_since_previous": false,
+          "latest_summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.",
           "daily_questions": [
             "오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
             "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
@@ -2901,13 +2901,6 @@
         }
       ],
       "runs": [
-        {
-          "run_id": "daily-research",
-          "generated_at": "2026-06-05T14:37:49.573873+00:00",
-          "evidence_catalog": "2026-06-05T14:37:49.573741+00:00",
-          "topic_count": 5,
-          "changed_topics": []
-        },
         {
           "run_id": "daily-research",
           "generated_at": "2026-06-05T14:57:26.618518+00:00",
@@ -3052,6 +3045,13 @@
             "consumer-weakness",
             "korea-semiconductors"
           ]
+        },
+        {
+          "run_id": "daily-research",
+          "generated_at": "2026-06-05T19:39:26.254223+00:00",
+          "evidence_catalog": "2026-06-05T19:39:26.253910+00:00",
+          "topic_count": 5,
+          "changed_topics": []
         }
       ],
       "policy": {
@@ -3067,7 +3067,7 @@
     },
     "evidence": {
       "schema_version": "public_evidence_catalog.v1",
-      "generated_at": "2026-06-05T19:38:11.650895+00:00",
+      "generated_at": "2026-06-05T19:39:26.253910+00:00",
       "mode": "sample_cache_topic_research",
       "source_status": [
         {
@@ -3728,7 +3728,7 @@
       ],
       "research_plan": {
         "run_id": "daily-research",
-        "generated_at": "2026-06-05T19:38:02.628244+00:00",
+        "generated_at": "2026-06-05T19:39:18.426013+00:00",
         "topic_count": 5,
         "next_step": "collect_free_public_evidence"
       },
@@ -3738,42 +3738,42 @@
       ],
       "topic_memory_snapshot": {
         "memory_path": "reports/memory/topic-memory.json",
-        "run_count": 45,
+        "run_count": 46,
         "topics": [
           {
             "topic_id": "ai-infrastructure",
             "name": "AI infrastructure",
-            "new_evidence_count": 2,
-            "changed_since_previous": true,
-            "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
           },
           {
             "topic_id": "semiconductors",
             "name": "Semiconductors",
-            "new_evidence_count": 2,
-            "changed_since_previous": true,
-            "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 2개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
           },
           {
             "topic_id": "us-rates",
             "name": "US rates",
-            "new_evidence_count": 1,
-            "changed_since_previous": true,
-            "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 1개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음."
           },
           {
             "topic_id": "consumer-weakness",
             "name": "Consumer weakness",
-            "new_evidence_count": 2,
-            "changed_since_previous": true,
-            "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
           },
           {
             "topic_id": "korea-semiconductors",
             "name": "Korea semiconductors",
-            "new_evidence_count": 2,
-            "changed_since_previous": true,
-            "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 2개."
+            "new_evidence_count": 0,
+            "changed_since_previous": false,
+            "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
           }
         ]
       }

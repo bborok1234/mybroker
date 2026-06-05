@@ -1,11 +1,11 @@
 {
   "schema_version": "personal_memory_audit.v1",
-  "generated_at": "2026-06-05T19:38:11.676893+00:00",
+  "generated_at": "2026-06-05T19:39:26.281601+00:00",
   "status": "ready",
   "audit_mode": "local_memory_and_vault_audit",
   "summary": {
     "topic_count": 5,
-    "run_count": 45,
+    "run_count": 46,
     "archive_count": 1,
     "vault_note_count": 1,
     "source_count": 3,
@@ -41,8 +41,8 @@
     },
     {
       "name": "change_detection",
-      "status": "ready",
-      "value": "5 changed topics",
+      "status": "needs_attention",
+      "value": "0 changed topics",
       "why_it_matters": "매일 무엇이 달라졌는지 보여야 시장 공부 루프가 누적됩니다."
     }
   ],
