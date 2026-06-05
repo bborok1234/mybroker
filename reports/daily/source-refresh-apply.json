@@ -1,6 +1,6 @@
 {
   "schema_version": "source_refresh_apply.v1",
-  "generated_at": "2026-06-05T20:15:29.963837+00:00",
+  "generated_at": "2026-06-05T21:42:36.930751+00:00",
   "inputs": {
     "refresh_plan_path": "reports/daily/source-refresh-plan.json"
   },

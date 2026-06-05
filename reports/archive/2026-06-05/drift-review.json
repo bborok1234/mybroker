@@ -1,6 +1,6 @@
 {
   "schema_version": "local_drift_review.v1",
-  "generated_at": "2026-06-05T20:15:30.008205+00:00",
+  "generated_at": "2026-06-05T21:42:36.986366+00:00",
   "status": "approval_required",
   "run_id": "daily-research",
   "decision": {
@@ -37,7 +37,7 @@
     },
     {
       "name": "operator_feedback",
-      "value": "0",
+      "value": "1",
       "interpretation": "operator review가 적으면 방향 판단 confidence를 낮춥니다."
     }
   ],
@@ -45,7 +45,7 @@
     "추천 branch를 확인합니다: hold_external_effect_until_scoped_approval",
     "새 외부효과 작업은 source/host/notification approval gate와 분리합니다.",
     "operator가 명시 승인하기 전까지 live/source/host 작업은 진행하지 않습니다.",
-    "operator review 응답이 없으므로 review prompt에서 복사 가능한 피드백을 남깁니다."
+    "operator review effect에서 피드백이 scout score에 반영됐는지 확인합니다."
   ],
   "input_artifacts": {
     "run_trace": "reports/runtime/run-trace.json",

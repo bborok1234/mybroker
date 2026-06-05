@@ -1,13 +1,13 @@
 {
   "schema_version": "personal_analyst_journal.v1",
-  "generated_at": "2026-06-05T20:15:29.983519+00:00",
+  "generated_at": "2026-06-05T21:42:36.958373+00:00",
   "run_id": "daily-research",
   "status": "stable_monitor",
   "today_focus": {
     "title": "먼저 시장 흐름을 학습",
     "rationale": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
     "recommended_topic": "Semiconductors",
-    "recommended_action": "monitor",
+    "recommended_action": "inspect_first",
     "confidence": "low-medium"
   },
   "what_changed": [],
@@ -61,7 +61,7 @@
     },
     {
       "role": "memory_librarian",
-      "finding": "누적 실행 48회, vault note 1개를 연결했습니다.",
+      "finding": "누적 실행 49회, vault note 1개를 연결했습니다.",
       "next_check": "오늘 질문이 내일 다시 검색 가능한 표현인지 확인합니다."
     }
   ],

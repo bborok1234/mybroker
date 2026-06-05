@@ -290,6 +290,11 @@ configured interests with source breadth, memory changes, evidence gaps, linked 
 local operator review signals.
 `appliance run` creates this artifact automatically, and `appliance today` renders it as "오늘 Scout
 추천" so the first phone screen explains what to inspect first and why.
+It is also the autonomous start contract for beginner users: the operator does not need to enter
+a ticker, sector, event, or thesis before the day begins. `daily_scout.v1` must say that the
+system recommends the first topic, explain why today in beginner-readable language, provide a
+reading order, and include short copy-ready feedback responses such as `more`, `confusing`, and
+`done`.
 
 `appliance agenda` is the phone-first work-shaping step. It writes
 `reports/daily/brief-agenda.json` and `reports/product/daily-agenda.html` from the current scout,
@@ -297,6 +302,8 @@ evidence, memory, vault, and refresh plan. The agenda translates the top scout t
 20-minute reading sequence, source fan-out, weak-evidence warnings, role-specific analyst work,
 and follow-up questions. It does not fetch live data or make investment decisions; it helps the
 operator study the right thing first and stop before overclaiming weak evidence.
+The agenda uses the scout's structured operator brief and feedback responses rather than inventing
+a separate product narrative.
 
 `appliance readiness` is the cross-day trust check. It writes
 `reports/runtime/daily-readiness.json` and `reports/product/readiness.html` by reading existing
@@ -308,9 +315,11 @@ schedulers, or perform host/network effects.
 `appliance home` is the first phone surface to open each day. It writes
 `daily_operator_home.v1` and `reports/product/daily-home.html` by reading existing today, morning,
 readiness, handoff, handoff-response-apply, run-ledger, scheduler operations, phone access,
-phone access verification, notification, and memory audit artifacts. It does not render project
-progress, fetch live data, send notifications, write host state, or make recommendations; it only
-orders the existing local surfaces and safe response commands.
+phone access verification, notification, memory audit, scout, and agenda artifacts. The first
+screen must show the autonomous scout's recommended topic and why it was picked before asking the
+operator to open deeper surfaces. It does not render project progress, fetch live data, send
+notifications, write host state, or make recommendations; it only orders the existing local
+surfaces and safe response commands.
 
 `appliance access-verify` is the no-effect proof before testing from the phone. It writes
 `phone_access_verify.v1` and `reports/product/phone-access.html` by reading the access plan and
