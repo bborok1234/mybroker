@@ -16,6 +16,7 @@ from mybroker.appliance import (
     DEFAULT_PHONE_ACCESS_OUTPUT,
     DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
     DEFAULT_RUNTIME_DOCTOR_OUTPUT,
+    DEFAULT_SCHEDULER_ACTIVATION_PREFLIGHT_OUTPUT,
     DEFAULT_SCHEDULER_APPLY_OUTPUT,
     DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT,
     DEFAULT_SCHEDULER_STATUS_OUTPUT,
@@ -29,6 +30,7 @@ from mybroker.appliance import (
     write_phone_access_plan,
     write_runtime_doctor,
     write_runtime_playbook,
+    write_scheduler_activation_preflight,
     write_scheduler_apply,
     write_scheduler_run_once,
     write_scheduler_status,
@@ -215,6 +217,10 @@ def main(argv: list[str] | None = None) -> int:
     appliance_scheduler_run_once_parser.add_argument("--project-root", default=".")
     appliance_scheduler_run_once_parser.add_argument("--output", default=DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT.as_posix())
     appliance_scheduler_run_once_parser.add_argument("--timeout-seconds", type=int, default=240)
+    appliance_scheduler_preflight_parser = appliance_scheduler_subcommands.add_parser("activation-preflight", help="Check whether scheduler activation has enough local proof before host-level writes.")
+    appliance_scheduler_preflight_parser.add_argument("--project-root", default=".")
+    appliance_scheduler_preflight_parser.add_argument("--output", default=DEFAULT_SCHEDULER_ACTIVATION_PREFLIGHT_OUTPUT.as_posix())
+    appliance_scheduler_preflight_parser.add_argument("--max-proof-age-hours", type=int, default=24)
     appliance_today_parser = appliance_subcommands.add_parser("today", help="Render the mobile-first /today product surface.")
     appliance_today_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
     appliance_today_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
@@ -557,6 +563,22 @@ def main(argv: list[str] | None = None) -> int:
                     "duration_seconds": payload["duration_seconds"],
                 }, indent=2, ensure_ascii=False))
                 return 0 if payload["status"] == "passed" else 1
+            if args.scheduler_command == "activation-preflight":
+                path = write_scheduler_activation_preflight(
+                    project_root=args.project_root,
+                    output_path=args.output,
+                    max_proof_age_hours=args.max_proof_age_hours,
+                )
+                payload = json.loads(Path(path).read_text(encoding="utf-8"))
+                print(json.dumps({
+                    "scheduler_activation_preflight": path.as_posix(),
+                    "status": payload["status"],
+                    "blocker_count": len(payload["blockers"]),
+                    "warning_count": len(payload["warnings"]),
+                    "host_write_performed": payload["host_write_performed"],
+                    "next_action": payload["next_action"],
+                }, indent=2, ensure_ascii=False))
+                return 0 if payload["status"] in {"ready", "already_active"} else 1
         if args.appliance_command == "today":
             path = write_today_surface(
                 scenario_path=args.scenario,
