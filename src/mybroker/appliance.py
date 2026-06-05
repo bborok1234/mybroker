@@ -34,6 +34,7 @@ OPERATOR_DECISION_APPLY_SCHEMA_VERSION = "operator_decision_apply.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 ANALYST_JOURNAL_SCHEMA_VERSION = "personal_analyst_journal.v1"
+ANALYST_TASK_QUEUE_SCHEMA_VERSION = "personal_analyst_task_queue.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
@@ -55,6 +56,8 @@ DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
 DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
 DEFAULT_ANALYST_JOURNAL_OUTPUT = Path("reports/product/journal.html")
 DEFAULT_ANALYST_JOURNAL_ARTIFACT = Path("reports/memory/analyst-journal.json")
+DEFAULT_ANALYST_TASK_QUEUE_OUTPUT = Path("reports/product/tasks.html")
+DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT = Path("reports/memory/analyst-task-queue.json")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_RUNTIME_DOCTOR_ACTIVATION_OUTPUT = Path("reports/runtime/local-runtime-doctor-activation.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
@@ -757,6 +760,7 @@ def write_today_surface(
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
     journal_surface_path: str | Path | None = None,
+    task_queue_surface_path: str | Path | None = None,
 ) -> Path:
     scenario = load_json(scenario_path)
     verdict = load_json(verdict_path)
@@ -788,6 +792,7 @@ def write_today_surface(
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
             journal_surface_path=Path(journal_surface_path) if journal_surface_path else None,
+            task_queue_surface_path=Path(task_queue_surface_path) if task_queue_surface_path else None,
         ),
         encoding="utf-8",
     )
@@ -811,6 +816,7 @@ def render_today_surface(
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
     journal_surface_path: Path | None = None,
+    task_queue_surface_path: Path | None = None,
 ) -> str:
     market_map = scenario.get("market_map", {})
     primary = verdict.get("primary_next_step") or {}
@@ -934,6 +940,11 @@ def render_today_surface(
         if journal_surface_path
         else "<span>Analyst journal 없음</span>"
     )
+    task_queue_link = (
+        f"<a href='{esc(_relative_href(task_queue_surface_path))}'>다음 analyst tasks</a>"
+        if task_queue_surface_path
+        else "<span>Analyst tasks 없음</span>"
+    )
     questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
@@ -1042,6 +1053,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <div class="links">
 <a href="{esc(_relative_href(brief_path))}">상세 시장 브리프</a>
 {journal_link}
+{task_queue_link}
 {memory_link}
 {archive_link}
 </div>
@@ -1071,6 +1083,7 @@ def archive_daily_run(
     refresh_live_run_path: str | Path | None = None,
     refresh_live_preflight_path: str | Path | None = None,
     journal_path: str | Path | None = None,
+    task_queue_path: str | Path | None = None,
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
 ) -> Path:
     timestamp = datetime.now(timezone.utc)
@@ -1088,6 +1101,7 @@ def archive_daily_run(
         "source_refresh_live_run": refresh_live_run_path,
         "source_refresh_live_preflight": refresh_live_preflight_path,
         "journal": journal_path,
+        "tasks": task_queue_path,
         "brief": brief_path,
         "today": today_path,
     }.items():
@@ -1398,8 +1412,239 @@ p,small,li {{ color:var(--muted); }}
 <div class="links">{artifact_links}</div>
 </section>
 <section class="section">
+<h2>다음 작업 큐</h2>
+<div class="links"><a href="tasks.html">내일 이어갈 analyst tasks</a></div>
+</section>
+<section class="section">
 <h2>안전 경계</h2>
 <p>교육과 리서치, 시뮬레이션용 기록입니다. 계좌 접근, 주문 실행, 일임 운용, 근거 없는 개인화 추천을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def build_analyst_task_queue(
+    *,
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    journal = load_json(journal_path)
+    memory = load_json(memory_path) if Path(memory_path).exists() else {}
+    evidence = load_json(evidence_path) if Path(evidence_path).exists() else {}
+    scout = load_json(scout_path) if Path(scout_path).exists() else {}
+    recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    source_posture = journal.get("source_posture", {})
+    questions = journal.get("follow_up_questions", [])
+    collection_gaps = source_posture.get("collection_gaps", evidence.get("collection_gaps", []))
+    weak_count = int(source_posture.get("weak_or_stale_count", 0) or 0)
+    task_specs = [
+        {
+            "role": "source_scout",
+            "title": "자료 신선도와 부족한 근거를 먼저 확인",
+            "why": _task_source_scout_why(collection_gaps=collection_gaps, weak_count=weak_count),
+            "priority": "high" if collection_gaps or weak_count else "medium",
+            "inputs": ["reports/evidence/daily-evidence-catalog.json", "reports/daily/source-refresh-plan.json"],
+            "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker source-refresh-plan",
+            "approval_scope": "local_dry_run_only",
+        },
+        {
+            "role": "market_mapper",
+            "title": "오늘 초점 주제를 시장 지도에 다시 연결",
+            "why": recommended.get("why", journal.get("today_focus", {}).get("rationale", "오늘 초점과 시장 지도 연결을 점검합니다.")),
+            "priority": "high",
+            "inputs": ["reports/scenarios/daily-research-sim.json", "reports/scenarios/daily-research-verdict.json"],
+            "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance today",
+            "approval_scope": "local_render_only",
+        },
+        {
+            "role": "skeptic",
+            "title": "가장 약한 결론을 반대 근거로 공격",
+            "why": _task_skeptic_why(journal=journal),
+            "priority": "high",
+            "inputs": ["reports/memory/analyst-journal.json", "reports/evidence/daily-evidence-catalog.json"],
+            "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance journal",
+            "approval_scope": "local_render_only",
+        },
+        {
+            "role": "beginner_tutor",
+            "title": "초보자가 이해할 질문 하나를 쉬운 언어로 풀기",
+            "why": questions[0] if questions else "오늘 브리프를 처음 보는 사용자가 이해할 출발 질문을 만듭니다.",
+            "priority": "medium",
+            "inputs": ["reports/product/today.html", "reports/product/journal.html"],
+            "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance query \"오늘 먼저 볼 주제\"",
+            "approval_scope": "local_query_only",
+        },
+        {
+            "role": "memory_librarian",
+            "title": "내일 다시 찾을 수 있게 질문과 원천을 정리",
+            "why": f"누적 실행 {memory.get('run_count', 0)}회를 다음 질문과 연결합니다.",
+            "priority": "medium",
+            "inputs": ["reports/memory/topic-memory.json", "reports/vault/compile.json"],
+            "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance memory",
+            "approval_scope": "local_render_only",
+        },
+        {
+            "role": "publisher",
+            "title": "폰에서 볼 표면과 dry-run 알림 상태 점검",
+            "why": "오늘 산출물이 폰에서 읽히고 notification은 dry-run 상태인지 확인합니다.",
+            "priority": "medium",
+            "inputs": ["reports/product/today.html", "reports/product/tasks.html", "reports/notifications/latest.json"],
+            "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance notify --dry-run",
+            "approval_scope": "local_dry_run_only",
+        },
+    ]
+    tasks = []
+    for index, spec in enumerate(task_specs, start=1):
+        tasks.append({
+            "task_id": f"AT-{index:03d}",
+            "role": spec["role"],
+            "title": spec["title"],
+            "why": spec["why"],
+            "priority": spec["priority"],
+            "status": "queued",
+            "autonomy_level": "autonomous_local",
+            "approval_scope": spec["approval_scope"],
+            "external_effect_allowed": False,
+            "requires_operator_approval": False,
+            "inputs": spec["inputs"],
+            "suggested_command": spec["suggested_command"],
+            "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
+        })
+    live_task = _maybe_live_refresh_task(journal=journal)
+    if live_task:
+        tasks.append(live_task)
+    payload = {
+        "schema_version": ANALYST_TASK_QUEUE_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "run_id": journal.get("run_id", ""),
+        "status": "queued",
+        "source_journal": Path(journal_path).as_posix(),
+        "task_count": len(tasks),
+        "tasks": tasks,
+        "reading_order": ["high priority", "source_scout", "skeptic", "market_mapper", "beginner_tutor", "memory_librarian", "publisher"],
+        "policy": "research_only",
+        "safety_boundary": [
+            "queued_tasks_do_not_execute",
+            "no_account_access",
+            "no_live_trading",
+            "no_discretionary_management",
+            "external_effects_require_separate_gate",
+        ],
+    }
+    return payload
+
+
+def write_analyst_task_queue(
+    *,
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
+    surface_output_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
+) -> Path:
+    payload = build_analyst_task_queue(
+        journal_path=journal_path,
+        memory_path=memory_path,
+        evidence_path=evidence_path,
+        scout_path=scout_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_analyst_task_queue(payload), encoding="utf-8")
+    return target
+
+
+def validate_analyst_task_queue_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != ANALYST_TASK_QUEUE_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    tasks = payload.get("tasks", [])
+    if not tasks:
+        errors.append("tasks must not be empty")
+    for index, task in enumerate(tasks):
+        for field in ["task_id", "role", "title", "why", "priority", "status", "approval_scope", "external_effect_allowed", "inputs", "suggested_command"]:
+            if field not in task:
+                errors.append(f"tasks[{index}] missing {field}")
+        if task.get("status") != "queued":
+            errors.append(f"tasks[{index}] status must be queued")
+        if task.get("external_effect_allowed") is True and task.get("requires_operator_approval") is not True:
+            errors.append(f"tasks[{index}] external effects require operator approval")
+    if "queued_tasks_do_not_execute" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include queued_tasks_do_not_execute")
+    return errors
+
+
+def validate_analyst_task_queue_file(path: str | Path) -> list[str]:
+    return validate_analyst_task_queue_payload(load_json(path))
+
+
+def render_analyst_task_queue(payload: dict[str, Any]) -> str:
+    high_count = sum(1 for task in payload.get("tasks", []) if task.get("priority") == "high")
+    task_cards = "".join(
+        "<article class='task'>"
+        f"<span>{esc(task.get('task_id', ''))} · {esc(task.get('role', ''))} · {esc(task.get('priority', ''))}</span>"
+        f"<h2>{esc(task.get('title', ''))}</h2>"
+        f"<p>{esc(task.get('why', ''))}</p>"
+        f"<small>scope: {esc(task.get('approval_scope', ''))} · external effect: {esc('yes' if task.get('external_effect_allowed') else 'no')}</small>"
+        f"<code>{esc(task.get('suggested_command', ''))}</code>"
+        "</article>"
+        for task in payload.get("tasks", [])
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Analyst Tasks</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:18px; }}
+.eyebrow,.task span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:18px; }}
+p,small {{ color:var(--muted); }}
+.hero,.section,.task {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.metrics {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+.metric,.task {{ background:white; padding:14px; }}
+.metric strong {{ display:block; font-size:24px; }}
+.stack {{ display:grid; grid-template-columns:1fr; gap:10px; }}
+code {{ display:block; margin-top:10px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Analyst Tasks · {esc(_short_date(payload.get('generated_at', '')))}</span>
+<h1>내일 이어갈 analyst 작업 큐</h1>
+<p>실행 명령이 아니라, 로컬 개인 애널리스트가 다음에 처리할 역할별 작업 목록입니다.</p>
+</header>
+<section class="hero">
+<div class="metrics">
+<article class="metric"><span>Total</span><strong>{esc(payload.get('task_count', 0))}</strong></article>
+<article class="metric"><span>High</span><strong>{esc(high_count)}</strong></article>
+<article class="metric"><span>Effects</span><strong>0</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>역할별 큐</h2>
+<div class="stack">{task_cards}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 큐는 작업을 실행하지 않습니다. live network, host write, notification send, 계좌/주문/일임 행위는 별도 승인 게이트 없이는 허용하지 않습니다.</p>
 </section>
 </main>
 </body>
@@ -2054,6 +2299,52 @@ def _journal_follow_up_questions(
     if not questions:
         questions.append("오늘 시장을 이해하기 전에 먼저 확인해야 할 원천 자료는 무엇인가요?")
     return questions[:6]
+
+
+def _task_source_scout_why(*, collection_gaps: list[str], weak_count: int) -> str:
+    parts = []
+    if collection_gaps:
+        parts.append(f"자료 gap: {', '.join(_gap_label(gap) for gap in collection_gaps[:3])}")
+    if weak_count:
+        parts.append(f"약하거나 오래된 source {weak_count}개")
+    if not parts:
+        parts.append("오늘 source 상태가 안정적이지만 다음 run 전에 refresh 계획을 확인합니다.")
+    return " · ".join(parts)
+
+
+def _task_skeptic_why(*, journal: dict[str, Any]) -> str:
+    changed = journal.get("what_changed", [])
+    if changed:
+        return f"{changed[0].get('name', '오늘 변화')} 변화가 실제 근거 변화인지 반복 관찰인지 구분합니다."
+    stable = journal.get("stable_observations", [])
+    if stable:
+        return f"{stable[0].get('name', '반복 관찰')}은 새 변화가 없으므로 결론 강도를 낮춰 읽습니다."
+    return "오늘 journal의 가장 강한 문장을 반대 근거로 검토합니다."
+
+
+def _maybe_live_refresh_task(*, journal: dict[str, Any]) -> dict[str, Any] | None:
+    gaps = set(journal.get("source_posture", {}).get("collection_gaps", []))
+    if "live_refresh" not in gaps:
+        return None
+    return {
+        "task_id": "AT-999",
+        "role": "operator_gate",
+        "title": "live source execution 승인 여부 결정",
+        "why": "live_refresh gap이 남아 있지만 실제 live network 실행은 별도 승인과 preflight 통과 없이는 수행하지 않습니다.",
+        "priority": "high",
+        "status": "queued",
+        "autonomy_level": "requires_human_approval",
+        "approval_scope": "live_network_refresh",
+        "external_effect_allowed": False,
+        "requires_operator_approval": True,
+        "inputs": [
+            "reports/daily/source-refresh-live-gate.json",
+            "reports/daily/source-refresh-live-run.json",
+            "reports/daily/source-refresh-live-preflight.json",
+        ],
+        "suggested_command": "Review /today live refresh gate; do not execute without explicit approval.",
+        "stop_condition": "operator_decision_recorded_or_deferred",
+    }
 
 
 def _today_vault_notes(*, vault_notes: list[dict[str, Any]], memory_topics: list[dict[str, Any]]) -> list[dict[str, Any]]:
