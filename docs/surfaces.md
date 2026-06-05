@@ -61,6 +61,7 @@ Machine-readable artifacts include:
 - `personal_analyst_task_ledger.v1`
 - `daily_review.v1`
 - `agent_pattern_radar.v1`
+- `local_run_trace.v1`
 - `scenario_report.v1`
 - `market_verdict.v1`
 - `research_report.v1`

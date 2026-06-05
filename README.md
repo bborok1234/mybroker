@@ -224,6 +224,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/daily/scout.json`: local scout recommendations for what to inspect first;
 - `reports/memory/daily-review.json` and `reports/product/review.html`: local operator feedback about what was read, skipped, confusing, or worth seeing more often; the next scout can use this as a review signal;
 - `reports/runtime/agent-pattern-radar.json` and `reports/product/pattern-radar.html`: local workflow evolution radar that records which Hermes/OpenClaw/MiroFish/TradingAgents/work-buddy/Dexter/TaskWeaver/TraceAgent/Obsidian-style patterns are adopted, partially adopted, deferred, or rejected before they shape the daily analyst loop;
+- `reports/runtime/run-trace.json` and `reports/product/run-trace.html`: compact local proof of which daily steps and artifacts shaped today's phone brief, memory, task queue, and control surfaces;
 - `reports/daily/brief-agenda.json` and `reports/product/daily-agenda.html`: the phone-first daily study agenda that says what to read first, which sources influenced it, what is weak, and what the analyst roles should do next;
 - `reports/daily/source-refresh-plan.json`: dry-run source refresh actions for the scout recommendation;
 - `reports/daily/source-refresh-apply.json`: dry-run execution-readiness decisions for those refresh actions;

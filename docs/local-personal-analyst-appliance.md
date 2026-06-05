@@ -229,6 +229,13 @@ missing, reports scheduler status if available, links the phone surfaces, and sh
 `appliance run --dry-run` command. It does not refresh sources, send notifications, install
 schedulers, or perform host/network effects.
 
+`appliance trace` is the local observability proof. It writes `local_run_trace.v1` and
+`reports/product/run-trace.html` by reading the existing playbook, pattern radar, scout, evidence,
+memory, agenda, source refresh brief, scenario, verdict, journal, task queue, task ledger, daily
+review, scheduler operations, and today surface. It summarizes what shaped today's output, marks
+missing or stale steps, and links the relevant phone surfaces. It does not execute live network,
+send notifications, write host scheduler state, use credentials, or touch account flows.
+
 `source-refresh-plan` is the no-execution source cadence step. It writes
 `reports/daily/source-refresh-plan.json` with dry-run-only actions such as GDELT live, Stooq live,
 SEC sample review, or vault compile. `appliance run` creates it automatically, and `appliance
