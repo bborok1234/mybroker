@@ -32,6 +32,8 @@ from mybroker.appliance import (
     write_scheduler_run_once,
     write_today_surface,
     validate_morning_control_packet_file,
+    validate_daily_brief_agenda_file,
+    validate_daily_brief_agenda_payload,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
 from mybroker.scenario import run_market_simulation, write_scenario_report, write_verdict
@@ -867,9 +869,12 @@ class LocalApplianceTests(unittest.TestCase):
             memory_index = json.loads((root / "reports" / "memory" / "index.json").read_text(encoding="utf-8"))
             journal_payload = json.loads((root / "reports" / "memory" / "analyst-journal.json").read_text(encoding="utf-8"))
             morning_payload = json.loads((root / "reports" / "runtime" / "morning-control.json").read_text(encoding="utf-8"))
+            agenda_payload = json.loads((root / "reports" / "daily" / "brief-agenda.json").read_text(encoding="utf-8"))
+            agenda_errors = validate_daily_brief_agenda_file(root / "reports" / "daily" / "brief-agenda.json")
             manifest_payload = json.loads((root / "reports" / "archive" / "2026-06-05" / "manifest.json").read_text(encoding="utf-8"))
             today_html = (root / "reports" / "product" / "today.html").read_text(encoding="utf-8")
             morning_html = (root / "reports" / "product" / "morning.html").read_text(encoding="utf-8")
+            agenda_html = (root / "reports" / "product" / "daily-agenda.html").read_text(encoding="utf-8")
             vault_html = (root / "reports" / "product" / "vault.html").read_text(encoding="utf-8")
 
         self.assertEqual(result, 0)
@@ -880,9 +885,21 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(memory_index["vault_notes"][0]["title"], "Semiconductor cycle note")
         self.assertIn("vault note 1개", journal_payload["role_notes"][4]["finding"])
         self.assertIn("vault", morning_payload["phone_links"])
+        self.assertIn("agenda", morning_payload["phone_links"])
+        self.assertEqual(agenda_payload["schema_version"], "daily_brief_agenda.v1")
+        self.assertEqual(agenda_errors, [])
+        self.assertEqual(validate_daily_brief_agenda_payload(agenda_payload), [])
+        self.assertIn("phone_first_local_personal_analyst", agenda_payload["mode"])
+        self.assertGreaterEqual(len(agenda_payload["study_sequence"]), 4)
+        self.assertTrue(any(role["role"] == "skeptic" for role in agenda_payload["role_brief"]))
         self.assertIn("vault_compile", manifest_payload["artifacts"])
         self.assertIn("vault", manifest_payload["artifacts"])
+        self.assertIn("daily_agenda", manifest_payload["artifacts"])
+        self.assertIn("daily_agenda_surface", manifest_payload["artifacts"])
+        self.assertIn("오늘 20분 agenda", today_html)
         self.assertIn("Semiconductor cycle note", today_html)
+        self.assertIn("오늘 20분 시장 공부 순서", agenda_html)
+        self.assertIn("아직 결론내리면 안 되는 이유", agenda_html)
         self.assertIn("vault", morning_html)
         self.assertIn("컴파일된 리서치 노트", vault_html)
 

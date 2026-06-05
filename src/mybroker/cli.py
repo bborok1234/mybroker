@@ -15,6 +15,8 @@ from mybroker.appliance import (
     DEFAULT_ANALYST_TASK_LEDGER_OUTPUT,
     DEFAULT_ANALYST_TASK_RESPONSES,
     DEFAULT_ANALYST_TASK_STATUS_APPLY,
+    DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
+    DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
@@ -40,6 +42,7 @@ from mybroker.appliance import (
     write_analyst_journal,
     write_analyst_task_queue,
     write_analyst_task_ledger,
+    write_daily_brief_agenda,
     build_task_status_apply,
     record_task_status_response,
     write_morning_control_packet,
@@ -60,6 +63,7 @@ from mybroker.appliance import (
     validate_analyst_journal_file,
     validate_analyst_task_queue_file,
     validate_analyst_task_ledger_file,
+    validate_daily_brief_agenda_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
 )
@@ -255,6 +259,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_plan_parser.add_argument("plan_path")
     validate_scout_parser = subcommands.add_parser("validate-daily-scout", help="Validate a daily_scout.v1 artifact.")
     validate_scout_parser.add_argument("scout_path")
+    validate_agenda_parser = subcommands.add_parser("validate-daily-agenda", help="Validate a daily_brief_agenda.v1 artifact.")
+    validate_agenda_parser.add_argument("agenda_path")
     validate_refresh_plan_parser = subcommands.add_parser("validate-source-refresh-plan", help="Validate a source_refresh_plan.v1 artifact.")
     validate_refresh_plan_parser.add_argument("refresh_plan_path")
     validate_refresh_apply_parser = subcommands.add_parser("validate-source-refresh-apply", help="Validate a source_refresh_apply.v1 artifact.")
@@ -370,6 +376,8 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--refresh-live-gate", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--refresh-live-run", default=DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--refresh-live-preflight", default=DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix())
+    appliance_today_parser.add_argument("--agenda", default=DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT.as_posix())
+    appliance_today_parser.add_argument("--agenda-surface", default=DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix())
     appliance_today_parser.add_argument("--brief", default="reports/product/market-brief.html")
     appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--archive-manifest")
@@ -377,6 +385,14 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--journal-surface")
     appliance_today_parser.add_argument("--task-queue-surface")
     appliance_today_parser.add_argument("--task-ledger-surface")
+    appliance_agenda_parser = appliance_subcommands.add_parser("agenda", help="Render the phone-first daily study agenda from scout and evidence artifacts.")
+    appliance_agenda_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_agenda_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_agenda_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_agenda_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    appliance_agenda_parser.add_argument("--refresh-plan", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
+    appliance_agenda_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT.as_posix())
+    appliance_agenda_parser.add_argument("--output", default=DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix())
     appliance_memory_parser = appliance_subcommands.add_parser("memory", help="Render the mobile-friendly accumulated memory and archive surface.")
     appliance_memory_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
@@ -756,6 +772,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-daily-agenda":
+        errors = validate_daily_brief_agenda_file(args.agenda_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-source-refresh-plan":
         errors = validate_source_refresh_plan_file(args.refresh_plan_path)
         if errors:
@@ -1082,6 +1105,8 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_gate_path=args.refresh_live_gate,
                 refresh_live_run_path=args.refresh_live_run,
                 refresh_live_preflight_path=args.refresh_live_preflight,
+                agenda_path=args.agenda,
+                agenda_surface_path=args.agenda_surface,
                 brief_path=args.brief,
                 output_path=args.output,
                 archive_manifest_path=args.archive_manifest,
@@ -1091,6 +1116,21 @@ def main(argv: list[str] | None = None) -> int:
                 task_ledger_surface_path=args.task_ledger_surface,
             )
             print(json.dumps({"today": path.as_posix()}, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "agenda":
+            path = write_daily_brief_agenda(
+                scout_path=args.scout,
+                evidence_path=args.evidence,
+                memory_path=args.memory,
+                vault_path=args.vault,
+                refresh_plan_path=args.refresh_plan,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            print(json.dumps({
+                "daily_agenda": path.as_posix(),
+                "artifact": args.artifact_output,
+            }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "memory":
             path = write_memory_surface(
@@ -1272,6 +1312,8 @@ def main(argv: list[str] | None = None) -> int:
             task_status_apply_path = DEFAULT_ANALYST_TASK_STATUS_APPLY
             morning_path = DEFAULT_MORNING_CONTROL_SURFACE
             morning_artifact_path = DEFAULT_MORNING_CONTROL_OUTPUT
+            agenda_artifact_path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT
+            agenda_surface_path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE
             vault_compile_path = Path(args.vault_output)
             vault_surface_path = Path(args.vault_surface_output)
             playbook_path = write_runtime_playbook(args.playbook_output)
@@ -1325,6 +1367,15 @@ def main(argv: list[str] | None = None) -> int:
                 live_run_path=refresh_live_run_path,
                 output_path=refresh_live_preflight_path,
             )
+            written_agenda = write_daily_brief_agenda(
+                scout_path=scout_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=active_vault_path,
+                refresh_plan_path=refresh_plan_path,
+                artifact_output_path=agenda_artifact_path,
+                surface_output_path=agenda_surface_path,
+            )
             report = run_market_simulation(
                 seed_sources=["examples/seeds"],
                 profile_path=args.profile,
@@ -1374,6 +1425,8 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_gate_path=refresh_live_gate_path,
                 refresh_live_run_path=refresh_live_run_path,
                 refresh_live_preflight_path=refresh_live_preflight_path,
+                agenda_path=agenda_artifact_path,
+                agenda_surface_path=written_agenda,
                 brief_path=written_brief,
                 output_path=today_path,
                 journal_surface_path=provisional_journal,
@@ -1398,6 +1451,8 @@ def main(argv: list[str] | None = None) -> int:
                 task_ledger_path=provisional_task_ledger,
                 vault_compile_path=active_vault_path,
                 vault_surface_path=active_vault_surface,
+                agenda_path=agenda_artifact_path,
+                agenda_surface_path=written_agenda,
                 archive_root=args.archive_root,
             )
             written_memory = write_memory_surface(
@@ -1446,6 +1501,8 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_gate_path=refresh_live_gate_path,
                 refresh_live_run_path=refresh_live_run_path,
                 refresh_live_preflight_path=refresh_live_preflight_path,
+                agenda_path=agenda_artifact_path,
+                agenda_surface_path=written_agenda,
                 brief_path=written_brief,
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,
@@ -1475,6 +1532,8 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_preflight_path=refresh_live_preflight_path,
                 notification_path=notification_path,
                 runtime_doctor_path=DEFAULT_RUNTIME_DOCTOR_OUTPUT,
+                agenda_path=agenda_artifact_path,
+                agenda_surface_path=written_agenda,
                 artifact_output_path=morning_artifact_path,
                 surface_output_path=morning_path,
             )
@@ -1488,6 +1547,8 @@ def main(argv: list[str] | None = None) -> int:
                 "source_refresh_live_gate": refresh_live_gate_path.as_posix(),
                 "source_refresh_live_run": refresh_live_run_path.as_posix(),
                 "source_refresh_live_preflight": refresh_live_preflight_path.as_posix(),
+                "daily_agenda": agenda_artifact_path.as_posix(),
+                "daily_agenda_surface": written_agenda.as_posix(),
                 "evidence_catalog": evidence_path.as_posix(),
                 "topic_memory": memory_path.as_posix(),
                 "scenario_report": written_scenario.as_posix(),
