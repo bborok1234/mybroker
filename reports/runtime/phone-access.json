@@ -1,6 +1,6 @@
 {
   "schema_version": "phone_access_plan.v1",
-  "generated_at": "2026-06-05T23:18:49.835919+00:00",
+  "generated_at": "2026-06-05T23:36:17.587120+00:00",
   "recommended_path": "tailscale_serve_private",
   "local_url": "http://localhost:8787/reports/product/daily-home.html",
   "private_phone_url": "https://mybroker-mac/reports/product/daily-home.html",

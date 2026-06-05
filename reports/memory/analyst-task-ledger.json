@@ -1,16 +1,16 @@
 {
   "schema_version": "personal_analyst_task_ledger.v1",
-  "generated_at": "2026-06-05T23:18:49.860905+00:00",
+  "generated_at": "2026-06-05T23:36:17.609519+00:00",
   "run_id": "daily-research",
   "source_task_queue": "reports/memory/analyst-task-queue.json",
   "previous_ledger": "reports/memory/analyst-task-ledger.json",
   "entry_count": 6,
   "summary": {
     "ready_for_local_work": 0,
-    "carried": 6,
+    "carried": 0,
     "blocked_requires_approval": 0,
     "retired_not_in_current_queue": 0,
-    "completed": 0,
+    "completed": 6,
     "deferred": 0,
     "blocked_by_operator": 0
   },
@@ -22,18 +22,40 @@
       "role": "source_scout",
       "title": "자료 신선도와 부족한 근거를 먼저 확인",
       "priority": "high",
-      "status": "carried",
-      "previous_status": "carried",
+      "status": "completed",
+      "previous_status": "completed",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T23:18:49.860905+00:00",
+      "last_seen_at": "2026-06-05T23:36:17.609519+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_dry_run_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker source-refresh-plan",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-      "operator_override": {}
+      "operator_note": "로컬 산출물 2개가 확인되어 자동 완료로 닫았습니다.",
+      "operator_override": {},
+      "local_completion": {
+        "status": "satisfied",
+        "required_count": 2,
+        "present_count": 2,
+        "missing_count": 0,
+        "artifacts": [
+          {
+            "path": "reports/evidence/daily-evidence-catalog.json",
+            "resolved_path": "reports/evidence/daily-evidence-catalog.json",
+            "exists": true,
+            "is_local": true
+          },
+          {
+            "path": "reports/daily/source-refresh-plan.json",
+            "resolved_path": "reports/daily/source-refresh-plan.json",
+            "exists": true,
+            "is_local": true
+          }
+        ],
+        "reason": "all declared local artifact inputs exist",
+        "external_effect_performed": false
+      }
     },
     {
       "ledger_id": "daily-research-AT-002",
@@ -42,18 +64,40 @@
       "role": "market_mapper",
       "title": "오늘 초점 주제를 시장 지도에 다시 연결",
       "priority": "high",
-      "status": "carried",
-      "previous_status": "carried",
+      "status": "completed",
+      "previous_status": "completed",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T23:18:49.860905+00:00",
+      "last_seen_at": "2026-06-05T23:36:17.609519+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_render_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance today",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-      "operator_override": {}
+      "operator_note": "로컬 산출물 2개가 확인되어 자동 완료로 닫았습니다.",
+      "operator_override": {},
+      "local_completion": {
+        "status": "satisfied",
+        "required_count": 2,
+        "present_count": 2,
+        "missing_count": 0,
+        "artifacts": [
+          {
+            "path": "reports/scenarios/daily-research-sim.json",
+            "resolved_path": "reports/scenarios/daily-research-sim.json",
+            "exists": true,
+            "is_local": true
+          },
+          {
+            "path": "reports/scenarios/daily-research-verdict.json",
+            "resolved_path": "reports/scenarios/daily-research-verdict.json",
+            "exists": true,
+            "is_local": true
+          }
+        ],
+        "reason": "all declared local artifact inputs exist",
+        "external_effect_performed": false
+      }
     },
     {
       "ledger_id": "daily-research-AT-003",
@@ -62,18 +106,40 @@
       "role": "skeptic",
       "title": "가장 약한 결론을 반대 근거로 공격",
       "priority": "high",
-      "status": "carried",
-      "previous_status": "carried",
+      "status": "completed",
+      "previous_status": "completed",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T23:18:49.860905+00:00",
+      "last_seen_at": "2026-06-05T23:36:17.609519+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_render_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance journal",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-      "operator_override": {}
+      "operator_note": "로컬 산출물 2개가 확인되어 자동 완료로 닫았습니다.",
+      "operator_override": {},
+      "local_completion": {
+        "status": "satisfied",
+        "required_count": 2,
+        "present_count": 2,
+        "missing_count": 0,
+        "artifacts": [
+          {
+            "path": "reports/memory/analyst-journal.json",
+            "resolved_path": "reports/memory/analyst-journal.json",
+            "exists": true,
+            "is_local": true
+          },
+          {
+            "path": "reports/evidence/daily-evidence-catalog.json",
+            "resolved_path": "reports/evidence/daily-evidence-catalog.json",
+            "exists": true,
+            "is_local": true
+          }
+        ],
+        "reason": "all declared local artifact inputs exist",
+        "external_effect_performed": false
+      }
     },
     {
       "ledger_id": "daily-research-AT-004",
@@ -82,18 +148,40 @@
       "role": "beginner_tutor",
       "title": "초보자가 이해할 질문 하나를 쉬운 언어로 풀기",
       "priority": "medium",
-      "status": "carried",
-      "previous_status": "carried",
+      "status": "completed",
+      "previous_status": "completed",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T23:18:49.860905+00:00",
+      "last_seen_at": "2026-06-05T23:36:17.609519+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_query_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance query \"오늘 먼저 볼 주제\"",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-      "operator_override": {}
+      "operator_note": "로컬 산출물 2개가 확인되어 자동 완료로 닫았습니다.",
+      "operator_override": {},
+      "local_completion": {
+        "status": "satisfied",
+        "required_count": 2,
+        "present_count": 2,
+        "missing_count": 0,
+        "artifacts": [
+          {
+            "path": "reports/product/today.html",
+            "resolved_path": "reports/product/today.html",
+            "exists": true,
+            "is_local": true
+          },
+          {
+            "path": "reports/product/journal.html",
+            "resolved_path": "reports/product/journal.html",
+            "exists": true,
+            "is_local": true
+          }
+        ],
+        "reason": "all declared local artifact inputs exist",
+        "external_effect_performed": false
+      }
     },
     {
       "ledger_id": "daily-research-AT-005",
@@ -102,18 +190,40 @@
       "role": "memory_librarian",
       "title": "내일 다시 찾을 수 있게 질문과 원천을 정리",
       "priority": "medium",
-      "status": "carried",
-      "previous_status": "carried",
+      "status": "completed",
+      "previous_status": "completed",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T23:18:49.860905+00:00",
+      "last_seen_at": "2026-06-05T23:36:17.609519+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_render_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance memory",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-      "operator_override": {}
+      "operator_note": "로컬 산출물 2개가 확인되어 자동 완료로 닫았습니다.",
+      "operator_override": {},
+      "local_completion": {
+        "status": "satisfied",
+        "required_count": 2,
+        "present_count": 2,
+        "missing_count": 0,
+        "artifacts": [
+          {
+            "path": "reports/memory/topic-memory.json",
+            "resolved_path": "reports/memory/topic-memory.json",
+            "exists": true,
+            "is_local": true
+          },
+          {
+            "path": "reports/vault/compile.json",
+            "resolved_path": "reports/vault/compile.json",
+            "exists": true,
+            "is_local": true
+          }
+        ],
+        "reason": "all declared local artifact inputs exist",
+        "external_effect_performed": false
+      }
     },
     {
       "ledger_id": "daily-research-AT-006",
@@ -122,24 +232,53 @@
       "role": "publisher",
       "title": "폰에서 볼 표면과 dry-run 알림 상태 점검",
       "priority": "medium",
-      "status": "carried",
-      "previous_status": "carried",
+      "status": "completed",
+      "previous_status": "completed",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T23:18:49.860905+00:00",
+      "last_seen_at": "2026-06-05T23:36:17.609519+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_dry_run_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance notify --dry-run",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
-      "operator_override": {}
+      "operator_note": "로컬 산출물 3개가 확인되어 자동 완료로 닫았습니다.",
+      "operator_override": {},
+      "local_completion": {
+        "status": "satisfied",
+        "required_count": 3,
+        "present_count": 3,
+        "missing_count": 0,
+        "artifacts": [
+          {
+            "path": "reports/product/today.html",
+            "resolved_path": "reports/product/today.html",
+            "exists": true,
+            "is_local": true
+          },
+          {
+            "path": "reports/product/tasks.html",
+            "resolved_path": "reports/product/tasks.html",
+            "exists": true,
+            "is_local": true
+          },
+          {
+            "path": "reports/notifications/latest.json",
+            "resolved_path": "reports/notifications/latest.json",
+            "exists": true,
+            "is_local": true
+          }
+        ],
+        "reason": "all declared local artifact inputs exist",
+        "external_effect_performed": false
+      }
     }
   ],
   "policy": "research_only",
   "safety_boundary": [
     "ledger_records_status_only",
     "does_not_execute_tasks",
+    "completion_inferred_from_local_artifact_presence_only",
     "no_account_access",
     "no_live_trading",
     "external_effects_require_separate_gate"

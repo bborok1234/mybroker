@@ -369,6 +369,10 @@ network, send notifications, write host scheduler state, use credentials, or tou
 analyst council, memory audit, scout, and run ledger. It shows what was reflected today and what
 remains unresolved, but it does not execute tasks, fetch live network data, send notifications,
 write host scheduler state, use credentials, or touch account flows.
+`appliance task-ledger` can auto-close local-only tasks when every declared local artifact input is
+already present. The ledger records `local_completion` evidence for each task and marks the task
+`completed` only from local artifact presence or an explicit local response; it never runs the
+suggested task command as part of status inference.
 When unresolved items remain, `handoff.html` now suggests copy-ready `handoff-response-apply`
 commands so the phone operator can close the loop without remembering separate review/task command
 grammars.
