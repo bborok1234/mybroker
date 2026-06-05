@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Scheduler Operations</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:760px; margin:0 auto; padding:16px; }
+.eyebrow,.command span { color:var(--green); font-size:12px; font-weight:900; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 10px; font-size:20px; }
+p,small,td span { color:var(--muted); }
+.hero,.section,.command { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:16px; margin:14px 0; }
+.status { display:block; margin:8px 0; font-size:28px; line-height:1.1; }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.metric { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }
+.metric strong { display:block; font-size:24px; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.panel { border:1px solid var(--line); border-radius:8px; background:white; padding:13px; min-width:0; }
+.panel strong { display:block; margin-bottom:4px; }
+table { width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }
+td,th { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+td strong,td span { display:block; overflow-wrap:anywhere; }
+.pill { display:inline-block; border-radius:999px; padding:2px 8px; font-size:12px; font-weight:900; }
+.fresh { background:#e7f5ee; color:var(--green); }
+.stale { background:#fff3d8; color:var(--warn); }
+.missing { background:#ffe2e2; color:var(--bad); }
+.command { background:white; padding:14px; margin:10px 0; }
+code { display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.grid,.links { grid-template-columns:1fr; } table { font-size:13px; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Scheduler · 2026-06-06 local</span>
+<h1>자동 실행 준비 상태</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">활성화 준비됨</strong>
+<p>수동 run-once와 preflight가 통과했습니다. host scheduler 활성화는 별도 확인과 승인 후에만 진행하세요.</p>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Script</span><strong>OK</strong></article>
+<article class="metric"><span>Plist</span><strong>OK</strong></article>
+<article class="metric"><span>Installed</span><strong>NO</strong></article>
+<article class="metric"><span>Loaded</span><strong>NO</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>운영 증거</h2>
+<div class="grid">
+<article class="panel"><strong>수동 run-once</strong><p>passed · returncode 0</p></article>
+<article class="panel"><strong>Activation preflight</strong><p>ready · blockers 0</p></article>
+<article class="panel"><strong>Activation verify</strong><p>blocked · blockers 4</p></article>
+<article class="panel"><strong>Runtime doctor</strong><p>ready · fails 0 · warns 1</p></article>
+</div>
+</section>
+<section class="section">
+<h2>다음에 복사할 명령</h2>
+<article class='command'><span>scheduler assets 생성</span><code>PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance init --project-root .</code><small>runner script와 LaunchAgent plist를 로컬 repo 안에 생성합니다.</small></article><article class='command'><span>수동 run-once proof</span><code>PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance scheduler run-once</code><small>host scheduler 설치 없이 같은 runner를 한 번 실행합니다.</small></article><article class='command'><span>activation preflight</span><code>PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight</code><small>host write 전에 필요한 proof가 충분한지 다시 검사합니다.</small></article><article class='command'><span>별도 승인 후 활성화</span><code>PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now --confirm-host-write</code><small>현재 macOS 사용자 LaunchAgent를 설치/load/start합니다. 별도 승인 없이는 실행하지 않습니다.</small></article>
+</section>
+<section class="section">
+<h2>Proof freshness</h2>
+<table><thead><tr><th>Proof</th><th>Freshness</th><th>Status</th><th>Age</th></tr></thead><tbody><tr><td><strong>scheduler_status</strong><span>/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-status.json</span></td><td><span class='pill fresh'>fresh</span></td><td>assets_ready</td><td>0.0</td></tr><tr><td><strong>run_once</strong><span>/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-run-once.json</span></td><td><span class='pill fresh'>fresh</span></td><td>passed</td><td>8.86</td></tr><tr><td><strong>activation_preflight</strong><span>/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-preflight.json</span></td><td><span class='pill fresh'>fresh</span></td><td>ready</td><td>8.28</td></tr><tr><td><strong>activation_verify</strong><span>/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-verify.json</span></td><td><span class='pill fresh'>fresh</span></td><td>blocked</td><td>8.28</td></tr><tr><td><strong>runtime_doctor</strong><span>/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/local-runtime-doctor.json</span></td><td><span class='pill fresh'>fresh</span></td><td>ready</td><td>8.63</td></tr></tbody></table>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links"><a href='reports/product/readiness.html'>readiness</a><a href='reports/product/morning.html'>morning</a><a href='reports/product/today.html'>today</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 화면은 로컬 파일만 읽습니다. 설치, load, start, 알림 전송, live source refresh는 별도 승인과 확인 없이는 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

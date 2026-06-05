@@ -29,6 +29,7 @@ from mybroker.appliance import (
     write_scheduler_activation_preflight,
     write_scheduler_status,
     write_scheduler_apply,
+    write_scheduler_operations,
     write_scheduler_run_once,
     write_today_surface,
     validate_morning_control_packet_file,
@@ -36,6 +37,8 @@ from mybroker.appliance import (
     validate_daily_brief_agenda_payload,
     validate_daily_readiness_file,
     validate_daily_readiness_payload,
+    validate_scheduler_operations_file,
+    validate_scheduler_operations_payload,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
 from mybroker.scenario import run_market_simulation, write_scenario_report, write_verdict
@@ -228,6 +231,11 @@ class LocalApplianceTests(unittest.TestCase):
                 load=True,
                 start_now=True,
             )
+            scheduler_operations = write_scheduler_operations(
+                project_root=root,
+                artifact_output_path=root / "scheduler-operations.json",
+                surface_output_path=root / "scheduler.html",
+            )
 
             html = today.read_text(encoding="utf-8")
             journal_html = journal.read_text(encoding="utf-8")
@@ -246,6 +254,8 @@ class LocalApplianceTests(unittest.TestCase):
             doctor_payload = json.loads(doctor.read_text(encoding="utf-8"))
             scheduler_payload = json.loads(scheduler.read_text(encoding="utf-8"))
             scheduler_apply_payload = json.loads(scheduler_apply.read_text(encoding="utf-8"))
+            scheduler_operations_payload = json.loads((root / "scheduler-operations.json").read_text(encoding="utf-8"))
+            scheduler_operations_html = scheduler_operations.read_text(encoding="utf-8")
             script_exists = Path(assets["script"]).exists()
             plist_exists = Path(assets["plist"]).exists()
             morning = write_morning_control_packet(
@@ -328,6 +338,13 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual({item["status"] for item in scheduler_apply_payload["actions"]}, {"planned"})
         self.assertIn("post_status", scheduler_apply_payload)
         self.assertTrue(scheduler_apply_payload["post_status_path"].startswith(root.resolve().as_posix()))
+        self.assertEqual(scheduler_operations_payload["schema_version"], "local_scheduler_operations.v1")
+        self.assertIn(scheduler_operations_payload["status"], {"manual_ready", "not_ready", "blocked", "activation_ready", "active_verified"})
+        self.assertFalse(scheduler_operations_payload["external_effect_performed"])
+        self.assertFalse(scheduler_operations_payload["host_write_performed"])
+        self.assertEqual(validate_scheduler_operations_payload(scheduler_operations_payload), [])
+        self.assertIn("자동 실행 준비 상태", scheduler_operations_html)
+        self.assertNotIn("schema_version", scheduler_operations_html)
         self.assertTrue(script_exists)
         self.assertTrue(plist_exists)
         self.assertEqual(morning_payload["schema_version"], "morning_control_packet.v1")
@@ -875,11 +892,14 @@ class LocalApplianceTests(unittest.TestCase):
             agenda_errors = validate_daily_brief_agenda_file(root / "reports" / "daily" / "brief-agenda.json")
             readiness_payload = json.loads((root / "reports" / "runtime" / "daily-readiness.json").read_text(encoding="utf-8"))
             readiness_errors = validate_daily_readiness_file(root / "reports" / "runtime" / "daily-readiness.json")
+            scheduler_operations_payload = json.loads((root / "reports" / "runtime" / "scheduler-operations.json").read_text(encoding="utf-8"))
+            scheduler_operations_errors = validate_scheduler_operations_file(root / "reports" / "runtime" / "scheduler-operations.json")
             manifest_payload = json.loads((root / "reports" / "archive" / "2026-06-05" / "manifest.json").read_text(encoding="utf-8"))
             today_html = (root / "reports" / "product" / "today.html").read_text(encoding="utf-8")
             morning_html = (root / "reports" / "product" / "morning.html").read_text(encoding="utf-8")
             agenda_html = (root / "reports" / "product" / "daily-agenda.html").read_text(encoding="utf-8")
             readiness_html = (root / "reports" / "product" / "readiness.html").read_text(encoding="utf-8")
+            scheduler_html = (root / "reports" / "product" / "scheduler.html").read_text(encoding="utf-8")
             vault_html = (root / "reports" / "product" / "vault.html").read_text(encoding="utf-8")
 
         self.assertEqual(result, 0)
@@ -892,6 +912,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("vault", morning_payload["phone_links"])
         self.assertIn("agenda", morning_payload["phone_links"])
         self.assertIn("readiness", morning_payload["phone_links"])
+        self.assertIn("scheduler", morning_payload["phone_links"])
         self.assertEqual(agenda_payload["schema_version"], "daily_brief_agenda.v1")
         self.assertEqual(agenda_errors, [])
         self.assertEqual(validate_daily_brief_agenda_payload(agenda_payload), [])
@@ -904,20 +925,32 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertFalse(readiness_payload["external_effect_performed"])
         self.assertIn(readiness_payload["status"], {"ready", "review", "stale", "blocked"})
         self.assertTrue(any(item["name"] == "daily_agenda" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "scheduler_operations" for item in readiness_payload["artifacts"]))
+        self.assertIn("scheduler", readiness_payload["phone_links"])
+        self.assertEqual(scheduler_operations_payload["schema_version"], "local_scheduler_operations.v1")
+        self.assertEqual(scheduler_operations_errors, [])
+        self.assertFalse(scheduler_operations_payload["external_effect_performed"])
+        self.assertFalse(scheduler_operations_payload["host_write_performed"])
+        self.assertIn(scheduler_operations_payload["status"], {"manual_ready", "not_ready", "blocked", "activation_ready", "active_verified"})
         self.assertIn("vault_compile", manifest_payload["artifacts"])
         self.assertIn("vault", manifest_payload["artifacts"])
         self.assertIn("daily_agenda", manifest_payload["artifacts"])
         self.assertIn("daily_agenda_surface", manifest_payload["artifacts"])
         self.assertIn("daily_readiness", manifest_payload["artifacts"])
         self.assertIn("daily_readiness_surface", manifest_payload["artifacts"])
+        self.assertIn("scheduler_operations", manifest_payload["artifacts"])
+        self.assertIn("scheduler_operations_surface", manifest_payload["artifacts"])
         self.assertIn("오늘 20분 agenda", today_html)
         self.assertIn("Semiconductor cycle note", today_html)
         self.assertIn("오늘 20분 시장 공부 순서", agenda_html)
         self.assertIn("아직 결론내리면 안 되는 이유", agenda_html)
         self.assertIn("오늘 브리프 준비 상태", readiness_html)
         self.assertIn("Artifact freshness", readiness_html)
+        self.assertIn("자동 실행 준비 상태", scheduler_html)
+        self.assertIn("운영 증거", scheduler_html)
         self.assertIn("vault", morning_html)
         self.assertIn("readiness", morning_html)
+        self.assertIn("scheduler", morning_html)
         self.assertIn("컴파일된 리서치 노트", vault_html)
 
     def test_task_status_response_apply_updates_ledger_locally(self) -> None:

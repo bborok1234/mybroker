@@ -46,6 +46,7 @@ SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
 SCHEDULER_RUN_ONCE_SCHEMA_VERSION = "local_scheduler_run_once.v1"
 SCHEDULER_ACTIVATION_PREFLIGHT_SCHEMA_VERSION = "local_scheduler_activation_preflight.v1"
 SCHEDULER_ACTIVATION_VERIFY_SCHEMA_VERSION = "local_scheduler_activation_verify.v1"
+SCHEDULER_OPERATIONS_SCHEMA_VERSION = "local_scheduler_operations.v1"
 LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
@@ -80,6 +81,8 @@ DEFAULT_SCHEDULER_APPLY_OUTPUT = Path("reports/runtime/scheduler-apply.json")
 DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT = Path("reports/runtime/scheduler-run-once.json")
 DEFAULT_SCHEDULER_ACTIVATION_PREFLIGHT_OUTPUT = Path("reports/runtime/scheduler-activation-preflight.json")
 DEFAULT_SCHEDULER_ACTIVATION_VERIFY_OUTPUT = Path("reports/runtime/scheduler-activation-verify.json")
+DEFAULT_SCHEDULER_OPERATIONS_OUTPUT = Path("reports/runtime/scheduler-operations.json")
+DEFAULT_SCHEDULER_OPERATIONS_SURFACE = Path("reports/product/scheduler.html")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -657,6 +660,327 @@ def write_scheduler_activation_verify(
     return write_json(payload, output_path)
 
 
+def build_scheduler_operations(
+    *,
+    project_root: str | Path = ".",
+    freshness_hours: int = 24,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    root = Path(project_root).resolve()
+    generated = generated_at or datetime.now(timezone.utc)
+    status_path = root / DEFAULT_SCHEDULER_STATUS_OUTPUT
+    run_once_path = root / DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT
+    preflight_path = root / DEFAULT_SCHEDULER_ACTIVATION_PREFLIGHT_OUTPUT
+    verify_path = root / DEFAULT_SCHEDULER_ACTIVATION_VERIFY_OUTPUT
+    doctor_path = root / DEFAULT_RUNTIME_DOCTOR_OUTPUT
+    status = _load_optional_json(status_path)
+    run_once = _load_optional_json(run_once_path)
+    preflight = _load_optional_json(preflight_path)
+    verify = _load_optional_json(verify_path)
+    doctor = _load_optional_json(doctor_path)
+    proof_artifacts = [
+        _scheduler_proof_artifact(
+            name="scheduler_status",
+            path=status_path,
+            expected_schema=SCHEDULER_STATUS_SCHEMA_VERSION,
+            freshness_hours=freshness_hours,
+            now=generated,
+        ),
+        _scheduler_proof_artifact(
+            name="run_once",
+            path=run_once_path,
+            expected_schema=SCHEDULER_RUN_ONCE_SCHEMA_VERSION,
+            freshness_hours=freshness_hours,
+            now=generated,
+        ),
+        _scheduler_proof_artifact(
+            name="activation_preflight",
+            path=preflight_path,
+            expected_schema=SCHEDULER_ACTIVATION_PREFLIGHT_SCHEMA_VERSION,
+            freshness_hours=freshness_hours,
+            now=generated,
+        ),
+        _scheduler_proof_artifact(
+            name="activation_verify",
+            path=verify_path,
+            expected_schema=SCHEDULER_ACTIVATION_VERIFY_SCHEMA_VERSION,
+            freshness_hours=freshness_hours,
+            now=generated,
+        ),
+        _scheduler_proof_artifact(
+            name="runtime_doctor",
+            path=doctor_path,
+            expected_schema=RUNTIME_DOCTOR_SCHEMA_VERSION,
+            freshness_hours=freshness_hours,
+            now=generated,
+        ),
+    ]
+    install_state = {
+        "source_assets_status": status.get("status", "missing"),
+        "script_ready": bool(status.get("source_assets", {}).get("script_executable")),
+        "plist_ready": bool(status.get("source_assets", {}).get("plist_exists")),
+        "installed": bool(status.get("installed_plist", {}).get("exists")),
+        "loaded": bool(status.get("launchd", {}).get("loaded")),
+        "installed_path": status.get("installed_plist", {}).get("path", ""),
+    }
+    local_run = {
+        "status": run_once.get("status", "missing"),
+        "returncode": run_once.get("returncode"),
+        "duration_seconds": run_once.get("duration_seconds"),
+        "host_write_performed": run_once.get("host_write_performed", False),
+        "path": run_once_path.as_posix(),
+    }
+    activation_preflight = {
+        "status": preflight.get("status", "missing"),
+        "blockers": preflight.get("blockers", []),
+        "warnings": preflight.get("warnings", []),
+        "next_action": preflight.get("next_action", "Run activation-preflight after dry-run apply and run-once proof."),
+        "host_write_performed": preflight.get("host_write_performed", False),
+        "path": preflight_path.as_posix(),
+    }
+    activation_verify = {
+        "status": verify.get("status", "missing"),
+        "blockers": verify.get("blockers", []),
+        "warnings": verify.get("warnings", []),
+        "next_action": verify.get("next_action", "Verify only after confirmed activation."),
+        "host_write_performed": verify.get("host_write_performed", False),
+        "path": verify_path.as_posix(),
+    }
+    runtime = {
+        "doctor_status": doctor.get("status", "missing"),
+        "fail_count": doctor.get("fail_count", 0),
+        "warn_count": doctor.get("warn_count", 0),
+        "path": doctor_path.as_posix(),
+    }
+    overall_status = _scheduler_operations_status(
+        install_state=install_state,
+        local_run=local_run,
+        activation_preflight=activation_preflight,
+        activation_verify=activation_verify,
+        runtime=runtime,
+        proof_artifacts=proof_artifacts,
+    )
+    operator_next_action = _scheduler_operations_next_action(
+        status=overall_status,
+        install_state=install_state,
+        local_run=local_run,
+        activation_preflight=activation_preflight,
+        runtime=runtime,
+    )
+    payload = {
+        "schema_version": SCHEDULER_OPERATIONS_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "project_root": root.as_posix(),
+        "status": overall_status,
+        "freshness_hours": freshness_hours,
+        "install_state": install_state,
+        "local_run": local_run,
+        "activation_preflight": activation_preflight,
+        "activation_verify": activation_verify,
+        "runtime": runtime,
+        "proof_artifacts": proof_artifacts,
+        "operator_next_action": operator_next_action,
+        "copy_ready_commands": _scheduler_operations_commands(overall_status=overall_status),
+        "phone_links": {
+            "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
+            "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_local_artifacts_only",
+            "does_not_install_or_load_scheduler",
+            "does_not_start_scheduler",
+            "does_not_send_notifications",
+            "does_not_fetch_live_network",
+            "no_account_access",
+            "no_order_execution",
+            "host_writes_require_separate_confirmation",
+        ],
+    }
+    return payload
+
+
+def write_scheduler_operations(
+    *,
+    project_root: str | Path = ".",
+    freshness_hours: int = 24,
+    artifact_output_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE,
+) -> Path:
+    payload = build_scheduler_operations(project_root=project_root, freshness_hours=freshness_hours)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_scheduler_operations(payload), encoding="utf-8")
+    return target
+
+
+def validate_scheduler_operations_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != SCHEDULER_OPERATIONS_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"not_ready", "manual_ready", "activation_ready", "active_verified", "blocked"}:
+        errors.append("status must be not_ready, manual_ready, activation_ready, active_verified, or blocked")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if not payload.get("operator_next_action"):
+        errors.append("operator_next_action must not be empty")
+    if not payload.get("proof_artifacts"):
+        errors.append("proof_artifacts must not be empty")
+    if not payload.get("phone_links", {}).get("scheduler"):
+        errors.append("phone_links.scheduler must not be empty")
+    if "does_not_install_or_load_scheduler" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include does_not_install_or_load_scheduler")
+    for index, item in enumerate(payload.get("proof_artifacts", [])):
+        for field in ["name", "path", "exists", "freshness_status"]:
+            if field not in item:
+                errors.append(f"proof_artifacts[{index}] missing {field}")
+        if item.get("freshness_status") not in {"fresh", "stale", "missing", "invalid_schema"}:
+            errors.append(f"proof_artifacts[{index}] invalid freshness_status")
+    for index, command in enumerate(payload.get("copy_ready_commands", [])):
+        command_text = command.get("command", "")
+        if "--confirm-host-write" in command_text and command.get("requires_separate_approval") is not True:
+            errors.append(f"copy_ready_commands[{index}] host write command must require separate approval")
+        if command.get("external_effect_performed") is not False:
+            errors.append(f"copy_ready_commands[{index}] external_effect_performed must be false")
+    return errors
+
+
+def validate_scheduler_operations_file(path: str | Path) -> list[str]:
+    return validate_scheduler_operations_payload(load_json(path))
+
+
+def render_scheduler_operations(payload: dict[str, Any]) -> str:
+    status_label = {
+        "active_verified": "자동 실행 확인됨",
+        "activation_ready": "활성화 준비됨",
+        "manual_ready": "수동 실행은 준비됨",
+        "not_ready": "준비 전",
+        "blocked": "차단됨",
+    }.get(payload.get("status", ""), payload.get("status", "unknown"))
+    install = payload.get("install_state", {})
+    local_run = payload.get("local_run", {})
+    preflight = payload.get("activation_preflight", {})
+    verify = payload.get("activation_verify", {})
+    runtime = payload.get("runtime", {})
+    proof_rows = "".join(
+        "<tr>"
+        f"<td><strong>{esc(item.get('name', ''))}</strong><span>{esc(item.get('path', ''))}</span></td>"
+        f"<td><span class='pill {esc(_readiness_css(item.get('freshness_status', 'missing')))}'>{esc(item.get('freshness_status', ''))}</span></td>"
+        f"<td>{esc(item.get('summary_status', ''))}</td>"
+        f"<td>{esc(item.get('age_hours', ''))}</td>"
+        "</tr>"
+        for item in payload.get("proof_artifacts", [])
+    )
+    commands = "".join(
+        "<article class='command'>"
+        f"<span>{esc(command.get('label', 'command'))}</span>"
+        f"<code>{esc(command.get('command', ''))}</code>"
+        f"<small>{esc(command.get('why', ''))}</small>"
+        "</article>"
+        for command in payload.get("copy_ready_commands", [])
+    ) or "<p>지금 복사할 안전한 로컬 명령이 없습니다.</p>"
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if label != "scheduler"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Scheduler Operations</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+.eyebrow,.command span {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small,td span {{ color:var(--muted); }}
+.hero,.section,.command {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
+.metric strong {{ display:block; font-size:24px; }}
+.grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.panel {{ border:1px solid var(--line); border-radius:8px; background:white; padding:13px; min-width:0; }}
+.panel strong {{ display:block; margin-bottom:4px; }}
+table {{ width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }}
+td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }}
+td strong,td span {{ display:block; overflow-wrap:anywhere; }}
+.pill {{ display:inline-block; border-radius:999px; padding:2px 8px; font-size:12px; font-weight:900; }}
+.fresh {{ background:#e7f5ee; color:var(--green); }}
+.stale {{ background:#fff3d8; color:var(--warn); }}
+.missing {{ background:#ffe2e2; color:var(--bad); }}
+.command {{ background:white; padding:14px; margin:10px 0; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid,.links {{ grid-template-columns:1fr; }} table {{ font-size:13px; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Scheduler · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>자동 실행 준비 상태</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('operator_next_action', ''))}</p>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Script</span><strong>{esc('OK' if install.get('script_ready') else 'NO')}</strong></article>
+<article class="metric"><span>Plist</span><strong>{esc('OK' if install.get('plist_ready') else 'NO')}</strong></article>
+<article class="metric"><span>Installed</span><strong>{esc('YES' if install.get('installed') else 'NO')}</strong></article>
+<article class="metric"><span>Loaded</span><strong>{esc('YES' if install.get('loaded') else 'NO')}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>운영 증거</h2>
+<div class="grid">
+<article class="panel"><strong>수동 run-once</strong><p>{esc(local_run.get('status', 'missing'))} · returncode {esc(local_run.get('returncode', ''))}</p></article>
+<article class="panel"><strong>Activation preflight</strong><p>{esc(preflight.get('status', 'missing'))} · blockers {esc(len(preflight.get('blockers', [])))}</p></article>
+<article class="panel"><strong>Activation verify</strong><p>{esc(verify.get('status', 'missing'))} · blockers {esc(len(verify.get('blockers', [])))}</p></article>
+<article class="panel"><strong>Runtime doctor</strong><p>{esc(runtime.get('doctor_status', 'missing'))} · fails {esc(runtime.get('fail_count', 0))} · warns {esc(runtime.get('warn_count', 0))}</p></article>
+</div>
+</section>
+<section class="section">
+<h2>다음에 복사할 명령</h2>
+{commands}
+</section>
+<section class="section">
+<h2>Proof freshness</h2>
+<table><thead><tr><th>Proof</th><th>Freshness</th><th>Status</th><th>Age</th></tr></thead><tbody>{proof_rows}</tbody></table>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 화면은 로컬 파일만 읽습니다. 설치, load, start, 알림 전송, live source refresh는 별도 승인과 확인 없이는 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
 def write_operator_decision_packet(
     *,
     project_root: str | Path = ".",
@@ -895,6 +1219,8 @@ def build_daily_readiness(
         ("archive_manifest", _latest_archive_manifest(root / DEFAULT_ARCHIVE_ROOT) or DEFAULT_ARCHIVE_ROOT / "missing" / "manifest.json", "archive", True),
         ("runtime_doctor", DEFAULT_RUNTIME_DOCTOR_OUTPUT, "runtime_artifact", False),
         ("scheduler_status", DEFAULT_SCHEDULER_STATUS_OUTPUT, "runtime_artifact", False),
+        ("scheduler_operations", DEFAULT_SCHEDULER_OPERATIONS_OUTPUT, "runtime_artifact", False),
+        ("scheduler_surface", DEFAULT_SCHEDULER_OPERATIONS_SURFACE, "phone_surface", False),
         ("vault_surface", DEFAULT_VAULT_SURFACE_OUTPUT, "phone_surface", False),
         ("memory_surface", DEFAULT_MEMORY_OUTPUT, "phone_surface", False),
     ]
@@ -939,6 +1265,7 @@ def build_daily_readiness(
         "phone_links": {
             "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
@@ -2403,6 +2730,7 @@ def build_morning_control_packet(
     runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
     readiness_surface_path: str | Path = DEFAULT_DAILY_READINESS_SURFACE,
+    scheduler_surface_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE,
     vault_surface_path: str | Path = DEFAULT_VAULT_SURFACE_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
@@ -2459,6 +2787,7 @@ def build_morning_control_packet(
         "phone_links": {
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "readiness": Path(readiness_surface_path).as_posix(),
+            "scheduler": Path(scheduler_surface_path).as_posix(),
             "today": Path(today_path).as_posix(),
             "agenda": Path(agenda_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
@@ -2514,6 +2843,7 @@ def write_morning_control_packet(
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     runtime_doctor_path: str | Path = DEFAULT_RUNTIME_DOCTOR_OUTPUT,
     readiness_surface_path: str | Path = DEFAULT_DAILY_READINESS_SURFACE,
+    scheduler_surface_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
@@ -2530,6 +2860,7 @@ def write_morning_control_packet(
         notification_path=notification_path,
         runtime_doctor_path=runtime_doctor_path,
         readiness_surface_path=readiness_surface_path,
+        scheduler_surface_path=scheduler_surface_path,
         agenda_path=agenda_path,
         agenda_surface_path=agenda_surface_path,
     )
@@ -4544,6 +4875,123 @@ def _readiness_age_hours(path: Path, *, payload: dict[str, Any], now: datetime) 
             pass
     modified = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
     return (now - modified).total_seconds() / 3600
+
+
+def _scheduler_proof_artifact(
+    *,
+    name: str,
+    path: Path,
+    expected_schema: str,
+    freshness_hours: int,
+    now: datetime,
+) -> dict[str, Any]:
+    exists = path.exists()
+    payload: dict[str, Any] = {}
+    age_hours: float | None = None
+    freshness_status = "missing"
+    summary_status = "missing"
+    if exists:
+        try:
+            payload = load_json(path)
+            age_hours = _readiness_age_hours(path, payload=payload, now=now)
+            freshness_status = "fresh" if age_hours <= freshness_hours else "stale"
+            summary_status = str(payload.get("status", payload.get("delivery_status", "present")))
+            if payload.get("schema_version") != expected_schema:
+                freshness_status = "invalid_schema"
+                summary_status = f"unexpected schema {payload.get('schema_version', '')}"
+        except json.JSONDecodeError:
+            freshness_status = "invalid_schema"
+            summary_status = "invalid json"
+    return {
+        "name": name,
+        "path": path.as_posix(),
+        "exists": exists,
+        "freshness_status": freshness_status,
+        "age_hours": round(age_hours, 2) if age_hours is not None else None,
+        "schema_version": payload.get("schema_version", ""),
+        "summary_status": summary_status,
+        "host_write_performed": payload.get("host_write_performed", False),
+    }
+
+
+def _scheduler_operations_status(
+    *,
+    install_state: dict[str, Any],
+    local_run: dict[str, Any],
+    activation_preflight: dict[str, Any],
+    activation_verify: dict[str, Any],
+    runtime: dict[str, Any],
+    proof_artifacts: list[dict[str, Any]],
+) -> str:
+    if any(item.get("freshness_status") == "invalid_schema" for item in proof_artifacts):
+        return "blocked"
+    if activation_verify.get("status") == "active_verified" and install_state.get("loaded"):
+        return "active_verified"
+    if activation_preflight.get("status") in {"ready", "already_active"} and local_run.get("status") == "passed":
+        return "activation_ready"
+    if install_state.get("script_ready") and install_state.get("plist_ready") and runtime.get("doctor_status") == "ready":
+        return "manual_ready"
+    if not install_state.get("script_ready") or not install_state.get("plist_ready"):
+        return "not_ready"
+    return "blocked"
+
+
+def _scheduler_operations_next_action(
+    *,
+    status: str,
+    install_state: dict[str, Any],
+    local_run: dict[str, Any],
+    activation_preflight: dict[str, Any],
+    runtime: dict[str, Any],
+) -> str:
+    if status == "active_verified":
+        return "자동 실행이 확인됐습니다. 내일 archive와 log가 새로 생기는지 점검하세요."
+    if status == "activation_ready":
+        return "수동 run-once와 preflight가 통과했습니다. host scheduler 활성화는 별도 확인과 승인 후에만 진행하세요."
+    if not install_state.get("script_ready") or not install_state.get("plist_ready"):
+        return "먼저 appliance init으로 runner script와 LaunchAgent plist를 생성하세요."
+    if runtime.get("doctor_status") != "ready":
+        return "runtime doctor가 ready가 아닙니다. readiness와 doctor proof를 먼저 새로 생성하세요."
+    if local_run.get("status") != "passed":
+        return "host-level 활성화 전에 scheduler run-once를 실행해 로컬 runner가 끝까지 도는지 확인하세요."
+    if activation_preflight.get("status") != "ready":
+        return "dry-run apply, run-once, notification dry-run proof를 만든 뒤 activation-preflight를 다시 실행하세요."
+    return "현재 상태를 확인하고 readiness, morning, scheduler 순서로 폰에서 검토하세요."
+
+
+def _scheduler_operations_commands(*, overall_status: str) -> list[dict[str, Any]]:
+    commands = [
+        {
+            "label": "scheduler assets 생성",
+            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance init --project-root .",
+            "why": "runner script와 LaunchAgent plist를 로컬 repo 안에 생성합니다.",
+            "requires_separate_approval": False,
+            "external_effect_performed": False,
+        },
+        {
+            "label": "수동 run-once proof",
+            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance scheduler run-once",
+            "why": "host scheduler 설치 없이 같은 runner를 한 번 실행합니다.",
+            "requires_separate_approval": False,
+            "external_effect_performed": False,
+        },
+        {
+            "label": "activation preflight",
+            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight",
+            "why": "host write 전에 필요한 proof가 충분한지 다시 검사합니다.",
+            "requires_separate_approval": False,
+            "external_effect_performed": False,
+        },
+    ]
+    if overall_status == "activation_ready":
+        commands.append({
+            "label": "별도 승인 후 활성화",
+            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now --confirm-host-write",
+            "why": "현재 macOS 사용자 LaunchAgent를 설치/load/start합니다. 별도 승인 없이는 실행하지 않습니다.",
+            "requires_separate_approval": True,
+            "external_effect_performed": False,
+        })
+    return commands
 
 
 def _readiness_scheduler_state(status_path: Path) -> dict[str, Any]:

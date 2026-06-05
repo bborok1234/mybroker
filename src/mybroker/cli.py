@@ -35,6 +35,8 @@ from mybroker.appliance import (
     DEFAULT_SCHEDULER_ACTIVATION_VERIFY_OUTPUT,
     DEFAULT_SCHEDULER_ACTIVATION_PREFLIGHT_OUTPUT,
     DEFAULT_SCHEDULER_APPLY_OUTPUT,
+    DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
+    DEFAULT_SCHEDULER_OPERATIONS_SURFACE,
     DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT,
     DEFAULT_SCHEDULER_STATUS_OUTPUT,
     DEFAULT_TODAY_OUTPUT,
@@ -61,6 +63,7 @@ from mybroker.appliance import (
     write_scheduler_activation_verify,
     write_scheduler_activation_preflight,
     write_scheduler_apply,
+    write_scheduler_operations,
     write_scheduler_run_once,
     write_scheduler_status,
     write_today_surface,
@@ -71,6 +74,7 @@ from mybroker.appliance import (
     validate_daily_readiness_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
+    validate_scheduler_operations_file,
 )
 from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
@@ -290,6 +294,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_task_apply_parser.add_argument("task_status_apply_path")
     validate_morning_parser = subcommands.add_parser("validate-morning-control", help="Validate a morning_control_packet.v1 artifact.")
     validate_morning_parser.add_argument("morning_control_path")
+    validate_scheduler_operations_parser = subcommands.add_parser("validate-scheduler-operations", help="Validate a local_scheduler_operations.v1 artifact.")
+    validate_scheduler_operations_parser.add_argument("scheduler_operations_path")
 
     brief_parser = subcommands.add_parser("brief", help="Build a user-facing MyBroker product brief from scenario and verdict artifacts.")
     brief_parser.add_argument("--scenario", required=True, help="scenario_report.v1 artifact path.")
@@ -371,6 +377,11 @@ def main(argv: list[str] | None = None) -> int:
     appliance_scheduler_verify_parser.add_argument("--project-root", default=".")
     appliance_scheduler_verify_parser.add_argument("--output", default=DEFAULT_SCHEDULER_ACTIVATION_VERIFY_OUTPUT.as_posix())
     appliance_scheduler_verify_parser.add_argument("--freshness-hours", type=int, default=36)
+    appliance_scheduler_summary_parser = appliance_scheduler_subcommands.add_parser("summary", help="Render scheduler operations summary without host-level writes.")
+    appliance_scheduler_summary_parser.add_argument("--project-root", default=".")
+    appliance_scheduler_summary_parser.add_argument("--freshness-hours", type=int, default=24)
+    appliance_scheduler_summary_parser.add_argument("--artifact-output", default=DEFAULT_SCHEDULER_OPERATIONS_OUTPUT.as_posix())
+    appliance_scheduler_summary_parser.add_argument("--output", default=DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix())
     appliance_today_parser = appliance_subcommands.add_parser("today", help="Render the mobile-first /today product surface.")
     appliance_today_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
     appliance_today_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
@@ -452,6 +463,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_morning_parser.add_argument("--refresh-live-preflight", default=DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--runtime-doctor", default=DEFAULT_RUNTIME_DOCTOR_OUTPUT.as_posix())
+    appliance_morning_parser.add_argument("--scheduler-surface", default=DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--artifact-output", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--output", default=DEFAULT_MORNING_CONTROL_SURFACE.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
@@ -875,6 +887,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-scheduler-operations":
+        errors = validate_scheduler_operations_file(args.scheduler_operations_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-vault":
         errors = validate_knowledge_vault_compile_file(args.vault_path)
         if errors:
@@ -1111,6 +1130,23 @@ def main(argv: list[str] | None = None) -> int:
                     "next_action": payload["next_action"],
                 }, indent=2, ensure_ascii=False))
                 return 0 if payload["status"] == "active_verified" else 1
+            if args.scheduler_command == "summary":
+                path = write_scheduler_operations(
+                    project_root=args.project_root,
+                    freshness_hours=args.freshness_hours,
+                    artifact_output_path=args.artifact_output,
+                    surface_output_path=args.output,
+                )
+                payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+                print(json.dumps({
+                    "scheduler_operations": args.artifact_output,
+                    "surface": path.as_posix(),
+                    "status": payload["status"],
+                    "operator_next_action": payload["operator_next_action"],
+                    "external_effect_performed": payload["external_effect_performed"],
+                    "host_write_performed": payload["host_write_performed"],
+                }, indent=2, ensure_ascii=False))
+                return 0 if payload["status"] != "blocked" else 1
         if args.appliance_command == "today":
             path = write_today_surface(
                 scenario_path=args.scenario,
@@ -1255,6 +1291,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_preflight_path=args.refresh_live_preflight,
                 notification_path=args.notification,
                 runtime_doctor_path=args.runtime_doctor,
+                scheduler_surface_path=args.scheduler_surface,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
@@ -1353,6 +1390,8 @@ def main(argv: list[str] | None = None) -> int:
             agenda_surface_path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE
             readiness_artifact_path = DEFAULT_DAILY_READINESS_OUTPUT
             readiness_surface_path = DEFAULT_DAILY_READINESS_SURFACE
+            scheduler_operations_artifact_path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT
+            scheduler_operations_surface_path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE
             vault_compile_path = Path(args.vault_output)
             vault_surface_path = Path(args.vault_surface_output)
             playbook_path = write_runtime_playbook(args.playbook_output)
@@ -1561,6 +1600,12 @@ def main(argv: list[str] | None = None) -> int:
             notification_status = "dry_run_ready"
             if args.send:
                 notification_status = send_notification_payload(notification_path).get("delivery_status", "unknown")
+            write_scheduler_status(project_root=".", output_path=DEFAULT_SCHEDULER_STATUS_OUTPUT)
+            written_scheduler_operations = write_scheduler_operations(
+                project_root=".",
+                artifact_output_path=scheduler_operations_artifact_path,
+                surface_output_path=scheduler_operations_surface_path,
+            )
             written_morning = write_morning_control_packet(
                 scout_path=scout_path,
                 journal_path=journal_artifact_path,
@@ -1572,6 +1617,7 @@ def main(argv: list[str] | None = None) -> int:
                 notification_path=notification_path,
                 runtime_doctor_path=DEFAULT_RUNTIME_DOCTOR_OUTPUT,
                 readiness_surface_path=readiness_surface_path,
+                scheduler_surface_path=written_scheduler_operations,
                 agenda_path=agenda_artifact_path,
                 agenda_surface_path=written_agenda,
                 artifact_output_path=morning_artifact_path,
@@ -1585,6 +1631,8 @@ def main(argv: list[str] | None = None) -> int:
             add_archive_artifacts(
                 manifest_path=archive_manifest,
                 artifacts={
+                    "scheduler_operations": scheduler_operations_artifact_path,
+                    "scheduler_operations_surface": written_scheduler_operations,
                     "daily_readiness": readiness_artifact_path,
                     "daily_readiness_surface": written_readiness,
                 },
@@ -1603,6 +1651,8 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_agenda_surface": written_agenda.as_posix(),
                 "daily_readiness": readiness_artifact_path.as_posix(),
                 "daily_readiness_surface": written_readiness.as_posix(),
+                "scheduler_operations": scheduler_operations_artifact_path.as_posix(),
+                "scheduler_operations_surface": written_scheduler_operations.as_posix(),
                 "evidence_catalog": evidence_path.as_posix(),
                 "topic_memory": memory_path.as_posix(),
                 "scenario_report": written_scenario.as_posix(),

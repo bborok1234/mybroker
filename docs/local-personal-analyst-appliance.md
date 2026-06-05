@@ -115,6 +115,7 @@ PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --
 PYTHONPATH=src python3 -m mybroker appliance scheduler run-once
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify
+PYTHONPATH=src python3 -m mybroker appliance scheduler summary
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --vault-raw-dir research-vault/raw --vault-wiki-dir research-vault/wiki --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
@@ -145,6 +146,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/daily-agenda.html`: phone-readable agenda with reading order, source fan-out, weak evidence, role work, and follow-up questions.
 - `reports/runtime/daily-readiness.json`: machine-readable freshness/readiness proof for required daily artifacts.
 - `reports/product/readiness.html`: phone-readable control page that says whether today's brief is fresh enough, what is stale or missing, and what local run command to use next.
+- `reports/runtime/scheduler-operations.json`: machine-readable summary of scheduler assets, local run-once proof, activation preflight, activation verification, and runtime doctor state.
+- `reports/product/scheduler.html`: phone-readable scheduler operations page that says whether automation is inactive, locally proven, activation-ready, active, or blocked.
 - `reports/memory/analyst-task-queue.json`: machine-readable role-based task queue.
 - `reports/product/tasks.html`: phone-readable analyst task board for the next local work loop.
 - `reports/memory/analyst-task-ledger.json`: machine-readable task state history.
@@ -300,6 +303,12 @@ after successful activation it should return `active_verified`.
 The strict doctor evidence is written separately to
 `reports/runtime/local-runtime-doctor-activation.json` so ordinary readiness checks are not
 overwritten when activation has not happened yet.
+
+`appliance scheduler summary` writes `reports/runtime/scheduler-operations.json` and
+`reports/product/scheduler.html`. It does not install, load, start, unload, uninstall, send
+notifications, or fetch live sources. It reads the local scheduler proof artifacts and tells the
+operator whether the next step is local asset generation, run-once proof, activation preflight,
+separate host-write approval, or post-activation log/archive inspection.
 
 ## Safety Boundary
 
