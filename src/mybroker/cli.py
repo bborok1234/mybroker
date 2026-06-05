@@ -145,6 +145,7 @@ from mybroker.appliance import (
     validate_operator_handoff_response_apply_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
+    validate_memory_query_file,
     validate_memory_audit_file,
     validate_daily_run_ledger_file,
     validate_run_trace_file,
@@ -378,6 +379,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_council_response_apply_parser.add_argument("council_response_apply_path")
     validate_handoff_response_apply_parser = subcommands.add_parser("validate-handoff-response-apply", help="Validate an operator_handoff_response_apply.v1 artifact.")
     validate_handoff_response_apply_parser.add_argument("handoff_response_apply_path")
+    validate_memory_query_parser = subcommands.add_parser("validate-memory-query", help="Validate a personal_memory_query.v1 artifact.")
+    validate_memory_query_parser.add_argument("memory_query_path")
     validate_memory_audit_parser = subcommands.add_parser("validate-memory-audit", help="Validate a personal_memory_audit.v1 artifact.")
     validate_memory_audit_parser.add_argument("memory_audit_path")
     validate_council_parser = subcommands.add_parser("validate-analyst-council", help="Validate an analyst_council.v1 artifact.")
@@ -538,6 +541,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_home_parser.add_argument("--phone-access", default=DEFAULT_PHONE_ACCESS_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--phone-access-verify", default=DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--memory-query", default=DEFAULT_MEMORY_QUERY_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--pattern-dry-run-proof", default=DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_HOME_OUTPUT.as_posix())
@@ -749,6 +753,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_morning_parser.add_argument("--handoff-apply-surface", default=DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--drift-review-surface", default=DEFAULT_DRIFT_REVIEW_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--analyst-council-surface", default=DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix())
+    appliance_morning_parser.add_argument("--memory-query-surface", default=DEFAULT_MEMORY_QUERY_SURFACE.as_posix())
     appliance_morning_parser.add_argument("--artifact-output", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--output", default=DEFAULT_MORNING_CONTROL_SURFACE.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
@@ -1212,6 +1217,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-memory-query":
+        errors = validate_memory_query_file(args.memory_query_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-memory-audit":
         errors = validate_memory_audit_file(args.memory_audit_path)
         if errors:
@@ -1630,6 +1642,7 @@ def main(argv: list[str] | None = None) -> int:
                 phone_access_path=args.phone_access,
                 phone_access_verify_path=args.phone_access_verify,
                 notification_path=args.notification,
+                memory_query_path=args.memory_query,
                 memory_audit_path=args.memory_audit,
                 pattern_dry_run_proof_path=args.pattern_dry_run_proof,
                 artifact_output_path=args.artifact_output,
@@ -2360,6 +2373,7 @@ def main(argv: list[str] | None = None) -> int:
                 handoff_apply_surface_path=args.handoff_apply_surface,
                 drift_review_surface_path=args.drift_review_surface,
                 analyst_council_surface_path=args.analyst_council_surface,
+                memory_query_surface_path=args.memory_query_surface,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
@@ -2525,6 +2539,8 @@ def main(argv: list[str] | None = None) -> int:
             daily_home_surface_path = DEFAULT_DAILY_HOME_SURFACE
             phone_access_verify_artifact_path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT
             phone_access_verify_surface_path = DEFAULT_PHONE_ACCESS_VERIFY_SURFACE
+            memory_query_artifact_path = DEFAULT_MEMORY_QUERY_OUTPUT
+            memory_query_surface_path = DEFAULT_MEMORY_QUERY_SURFACE
             memory_audit_artifact_path = DEFAULT_MEMORY_AUDIT_OUTPUT
             memory_audit_surface_path = DEFAULT_MEMORY_AUDIT_SURFACE
             analyst_council_artifact_path = DEFAULT_ANALYST_COUNCIL_OUTPUT
@@ -2745,6 +2761,16 @@ def main(argv: list[str] | None = None) -> int:
                 output_path=memory_audit_artifact_path,
                 surface_path=memory_audit_surface_path,
             )
+            recall_query = scout.get("recommended_topic", {}).get("name") or scout.get("recommendations", [{}])[0].get("name", "today brief")
+            written_memory_query = write_memory_query(
+                query=recall_query,
+                memory_path=memory_path,
+                archive_root=args.archive_root,
+                evidence_path=evidence_path,
+                vault_path=active_vault_path,
+                output_path=memory_query_artifact_path,
+                surface_path=memory_query_surface_path,
+            )
             written_journal = write_analyst_journal(
                 scenario_path=written_scenario,
                 verdict_path=written_verdict,
@@ -2856,6 +2882,7 @@ def main(argv: list[str] | None = None) -> int:
                 review_prompt_path=review_prompt_artifact_path,
                 review_effect_path=review_effect_artifact_path,
                 analyst_council_path=analyst_council_artifact_path,
+                memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
                 scheduler_operations_path=scheduler_operations_artifact_path,
             )
@@ -2892,6 +2919,7 @@ def main(argv: list[str] | None = None) -> int:
                 review_prompt_surface_path=written_review_prompt,
                 review_effect_surface_path=written_review_effect,
                 analyst_council_surface_path=written_analyst_council,
+                memory_query_surface_path=written_memory_query,
                 memory_audit_surface_path=written_memory_audit,
                 pattern_radar_surface_path=written_pattern_radar,
                 pattern_dry_run_surface_path=written_pattern_proof,
@@ -2970,6 +2998,7 @@ def main(argv: list[str] | None = None) -> int:
                 scheduler_operations_path=scheduler_operations_artifact_path,
                 phone_access_path=phone_access_path,
                 notification_path=notification_path,
+                memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
                 pattern_dry_run_proof_path=pattern_proof_artifact_path,
             )
@@ -2998,6 +3027,7 @@ def main(argv: list[str] | None = None) -> int:
                 scheduler_operations_path=scheduler_operations_artifact_path,
                 phone_access_path=phone_access_path,
                 notification_path=notification_path,
+                memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
                 pattern_dry_run_proof_path=pattern_proof_artifact_path,
             )
@@ -3031,6 +3061,8 @@ def main(argv: list[str] | None = None) -> int:
                     "review_effect_surface": written_review_effect,
                     "analyst_council": analyst_council_artifact_path,
                     "analyst_council_surface": written_analyst_council,
+                    "memory_query": memory_query_artifact_path,
+                    "memory_query_surface": written_memory_query,
                     "memory_audit": memory_audit_artifact_path,
                     "memory_audit_surface": written_memory_audit,
                     "pattern_dry_run_proof": pattern_proof_artifact_path,
@@ -3104,6 +3136,8 @@ def main(argv: list[str] | None = None) -> int:
                 "analyst_task_ledger_artifact": task_ledger_artifact_path.as_posix(),
                 "today": written_today.as_posix(),
                 "memory_surface": written_memory.as_posix(),
+                "memory_query": memory_query_artifact_path.as_posix(),
+                "memory_query_surface": written_memory_query.as_posix(),
                 "memory_index": DEFAULT_MEMORY_INDEX_OUTPUT.as_posix(),
                 "memory_audit": memory_audit_artifact_path.as_posix(),
                 "memory_audit_surface": written_memory_audit.as_posix(),

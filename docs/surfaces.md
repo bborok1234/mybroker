@@ -29,6 +29,7 @@ Must not show adapter IDs, schema names, raw validation logs, Flyhigh gates, or 
 `reports/product/journal.html` is not a project dashboard. It is the daily analyst work log: what changed, what stayed stable, what each analyst role noticed, what evidence is weak, and which questions should continue tomorrow.
 
 `reports/product/daily-home.html` is not the Flyhigh project dashboard, not the ops artifact dashboard, and not a market answer. It is the phone-first entrypoint for the day: what the autonomous scout picked first, why it was picked, what to open next, whether the local artifacts are trustworthy enough, what cross-day handoff remains open, and which safe local response command can close the loop. It reads existing artifacts only.
+It must show the adopted local memory-recall proof for the scout-selected topic: recall quality, proof status, matched topics/archives/vault notes, weak spots, and the memory-query link.
 
 `reports/product/phone-access.html` is not a server console and not an approval executor. It is the read-only proof that the daily home can be treated as the private/local phone entrypoint: access guidance exists, required local links resolve, public exposure is not the default, and manual commands are visible but not executed.
 
@@ -56,6 +57,8 @@ It must show a source freshness scorecard so sample/cache/fallback evidence is n
 `reports/product/review-response-apply.html` is not a chat surface and not an executor. It is the local handoff proof after a copied review command records feedback, refreshes review/scout/prompt/effect artifacts, and confirms whether the same local run applied the feedback.
 
 `reports/product/memory-audit.html` is not a market answer and not a model-generated synthesis. It is the recurring audit surface for local memory quality: archive history, vault compounding, source weakness, topic coverage, review feedback, and next inspection questions.
+
+`reports/product/memory-query.html` is not a chatbot answer. It is the deterministic local recall surface for one question or scout-selected topic. During `appliance run`, MyBroker writes it automatically for the day's recommended topic so the operator sees accumulated local context before reading the daily brief.
 
 `reports/product/council.html` is not a chat surface, executor, or project tracker. It is the local analyst council: source scout, evidence curator, market mapper, scenario analyst, skeptic, beginner tutor, and memory librarian review existing artifacts and decide whether today's brief is ready to read, should be read with caution, or is blocked by local evidence/memory quality.
 

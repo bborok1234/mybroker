@@ -2436,6 +2436,8 @@ def build_daily_readiness(
         ("scheduler_surface", DEFAULT_SCHEDULER_OPERATIONS_SURFACE, "phone_surface", False),
         ("vault_surface", DEFAULT_VAULT_SURFACE_OUTPUT, "phone_surface", False),
         ("memory_surface", DEFAULT_MEMORY_OUTPUT, "phone_surface", False),
+        ("memory_query", DEFAULT_MEMORY_QUERY_OUTPUT, "memory_artifact", False),
+        ("memory_query_surface", DEFAULT_MEMORY_QUERY_SURFACE, "phone_surface", False),
         ("memory_audit", DEFAULT_MEMORY_AUDIT_OUTPUT, "memory_artifact", False),
         ("memory_audit_surface", DEFAULT_MEMORY_AUDIT_SURFACE, "phone_surface", False),
     ]
@@ -2496,6 +2498,7 @@ def build_daily_readiness(
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
+            "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
             "vault": DEFAULT_VAULT_SURFACE_OUTPUT.as_posix(),
         },
         "next_actions": next_actions,
@@ -2572,6 +2575,7 @@ def build_run_trace(
     scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
     evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
     memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    memory_query_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     source_refresh_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
     scenario_path: str | Path = Path("reports/scenarios/daily-research-sim.json"),
@@ -2596,6 +2600,7 @@ def build_run_trace(
         ("daily_scout", scout_path, "prioritize", "Chooses what the operator should inspect first.", True),
         ("evidence_catalog", evidence_path, "evidence", "Records which local/free sources support the daily scenario.", True),
         ("topic_memory", memory_path, "memory", "Carries accumulated observations into today's context.", True),
+        ("memory_query", memory_query_path, "memory", "Recalls prior local context for the scout-selected topic.", False),
         ("daily_agenda", agenda_path, "study", "Converts the scout recommendation into a phone-first study sequence.", True),
         ("source_refresh_brief", source_refresh_brief_path, "gate", "Explains weak evidence and blocked refresh authority.", False),
         ("scenario_report", scenario_path, "simulate", "Builds beginner-readable paths from available evidence.", True),
@@ -2660,6 +2665,7 @@ def build_run_trace(
             "council": DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix(),
             "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
+            "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
             "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
@@ -7161,6 +7167,7 @@ def build_morning_control_packet(
     review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
     review_effect_surface_path: str | Path = DEFAULT_REVIEW_EFFECT_SURFACE,
     analyst_council_surface_path: str | Path = DEFAULT_ANALYST_COUNCIL_SURFACE,
+    memory_query_surface_path: str | Path = DEFAULT_MEMORY_QUERY_SURFACE,
     memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     pattern_dry_run_surface_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE,
@@ -7233,6 +7240,7 @@ def build_morning_control_packet(
             "review_prompt": Path(review_prompt_surface_path).as_posix(),
             "review_effect": Path(review_effect_surface_path).as_posix(),
             "council": Path(analyst_council_surface_path).as_posix(),
+            "memory_query": Path(memory_query_surface_path).as_posix(),
             "memory_audit": Path(memory_audit_surface_path).as_posix(),
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
             "pattern_dry_run": Path(pattern_dry_run_surface_path).as_posix(),
@@ -7302,6 +7310,7 @@ def write_morning_control_packet(
     review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
     review_effect_surface_path: str | Path = DEFAULT_REVIEW_EFFECT_SURFACE,
     analyst_council_surface_path: str | Path = DEFAULT_ANALYST_COUNCIL_SURFACE,
+    memory_query_surface_path: str | Path = DEFAULT_MEMORY_QUERY_SURFACE,
     memory_audit_surface_path: str | Path = DEFAULT_MEMORY_AUDIT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     pattern_dry_run_surface_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE,
@@ -7333,6 +7342,7 @@ def write_morning_control_packet(
         review_prompt_surface_path=review_prompt_surface_path,
         review_effect_surface_path=review_effect_surface_path,
         analyst_council_surface_path=analyst_council_surface_path,
+        memory_query_surface_path=memory_query_surface_path,
         memory_audit_surface_path=memory_audit_surface_path,
         pattern_radar_surface_path=pattern_radar_surface_path,
         pattern_dry_run_surface_path=pattern_dry_run_surface_path,
@@ -7446,6 +7456,7 @@ def build_daily_operator_home(
     phone_access_path: str | Path = DEFAULT_PHONE_ACCESS_OUTPUT,
     phone_access_verify_path: str | Path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT,
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
+    memory_query_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
     pattern_dry_run_proof_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
     generated_at: datetime | None = None,
@@ -7462,6 +7473,7 @@ def build_daily_operator_home(
     phone_access = _load_optional_json(phone_access_path)
     phone_access_verify = _load_optional_json(phone_access_verify_path)
     notification = _load_optional_json(notification_path)
+    memory_query = _load_optional_json(memory_query_path)
     memory_audit = _load_optional_json(memory_audit_path)
     pattern_proof = _load_optional_json(pattern_dry_run_proof_path)
     read_first = morning.get("read_first", {})
@@ -7486,6 +7498,14 @@ def build_daily_operator_home(
     pending_decision_count = len(morning.get("pending_decisions", []))
     required_stale = int(readiness.get("summary", {}).get("stale_required_count", 0) or 0)
     required_missing = int(readiness.get("summary", {}).get("missing_required_count", 0) or 0)
+    recall_quality = memory_query.get("recall_quality", {}) if memory_query.get("schema_version") == MEMORY_QUERY_SCHEMA_VERSION else {}
+    recall_proof = next(
+        (
+            row for row in pattern_proof.get("candidate_results", [])
+            if row.get("candidate_id") == "pattern-memory-recall-quality"
+        ),
+        {},
+    )
     if required_missing or morning.get("status") == "blocked" or readiness.get("status") == "blocked":
         status = "blocked"
     elif unresolved_count or pending_decision_count or required_stale or morning.get("status") == "operator_review":
@@ -7503,6 +7523,7 @@ def build_daily_operator_home(
         "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
         "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
         "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
+        "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
         "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
         "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
         "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
@@ -7529,6 +7550,14 @@ def build_daily_operator_home(
         },
         {
             "step": 3,
+            "label": "과거 기억 먼저 불러오기",
+            "title": "memory recall",
+            "why": f"{autonomous_name}에 대해 로컬 vault, archive, memory가 무엇을 기억하는지 먼저 확인합니다.",
+            "href": links["memory_query"],
+            "status": memory_query.get("status", "missing"),
+        },
+        {
+            "step": 4,
             "label": "운영 상태 확인",
             "title": "morning control",
             "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -7536,7 +7565,7 @@ def build_daily_operator_home(
             "status": morning.get("status", "missing"),
         },
         {
-            "step": 4,
+            "step": 5,
             "label": "신뢰도 확인",
             "title": "readiness",
             "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -7544,7 +7573,7 @@ def build_daily_operator_home(
             "status": readiness.get("status", "missing"),
         },
         {
-            "step": 5,
+            "step": 6,
             "label": "전날 맥락 닫기",
             "title": "handoff",
             "why": f"남은 항목 {unresolved_count}개를 보고 필요한 응답을 복사합니다.",
@@ -7552,7 +7581,7 @@ def build_daily_operator_home(
             "status": handoff.get("status", "missing"),
         },
         {
-            "step": 6,
+            "step": 7,
             "label": "응답 반영 확인",
             "title": "handoff apply proof",
             "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -7560,7 +7589,7 @@ def build_daily_operator_home(
             "status": handoff_apply.get("status", "missing"),
         },
         {
-            "step": 7,
+            "step": 8,
             "label": "기억 품질 확인",
             "title": "memory audit",
             "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -7568,7 +7597,7 @@ def build_daily_operator_home(
             "status": memory_audit.get("status", "missing"),
         },
         {
-            "step": 8,
+            "step": 9,
             "label": "새 작업 방식 증거 확인",
             "title": "pattern dry-run proof",
             "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -7593,6 +7622,8 @@ def build_daily_operator_home(
             "autonomous_topic": autonomous_name,
             "autonomous_reason": autonomous_why,
             "scout_operator_input_required": scout.get("autonomous_start", {}).get("operator_input_required", False),
+            "memory_recall_quality": recall_quality.get("level", "missing"),
+            "memory_recall_matches": int(memory_query.get("matched_topic_count", 0) or 0) + int(memory_query.get("matched_archive_count", 0) or 0) + int(memory_query.get("matched_vault_note_count", 0) or 0),
         },
         "daily_route": daily_route,
         "autonomous_scout": {
@@ -7612,6 +7643,23 @@ def build_daily_operator_home(
                     "effect": "다음 로컬 실행에 반영합니다.",
                 }]
             )[:3],
+        },
+        "memory_recall_adoption": {
+            "pattern_candidate_id": "pattern-memory-recall-quality",
+            "proof_status": recall_proof.get("proof_status", "missing"),
+            "query": memory_query.get("query", autonomous_name),
+            "status": memory_query.get("status", "missing"),
+            "quality_level": recall_quality.get("level", "missing"),
+            "quality_summary": recall_quality.get("summary", "아직 로컬 기억 회상 품질을 판단할 수 없습니다."),
+            "coverage_label": recall_quality.get("coverage_label", "unknown"),
+            "confidence": recall_quality.get("confidence", "low"),
+            "matched_topic_count": memory_query.get("matched_topic_count", 0),
+            "matched_archive_count": memory_query.get("matched_archive_count", 0),
+            "matched_vault_note_count": memory_query.get("matched_vault_note_count", 0),
+            "weak_spots": memory_query.get("weak_spots", [])[:3],
+            "next_questions": memory_query.get("next_questions", [])[:3],
+            "surface": links["memory_query"],
+            "external_effect_performed": False,
         },
         "copy_ready_commands": _daily_home_commands(payloads=payloads),
         "phone_links": links,
@@ -7638,6 +7686,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="phone_access", path=phone_access_path, payload=phone_access),
             _daily_home_artifact_status(name="phone_access_verify", path=phone_access_verify_path, payload=phone_access_verify),
             _daily_home_artifact_status(name="notification", path=notification_path, payload=notification),
+            _daily_home_artifact_status(name="memory_query", path=memory_query_path, payload=memory_query),
             _daily_home_artifact_status(name="pattern_dry_run_proof", path=pattern_dry_run_proof_path, payload=pattern_proof),
         ],
         "external_effect_performed": False,
@@ -7693,7 +7742,13 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("autonomous_scout.operator_input_required must be false")
     if not autonomous.get("why_today"):
         errors.append("autonomous_scout.why_today must not be empty")
-    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply"]:
+    recall = payload.get("memory_recall_adoption", {})
+    for field in ["pattern_candidate_id", "proof_status", "query", "status", "quality_level", "quality_summary", "surface", "external_effect_performed"]:
+        if field not in recall:
+            errors.append(f"memory_recall_adoption missing {field}")
+    if recall.get("external_effect_performed") is not False:
+        errors.append("memory_recall_adoption.external_effect_performed must be false")
+    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "memory_query"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
     if "daily_home_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
@@ -7721,6 +7776,7 @@ def validate_daily_operator_home_file(path: str | Path) -> list[str]:
 def render_daily_operator_home(payload: dict[str, Any]) -> str:
     summary = payload.get("summary", {})
     autonomous = payload.get("autonomous_scout", {})
+    recall = payload.get("memory_recall_adoption", {})
     status_label = {
         "ready": "오늘 읽기 준비됨",
         "operator_review": "사람 확인 필요",
@@ -7765,6 +7821,8 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
         for label, path in payload.get("phone_links", {}).items()
         if label != "daily_home" and path
     )
+    recall_weak_items = "".join(f"<li>{esc(item)}</li>" for item in recall.get("weak_spots", [])) or "<li>오늘 회상에서 즉시 막힌 약점은 없습니다.</li>"
+    recall_question_items = "".join(f"<li>{esc(item)}</li>" for item in recall.get("next_questions", [])) or "<li>오늘 주제와 연결된 질문이 아직 없습니다.</li>"
     artifact_rows = "".join(
         "<tr>"
         f"<td><strong>{esc(item.get('name', ''))}</strong><span>{esc(item.get('path', ''))}</span></td>"
@@ -7825,7 +7883,7 @@ td strong,td span {{ display:block; }}
 <article class="metric"><span>Handoff</span><strong>{esc(summary.get('unresolved_handoff_count', 0))}</strong></article>
 <article class="metric"><span>Decisions</span><strong>{esc(summary.get('pending_decision_count', 0))}</strong></article>
 <article class="metric"><span>Missing</span><strong>{esc(summary.get('required_missing_count', 0))}</strong></article>
-<article class="metric"><span>Scheduler</span><strong>{esc(scheduler_label)}</strong></article>
+<article class="metric"><span>Recall</span><strong>{esc(summary.get('memory_recall_quality', 'missing'))}</strong></article>
 </div>
 </section>
 <section class="section">
@@ -7835,6 +7893,22 @@ td strong,td span {{ display:block; }}
 <p>{esc(autonomous.get('confidence_note', ''))}</p>
 <p>{esc(autonomous.get('missing_evidence_note', ''))}</p>
 <div class="commands">{scout_response_cards}</div>
+</section>
+<section class="section">
+<h2>오늘 기억 회상 품질</h2>
+<p><strong>{esc(recall.get('quality_level', 'missing'))} · {esc(recall.get('coverage_label', 'unknown'))}</strong></p>
+<p>{esc(recall.get('quality_summary', '로컬 기억 회상 품질을 아직 판단할 수 없습니다.'))}</p>
+<div class="metrics">
+<article class="metric"><span>Proof</span><strong>{esc(recall.get('proof_status', 'missing'))}</strong></article>
+<article class="metric"><span>Topics</span><strong>{esc(recall.get('matched_topic_count', 0))}</strong></article>
+<article class="metric"><span>Archives</span><strong>{esc(recall.get('matched_archive_count', 0))}</strong></article>
+<article class="metric"><span>Vault</span><strong>{esc(recall.get('matched_vault_note_count', 0))}</strong></article>
+</div>
+<p><a href="{esc(_relative_href(Path(recall.get('surface', 'reports/product/memory-query.html'))))}">memory recall 열기</a></p>
+<h2>약한 부분</h2>
+<ul>{recall_weak_items}</ul>
+<h2>이어갈 질문</h2>
+<ul>{recall_question_items}</ul>
 </section>
 <section class="section">
 <h2>오늘 볼 순서</h2>
@@ -8321,6 +8395,36 @@ def write_memory_query(
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render_memory_query_surface(payload), encoding="utf-8")
     return target
+
+
+def validate_memory_query_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != MEMORY_QUERY_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"matched", "no_direct_match"}:
+        errors.append(f"invalid status {payload.get('status')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if not str(payload.get("query", "")).strip():
+        errors.append("query must not be empty")
+    quality = payload.get("recall_quality", {})
+    for field in ["level", "coverage_label", "confidence", "summary"]:
+        if field not in quality:
+            errors.append(f"recall_quality missing {field}")
+    if not payload.get("reading_order"):
+        errors.append("reading_order must not be empty")
+    if "weak_spots" not in payload:
+        errors.append("weak_spots must be present")
+    if "next_questions" not in payload:
+        errors.append("next_questions must be present")
+    for field in ["matched_topic_count", "matched_archive_count", "matched_vault_note_count"]:
+        if not isinstance(payload.get(field), int):
+            errors.append(f"{field} must be an integer")
+    return errors
+
+
+def validate_memory_query_file(path: str | Path) -> list[str]:
+    return validate_memory_query_payload(load_json(path))
 
 
 def build_memory_audit(
