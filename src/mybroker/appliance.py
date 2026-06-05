@@ -35,6 +35,7 @@ MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 ANALYST_JOURNAL_SCHEMA_VERSION = "personal_analyst_journal.v1"
 ANALYST_TASK_QUEUE_SCHEMA_VERSION = "personal_analyst_task_queue.v1"
+ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
@@ -58,6 +59,8 @@ DEFAULT_ANALYST_JOURNAL_OUTPUT = Path("reports/product/journal.html")
 DEFAULT_ANALYST_JOURNAL_ARTIFACT = Path("reports/memory/analyst-journal.json")
 DEFAULT_ANALYST_TASK_QUEUE_OUTPUT = Path("reports/product/tasks.html")
 DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT = Path("reports/memory/analyst-task-queue.json")
+DEFAULT_ANALYST_TASK_LEDGER_OUTPUT = Path("reports/product/task-ledger.html")
+DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT = Path("reports/memory/analyst-task-ledger.json")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_RUNTIME_DOCTOR_ACTIVATION_OUTPUT = Path("reports/runtime/local-runtime-doctor-activation.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
@@ -761,6 +764,7 @@ def write_today_surface(
     memory_surface_path: str | Path | None = None,
     journal_surface_path: str | Path | None = None,
     task_queue_surface_path: str | Path | None = None,
+    task_ledger_surface_path: str | Path | None = None,
 ) -> Path:
     scenario = load_json(scenario_path)
     verdict = load_json(verdict_path)
@@ -793,6 +797,7 @@ def write_today_surface(
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
             journal_surface_path=Path(journal_surface_path) if journal_surface_path else None,
             task_queue_surface_path=Path(task_queue_surface_path) if task_queue_surface_path else None,
+            task_ledger_surface_path=Path(task_ledger_surface_path) if task_ledger_surface_path else None,
         ),
         encoding="utf-8",
     )
@@ -817,6 +822,7 @@ def render_today_surface(
     memory_surface_path: Path | None = None,
     journal_surface_path: Path | None = None,
     task_queue_surface_path: Path | None = None,
+    task_ledger_surface_path: Path | None = None,
 ) -> str:
     market_map = scenario.get("market_map", {})
     primary = verdict.get("primary_next_step") or {}
@@ -945,6 +951,11 @@ def render_today_surface(
         if task_queue_surface_path
         else "<span>Analyst tasks 없음</span>"
     )
+    task_ledger_link = (
+        f"<a href='{esc(_relative_href(task_ledger_surface_path))}'>task ledger</a>"
+        if task_ledger_surface_path
+        else "<span>Task ledger 없음</span>"
+    )
     questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
@@ -1054,6 +1065,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <a href="{esc(_relative_href(brief_path))}">상세 시장 브리프</a>
 {journal_link}
 {task_queue_link}
+{task_ledger_link}
 {memory_link}
 {archive_link}
 </div>
@@ -1084,6 +1096,7 @@ def archive_daily_run(
     refresh_live_preflight_path: str | Path | None = None,
     journal_path: str | Path | None = None,
     task_queue_path: str | Path | None = None,
+    task_ledger_path: str | Path | None = None,
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
 ) -> Path:
     timestamp = datetime.now(timezone.utc)
@@ -1102,6 +1115,7 @@ def archive_daily_run(
         "source_refresh_live_preflight": refresh_live_preflight_path,
         "journal": journal_path,
         "tasks": task_queue_path,
+        "task_ledger": task_ledger_path,
         "brief": brief_path,
         "today": today_path,
     }.items():
@@ -1645,6 +1659,192 @@ code {{ display:block; margin-top:10px; padding:10px; border-radius:8px; backgro
 <section class="section">
 <h2>안전 경계</h2>
 <p>이 큐는 작업을 실행하지 않습니다. live network, host write, notification send, 계좌/주문/일임 행위는 별도 승인 게이트 없이는 허용하지 않습니다.</p>
+</section>
+<section class="section">
+<h2>작업 이력</h2>
+<p><a href="task-ledger.html">task ledger에서 완료, 이월, 보류 상태 보기</a></p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def build_analyst_task_ledger(
+    *,
+    task_queue_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
+    previous_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    queue = load_json(task_queue_path)
+    previous = load_json(previous_ledger_path) if Path(previous_ledger_path).exists() else {}
+    generated = (generated_at or datetime.now(timezone.utc)).isoformat()
+    previous_entries = previous.get("entries", []) if previous.get("schema_version") == ANALYST_TASK_LEDGER_SCHEMA_VERSION else []
+    previous_by_fingerprint = {
+        entry.get("fingerprint", ""): entry
+        for entry in previous_entries
+        if entry.get("fingerprint")
+    }
+    current_entries = []
+    for task in queue.get("tasks", []):
+        fingerprint = _task_fingerprint(task)
+        prior = previous_by_fingerprint.get(fingerprint, {})
+        status = _ledger_status_for_task(task=task, prior=prior)
+        current_entries.append({
+            "ledger_id": f"{queue.get('run_id', 'daily')}-{task.get('task_id', '')}",
+            "task_id": task.get("task_id", ""),
+            "fingerprint": fingerprint,
+            "role": task.get("role", ""),
+            "title": task.get("title", ""),
+            "priority": task.get("priority", ""),
+            "status": status,
+            "previous_status": prior.get("status", ""),
+            "first_seen_at": prior.get("first_seen_at", generated),
+            "last_seen_at": generated,
+            "run_id": queue.get("run_id", ""),
+            "approval_scope": task.get("approval_scope", ""),
+            "external_effect_allowed": bool(task.get("external_effect_allowed")),
+            "requires_operator_approval": bool(task.get("requires_operator_approval")),
+            "suggested_command": task.get("suggested_command", ""),
+            "stop_condition": task.get("stop_condition", ""),
+            "operator_note": _ledger_note_for_task(task=task, status=status),
+        })
+    current_fingerprints = {entry["fingerprint"] for entry in current_entries}
+    retired_entries = []
+    for entry in previous_entries:
+        if entry.get("fingerprint") not in current_fingerprints:
+            retired = dict(entry)
+            retired["status"] = "retired_not_in_current_queue"
+            retired["previous_status"] = entry.get("status", "")
+            retired["last_seen_at"] = generated
+            retired["operator_note"] = "이전 queue에는 있었지만 현재 queue에는 없습니다. 완료됐는지, 필요 없어졌는지 archive에서 확인하세요."
+            retired_entries.append(retired)
+    entries = current_entries + retired_entries[:12]
+    summary = _ledger_summary(entries)
+    return {
+        "schema_version": ANALYST_TASK_LEDGER_SCHEMA_VERSION,
+        "generated_at": generated,
+        "run_id": queue.get("run_id", ""),
+        "source_task_queue": Path(task_queue_path).as_posix(),
+        "previous_ledger": Path(previous_ledger_path).as_posix() if Path(previous_ledger_path).exists() else "",
+        "entry_count": len(entries),
+        "summary": summary,
+        "entries": entries,
+        "policy": "research_only",
+        "safety_boundary": [
+            "ledger_records_status_only",
+            "does_not_execute_tasks",
+            "no_account_access",
+            "no_live_trading",
+            "external_effects_require_separate_gate",
+        ],
+    }
+
+
+def write_analyst_task_ledger(
+    *,
+    task_queue_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
+    previous_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    artifact_output_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    surface_output_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_OUTPUT,
+) -> Path:
+    payload = build_analyst_task_ledger(
+        task_queue_path=task_queue_path,
+        previous_ledger_path=previous_ledger_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_analyst_task_ledger(payload), encoding="utf-8")
+    return target
+
+
+def validate_analyst_task_ledger_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != ANALYST_TASK_LEDGER_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    entries = payload.get("entries", [])
+    if payload.get("entry_count", 0) != len(entries):
+        errors.append("entry_count must match entries length")
+    if not entries:
+        errors.append("entries must not be empty")
+    allowed_statuses = {"ready_for_local_work", "carried", "blocked_requires_approval", "retired_not_in_current_queue"}
+    for index, entry in enumerate(entries):
+        for field in ["ledger_id", "task_id", "fingerprint", "role", "title", "priority", "status", "first_seen_at", "last_seen_at", "operator_note"]:
+            if field not in entry:
+                errors.append(f"entries[{index}] missing {field}")
+        if entry.get("status") not in allowed_statuses:
+            errors.append(f"entries[{index}] invalid status {entry.get('status')}")
+        if entry.get("external_effect_allowed") is True and entry.get("requires_operator_approval") is not True:
+            errors.append(f"entries[{index}] external effects require operator approval")
+    if "does_not_execute_tasks" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include does_not_execute_tasks")
+    return errors
+
+
+def validate_analyst_task_ledger_file(path: str | Path) -> list[str]:
+    return validate_analyst_task_ledger_payload(load_json(path))
+
+
+def render_analyst_task_ledger(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    cards = "".join(
+        "<article class='entry'>"
+        f"<span>{esc(entry.get('status', ''))} · {esc(entry.get('role', ''))} · {esc(entry.get('priority', ''))}</span>"
+        f"<h2>{esc(entry.get('title', ''))}</h2>"
+        f"<p>{esc(entry.get('operator_note', ''))}</p>"
+        f"<small>first: {esc(_short_date(entry.get('first_seen_at', '')))} · last: {esc(_short_date(entry.get('last_seen_at', '')))} · scope: {esc(entry.get('approval_scope', ''))}</small>"
+        "</article>"
+        for entry in payload.get("entries", [])
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Task Ledger</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:18px; }}
+.eyebrow,.entry span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:18px; }}
+p,small {{ color:var(--muted); }}
+.hero,.section,.entry {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
+.metric,.entry {{ background:white; padding:14px; }}
+.metric strong {{ display:block; font-size:24px; }}
+.stack {{ display:grid; grid-template-columns:1fr; gap:10px; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Task Ledger · {esc(_short_date(payload.get('generated_at', '')))}</span>
+<h1>analyst 작업 이력</h1>
+<p>오늘 queue가 어제와 어떻게 이어지는지, 무엇이 이월되고 무엇이 승인 대기인지 보는 기록입니다.</p>
+</header>
+<section class="hero">
+<div class="metrics">
+<article class="metric"><span>Total</span><strong>{esc(payload.get('entry_count', 0))}</strong></article>
+<article class="metric"><span>Ready</span><strong>{esc(summary.get('ready_for_local_work', 0))}</strong></article>
+<article class="metric"><span>Carried</span><strong>{esc(summary.get('carried', 0))}</strong></article>
+<article class="metric"><span>Blocked</span><strong>{esc(summary.get('blocked_requires_approval', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>상태별 작업</h2>
+<div class="stack">{cards}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 ledger는 상태만 기록합니다. queued task 실행, live network, host write, notification send, 계좌/주문/일임 행위는 하지 않습니다.</p>
 </section>
 </main>
 </body>
@@ -2345,6 +2545,44 @@ def _maybe_live_refresh_task(*, journal: dict[str, Any]) -> dict[str, Any] | Non
         "suggested_command": "Review /today live refresh gate; do not execute without explicit approval.",
         "stop_condition": "operator_decision_recorded_or_deferred",
     }
+
+
+def _task_fingerprint(task: dict[str, Any]) -> str:
+    return "|".join([
+        str(task.get("role", "")),
+        str(task.get("title", "")),
+        str(task.get("approval_scope", "")),
+    ])
+
+
+def _ledger_status_for_task(*, task: dict[str, Any], prior: dict[str, Any]) -> str:
+    if task.get("requires_operator_approval"):
+        return "blocked_requires_approval"
+    if prior:
+        return "carried"
+    return "ready_for_local_work"
+
+
+def _ledger_note_for_task(*, task: dict[str, Any], status: str) -> str:
+    if status == "blocked_requires_approval":
+        return "명시 승인 없이는 진행하지 않습니다. gate와 preflight를 먼저 확인하세요."
+    if status == "carried":
+        return "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
+    return "로컬에서 외부 효과 없이 수행 가능한 작업입니다."
+
+
+def _ledger_summary(entries: list[dict[str, Any]]) -> dict[str, int]:
+    summary = {
+        "ready_for_local_work": 0,
+        "carried": 0,
+        "blocked_requires_approval": 0,
+        "retired_not_in_current_queue": 0,
+    }
+    for entry in entries:
+        status = entry.get("status", "")
+        if status in summary:
+            summary[status] += 1
+    return summary
 
 
 def _today_vault_notes(*, vault_notes: list[dict[str, Any]], memory_topics: list[dict[str, Any]]) -> list[dict[str, Any]]:

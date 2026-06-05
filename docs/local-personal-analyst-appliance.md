@@ -116,6 +116,7 @@ PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
 PYTHONPATH=src python3 -m mybroker appliance tasks
+PYTHONPATH=src python3 -m mybroker appliance task-ledger
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
@@ -132,6 +133,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/journal.html`: phone-readable daily analyst journal with today's focus, role notes, evidence gaps, and tomorrow's questions.
 - `reports/memory/analyst-task-queue.json`: machine-readable role-based task queue.
 - `reports/product/tasks.html`: phone-readable analyst task board for the next local work loop.
+- `reports/memory/analyst-task-ledger.json`: machine-readable task state history.
+- `reports/product/task-ledger.html`: phone-readable task ledger for ready, carried, blocked, and retired work.
 - `reports/memory/latest-query.json`: machine-readable recall result for one operator question.
 - `reports/product/memory-query.html`: phone-readable recall page that links the question to matching topics, archives, and next inspection questions.
 
@@ -144,6 +147,8 @@ without hiding source context.
 `tasks.html` translates that journal into queued work for source_scout, market_mapper, skeptic,
 beginner_tutor, memory_librarian, and publisher roles. It does not execute commands; live network,
 host writes, notification send, credentials, and trading remain behind separate approval gates.
+`task-ledger.html` keeps the queue from being a daily reset: it records whether work is newly ready,
+carried from an earlier run, blocked by approval, or no longer present in the current queue.
 
 The local vault is the raw inbox side of the same pattern:
 
