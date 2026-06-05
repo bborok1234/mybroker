@@ -27,6 +27,7 @@ from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT, DEFAULT_VAULT_SURFACE_O
 
 
 TODAY_SURFACE_SCHEMA_VERSION = "today_surface.v1"
+DAILY_OPERATOR_HOME_SCHEMA_VERSION = "daily_operator_home.v1"
 DAILY_BRIEF_AGENDA_SCHEMA_VERSION = "daily_brief_agenda.v1"
 DAILY_READINESS_SCHEMA_VERSION = "daily_readiness.v1"
 SOURCE_REFRESH_BRIEF_SCHEMA_VERSION = "source_refresh_brief.v1"
@@ -66,6 +67,8 @@ SCHEDULER_OPERATIONS_SCHEMA_VERSION = "local_scheduler_operations.v1"
 LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
+DEFAULT_DAILY_HOME_OUTPUT = Path("reports/runtime/daily-home.json")
+DEFAULT_DAILY_HOME_SURFACE = Path("reports/product/daily-home.html")
 DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT = Path("reports/daily/brief-agenda.json")
 DEFAULT_DAILY_BRIEF_AGENDA_SURFACE = Path("reports/product/daily-agenda.html")
 DEFAULT_DAILY_READINESS_OUTPUT = Path("reports/runtime/daily-readiness.json")
@@ -1660,6 +1663,8 @@ def build_daily_readiness(
     root = Path(project_root).resolve()
     generated = generated_at or datetime.now(timezone.utc)
     artifact_specs = [
+        ("daily_home", DEFAULT_DAILY_HOME_OUTPUT, "control_artifact", False),
+        ("daily_home_surface", DEFAULT_DAILY_HOME_SURFACE, "phone_surface", False),
         ("today_surface", DEFAULT_TODAY_OUTPUT, "phone_surface", True),
         ("daily_agenda_surface", DEFAULT_DAILY_BRIEF_AGENDA_SURFACE, "phone_surface", True),
         ("daily_agenda", DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT, "machine_artifact", True),
@@ -1737,6 +1742,7 @@ def build_daily_readiness(
         "artifacts": artifacts,
         "scheduler": scheduler,
         "phone_links": {
+            "daily_home": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
             "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
@@ -6384,6 +6390,7 @@ def build_morning_control_packet(
     run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     handoff_surface_path: str | Path = DEFAULT_DAILY_HANDOFF_SURFACE,
     handoff_apply_surface_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE,
+    daily_home_surface_path: str | Path = DEFAULT_DAILY_HOME_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
@@ -6436,6 +6443,7 @@ def build_morning_control_packet(
         "pending_decisions": pending_decisions,
         "command_bar": command_bar,
         "phone_links": {
+            "daily_home": Path(daily_home_surface_path).as_posix(),
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "readiness": Path(readiness_surface_path).as_posix(),
             "scheduler": Path(scheduler_surface_path).as_posix(),
@@ -6520,6 +6528,7 @@ def write_morning_control_packet(
     run_ledger_surface_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     handoff_surface_path: str | Path = DEFAULT_DAILY_HANDOFF_SURFACE,
     handoff_apply_surface_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE,
+    daily_home_surface_path: str | Path = DEFAULT_DAILY_HOME_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
@@ -6549,6 +6558,7 @@ def write_morning_control_packet(
         run_ledger_surface_path=run_ledger_surface_path,
         handoff_surface_path=handoff_surface_path,
         handoff_apply_surface_path=handoff_apply_surface_path,
+        daily_home_surface_path=daily_home_surface_path,
         drift_review_surface_path=drift_review_surface_path,
     )
     write_json(payload, artifact_output_path)
@@ -6593,6 +6603,394 @@ def validate_morning_control_packet_payload(payload: dict[str, Any]) -> list[str
 
 def validate_morning_control_packet_file(path: str | Path) -> list[str]:
     return validate_morning_control_packet_payload(load_json(path))
+
+
+def _daily_home_artifact_status(*, name: str, path: str | Path, payload: dict[str, Any]) -> dict[str, Any]:
+    target = Path(path)
+    return {
+        "name": name,
+        "path": target.as_posix(),
+        "exists": target.exists(),
+        "schema_version": payload.get("schema_version", "missing"),
+        "status": payload.get("status", payload.get("delivery_status", "missing")),
+        "generated_at": payload.get("generated_at", payload.get("created_at", "")),
+    }
+
+
+def _daily_home_commands(*, payloads: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    commands: list[dict[str, Any]] = []
+    forbidden_fragments = [" --send", "--confirm-host-write", "--execute", "launchctl bootstrap"]
+    for command in payloads.get("handoff", {}).get("copy_ready_commands", [])[:3]:
+        if command.get("command"):
+            commands.append({
+                "source": "handoff",
+                "label": command.get("label", "handoff response"),
+                "command": command.get("command", ""),
+                "why": command.get("why", ""),
+                "external_effect_performed": False,
+            })
+    for command in payloads.get("morning", {}).get("command_bar", [])[:4]:
+        command_text = command.get("command", "")
+        if command_text and not any(fragment in command_text for fragment in forbidden_fragments):
+            commands.append({
+                "source": "morning",
+                "label": command.get("label", "local command"),
+                "command": command_text,
+                "why": command.get("effect", "local only"),
+                "external_effect_performed": False,
+            })
+    if not commands:
+        commands.append({
+            "source": "daily_home",
+            "label": "수동 daily run",
+            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run",
+            "why": "오늘 산출물이 없거나 오래됐을 때 로컬 dry-run만 다시 생성합니다.",
+            "external_effect_performed": False,
+        })
+    return commands
+
+
+def build_daily_operator_home(
+    *,
+    today_path: str | Path = DEFAULT_TODAY_OUTPUT,
+    morning_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
+    readiness_path: str | Path = DEFAULT_DAILY_READINESS_OUTPUT,
+    handoff_path: str | Path = DEFAULT_DAILY_HANDOFF_OUTPUT,
+    handoff_apply_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT,
+    run_ledger_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
+    scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
+    phone_access_path: str | Path = DEFAULT_PHONE_ACCESS_OUTPUT,
+    notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
+    memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    morning = _load_optional_json(morning_path)
+    readiness = _load_optional_json(readiness_path)
+    handoff = _load_optional_json(handoff_path)
+    handoff_apply = _load_optional_json(handoff_apply_path)
+    run_ledger = _load_optional_json(run_ledger_path)
+    scheduler = _load_optional_json(scheduler_operations_path)
+    phone_access = _load_optional_json(phone_access_path)
+    notification = _load_optional_json(notification_path)
+    memory_audit = _load_optional_json(memory_audit_path)
+    read_first = morning.get("read_first", {})
+    unresolved_count = int(handoff.get("summary", {}).get("unresolved_count", 0) or 0)
+    pending_decision_count = len(morning.get("pending_decisions", []))
+    required_stale = int(readiness.get("summary", {}).get("stale_required_count", 0) or 0)
+    required_missing = int(readiness.get("summary", {}).get("missing_required_count", 0) or 0)
+    if required_missing or morning.get("status") == "blocked" or readiness.get("status") == "blocked":
+        status = "blocked"
+    elif unresolved_count or pending_decision_count or required_stale or morning.get("status") == "operator_review":
+        status = "operator_review"
+    else:
+        status = "ready"
+    links = {
+        "daily_home": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
+        "today": Path(today_path).as_posix(),
+        "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+        "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
+        "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+        "handoff": DEFAULT_DAILY_HANDOFF_SURFACE.as_posix(),
+        "handoff_apply": DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix(),
+        "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+        "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
+        "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
+        "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
+        "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
+        "phone_access_plan": Path(phone_access_path).as_posix(),
+        "notification": Path(notification_path).as_posix(),
+    }
+    daily_route = [
+        {
+            "step": 1,
+            "label": "먼저 읽기",
+            "title": read_first.get("title", "오늘 브리프"),
+            "why": read_first.get("reason", "오늘 생성된 beginner brief를 먼저 읽습니다."),
+            "href": links["today"],
+            "status": "ready" if Path(today_path).exists() else "missing",
+        },
+        {
+            "step": 2,
+            "label": "운영 상태 확인",
+            "title": "morning control",
+            "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
+            "href": links["morning"],
+            "status": morning.get("status", "missing"),
+        },
+        {
+            "step": 3,
+            "label": "신뢰도 확인",
+            "title": "readiness",
+            "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
+            "href": links["readiness"],
+            "status": readiness.get("status", "missing"),
+        },
+        {
+            "step": 4,
+            "label": "전날 맥락 닫기",
+            "title": "handoff",
+            "why": f"남은 항목 {unresolved_count}개를 보고 필요한 응답을 복사합니다.",
+            "href": links["handoff"],
+            "status": handoff.get("status", "missing"),
+        },
+        {
+            "step": 5,
+            "label": "응답 반영 확인",
+            "title": "handoff apply proof",
+            "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
+            "href": links["handoff_apply"],
+            "status": handoff_apply.get("status", "missing"),
+        },
+        {
+            "step": 6,
+            "label": "기억 품질 확인",
+            "title": "memory audit",
+            "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
+            "href": links["memory_audit"],
+            "status": memory_audit.get("status", "missing"),
+        },
+    ]
+    payloads = {"morning": morning, "handoff": handoff}
+    payload = {
+        "schema_version": DAILY_OPERATOR_HOME_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": status,
+        "summary": {
+            "read_first": read_first.get("title", "오늘 브리프"),
+            "unresolved_handoff_count": unresolved_count,
+            "pending_decision_count": pending_decision_count,
+            "required_stale_count": required_stale,
+            "required_missing_count": required_missing,
+            "scheduler_status": scheduler.get("status", "missing"),
+            "notification_status": notification.get("delivery_status", "missing"),
+            "phone_access_path": phone_access.get("recommended_path", "missing"),
+        },
+        "daily_route": daily_route,
+        "copy_ready_commands": _daily_home_commands(payloads=payloads),
+        "phone_links": links,
+        "access": {
+            "recommended_path": phone_access.get("recommended_path", "missing"),
+            "local_url": phone_access.get("local_url", ""),
+            "private_phone_url": phone_access.get("private_phone_url", ""),
+            "requires_separate_approval": True,
+        },
+        "notification": {
+            "delivery_status": notification.get("delivery_status", "missing"),
+            "dry_run": notification.get("dry_run", True),
+            "send_requires_separate_approval": True,
+        },
+        "artifacts": [
+            _daily_home_artifact_status(name="morning", path=morning_path, payload=morning),
+            _daily_home_artifact_status(name="readiness", path=readiness_path, payload=readiness),
+            _daily_home_artifact_status(name="handoff", path=handoff_path, payload=handoff),
+            _daily_home_artifact_status(name="handoff_apply", path=handoff_apply_path, payload=handoff_apply),
+            _daily_home_artifact_status(name="run_ledger", path=run_ledger_path, payload=run_ledger),
+            _daily_home_artifact_status(name="scheduler", path=scheduler_operations_path, payload=scheduler),
+            _daily_home_artifact_status(name="phone_access", path=phone_access_path, payload=phone_access),
+            _daily_home_artifact_status(name="notification", path=notification_path, payload=notification),
+        ],
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "daily_home_reads_existing_artifacts_only",
+            "does_not_execute_tasks",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_order_execution",
+            "external_effects_require_separate_gate",
+        ],
+    }
+    return payload
+
+
+def write_daily_operator_home(
+    *,
+    artifact_output_path: str | Path = DEFAULT_DAILY_HOME_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_DAILY_HOME_SURFACE,
+    **paths: Any,
+) -> Path:
+    payload = build_daily_operator_home(**paths)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_daily_operator_home(payload), encoding="utf-8")
+    return target
+
+
+def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != DAILY_OPERATOR_HOME_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"ready", "operator_review", "blocked"}:
+        errors.append(f"invalid status {payload.get('status')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if not payload.get("daily_route"):
+        errors.append("daily_route must not be empty")
+    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply"]:
+        if not payload.get("phone_links", {}).get(field):
+            errors.append(f"phone_links.{field} must not be empty")
+    if "daily_home_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include daily_home_reads_existing_artifacts_only")
+    forbidden_fragments = [" --send", "--confirm-host-write", "--execute", "launchctl bootstrap"]
+    for index, command in enumerate(payload.get("copy_ready_commands", [])):
+        command_text = command.get("command", "")
+        if not command_text:
+            errors.append(f"copy_ready_commands[{index}] missing command")
+        if any(fragment in command_text for fragment in forbidden_fragments):
+            errors.append(f"copy_ready_commands[{index}] includes gated execution fragment")
+        if command.get("external_effect_performed") is not False:
+            errors.append(f"copy_ready_commands[{index}] external_effect_performed must be false")
+    for index, step in enumerate(payload.get("daily_route", [])):
+        for field in ["step", "label", "title", "why", "href", "status"]:
+            if field not in step:
+                errors.append(f"daily_route[{index}] missing {field}")
+    return errors
+
+
+def validate_daily_operator_home_file(path: str | Path) -> list[str]:
+    return validate_daily_operator_home_payload(load_json(path))
+
+
+def render_daily_operator_home(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    status_label = {
+        "ready": "오늘 읽기 준비됨",
+        "operator_review": "사람 확인 필요",
+        "blocked": "먼저 막힌 상태 확인",
+    }.get(payload.get("status", ""), payload.get("status", "unknown"))
+    scheduler_label = {
+        "manual_ready": "수동 준비",
+        "activation_ready": "활성화 준비",
+        "active_verified": "활성 확인",
+        "not_ready": "준비 안 됨",
+        "blocked": "막힘",
+        "missing": "없음",
+    }.get(str(summary.get("scheduler_status", "")), summary.get("scheduler_status", ""))
+    route_cards = "".join(
+        "<article class='route'>"
+        f"<span>Step {esc(step.get('step', ''))} · {esc(step.get('status', ''))}</span>"
+        f"<h2>{esc(step.get('label', ''))}</h2>"
+        f"<strong>{esc(step.get('title', ''))}</strong>"
+        f"<p>{esc(step.get('why', ''))}</p>"
+        f"<a href='{esc(_relative_href(Path(step.get('href', ''))))}'>열기</a>"
+        "</article>"
+        for step in payload.get("daily_route", [])
+    )
+    command_cards = "".join(
+        "<article class='command'>"
+        f"<span>{esc(command.get('source', 'local'))} · {esc(command.get('label', 'command'))}</span>"
+        f"<code>{esc(command.get('command', ''))}</code>"
+        f"<small>{esc(command.get('why', ''))}</small>"
+        "</article>"
+        for command in payload.get("copy_ready_commands", [])
+    ) or "<p>지금 복사할 로컬 응답 명령이 없습니다.</p>"
+    link_cards = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if label != "daily_home" and path
+    )
+    artifact_rows = "".join(
+        "<tr>"
+        f"<td><strong>{esc(item.get('name', ''))}</strong><span>{esc(item.get('path', ''))}</span></td>"
+        f"<td>{esc('yes' if item.get('exists') else 'no')}</td>"
+        f"<td>{esc(item.get('status', ''))}</td>"
+        "</tr>"
+        for item in payload.get("artifacts", [])
+    )
+    access = payload.get("access", {})
+    notification = payload.get("notification", {})
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Home</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:820px; margin:0 auto; padding:16px; }}
+a {{ color:var(--blue); font-weight:900; text-decoration:none; }}
+.eyebrow,.route span,.command span,.metric span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:36px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:18px; }}
+p,small,td span {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.route,.command {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:30px; line-height:1.08; }}
+.metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:13px; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; overflow-wrap:anywhere; }}
+.route-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.route,.command {{ background:white; padding:14px; min-width:0; }}
+.route strong {{ display:block; font-size:20px; }}
+.commands {{ display:grid; grid-template-columns:1fr; gap:10px; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }}
+table {{ width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }}
+td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }}
+td strong,td span {{ display:block; }}
+@media (max-width:680px) {{ main {{ padding:12px; }} h1 {{ font-size:30px; }} .metrics,.route-grid,.links {{ grid-template-columns:1fr; }} table {{ font-size:13px; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Daily Home · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>오늘의 개인 애널리스트 홈</h1>
+<p>폰에서 매일 시작하는 한 화면입니다. 여기서는 읽기와 확인만 하며, 실행 권한은 별도 게이트에 남겨둡니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">오늘 판정</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>먼저 볼 주제: {esc(summary.get('read_first', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Handoff</span><strong>{esc(summary.get('unresolved_handoff_count', 0))}</strong></article>
+<article class="metric"><span>Decisions</span><strong>{esc(summary.get('pending_decision_count', 0))}</strong></article>
+<article class="metric"><span>Missing</span><strong>{esc(summary.get('required_missing_count', 0))}</strong></article>
+<article class="metric"><span>Scheduler</span><strong>{esc(scheduler_label)}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>오늘 볼 순서</h2>
+<div class="route-grid">{route_cards}</div>
+</section>
+<section class="section">
+<h2>복사할 수 있는 로컬 응답</h2>
+<div class="commands">{command_cards}</div>
+</section>
+<section class="section">
+<h2>접근과 알림</h2>
+<p>접근 경로: {esc(access.get('recommended_path', ''))} · private URL: {esc(access.get('private_phone_url', ''))}</p>
+<p>알림 상태: {esc(notification.get('delivery_status', ''))} · dry-run: {esc(notification.get('dry_run', True))}</p>
+</section>
+<section class="section">
+<h2>빠른 링크</h2>
+<div class="links">{link_cards}</div>
+</section>
+<section class="section">
+<h2>증거 파일</h2>
+<table><thead><tr><th>Artifact</th><th>Exists</th><th>Status</th></tr></thead><tbody>{artifact_rows}</tbody></table>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 홈은 기존 로컬 파일만 읽습니다. task 실행, live network, 알림 전송, host write, credential, 계좌 접근, 주문 실행을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def render_morning_control_packet(payload: dict[str, Any]) -> str:
