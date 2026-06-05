@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_research_plan.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-05-29T09:53:26.579536+00:00",
+  "generated_at": "2026-06-05T05:48:24.477943+00:00",
   "topics_path": "config/topics.json",
   "policy": {
     "output_boundary": "research_only",

@@ -1,0 +1,56 @@
+{
+  "schema_version": "personal_analyst_runtime_playbook.v1",
+  "generated_at": "2026-06-05T05:48:24.476784+00:00",
+  "goal": "Run MyBroker as a local personal analyst appliance, not as a generic web app.",
+  "absorbed_patterns": [
+    {
+      "source": "Hermes Agent",
+      "pattern": "persistent memory, skill-like workflows, messaging gateway, scheduled loops",
+      "mybroker_translation": "topic memory, CLI workflows, notification dry-runs, launchd schedule assets"
+    },
+    {
+      "source": "OpenClaw",
+      "pattern": "local workspace assistant with skills and tool routing",
+      "mybroker_translation": "narrow finance-research appliance with explicit safety boundaries instead of broad file/account authority"
+    },
+    {
+      "source": "MiroFish",
+      "pattern": "graph-based simulation, personas, scenario paths, narrative maps",
+      "mybroker_translation": "market map, persona views, optimistic/base/downside scenarios, beginner explanations"
+    },
+    {
+      "source": "TradingAgents and FinRobot",
+      "pattern": "role-specialized analyst debate and risk review",
+      "mybroker_translation": "source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor, memory librarian, publisher"
+    },
+    {
+      "source": "Obsidian research vault workflows",
+      "pattern": "local markdown/file memory that compounds over time",
+      "mybroker_translation": "archive manifests, topic memory, source-linked artifacts, daily brief history"
+    }
+  ],
+  "recommended_runtime": {
+    "scheduler": "macOS launchd",
+    "phone_access": "Tailscale Serve or private LAN URL before public deployment",
+    "notification": "Pushover or Telegram via explicit environment secrets; dry-run by default",
+    "storage": "local reports/ artifacts plus topic memory and daily archive"
+  },
+  "agent_roles": [
+    "source_scout",
+    "evidence_curator",
+    "market_mapper",
+    "scenario_analyst",
+    "skeptic",
+    "beginner_tutor",
+    "memory_librarian",
+    "publisher"
+  ],
+  "safety_boundaries": [
+    "research_only",
+    "no_brokerage_credentials",
+    "no_live_trading",
+    "no_discretionary_management",
+    "no_unsupported_personalized_recommendations",
+    "paid_or_credentialed_sources_require_explicit_approval"
+  ]
+}
