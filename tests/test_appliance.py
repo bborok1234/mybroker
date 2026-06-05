@@ -177,6 +177,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertFalse(scheduler_apply_payload["host_write_performed"])
         self.assertEqual({item["status"] for item in scheduler_apply_payload["actions"]}, {"planned"})
         self.assertIn("post_status", scheduler_apply_payload)
+        self.assertTrue(scheduler_apply_payload["post_status_path"].startswith(root.resolve().as_posix()))
         self.assertTrue(script_exists)
         self.assertTrue(plist_exists)
 
