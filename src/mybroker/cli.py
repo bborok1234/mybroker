@@ -27,6 +27,8 @@ from mybroker.appliance import (
     DEFAULT_DRIFT_REVIEW_SURFACE,
     DEFAULT_REVIEW_PROMPT_OUTPUT,
     DEFAULT_REVIEW_PROMPT_SURFACE,
+    DEFAULT_REVIEW_EFFECT_OUTPUT,
+    DEFAULT_REVIEW_EFFECT_SURFACE,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
@@ -65,6 +67,7 @@ from mybroker.appliance import (
     write_daily_review,
     write_drift_review,
     write_operator_review_prompt,
+    write_operator_review_effect,
     build_task_status_apply,
     record_daily_review_response,
     record_task_status_response,
@@ -95,6 +98,7 @@ from mybroker.appliance import (
     validate_daily_review_file,
     validate_drift_review_file,
     validate_operator_review_prompt_file,
+    validate_operator_review_effect_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
     validate_run_trace_file,
@@ -315,6 +319,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_review_parser.add_argument("review_path")
     validate_review_prompt_parser = subcommands.add_parser("validate-review-prompt", help="Validate an operator_review_prompt.v1 artifact.")
     validate_review_prompt_parser.add_argument("review_prompt_path")
+    validate_review_effect_parser = subcommands.add_parser("validate-review-effect", help="Validate an operator_review_effect.v1 artifact.")
+    validate_review_effect_parser.add_argument("review_effect_path")
     validate_pattern_radar_parser = subcommands.add_parser("validate-agent-pattern-radar", help="Validate an agent_pattern_radar.v1 artifact.")
     validate_pattern_radar_parser.add_argument("pattern_radar_path")
     validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
@@ -536,6 +542,12 @@ def main(argv: list[str] | None = None) -> int:
     appliance_review_prompt_parser.add_argument("--task-ledger", default=DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT.as_posix())
     appliance_review_prompt_parser.add_argument("--artifact-output", default=DEFAULT_REVIEW_PROMPT_OUTPUT.as_posix())
     appliance_review_prompt_parser.add_argument("--output", default=DEFAULT_REVIEW_PROMPT_SURFACE.as_posix())
+    appliance_review_effect_parser = appliance_subcommands.add_parser("review-effect", help="Render proof that local review feedback shaped scout scoring.")
+    appliance_review_effect_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_review_effect_parser.add_argument("--daily-review", default=DEFAULT_DAILY_REVIEW_OUTPUT.as_posix())
+    appliance_review_effect_parser.add_argument("--review-prompt", default=DEFAULT_REVIEW_PROMPT_OUTPUT.as_posix())
+    appliance_review_effect_parser.add_argument("--artifact-output", default=DEFAULT_REVIEW_EFFECT_OUTPUT.as_posix())
+    appliance_review_effect_parser.add_argument("--output", default=DEFAULT_REVIEW_EFFECT_SURFACE.as_posix())
     appliance_pattern_radar_parser = appliance_subcommands.add_parser("pattern-radar", help="Render the workflow-pattern radar for local analyst evolution.")
     appliance_pattern_radar_parser.add_argument("--playbook", default=DEFAULT_RUNTIME_PLAYBOOK_OUTPUT.as_posix())
     appliance_pattern_radar_parser.add_argument("--artifact-output", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
@@ -959,6 +971,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-review-prompt":
         errors = validate_operator_review_prompt_file(args.review_prompt_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-review-effect":
+        errors = validate_operator_review_effect_file(args.review_effect_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1527,6 +1546,23 @@ def main(argv: list[str] | None = None) -> int:
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "review-effect":
+            path = write_operator_review_effect(
+                scout_path=args.scout,
+                daily_review_path=args.daily_review,
+                review_prompt_path=args.review_prompt,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "review_effect": args.artifact_output,
+                "review_effect_surface": path.as_posix(),
+                "status": payload["status"],
+                "applied_topic_count": payload["summary"]["applied_topic_count"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "pattern-radar":
             path = write_agent_pattern_radar(
                 playbook_path=args.playbook,
@@ -1687,6 +1723,8 @@ def main(argv: list[str] | None = None) -> int:
             review_surface_path = DEFAULT_DAILY_REVIEW_SURFACE
             review_prompt_artifact_path = DEFAULT_REVIEW_PROMPT_OUTPUT
             review_prompt_surface_path = DEFAULT_REVIEW_PROMPT_SURFACE
+            review_effect_artifact_path = DEFAULT_REVIEW_EFFECT_OUTPUT
+            review_effect_surface_path = DEFAULT_REVIEW_EFFECT_SURFACE
             pattern_radar_artifact_path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT
             pattern_radar_surface_path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE
             run_trace_artifact_path = DEFAULT_RUN_TRACE_OUTPUT
@@ -1829,6 +1867,13 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=review_prompt_artifact_path,
                 surface_output_path=review_prompt_surface_path,
             )
+            provisional_review_effect = write_operator_review_effect(
+                scout_path=scout_path,
+                daily_review_path=review_artifact_path,
+                review_prompt_path=review_prompt_artifact_path,
+                artifact_output_path=review_effect_artifact_path,
+                surface_output_path=review_effect_surface_path,
+            )
             provisional_today = write_today_surface(
                 scenario_path=written_scenario,
                 verdict_path=written_verdict,
@@ -1846,6 +1891,7 @@ def main(argv: list[str] | None = None) -> int:
                 source_refresh_surface_path=written_source_refresh_brief,
                 review_surface_path=provisional_review,
                 review_prompt_surface_path=provisional_review_prompt,
+                review_effect_surface_path=provisional_review_effect,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=run_trace_surface_path,
                 drift_review_surface_path=drift_review_surface_path,
@@ -1875,6 +1921,8 @@ def main(argv: list[str] | None = None) -> int:
                 daily_review_surface_path=provisional_review,
                 review_prompt_path=review_prompt_artifact_path,
                 review_prompt_surface_path=provisional_review_prompt,
+                review_effect_path=review_effect_artifact_path,
+                review_effect_surface_path=provisional_review_effect,
                 pattern_radar_path=pattern_radar_artifact_path,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_path=run_trace_artifact_path,
@@ -1935,6 +1983,13 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=review_prompt_artifact_path,
                 surface_output_path=review_prompt_surface_path,
             )
+            written_review_effect = write_operator_review_effect(
+                scout_path=scout_path,
+                daily_review_path=review_artifact_path,
+                review_prompt_path=review_prompt_artifact_path,
+                artifact_output_path=review_effect_artifact_path,
+                surface_output_path=review_effect_surface_path,
+            )
             written_today = write_today_surface(
                 scenario_path=written_scenario,
                 verdict_path=written_verdict,
@@ -1952,6 +2007,7 @@ def main(argv: list[str] | None = None) -> int:
                 source_refresh_surface_path=written_source_refresh_brief,
                 review_surface_path=written_review,
                 review_prompt_surface_path=written_review_prompt,
+                review_effect_surface_path=written_review_effect,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=run_trace_surface_path,
                 drift_review_surface_path=drift_review_surface_path,
@@ -1985,6 +2041,7 @@ def main(argv: list[str] | None = None) -> int:
                 surface_output_path=run_trace_surface_path,
                 today_path=written_today,
                 review_prompt_path=review_prompt_artifact_path,
+                review_effect_path=review_effect_artifact_path,
                 scheduler_operations_path=scheduler_operations_artifact_path,
             )
             written_drift_review = write_drift_review(
@@ -2013,6 +2070,7 @@ def main(argv: list[str] | None = None) -> int:
                 agenda_surface_path=written_agenda,
                 review_surface_path=written_review,
                 review_prompt_surface_path=written_review_prompt,
+                review_effect_surface_path=written_review_effect,
                 pattern_radar_surface_path=written_pattern_radar,
                 run_trace_surface_path=written_run_trace,
                 drift_review_surface_path=written_drift_review,
@@ -2042,6 +2100,13 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=review_prompt_artifact_path,
                 surface_output_path=review_prompt_surface_path,
             )
+            written_review_effect = write_operator_review_effect(
+                scout_path=scout_path,
+                daily_review_path=review_artifact_path,
+                review_prompt_path=review_prompt_artifact_path,
+                artifact_output_path=review_effect_artifact_path,
+                surface_output_path=review_effect_surface_path,
+            )
             add_archive_artifacts(
                 manifest_path=archive_manifest,
                 artifacts={
@@ -2055,6 +2120,8 @@ def main(argv: list[str] | None = None) -> int:
                     "daily_review_surface": written_review,
                     "review_prompt": review_prompt_artifact_path,
                     "review_prompt_surface": written_review_prompt,
+                    "review_effect": review_effect_artifact_path,
+                    "review_effect_surface": written_review_effect,
                     "run_trace": run_trace_artifact_path,
                     "run_trace_surface": written_run_trace,
                     "drift_review": drift_review_artifact_path,
@@ -2080,6 +2147,8 @@ def main(argv: list[str] | None = None) -> int:
                     "daily_review_surface": written_review.as_posix(),
                     "review_prompt": review_prompt_artifact_path.as_posix(),
                     "review_prompt_surface": written_review_prompt.as_posix(),
+                    "review_effect": review_effect_artifact_path.as_posix(),
+                    "review_effect_surface": written_review_effect.as_posix(),
                     "agent_pattern_radar": pattern_radar_artifact_path.as_posix(),
                     "agent_pattern_radar_surface": written_pattern_radar.as_posix(),
                     "run_trace": run_trace_artifact_path.as_posix(),

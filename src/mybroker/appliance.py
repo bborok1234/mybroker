@@ -45,6 +45,7 @@ ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
 ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION = "personal_analyst_task_status_apply.v1"
 DAILY_REVIEW_SCHEMA_VERSION = "daily_review.v1"
 OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION = "operator_review_prompt.v1"
+OPERATOR_REVIEW_EFFECT_SCHEMA_VERSION = "operator_review_effect.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUN_TRACE_SCHEMA_VERSION = "local_run_trace.v1"
 DRIFT_REVIEW_SCHEMA_VERSION = "local_drift_review.v1"
@@ -88,6 +89,8 @@ DEFAULT_DAILY_REVIEW_RESPONSES = Path("reports/memory/daily-review-responses.jso
 DEFAULT_DAILY_REVIEW_SURFACE = Path("reports/product/review.html")
 DEFAULT_REVIEW_PROMPT_OUTPUT = Path("reports/runtime/review-prompt.json")
 DEFAULT_REVIEW_PROMPT_SURFACE = Path("reports/product/review-prompt.html")
+DEFAULT_REVIEW_EFFECT_OUTPUT = Path("reports/runtime/review-effect.json")
+DEFAULT_REVIEW_EFFECT_SURFACE = Path("reports/product/review-effect.html")
 DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
 DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
 DEFAULT_RUN_TRACE_OUTPUT = Path("reports/runtime/run-trace.json")
@@ -1620,6 +1623,8 @@ def build_daily_readiness(
         ("drift_review_surface", DEFAULT_DRIFT_REVIEW_SURFACE, "phone_surface", False),
         ("review_prompt", DEFAULT_REVIEW_PROMPT_OUTPUT, "control_artifact", False),
         ("review_prompt_surface", DEFAULT_REVIEW_PROMPT_SURFACE, "phone_surface", False),
+        ("review_effect", DEFAULT_REVIEW_EFFECT_OUTPUT, "control_artifact", False),
+        ("review_effect_surface", DEFAULT_REVIEW_EFFECT_SURFACE, "phone_surface", False),
         ("daily_scout", DEFAULT_DAILY_SCOUT_OUTPUT, "machine_artifact", True),
         ("daily_evidence", DEFAULT_DAILY_EVIDENCE_OUTPUT, "machine_artifact", True),
         ("topic_memory", DEFAULT_TOPIC_MEMORY_OUTPUT, "memory_artifact", True),
@@ -1679,6 +1684,7 @@ def build_daily_readiness(
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+            "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
@@ -1767,6 +1773,7 @@ def build_run_trace(
     task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
     daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
     review_prompt_path: str | Path = DEFAULT_REVIEW_PROMPT_OUTPUT,
+    review_effect_path: str | Path = DEFAULT_REVIEW_EFFECT_OUTPUT,
     scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
     generated_at: datetime | None = None,
@@ -1788,6 +1795,7 @@ def build_run_trace(
         ("task_ledger", task_ledger_path, "queue", "Preserves task state across days.", True),
         ("daily_review", daily_review_path, "feedback", "Records what the operator read, skipped, or wants more of.", False),
         ("review_prompt", review_prompt_path, "feedback", "Suggests copy-ready responses so operator feedback can shape the next run.", False),
+        ("review_effect", review_effect_path, "feedback", "Proves whether recorded review feedback actually shaped scout scoring.", False),
         ("scheduler_operations", scheduler_operations_path, "ops", "Shows automation readiness without host writes.", False),
         ("today_surface", today_path, "publish", "Renders the phone-readable daily entry point.", True),
     ]
@@ -1824,6 +1832,7 @@ def build_run_trace(
             "task_ledger",
             "daily_review",
             "review_prompt",
+            "review_effect",
         ],
         "phone_links": {
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
@@ -1831,6 +1840,7 @@ def build_run_trace(
             "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+            "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
             "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
@@ -1953,6 +1963,7 @@ def build_drift_review(
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+            "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
             "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
@@ -2712,6 +2723,7 @@ def write_today_surface(
     source_refresh_surface_path: str | Path | None = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     review_surface_path: str | Path | None = DEFAULT_DAILY_REVIEW_SURFACE,
     review_prompt_surface_path: str | Path | None = DEFAULT_REVIEW_PROMPT_SURFACE,
+    review_effect_surface_path: str | Path | None = DEFAULT_REVIEW_EFFECT_SURFACE,
     pattern_radar_surface_path: str | Path | None = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path | None = DEFAULT_RUN_TRACE_SURFACE,
     drift_review_surface_path: str | Path | None = DEFAULT_DRIFT_REVIEW_SURFACE,
@@ -2755,6 +2767,7 @@ def write_today_surface(
             source_refresh_surface_path=Path(source_refresh_surface_path) if source_refresh_surface_path else None,
             review_surface_path=Path(review_surface_path) if review_surface_path else None,
             review_prompt_surface_path=Path(review_prompt_surface_path) if review_prompt_surface_path else None,
+            review_effect_surface_path=Path(review_effect_surface_path) if review_effect_surface_path else None,
             pattern_radar_surface_path=Path(pattern_radar_surface_path) if pattern_radar_surface_path else None,
             run_trace_surface_path=Path(run_trace_surface_path) if run_trace_surface_path else None,
             drift_review_surface_path=Path(drift_review_surface_path) if drift_review_surface_path else None,
@@ -2788,6 +2801,7 @@ def render_today_surface(
     source_refresh_surface_path: Path | None = None,
     review_surface_path: Path | None = None,
     review_prompt_surface_path: Path | None = None,
+    review_effect_surface_path: Path | None = None,
     pattern_radar_surface_path: Path | None = None,
     run_trace_surface_path: Path | None = None,
     drift_review_surface_path: Path | None = None,
@@ -2959,6 +2973,11 @@ def render_today_surface(
         if review_prompt_surface_path
         else "<span>오늘 피드백 가이드 없음</span>"
     )
+    review_effect_link = (
+        f"<a href='{esc(_relative_href(review_effect_surface_path))}'>피드백 반영 확인</a>"
+        if review_effect_surface_path
+        else "<span>피드백 반영 확인 없음</span>"
+    )
     pattern_radar_link = (
         f"<a href='{esc(_relative_href(pattern_radar_surface_path))}'>방식 업데이트 레이더</a>"
         if pattern_radar_surface_path
@@ -3096,6 +3115,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 {source_refresh_link}
 {review_link}
 {review_prompt_link}
+{review_effect_link}
 {pattern_radar_link}
 {run_trace_link}
 {drift_review_link}
@@ -3137,6 +3157,8 @@ def archive_daily_run(
     daily_review_surface_path: str | Path | None = None,
     review_prompt_path: str | Path | None = None,
     review_prompt_surface_path: str | Path | None = None,
+    review_effect_path: str | Path | None = None,
+    review_effect_surface_path: str | Path | None = None,
     pattern_radar_path: str | Path | None = None,
     pattern_radar_surface_path: str | Path | None = None,
     run_trace_path: str | Path | None = None,
@@ -3170,6 +3192,8 @@ def archive_daily_run(
         "daily_review_surface": daily_review_surface_path,
         "review_prompt": review_prompt_path,
         "review_prompt_surface": review_prompt_surface_path,
+        "review_effect": review_effect_path,
+        "review_effect_surface": review_effect_surface_path,
         "agent_pattern_radar": pattern_radar_path,
         "agent_pattern_radar_surface": pattern_radar_surface_path,
         "run_trace": run_trace_path,
@@ -4448,6 +4472,315 @@ def _review_prompt_default_note(*, action: str, topic: str) -> str:
     return notes.get(action, f"{topic} 피드백")
 
 
+def build_operator_review_effect(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    review_prompt_path: str | Path = DEFAULT_REVIEW_PROMPT_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    scout = _load_optional_json(scout_path)
+    review = _load_optional_json(daily_review_path)
+    prompt = _load_optional_json(review_prompt_path)
+    review_summary = review.get("summary", {}) if review.get("schema_version") == DAILY_REVIEW_SCHEMA_VERSION else {}
+    scout_context = scout.get("review_context", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    recommendations = scout.get("recommendations", []) if scout.get("schema_version") == "daily_scout.v1" else []
+    topic_effects = _operator_review_topic_effects(review=review, recommendations=recommendations)
+    response_count = int(review_summary.get("response_count", 0) or 0)
+    scout_response_count = int(scout_context.get("response_count", 0) or 0)
+    applied_count = sum(1 for effect in topic_effects if effect.get("effect_status") == "applied")
+    status = _operator_review_effect_status(
+        scout=scout,
+        review=review,
+        response_count=response_count,
+        scout_response_count=scout_response_count,
+        applied_count=applied_count,
+    )
+    payload = {
+        "schema_version": OPERATOR_REVIEW_EFFECT_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "status": status,
+        "summary": {
+            "response_count": response_count,
+            "scout_response_count": scout_response_count,
+            "review_signal_count": int(review_summary.get("signal_count", 0) or 0),
+            "applied_topic_count": applied_count,
+            "prompt_count": int(prompt.get("summary", {}).get("prompt_count", 0) or 0),
+        },
+        "interpretation": _operator_review_effect_interpretation(status=status),
+        "topic_effects": topic_effects,
+        "next_actions": _operator_review_effect_next_actions(status=status, prompt=prompt),
+        "input_artifacts": {
+            "scout": Path(scout_path).as_posix(),
+            "daily_review": Path(daily_review_path).as_posix(),
+            "review_prompt": Path(review_prompt_path).as_posix(),
+        },
+        "phone_links": {
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "review": DEFAULT_DAILY_REVIEW_SURFACE.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+            "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "local_review_effect_proof_only",
+            "reads_existing_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_live_trading",
+        ],
+    }
+    return payload
+
+
+def write_operator_review_effect(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    review_prompt_path: str | Path = DEFAULT_REVIEW_PROMPT_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_REVIEW_EFFECT_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_REVIEW_EFFECT_SURFACE,
+) -> Path:
+    payload = build_operator_review_effect(
+        scout_path=scout_path,
+        daily_review_path=daily_review_path,
+        review_prompt_path=review_prompt_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_operator_review_effect(payload), encoding="utf-8")
+    return target
+
+
+def validate_operator_review_effect_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != OPERATOR_REVIEW_EFFECT_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"no_feedback", "applied", "not_applied", "missing_inputs"}:
+        errors.append("status must be no_feedback, applied, not_applied, or missing_inputs")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if "local_review_effect_proof_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include local_review_effect_proof_only")
+    summary = payload.get("summary", {})
+    for field in ["response_count", "scout_response_count", "review_signal_count", "applied_topic_count", "prompt_count"]:
+        if field not in summary:
+            errors.append(f"summary missing {field}")
+    if not payload.get("next_actions"):
+        errors.append("next_actions must not be empty")
+    for index, effect in enumerate(payload.get("topic_effects", [])):
+        for field in ["topic_id", "topic", "review_delta", "scout_delta", "effect_status", "evidence"]:
+            if field not in effect:
+                errors.append(f"topic_effects[{index}] missing {field}")
+        if effect.get("effect_status") not in {"applied", "not_applied"}:
+            errors.append(f"topic_effects[{index}] invalid effect_status")
+    return errors
+
+
+def validate_operator_review_effect_file(path: str | Path) -> list[str]:
+    return validate_operator_review_effect_payload(load_json(path))
+
+
+def render_operator_review_effect(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    status_label = {
+        "no_feedback": "아직 피드백 없음",
+        "applied": "피드백 반영됨",
+        "not_applied": "피드백 미반영",
+        "missing_inputs": "입력 누락",
+    }.get(payload.get("status", ""), payload.get("status", "unknown"))
+    effect_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(effect.get('effect_status', ''))} · delta {esc(effect.get('scout_delta', 0))}</span>"
+        f"<strong>{esc(effect.get('topic', ''))}</strong>"
+        f"<p>{esc(effect.get('evidence', ''))}</p>"
+        f"<small>review delta {esc(effect.get('review_delta', 0))}</small>"
+        "</article>"
+        for effect in payload.get("topic_effects", [])
+    ) or "<p>아직 scout에 반영할 review signal이 없습니다.</p>"
+    action_cards = "".join(
+        "<article class='command'>"
+        f"<span>{esc(action.get('label', 'next'))}</span>"
+        f"<p>{esc(action.get('why', ''))}</p>"
+        f"<code>{esc(action.get('command', ''))}</code>"
+        "</article>"
+        for action in payload.get("next_actions", [])
+    )
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if label != "review_effect"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Review Effect</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+.eyebrow,.card span,.command span {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small {{ color:var(--muted); }}
+.hero,.section,.card,.command {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics,.links {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
+.metric,.card,.command {{ background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:26px; }}
+.stack {{ display:grid; grid-template-columns:1fr; gap:10px; }}
+.card strong {{ display:block; margin:5px 0; font-size:20px; }}
+.card p,.card small,.command p {{ overflow-wrap:anywhere; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Review Effect · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>피드백 반영 확인</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('interpretation', ''))}</p>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Responses</span><strong>{esc(summary.get('response_count', 0))}</strong></article>
+<article class="metric"><span>Scout read</span><strong>{esc(summary.get('scout_response_count', 0))}</strong></article>
+<article class="metric"><span>Signals</span><strong>{esc(summary.get('review_signal_count', 0))}</strong></article>
+<article class="metric"><span>Applied</span><strong>{esc(summary.get('applied_topic_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>Scout score 반영 증거</h2>
+<div class="stack">{effect_cards}</div>
+</section>
+<section class="section">
+<h2>다음 행동</h2>
+<div class="stack">{action_cards}</div>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def _operator_review_topic_effects(*, review: dict[str, Any], recommendations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if review.get("schema_version") != DAILY_REVIEW_SCHEMA_VERSION:
+        return []
+    recommendations_by_id = {row.get("topic_id"): row for row in recommendations}
+    effects = []
+    for signal in review.get("topic_signals", []):
+        topic_id = signal.get("topic_id", "")
+        recommendation = recommendations_by_id.get(topic_id, {})
+        score_factors = recommendation.get("score_factors", [])
+        scout_factor = next((factor for factor in score_factors if factor.get("name") == "operator_review"), {})
+        review_delta = float(signal.get("score_delta", 0) or 0)
+        scout_delta = float(scout_factor.get("delta", 0) or 0)
+        applied = bool(scout_factor) and round(review_delta, 2) == round(scout_delta, 2)
+        effects.append({
+            "topic_id": topic_id,
+            "topic": signal.get("name", recommendation.get("name", topic_id)),
+            "review_delta": round(review_delta, 2),
+            "scout_delta": round(scout_delta, 2),
+            "effect_status": "applied" if applied else "not_applied",
+            "latest_status": signal.get("latest_status", ""),
+            "latest_note": signal.get("latest_note", ""),
+            "evidence": scout_factor.get("reason") if applied else "현재 scout score_factors에 operator_review delta가 일치하지 않습니다.",
+        })
+    return effects
+
+
+def _operator_review_effect_status(
+    *,
+    scout: dict[str, Any],
+    review: dict[str, Any],
+    response_count: int,
+    scout_response_count: int,
+    applied_count: int,
+) -> str:
+    if scout.get("schema_version") != "daily_scout.v1" or review.get("schema_version") != DAILY_REVIEW_SCHEMA_VERSION:
+        return "missing_inputs"
+    if response_count == 0:
+        return "no_feedback"
+    if scout_response_count != response_count:
+        return "not_applied"
+    if applied_count > 0:
+        return "applied"
+    return "not_applied"
+
+
+def _operator_review_effect_interpretation(*, status: str) -> str:
+    return {
+        "no_feedback": "아직 기록된 review-response가 없어 scout가 개인 피드백을 반영할 수 없습니다.",
+        "applied": "daily_review의 topic signal이 현재 scout score_factors에 operator_review로 반영됐습니다.",
+        "not_applied": "review-response는 있으나 현재 scout가 같은 응답 수나 delta를 반영하지 못했습니다. appliance run을 다시 실행해 확인해야 합니다.",
+        "missing_inputs": "daily_scout 또는 daily_review artifact가 없거나 schema가 맞지 않아 반영 여부를 판단할 수 없습니다.",
+    }.get(status, "피드백 반영 상태를 확인해야 합니다.")
+
+
+def _operator_review_effect_next_actions(*, status: str, prompt: dict[str, Any]) -> list[dict[str, Any]]:
+    if status == "no_feedback":
+        command = _first_review_prompt_command(prompt)
+        return [{
+            "label": "피드백 남기기",
+            "why": "오늘 읽은 주제에 대해 가장 가까운 응답을 하나 남기면 다음 run에서 scout score에 반영됩니다.",
+            "command": command or "PYTHONPATH=src python3 -m mybroker appliance review-prompt",
+            "external_effect_performed": False,
+        }]
+    if status == "not_applied":
+        return [{
+            "label": "로컬 run 재생성",
+            "why": "review-response가 기록된 뒤 daily_review와 daily_scout를 같은 run에서 다시 생성해야 반영 여부가 맞춰집니다.",
+            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --dry-run",
+            "external_effect_performed": False,
+        }]
+    if status == "missing_inputs":
+        return [{
+            "label": "필수 artifact 생성",
+            "why": "daily_scout와 daily_review가 있어야 피드백 반영 여부를 판정할 수 있습니다.",
+            "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --dry-run",
+            "external_effect_performed": False,
+        }]
+    return [{
+        "label": "유지",
+        "why": "피드백이 현재 scout에 반영됐습니다. 오늘 브리프를 읽고 다음 피드백을 남기면 루프가 계속 개인화됩니다.",
+        "command": "PYTHONPATH=src python3 -m mybroker appliance review-prompt",
+        "external_effect_performed": False,
+    }]
+
+
+def _first_review_prompt_command(prompt: dict[str, Any]) -> str:
+    for card in prompt.get("prompt_cards", []):
+        for command in card.get("copy_ready_commands", []):
+            if command.get("command"):
+                return command["command"]
+    return ""
+
+
 def _load_daily_review_responses(path: str | Path) -> list[dict[str, Any]]:
     target = Path(path)
     if not target.exists():
@@ -4542,6 +4875,7 @@ def build_morning_control_packet(
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
+    review_effect_surface_path: str | Path = DEFAULT_REVIEW_EFFECT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
@@ -4604,6 +4938,7 @@ def build_morning_control_packet(
             "agenda": Path(agenda_surface_path).as_posix(),
             "review": Path(review_surface_path).as_posix(),
             "review_prompt": Path(review_prompt_surface_path).as_posix(),
+            "review_effect": Path(review_effect_surface_path).as_posix(),
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
             "trace": Path(run_trace_surface_path).as_posix(),
             "drift_review": Path(drift_review_surface_path).as_posix(),
@@ -4666,6 +5001,7 @@ def write_morning_control_packet(
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     review_prompt_surface_path: str | Path = DEFAULT_REVIEW_PROMPT_SURFACE,
+    review_effect_surface_path: str | Path = DEFAULT_REVIEW_EFFECT_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
@@ -4689,6 +5025,7 @@ def write_morning_control_packet(
         agenda_surface_path=agenda_surface_path,
         review_surface_path=review_surface_path,
         review_prompt_surface_path=review_prompt_surface_path,
+        review_effect_surface_path=review_effect_surface_path,
         pattern_radar_surface_path=pattern_radar_surface_path,
         run_trace_surface_path=run_trace_surface_path,
         drift_review_surface_path=drift_review_surface_path,
@@ -6037,6 +6374,8 @@ def _drift_review_next_steps(*, decision: dict[str, str], signals: list[dict[str
         steps.append("readiness, trace, pattern radar 중 약한 신호를 먼저 확인합니다.")
     if any(signal["name"] == "operator_feedback" and signal["value"] == "0" for signal in signals):
         steps.append("operator review 응답이 없으므로 review prompt에서 복사 가능한 피드백을 남깁니다.")
+    else:
+        steps.append("operator review effect에서 피드백이 scout score에 반영됐는지 확인합니다.")
     return steps
 
 

@@ -149,6 +149,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/review.html`: phone-readable review memory surface and copy-ready response example.
 - `reports/product/review-prompt.html`: phone-readable prompt surface that suggests copy-ready
   `review-response` commands for current scout topics before the next run.
+- `reports/product/review-effect.html`: phone-readable proof surface that shows whether local
+  review feedback was read by scout and applied as an `operator_review` score factor.
 - `reports/runtime/agent-pattern-radar.json`: machine-readable record of which external agentic workflow patterns are adopted, partially adopted, or rejected for the local daily analyst loop.
 - `reports/product/pattern-radar.html`: phone-readable workflow evolution radar for the next safe slice and safety guardrails.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
@@ -188,6 +190,11 @@ factor. This is local memory only: it does not execute tasks, fetch live data, o
 `operator_review_prompt.v1` plus `reports/product/review-prompt.html`. It is a phone-first helper
 for leaving better feedback; it does not change topic scores until the operator actually records a
 `review-response`.
+`review-effect` turns the current scout, review memory, and review prompt into
+`operator_review_effect.v1` plus `reports/product/review-effect.html`. It is the proof step: if no
+feedback exists, it points back to the prompt; if feedback exists but scout did not read the same
+response count or delta, it tells the operator to rerun the local appliance; if applied, it shows the
+topic-level score evidence.
 `pattern-radar` writes `agent_pattern_radar.v1` and `reports/product/pattern-radar.html`. It
 keeps Hermes/OpenClaw/MiroFish/TradingAgents/work-buddy/Dexter/TaskWeaver/TraceAgent/Obsidian-style
 lessons explicit: adopted patterns become local surfaces, memory, review, role separation, scenario

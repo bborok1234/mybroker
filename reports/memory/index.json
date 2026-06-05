@@ -1,9 +1,9 @@
 {
   "schema_version": "personal_memory_index.v1",
-  "generated_at": "2026-06-05T18:14:03.504203+00:00",
+  "generated_at": "2026-06-05T18:27:55.827926+00:00",
   "memory_path": "reports/memory/topic-memory.json",
   "archive_root": "reports/archive",
-  "run_count": 39,
+  "run_count": 40,
   "topic_count": 5,
   "topics": [
     {
@@ -140,6 +140,13 @@
   "recent_runs": [
     {
       "run_id": "daily-research",
+      "generated_at": "2026-06-05T18:27:55.802644+00:00",
+      "evidence_catalog": "2026-06-05T18:27:55.802022+00:00",
+      "topic_count": 5,
+      "changed_topics": []
+    },
+    {
+      "run_id": "daily-research",
       "generated_at": "2026-06-05T18:14:03.479422+00:00",
       "evidence_catalog": "2026-06-05T18:14:03.479003+00:00",
       "topic_count": 5,
@@ -200,20 +207,13 @@
       "evidence_catalog": "2026-06-05T16:26:21.002471+00:00",
       "topic_count": 5,
       "changed_topics": []
-    },
-    {
-      "run_id": "daily-research",
-      "generated_at": "2026-06-05T16:07:15.639860+00:00",
-      "evidence_catalog": "2026-06-05T16:07:15.639543+00:00",
-      "topic_count": 5,
-      "changed_topics": []
     }
   ],
   "archives": [
     {
       "schema_version": "daily_archive.v1",
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T18:14:03.497150+00:00",
+      "generated_at": "2026-06-05T18:27:55.820772+00:00",
       "archive_dir": "reports/archive/2026-06-05",
       "artifacts": {
         "scenario": "reports/archive/2026-06-05/daily-research-sim.json",
@@ -232,6 +232,8 @@
         "daily_review_surface": "reports/archive/2026-06-05/review.html",
         "review_prompt": "reports/archive/2026-06-05/review-prompt.json",
         "review_prompt_surface": "reports/archive/2026-06-05/review-prompt.html",
+        "review_effect": "reports/archive/2026-06-05/review-effect.json",
+        "review_effect_surface": "reports/archive/2026-06-05/review-effect.html",
         "agent_pattern_radar": "reports/archive/2026-06-05/agent-pattern-radar.json",
         "agent_pattern_radar_surface": "reports/archive/2026-06-05/pattern-radar.html",
         "run_trace": "reports/archive/2026-06-05/run-trace.json",

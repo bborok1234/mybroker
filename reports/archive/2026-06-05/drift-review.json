@@ -1,6 +1,6 @@
 {
   "schema_version": "local_drift_review.v1",
-  "generated_at": "2026-06-05T18:14:03.525365+00:00",
+  "generated_at": "2026-06-05T18:27:55.848443+00:00",
   "status": "approval_required",
   "run_id": "daily-research",
   "decision": {
@@ -62,6 +62,7 @@
     "trace": "reports/product/run-trace.html",
     "drift_review": "reports/product/drift-review.html",
     "review_prompt": "reports/product/review-prompt.html",
+    "review_effect": "reports/product/review-effect.html",
     "pattern_radar": "reports/product/pattern-radar.html",
     "source_refresh": "reports/product/source-refresh.html",
     "tasks": "reports/product/tasks.html"
