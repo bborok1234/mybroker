@@ -13,6 +13,7 @@ from mybroker.appliance import (
     DEFAULT_MEMORY_QUERY_SURFACE,
     DEFAULT_MEMORY_OUTPUT,
     DEFAULT_NOTIFICATION_OUTPUT,
+    DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT,
     DEFAULT_PHONE_ACCESS_OUTPUT,
     DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
     DEFAULT_RUNTIME_DOCTOR_OUTPUT,
@@ -28,6 +29,7 @@ from mybroker.appliance import (
     write_memory_query,
     write_memory_surface,
     write_notification_payload,
+    write_operator_decision_packet,
     write_phone_access_plan,
     write_runtime_doctor,
     write_runtime_playbook,
@@ -196,6 +198,9 @@ def main(argv: list[str] | None = None) -> int:
     appliance_access_parser.add_argument("--output", default=DEFAULT_PHONE_ACCESS_OUTPUT.as_posix())
     appliance_access_parser.add_argument("--port", type=int, default=8787)
     appliance_access_parser.add_argument("--tailnet-host", default="mybroker-mac")
+    appliance_decision_parser = appliance_subcommands.add_parser("decision-packet", help="Write pending operator decisions for external-effect appliance gates.")
+    appliance_decision_parser.add_argument("--project-root", default=".")
+    appliance_decision_parser.add_argument("--output", default=DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT.as_posix())
     appliance_doctor_parser = appliance_subcommands.add_parser("doctor", help="Write a local runtime readiness proof without installing host services.")
     appliance_doctor_parser.add_argument("--project-root", default=".")
     appliance_doctor_parser.add_argument("--output", default=DEFAULT_RUNTIME_DOCTOR_OUTPUT.as_posix())
@@ -508,6 +513,18 @@ def main(argv: list[str] | None = None) -> int:
         if args.appliance_command == "access":
             path = write_phone_access_plan(output_path=args.output, port=args.port, tailnet_host=args.tailnet_host)
             print(json.dumps({"phone_access": path.as_posix()}, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "decision-packet":
+            path = write_operator_decision_packet(project_root=args.project_root, output_path=args.output)
+            payload = json.loads(Path(path).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "operator_decision_packet": path.as_posix(),
+                "status": payload["status"],
+                "decision_count": payload["summary"]["decision_count"],
+                "ready_count": payload["summary"]["ready_count"],
+                "blocked_count": payload["summary"]["blocked_count"],
+                "host_write_performed": payload["host_write_performed"],
+            }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "doctor":
             path = write_runtime_doctor(

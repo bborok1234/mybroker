@@ -1,0 +1,95 @@
+{
+  "schema_version": "operator_decision_packet.v1",
+  "generated_at": "2026-06-05T07:50:09.871393+00:00",
+  "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
+  "status": "pending_operator_decision",
+  "host_write_performed": false,
+  "decisions": [
+    {
+      "id": "scheduler_activation",
+      "title": "Activate daily scheduler",
+      "approval_scope": "confirmed_host_write",
+      "readiness": "ready",
+      "current_state": {
+        "preflight_status": "ready",
+        "verify_status": "blocked",
+        "preflight_blockers": [],
+        "verify_blockers": [
+          "Required condition not met: LaunchAgent is loaded for the current user.",
+          "Required condition not met: LaunchAgent plist is installed under ~/Library/LaunchAgents.",
+          "Required condition not met: Installed plist matches the source scheduler asset.",
+          "Required condition not met: Runtime doctor passes with launchd loaded required."
+        ]
+      },
+      "operator_can_say": "approve scheduler_activation confirmed_host_write",
+      "agent_will_run": [
+        "PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now --confirm-host-write",
+        "PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify"
+      ],
+      "risk": "Installs and loads a LaunchAgent for the current macOS user and starts the local runner.",
+      "reversibility": "partially_reversible",
+      "rollback_command": "PYTHONPATH=src python3 -m mybroker appliance scheduler apply --unload --uninstall --confirm-host-write"
+    },
+    {
+      "id": "notification_send",
+      "title": "Send phone notification",
+      "approval_scope": "send_notification",
+      "readiness": "blocked",
+      "current_state": {
+        "provider": "telegram",
+        "delivery_status": "dry_run_ready",
+        "dry_run": true,
+        "missing_env": [
+          "TELEGRAM_BOT_TOKEN",
+          "TELEGRAM_CHAT_ID"
+        ]
+      },
+      "operator_can_say": "approve notification_send send_notification",
+      "agent_will_run": [
+        "PYTHONPATH=src python3 -m mybroker appliance notify --provider <provider> --send"
+      ],
+      "risk": "Sends one message through the configured provider using local environment secrets.",
+      "reversibility": "not_reversible",
+      "rollback_command": ""
+    },
+    {
+      "id": "private_phone_access",
+      "title": "Enable private phone access",
+      "approval_scope": "private_network_exposure",
+      "readiness": "ready",
+      "current_state": {
+        "recommended_path": "tailscale_serve_private",
+        "local_url": "http://localhost:8787/reports/product/today.html",
+        "private_phone_url": "https://mybroker-mac/reports/product/today.html"
+      },
+      "operator_can_say": "approve private_phone_access private_network_exposure",
+      "agent_will_run": [
+        "cd <mybroker-repo> && python3 -m http.server 8787",
+        "tailscale serve --bg 8787",
+        "tailscale serve reset"
+      ],
+      "risk": "Starts local/private serving so the phone can read the daily brief. Public exposure remains out of scope.",
+      "reversibility": "reversible",
+      "rollback_command": "tailscale serve reset"
+    }
+  ],
+  "summary": {
+    "decision_count": 3,
+    "ready_count": 2,
+    "blocked_count": 1,
+    "pending_count": 0
+  },
+  "artifacts": {
+    "scheduler_activation_preflight": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-preflight.json",
+    "scheduler_activation_verify": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-activation-verify.json",
+    "notification": "/Users/mirlim/sidejob/mybroker/mybroker/reports/notifications/latest.json",
+    "phone_access": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/phone-access.json"
+  },
+  "safety": {
+    "packet_does_not_execute_external_effects": true,
+    "scheduler_activation_requires_confirm_host_write": true,
+    "notification_send_requires_provider_secrets": true,
+    "private_serving_changes_network_exposure": true
+  },
+  "policy": "research_only"
+}

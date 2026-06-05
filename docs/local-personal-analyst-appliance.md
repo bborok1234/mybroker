@@ -40,6 +40,7 @@ launchd
   -> product brief + /today mobile surface
   -> /memory accumulated research surface
   -> /memory-query local recall surface
+  -> operator_decision_packet.v1
   -> local_runtime_doctor.v1
   -> local_runtime_doctor.v1 strict activation check
   -> local_scheduler_status.v1
@@ -101,6 +102,7 @@ freshness. This keeps the local morning loop useful while making weak or stale e
 PYTHONPATH=src python3 -m mybroker appliance playbook
 PYTHONPATH=src python3 -m mybroker appliance init --project-root .
 PYTHONPATH=src python3 -m mybroker appliance access
+PYTHONPATH=src python3 -m mybroker appliance decision-packet
 PYTHONPATH=src python3 -m mybroker appliance doctor
 PYTHONPATH=src python3 -m mybroker appliance scheduler status
 PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now
@@ -135,6 +137,12 @@ The launchd assets are written under `ops/local/`:
 
 They are intentionally not installed automatically. Installing a LaunchAgent is a host-level
 operation and should remain explicit.
+
+`appliance decision-packet` writes `reports/runtime/operator-decision-packet.json`. It is the
+operator handoff between local proof and external effects. It separates three approval scopes:
+confirmed scheduler host write, one notification send, and private phone access serving. The
+packet records current readiness, blockers, exact commands, risks, and rollback notes, but it
+does not execute any of those effects.
 
 `appliance doctor` writes `reports/runtime/local-runtime-doctor.json`. It checks runner assets,
 topic config, artifact freshness, notification payload state, private phone access guidance, and
