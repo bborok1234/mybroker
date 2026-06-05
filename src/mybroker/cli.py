@@ -19,6 +19,8 @@ from mybroker.appliance import (
     DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     DEFAULT_DAILY_READINESS_OUTPUT,
     DEFAULT_DAILY_READINESS_SURFACE,
+    DEFAULT_DAILY_REVIEW_RESPONSES,
+    DEFAULT_DAILY_REVIEW_SURFACE,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
@@ -51,7 +53,9 @@ from mybroker.appliance import (
     write_analyst_task_ledger,
     write_daily_brief_agenda,
     write_daily_readiness,
+    write_daily_review,
     build_task_status_apply,
+    record_daily_review_response,
     record_task_status_response,
     write_morning_control_packet,
     write_memory_query,
@@ -75,6 +79,7 @@ from mybroker.appliance import (
     validate_analyst_task_ledger_file,
     validate_daily_brief_agenda_file,
     validate_daily_readiness_file,
+    validate_daily_review_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
     validate_scheduler_operations_file,
@@ -106,6 +111,7 @@ from mybroker.scenario import (
 from mybroker.signals import momentum_signals
 from mybroker.topics import (
     DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    DEFAULT_DAILY_REVIEW_OUTPUT,
     DEFAULT_LIVE_EVIDENCE_OUTPUT,
     DEFAULT_DAILY_SCOUT_OUTPUT,
     DEFAULT_RESEARCH_PLAN_OUTPUT,
@@ -235,6 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     scout_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
     scout_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     scout_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    scout_parser.add_argument("--review", default=DEFAULT_DAILY_REVIEW_OUTPUT.as_posix())
     scout_parser.add_argument("--output", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     scout_parser.add_argument("--run-id", default="daily-research")
 
@@ -288,6 +295,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_refresh_live_preflight_parser.add_argument("refresh_live_preflight_path")
     validate_memory_parser = subcommands.add_parser("validate-topic-memory", help="Validate a topic_memory.v1 artifact.")
     validate_memory_parser.add_argument("memory_path")
+    validate_review_parser = subcommands.add_parser("validate-daily-review", help="Validate a daily_review.v1 artifact.")
+    validate_review_parser.add_argument("review_path")
     validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
     validate_journal_parser.add_argument("journal_path")
     validate_tasks_parser = subcommands.add_parser("validate-analyst-task-queue", help="Validate a personal_analyst_task_queue.v1 artifact.")
@@ -484,6 +493,15 @@ def main(argv: list[str] | None = None) -> int:
     appliance_task_apply_parser.add_argument("--ledger", default=DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT.as_posix())
     appliance_task_apply_parser.add_argument("--responses", default=DEFAULT_ANALYST_TASK_RESPONSES.as_posix())
     appliance_task_apply_parser.add_argument("--output", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
+    appliance_review_response_parser = appliance_subcommands.add_parser("review-response", help="Record one local daily review response for tomorrow's scout scoring.")
+    appliance_review_response_parser.add_argument("response", help='Example: more "Semiconductors" "memory cycle is useful"')
+    appliance_review_response_parser.add_argument("--responses", default=DEFAULT_DAILY_REVIEW_RESPONSES.as_posix())
+    appliance_review_parser = appliance_subcommands.add_parser("review", help="Render daily review memory and scout scoring signals.")
+    appliance_review_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_review_parser.add_argument("--task-status-apply", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
+    appliance_review_parser.add_argument("--responses", default=DEFAULT_DAILY_REVIEW_RESPONSES.as_posix())
+    appliance_review_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_REVIEW_OUTPUT.as_posix())
+    appliance_review_parser.add_argument("--output", default=DEFAULT_DAILY_REVIEW_SURFACE.as_posix())
     appliance_morning_parser = appliance_subcommands.add_parser("morning", help="Render the morning analyst control packet from existing daily artifacts.")
     appliance_morning_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     appliance_morning_parser.add_argument("--journal", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
@@ -713,6 +731,7 @@ def main(argv: list[str] | None = None) -> int:
             evidence_path=args.evidence,
             memory_path=args.memory,
             vault_path=args.vault,
+            review_path=args.review,
             output_path=args.output,
             run_id=args.run_id,
         )
@@ -879,6 +898,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-topic-memory":
         errors = validate_topic_memory_file(args.memory_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-daily-review":
+        errors = validate_daily_review_file(args.review_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1382,6 +1408,30 @@ def main(argv: list[str] | None = None) -> int:
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "review-response":
+            path = record_daily_review_response(response=args.response, responses_path=args.responses)
+            print(json.dumps({
+                "daily_review_responses": path.as_posix(),
+                "external_effect_performed": False,
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "review":
+            path = write_daily_review(
+                scout_path=args.scout,
+                task_status_apply_path=args.task_status_apply,
+                responses_path=args.responses,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "daily_review": args.artifact_output,
+                "daily_review_surface": path.as_posix(),
+                "response_count": payload["summary"]["response_count"],
+                "signal_count": payload["summary"]["signal_count"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "morning":
             path = write_morning_control_packet(
                 scout_path=args.scout,
@@ -1491,6 +1541,8 @@ def main(argv: list[str] | None = None) -> int:
             morning_artifact_path = DEFAULT_MORNING_CONTROL_OUTPUT
             agenda_artifact_path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT
             agenda_surface_path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE
+            review_artifact_path = DEFAULT_DAILY_REVIEW_OUTPUT
+            review_surface_path = DEFAULT_DAILY_REVIEW_SURFACE
             readiness_artifact_path = DEFAULT_DAILY_READINESS_OUTPUT
             readiness_surface_path = DEFAULT_DAILY_READINESS_SURFACE
             source_refresh_brief_artifact_path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT
@@ -1525,6 +1577,7 @@ def main(argv: list[str] | None = None) -> int:
                 evidence_path=evidence_path,
                 memory_path=memory_path,
                 vault_path=active_vault_path,
+                review_path=review_artifact_path,
                 output_path=scout_path,
                 run_id=args.run_id,
             )
@@ -1607,6 +1660,12 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=task_ledger_artifact_path,
                 surface_output_path=task_ledger_path,
             )
+            provisional_review = write_daily_review(
+                scout_path=scout_path,
+                task_status_apply_path=task_status_apply_path,
+                artifact_output_path=review_artifact_path,
+                surface_output_path=review_surface_path,
+            )
             provisional_today = write_today_surface(
                 scenario_path=written_scenario,
                 verdict_path=written_verdict,
@@ -1622,6 +1681,7 @@ def main(argv: list[str] | None = None) -> int:
                 agenda_path=agenda_artifact_path,
                 agenda_surface_path=written_agenda,
                 source_refresh_surface_path=written_source_refresh_brief,
+                review_surface_path=provisional_review,
                 brief_path=written_brief,
                 output_path=today_path,
                 journal_surface_path=provisional_journal,
@@ -1644,6 +1704,8 @@ def main(argv: list[str] | None = None) -> int:
                 journal_path=provisional_journal,
                 task_queue_path=provisional_task_queue,
                 task_ledger_path=provisional_task_ledger,
+                daily_review_path=review_artifact_path,
+                daily_review_surface_path=provisional_review,
                 vault_compile_path=active_vault_path,
                 vault_surface_path=active_vault_surface,
                 agenda_path=agenda_artifact_path,
@@ -1684,6 +1746,12 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=task_ledger_artifact_path,
                 surface_output_path=task_ledger_path,
             )
+            written_review = write_daily_review(
+                scout_path=scout_path,
+                task_status_apply_path=task_status_apply_path,
+                artifact_output_path=review_artifact_path,
+                surface_output_path=review_surface_path,
+            )
             written_today = write_today_surface(
                 scenario_path=written_scenario,
                 verdict_path=written_verdict,
@@ -1699,6 +1767,7 @@ def main(argv: list[str] | None = None) -> int:
                 agenda_path=agenda_artifact_path,
                 agenda_surface_path=written_agenda,
                 source_refresh_surface_path=written_source_refresh_brief,
+                review_surface_path=written_review,
                 brief_path=written_brief,
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,
@@ -1739,6 +1808,7 @@ def main(argv: list[str] | None = None) -> int:
                 source_refresh_surface_path=written_source_refresh_brief,
                 agenda_path=agenda_artifact_path,
                 agenda_surface_path=written_agenda,
+                review_surface_path=written_review,
                 artifact_output_path=morning_artifact_path,
                 surface_output_path=morning_path,
             )
@@ -1756,6 +1826,8 @@ def main(argv: list[str] | None = None) -> int:
                     "scheduler_operations_surface": written_scheduler_operations,
                     "daily_readiness": readiness_artifact_path,
                     "daily_readiness_surface": written_readiness,
+                    "daily_review": review_artifact_path,
+                    "daily_review_surface": written_review,
                 },
             )
             print(json.dumps({
@@ -1772,6 +1844,8 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_agenda_surface": written_agenda.as_posix(),
                 "daily_readiness": readiness_artifact_path.as_posix(),
                 "daily_readiness_surface": written_readiness.as_posix(),
+                "daily_review": review_artifact_path.as_posix(),
+                "daily_review_surface": written_review.as_posix(),
                 "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),
                 "source_refresh_brief_surface": written_source_refresh_brief.as_posix(),
                 "scheduler_operations": scheduler_operations_artifact_path.as_posix(),

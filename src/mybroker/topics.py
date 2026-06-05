@@ -38,6 +38,7 @@ DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT = Path("reports/daily/source-refresh-liv
 DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT = Path("reports/daily/source-refresh-live-run.json")
 DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT = Path("reports/daily/source-refresh-live-preflight.json")
 DEFAULT_TOPIC_MEMORY_OUTPUT = Path("reports/memory/topic-memory.json")
+DEFAULT_DAILY_REVIEW_OUTPUT = Path("reports/memory/daily-review.json")
 DEFAULT_DAILY_EVIDENCE_OUTPUT = Path("reports/evidence/daily-evidence-catalog.json")
 DEFAULT_LIVE_EVIDENCE_OUTPUT = Path("reports/evidence/live-evidence-catalog.json")
 
@@ -197,6 +198,7 @@ def build_daily_scout(
     evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
     memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
     vault_path: str | Path | None = None,
+    review_path: str | Path | None = DEFAULT_DAILY_REVIEW_OUTPUT,
     output_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
     run_id: str = "daily-research",
 ) -> dict[str, Any]:
@@ -205,16 +207,24 @@ def build_daily_scout(
     evidence = load_json(evidence_path)
     memory = load_json(memory_path)
     vault = load_json(vault_path) if vault_path and Path(vault_path).exists() else {}
+    review = load_json(review_path) if review_path and Path(review_path).exists() else {}
     plan_by_id = {item.get("topic_id"): item for item in plan.get("plan_items", [])}
     memory_by_id = {item.get("topic_id"): item for item in memory.get("topics", [])}
     vault_by_topic = _vault_notes_by_topic(vault)
+    review_by_topic = _review_signals_by_topic(review)
     recommendations = []
     for interest in config.get("interests", []):
         topic_id = interest.get("topic_id", "")
         memory_topic = memory_by_id.get(topic_id, {})
         plan_item = plan_by_id.get(topic_id, {})
         linked_notes = vault_by_topic.get(topic_id, [])
-        score, factors = _scout_score(memory_topic=memory_topic, plan_item=plan_item, linked_notes=linked_notes)
+        review_signal = review_by_topic.get(topic_id, {})
+        score, factors = _scout_score(
+            memory_topic=memory_topic,
+            plan_item=plan_item,
+            linked_notes=linked_notes,
+            review_signal=review_signal,
+        )
         source_names = memory_topic.get("source_names", [])
         recommendation = {
             "topic_id": topic_id,
@@ -236,6 +246,7 @@ def build_daily_scout(
                 }
                 for note in linked_notes[:3]
             ],
+            "review_signal": review_signal,
             "missing_evidence": memory_topic.get("collection_gaps", []),
             "score_factors": factors,
         }
@@ -254,6 +265,7 @@ def build_daily_scout(
             "evidence_path": Path(evidence_path).as_posix(),
             "memory_path": Path(memory_path).as_posix(),
             "vault_path": Path(vault_path).as_posix() if vault_path else "",
+            "review_path": Path(review_path).as_posix() if review_path else "",
         },
         "recommendation_count": len(recommendations),
         "recommended_topic": top,
@@ -262,6 +274,11 @@ def build_daily_scout(
             "source_count": len(evidence.get("source_status", [])),
             "collection_gaps": evidence.get("collection_gaps", []),
             "mode": evidence.get("mode", ""),
+        },
+        "review_context": {
+            "schema_version": review.get("schema_version", ""),
+            "response_count": int(review.get("summary", {}).get("response_count", 0) or 0),
+            "signal_count": len(review_by_topic),
         },
         "policy": _research_only_policy(),
         "next_step": "inspect_recommended_topic_first",
@@ -1080,9 +1097,35 @@ def _vault_notes_by_topic(vault: dict[str, Any]) -> dict[str, list[dict[str, Any
     return rows
 
 
-def _scout_score(*, memory_topic: dict[str, Any], plan_item: dict[str, Any], linked_notes: list[dict[str, Any]]) -> tuple[float, list[dict[str, Any]]]:
+def _review_signals_by_topic(review: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    if review.get("schema_version") != "daily_review.v1":
+        return {}
+    rows: dict[str, dict[str, Any]] = {}
+    for signal in review.get("topic_signals", []):
+        topic_id = signal.get("topic_id", "")
+        if topic_id:
+            rows[topic_id] = signal
+    return rows
+
+
+def _scout_score(
+    *,
+    memory_topic: dict[str, Any],
+    plan_item: dict[str, Any],
+    linked_notes: list[dict[str, Any]],
+    review_signal: dict[str, Any] | None = None,
+) -> tuple[float, list[dict[str, Any]]]:
     score = 1.0
     factors = [{"name": "base_interest", "delta": 1.0, "reason": "configured local interest"}]
+    review_signal = review_signal or {}
+    review_delta = float(review_signal.get("score_delta", 0) or 0)
+    if review_delta:
+        score += review_delta
+        factors.append({
+            "name": "operator_review",
+            "delta": round(review_delta, 2),
+            "reason": review_signal.get("reason", "operator daily review signal"),
+        })
     new_count = int(memory_topic.get("new_evidence_count", 0) or 0)
     if new_count:
         delta = min(3.0, new_count * 0.8)

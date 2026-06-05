@@ -11,6 +11,7 @@ from mybroker.appliance import (
     archive_daily_run,
     send_notification_payload,
     build_task_status_apply,
+    record_daily_review_response,
     record_task_status_response,
     write_analyst_journal,
     write_analyst_task_queue,
@@ -25,6 +26,7 @@ from mybroker.appliance import (
     write_phone_access_plan,
     write_runtime_doctor,
     write_runtime_playbook,
+    write_daily_review,
     write_scheduler_activation_verify,
     write_scheduler_activation_preflight,
     write_scheduler_status,
@@ -38,6 +40,8 @@ from mybroker.appliance import (
     validate_daily_brief_agenda_payload,
     validate_daily_readiness_file,
     validate_daily_readiness_payload,
+    validate_daily_review_file,
+    validate_daily_review_payload,
     validate_scheduler_operations_file,
     validate_scheduler_operations_payload,
     validate_source_refresh_brief_file,
@@ -919,6 +923,8 @@ class LocalApplianceTests(unittest.TestCase):
             readiness_errors = validate_daily_readiness_file(root / "reports" / "runtime" / "daily-readiness.json")
             source_refresh_brief_payload = json.loads((root / "reports" / "runtime" / "source-refresh-brief.json").read_text(encoding="utf-8"))
             source_refresh_brief_errors = validate_source_refresh_brief_file(root / "reports" / "runtime" / "source-refresh-brief.json")
+            review_payload = json.loads((root / "reports" / "memory" / "daily-review.json").read_text(encoding="utf-8"))
+            review_errors = validate_daily_review_file(root / "reports" / "memory" / "daily-review.json")
             scheduler_operations_payload = json.loads((root / "reports" / "runtime" / "scheduler-operations.json").read_text(encoding="utf-8"))
             scheduler_operations_errors = validate_scheduler_operations_file(root / "reports" / "runtime" / "scheduler-operations.json")
             manifest_payload = json.loads((root / "reports" / "archive" / "2026-06-05" / "manifest.json").read_text(encoding="utf-8"))
@@ -927,6 +933,7 @@ class LocalApplianceTests(unittest.TestCase):
             agenda_html = (root / "reports" / "product" / "daily-agenda.html").read_text(encoding="utf-8")
             readiness_html = (root / "reports" / "product" / "readiness.html").read_text(encoding="utf-8")
             source_refresh_html = (root / "reports" / "product" / "source-refresh.html").read_text(encoding="utf-8")
+            review_html = (root / "reports" / "product" / "review.html").read_text(encoding="utf-8")
             scheduler_html = (root / "reports" / "product" / "scheduler.html").read_text(encoding="utf-8")
             vault_html = (root / "reports" / "product" / "vault.html").read_text(encoding="utf-8")
 
@@ -942,6 +949,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("readiness", morning_payload["phone_links"])
         self.assertIn("scheduler", morning_payload["phone_links"])
         self.assertIn("source_refresh", morning_payload["phone_links"])
+        self.assertIn("review", morning_payload["phone_links"])
         self.assertEqual(agenda_payload["schema_version"], "daily_brief_agenda.v1")
         self.assertEqual(agenda_errors, [])
         self.assertEqual(validate_daily_brief_agenda_payload(agenda_payload), [])
@@ -963,6 +971,10 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertFalse(source_refresh_brief_payload["external_effect_performed"])
         self.assertFalse(source_refresh_brief_payload["host_write_performed"])
         self.assertIn(source_refresh_brief_payload["status"], {"local_ready", "approval_required", "preflight_required", "ready_to_execute", "executed", "blocked", "no_refresh_needed"})
+        self.assertEqual(review_payload["schema_version"], "daily_review.v1")
+        self.assertEqual(review_errors, [])
+        self.assertEqual(validate_daily_review_payload(review_payload), [])
+        self.assertFalse(review_payload["external_effect_performed"])
         self.assertEqual(scheduler_operations_payload["schema_version"], "local_scheduler_operations.v1")
         self.assertEqual(scheduler_operations_errors, [])
         self.assertFalse(scheduler_operations_payload["external_effect_performed"])
@@ -974,11 +986,14 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("daily_agenda_surface", manifest_payload["artifacts"])
         self.assertIn("daily_readiness", manifest_payload["artifacts"])
         self.assertIn("daily_readiness_surface", manifest_payload["artifacts"])
+        self.assertIn("daily_review", manifest_payload["artifacts"])
+        self.assertIn("daily_review_surface", manifest_payload["artifacts"])
         self.assertIn("source_refresh_brief", manifest_payload["artifacts"])
         self.assertIn("source_refresh_brief_surface", manifest_payload["artifacts"])
         self.assertIn("scheduler_operations", manifest_payload["artifacts"])
         self.assertIn("scheduler_operations_surface", manifest_payload["artifacts"])
         self.assertIn("오늘 20분 agenda", today_html)
+        self.assertIn("오늘 review 기록", today_html)
         self.assertIn("Semiconductor cycle note", today_html)
         self.assertIn("오늘 20분 시장 공부 순서", agenda_html)
         self.assertIn("아직 결론내리면 안 되는 이유", agenda_html)
@@ -986,6 +1001,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("Artifact freshness", readiness_html)
         self.assertIn("오늘 근거 새로고침 판단", source_refresh_html)
         self.assertIn("Source actions", source_refresh_html)
+        self.assertIn("오늘 읽은 것과 내일 더 볼 것", review_html)
         self.assertIn("자동 실행 준비 상태", scheduler_html)
         self.assertIn("운영 증거", scheduler_html)
         self.assertIn("vault", morning_html)
@@ -1164,6 +1180,75 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertFalse(brief["external_effect_performed"])
         self.assertIn("실행 전 최종 확인", html)
         self.assertFalse(live_evidence_exists)
+
+    def test_daily_review_feedback_changes_scout_score_locally(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            topics_path = root / "topics.json"
+            plan_path = root / "research-plan.json"
+            evidence_path = root / "daily-evidence.json"
+            memory_path = root / "topic-memory.json"
+            scout_before_path = root / "scout-before.json"
+            scout_after_path = root / "scout-after.json"
+            responses_path = root / "daily-review-responses.jsonl"
+            review_path = root / "daily-review.json"
+            review_surface_path = root / "review.html"
+
+            init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="review-loop")
+            collect_topic_evidence(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                output_path=evidence_path,
+                memory_path=memory_path,
+            )
+            scout_before = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                review_path=root / "missing-review.json",
+                output_path=scout_before_path,
+                run_id="review-loop",
+            )
+            topic_name = scout_before["recommended_topic"]["name"]
+            record_daily_review_response(
+                response=f'more "{topic_name}" "내일도 이 주제를 더 보고 싶다"',
+                responses_path=responses_path,
+            )
+            review_surface = write_daily_review(
+                scout_path=scout_before_path,
+                task_status_apply_path=root / "missing-task-status.json",
+                responses_path=responses_path,
+                artifact_output_path=review_path,
+                surface_output_path=review_surface_path,
+            )
+            scout_after = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                review_path=review_path,
+                output_path=scout_after_path,
+                run_id="review-loop",
+            )
+            review_payload = json.loads(review_path.read_text(encoding="utf-8"))
+            review_html = review_surface.read_text(encoding="utf-8")
+            after_topic = next(row for row in scout_after["recommendations"] if row["name"] == topic_name)
+            review_file_errors = validate_daily_review_file(review_path)
+            review_payload_errors = validate_daily_review_payload(review_payload)
+
+        self.assertEqual(review_file_errors, [])
+        self.assertEqual(review_payload_errors, [])
+        self.assertFalse(review_payload["external_effect_performed"])
+        self.assertEqual(review_payload["summary"]["signal_count"], 1)
+        self.assertEqual(review_payload["topic_signals"][0]["latest_status"], "want_more")
+        self.assertGreater(after_topic["review_signal"]["score_delta"], 0)
+        self.assertTrue(any(factor["name"] == "operator_review" for factor in after_topic["score_factors"]))
+        self.assertIn("오늘 읽은 것과 내일 더 볼 것", review_html)
+        self.assertIn(topic_name, review_html)
 
 
 if __name__ == "__main__":

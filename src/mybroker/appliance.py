@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import urllib.parse
@@ -13,6 +14,7 @@ from typing import Any
 
 from mybroker.topics import (
     DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    DEFAULT_DAILY_REVIEW_OUTPUT,
     DEFAULT_DAILY_SCOUT_OUTPUT,
     DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
     DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
@@ -40,6 +42,7 @@ ANALYST_JOURNAL_SCHEMA_VERSION = "personal_analyst_journal.v1"
 ANALYST_TASK_QUEUE_SCHEMA_VERSION = "personal_analyst_task_queue.v1"
 ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
 ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION = "personal_analyst_task_status_apply.v1"
+DAILY_REVIEW_SCHEMA_VERSION = "daily_review.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
@@ -75,6 +78,8 @@ DEFAULT_ANALYST_TASK_LEDGER_OUTPUT = Path("reports/product/task-ledger.html")
 DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT = Path("reports/memory/analyst-task-ledger.json")
 DEFAULT_ANALYST_TASK_RESPONSES = Path("reports/memory/analyst-task-responses.jsonl")
 DEFAULT_ANALYST_TASK_STATUS_APPLY = Path("reports/memory/analyst-task-status-apply.json")
+DEFAULT_DAILY_REVIEW_RESPONSES = Path("reports/memory/daily-review-responses.jsonl")
+DEFAULT_DAILY_REVIEW_SURFACE = Path("reports/product/review.html")
 DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
 DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
@@ -1846,6 +1851,7 @@ def write_today_surface(
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     agenda_surface_path: str | Path | None = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     source_refresh_surface_path: str | Path | None = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
+    review_surface_path: str | Path | None = DEFAULT_DAILY_REVIEW_SURFACE,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -1884,6 +1890,7 @@ def write_today_surface(
             brief_path=Path(brief_path),
             agenda_surface_path=Path(agenda_surface_path) if agenda_surface_path else None,
             source_refresh_surface_path=Path(source_refresh_surface_path) if source_refresh_surface_path else None,
+            review_surface_path=Path(review_surface_path) if review_surface_path else None,
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
             journal_surface_path=Path(journal_surface_path) if journal_surface_path else None,
@@ -1912,6 +1919,7 @@ def render_today_surface(
     brief_path: Path,
     agenda_surface_path: Path | None = None,
     source_refresh_surface_path: Path | None = None,
+    review_surface_path: Path | None = None,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
     journal_surface_path: Path | None = None,
@@ -2070,6 +2078,11 @@ def render_today_surface(
         if source_refresh_surface_path
         else "<span>근거 새로고침 판단 없음</span>"
     )
+    review_link = (
+        f"<a href='{esc(_relative_href(review_surface_path))}'>오늘 review 기록</a>"
+        if review_surface_path
+        else "<span>오늘 review 없음</span>"
+    )
     questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
@@ -2190,6 +2203,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <a href="{esc(_relative_href(brief_path))}">상세 시장 브리프</a>
 {agenda_link}
 {source_refresh_link}
+{review_link}
 {journal_link}
 {task_queue_link}
 {task_ledger_link}
@@ -2224,6 +2238,8 @@ def archive_daily_run(
     journal_path: str | Path | None = None,
     task_queue_path: str | Path | None = None,
     task_ledger_path: str | Path | None = None,
+    daily_review_path: str | Path | None = None,
+    daily_review_surface_path: str | Path | None = None,
     vault_compile_path: str | Path | None = None,
     vault_surface_path: str | Path | None = None,
     agenda_path: str | Path | None = None,
@@ -2247,6 +2263,8 @@ def archive_daily_run(
         "journal": journal_path,
         "tasks": task_queue_path,
         "task_ledger": task_ledger_path,
+        "daily_review": daily_review_path,
+        "daily_review_surface": daily_review_surface_path,
         "vault_compile": vault_compile_path,
         "vault": vault_surface_path,
         "daily_agenda": agenda_path,
@@ -3007,6 +3025,316 @@ def build_task_status_apply(
     return payload
 
 
+def parse_daily_review_response(response: str) -> dict[str, Any]:
+    try:
+        parts = shlex.split(response.strip())
+    except ValueError as error:
+        raise ValueError(f"response must be shell-quote parseable: {error}") from error
+    if len(parts) < 2:
+        raise ValueError('response must look like: more "Semiconductors" [note]')
+    action = parts[0].strip().lower()
+    topic = parts[1].strip()
+    note = " ".join(parts[2:]).strip()
+    status_map = {
+        "read": "reviewed",
+        "reviewed": "reviewed",
+        "more": "want_more",
+        "confusing": "confusing",
+        "skip": "skipped",
+        "skipped": "skipped",
+    }
+    if action not in status_map:
+        raise ValueError("action must be read, more, confusing, or skip")
+    return {
+        "schema_version": "daily_review_response.v1",
+        "recorded_at": _now(),
+        "action": action,
+        "status": status_map[action],
+        "topic": topic,
+        "note": note,
+        "external_effect_performed": False,
+    }
+
+
+def record_daily_review_response(
+    *,
+    response: str,
+    responses_path: str | Path = DEFAULT_DAILY_REVIEW_RESPONSES,
+) -> Path:
+    payload = parse_daily_review_response(response)
+    target = Path(responses_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    return target
+
+
+def build_daily_review(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    task_status_apply_path: str | Path = DEFAULT_ANALYST_TASK_STATUS_APPLY,
+    responses_path: str | Path = DEFAULT_DAILY_REVIEW_RESPONSES,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    scout = load_json(scout_path) if Path(scout_path).exists() else {}
+    task_status = load_json(task_status_apply_path) if Path(task_status_apply_path).exists() else {}
+    responses = _load_daily_review_responses(responses_path)
+    recommendations = scout.get("recommendations", []) if scout.get("schema_version") == "daily_scout.v1" else []
+    topic_index = _review_topic_index(recommendations)
+    signals_by_topic: dict[str, dict[str, Any]] = {}
+    ignored = []
+    for response in responses:
+        matched = _match_review_topic(response.get("topic", ""), topic_index)
+        if not matched:
+            ignored.append({**response, "reason": "topic_not_in_current_scout"})
+            continue
+        topic_id = matched["topic_id"]
+        signal = signals_by_topic.setdefault(topic_id, {
+            "topic_id": topic_id,
+            "name": matched.get("name", response.get("topic", "")),
+            "responses": [],
+            "score_delta": 0.0,
+            "reason": "",
+        })
+        signal["responses"].append(response)
+        signal["score_delta"] = round(float(signal["score_delta"]) + _review_action_delta(response.get("status", "")), 2)
+    for signal in signals_by_topic.values():
+        signal["response_count"] = len(signal["responses"])
+        signal["latest_status"] = signal["responses"][-1].get("status", "")
+        signal["latest_note"] = signal["responses"][-1].get("note", "")
+        signal["reason"] = _review_signal_reason(signal)
+    completed_tasks = [
+        row for row in task_status.get("applied", [])
+        if row.get("status") == "completed"
+    ] if task_status.get("schema_version") == ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION else []
+    payload = {
+        "schema_version": DAILY_REVIEW_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "inputs": {
+            "scout_path": Path(scout_path).as_posix(),
+            "task_status_apply_path": Path(task_status_apply_path).as_posix(),
+            "responses_path": Path(responses_path).as_posix(),
+        },
+        "summary": {
+            "response_count": len(responses),
+            "applied_response_count": sum(len(signal["responses"]) for signal in signals_by_topic.values()),
+            "ignored_response_count": len(ignored),
+            "completed_task_count": len(completed_tasks),
+            "signal_count": len(signals_by_topic),
+        },
+        "topic_signals": sorted(signals_by_topic.values(), key=lambda row: (-float(row.get("score_delta", 0)), row.get("name", ""))),
+        "ignored_responses": ignored,
+        "task_feedback": {
+            "completed_task_count": len(completed_tasks),
+            "completed_tasks": completed_tasks[:6],
+        },
+        "external_effect_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "local_review_memory_only",
+            "does_not_fetch_live_network",
+            "does_not_write_host_scheduler",
+            "does_not_send_notification",
+        ],
+        "next_step": "rerun_daily_scout_with_review_signal",
+    }
+    return payload
+
+
+def write_daily_review(
+    *,
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    task_status_apply_path: str | Path = DEFAULT_ANALYST_TASK_STATUS_APPLY,
+    responses_path: str | Path = DEFAULT_DAILY_REVIEW_RESPONSES,
+    artifact_output_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
+) -> Path:
+    payload = build_daily_review(
+        scout_path=scout_path,
+        task_status_apply_path=task_status_apply_path,
+        responses_path=responses_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_daily_review(payload), encoding="utf-8")
+    return target
+
+
+def validate_daily_review_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != DAILY_REVIEW_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    summary = payload.get("summary", {})
+    for field in ["response_count", "applied_response_count", "ignored_response_count", "completed_task_count", "signal_count"]:
+        if field not in summary:
+            errors.append(f"summary missing {field}")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    for index, signal in enumerate(payload.get("topic_signals", [])):
+        for field in ["topic_id", "name", "score_delta", "reason", "responses"]:
+            if field not in signal:
+                errors.append(f"topic_signals[{index}] missing {field}")
+    return errors
+
+
+def validate_daily_review_file(path: str | Path) -> list[str]:
+    return validate_daily_review_payload(load_json(path))
+
+
+def render_daily_review(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    signal_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(signal.get('latest_status', 'review'))} · delta {esc(signal.get('score_delta', 0))}</span>"
+        f"<strong>{esc(signal.get('name', ''))}</strong>"
+        f"<p>{esc(signal.get('reason', ''))}</p>"
+        f"<small>{esc(signal.get('latest_note', ''))}</small>"
+        "</article>"
+        for signal in payload.get("topic_signals", [])
+    ) or "<p>아직 오늘의 review signal이 없습니다.</p>"
+    ignored_cards = "".join(
+        "<article class='card muted'>"
+        f"<span>{esc(row.get('status', 'ignored'))}</span>"
+        f"<strong>{esc(row.get('topic', ''))}</strong>"
+        f"<p>{esc(row.get('reason', ''))}</p>"
+        "</article>"
+        for row in payload.get("ignored_responses", [])[:4]
+    ) or "<p>무시된 응답이 없습니다.</p>"
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Review</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+.eyebrow,.card span {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small {{ color:var(--muted); }}
+.hero,.section,.card {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.metrics,.stack {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.metric,.card {{ background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:26px; }}
+.card strong {{ display:block; margin:5px 0; }}
+.card p,.card small {{ overflow-wrap:anywhere; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.stack {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Daily Review · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>오늘 읽은 것과 내일 더 볼 것</h1>
+</header>
+<section class="hero">
+<p>이 화면은 오늘의 로컬 피드백을 내일 scout 점수에 반영하기 위한 메모리 표면입니다. 외부 호출이나 실행은 하지 않습니다.</p>
+<code>PYTHONPATH=src python3 -m mybroker appliance review-response 'more "Semiconductors" "메모리 업황을 더 보고 싶다"'</code>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Responses</span><strong>{esc(summary.get('response_count', 0))}</strong></article>
+<article class="metric"><span>Signals</span><strong>{esc(summary.get('signal_count', 0))}</strong></article>
+<article class="metric"><span>Applied</span><strong>{esc(summary.get('applied_response_count', 0))}</strong></article>
+<article class="metric"><span>Completed tasks</span><strong>{esc(summary.get('completed_task_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>내일 scout에 반영될 신호</h2>
+<div class="stack">{signal_cards}</div>
+</section>
+<section class="section">
+<h2>무시된 응답</h2>
+<div class="stack">{ignored_cards}</div>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def _load_daily_review_responses(path: str | Path) -> list[dict[str, Any]]:
+    target = Path(path)
+    if not target.exists():
+        return []
+    rows = []
+    for line in target.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            rows.append({
+                "schema_version": "daily_review_response.v1",
+                "recorded_at": _now(),
+                "action": "invalid",
+                "status": "invalid",
+                "topic": "",
+                "note": line,
+                "external_effect_performed": False,
+            })
+            continue
+        rows.append(payload)
+    return rows
+
+
+def _review_topic_index(recommendations: list[dict[str, Any]]) -> list[dict[str, str]]:
+    return [
+        {
+            "topic_id": str(item.get("topic_id", "")),
+            "name": str(item.get("name", "")),
+            "name_key": str(item.get("name", "")).lower().strip(),
+            "topic_key": str(item.get("topic_id", "")).lower().strip(),
+        }
+        for item in recommendations
+        if item.get("topic_id") or item.get("name")
+    ]
+
+
+def _match_review_topic(topic: str, index: list[dict[str, str]]) -> dict[str, str]:
+    key = topic.lower().strip()
+    for row in index:
+        if key in {row["topic_key"], row["name_key"]}:
+            return row
+    for row in index:
+        if key and (key in row["name_key"] or row["name_key"] in key):
+            return row
+    return {}
+
+
+def _review_action_delta(status: str) -> float:
+    if status == "want_more":
+        return 1.2
+    if status == "reviewed":
+        return 0.6
+    if status == "confusing":
+        return 0.5
+    if status == "skipped":
+        return -0.7
+    return 0.0
+
+
+def _review_signal_reason(signal: dict[str, Any]) -> str:
+    statuses = [row.get("status", "") for row in signal.get("responses", [])]
+    if "want_more" in statuses:
+        return "운영자가 이 주제를 더 보고 싶다고 기록했습니다."
+    if "confusing" in statuses:
+        return "운영자가 이 주제를 이해하기 어렵다고 표시해 초보자 설명을 우선합니다."
+    if "reviewed" in statuses:
+        return "운영자가 오늘 이 주제를 읽었다고 기록해 다음 루프에도 연결합니다."
+    if "skipped" in statuses:
+        return "운영자가 오늘 이 주제를 건너뛰어 우선순위를 낮춥니다."
+    return "운영자 daily review 응답이 기록됐습니다."
+
+
 def build_morning_control_packet(
     *,
     scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
@@ -3025,6 +3353,7 @@ def build_morning_control_packet(
     vault_surface_path: str | Path = DEFAULT_VAULT_SURFACE_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
+    review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
     task_queue_surface_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
@@ -3082,6 +3411,7 @@ def build_morning_control_packet(
             "source_refresh": Path(source_refresh_surface_path).as_posix(),
             "today": Path(today_path).as_posix(),
             "agenda": Path(agenda_surface_path).as_posix(),
+            "review": Path(review_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
             "journal": Path(journal_surface_path).as_posix(),
             "tasks": Path(task_queue_surface_path).as_posix(),
@@ -3139,6 +3469,7 @@ def write_morning_control_packet(
     source_refresh_surface_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
+    review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
 ) -> Path:
@@ -3157,6 +3488,7 @@ def write_morning_control_packet(
         source_refresh_surface_path=source_refresh_surface_path,
         agenda_path=agenda_path,
         agenda_surface_path=agenda_surface_path,
+        review_surface_path=review_surface_path,
     )
     write_json(payload, artifact_output_path)
     target = Path(surface_output_path)
