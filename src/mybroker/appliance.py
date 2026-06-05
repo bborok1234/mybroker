@@ -24,6 +24,7 @@ SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
 SCHEDULER_RUN_ONCE_SCHEMA_VERSION = "local_scheduler_run_once.v1"
 SCHEDULER_ACTIVATION_PREFLIGHT_SCHEMA_VERSION = "local_scheduler_activation_preflight.v1"
+SCHEDULER_ACTIVATION_VERIFY_SCHEMA_VERSION = "local_scheduler_activation_verify.v1"
 LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
@@ -36,10 +37,12 @@ DEFAULT_MEMORY_OUTPUT = Path("reports/product/memory.html")
 DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
 DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
+DEFAULT_RUNTIME_DOCTOR_ACTIVATION_OUTPUT = Path("reports/runtime/local-runtime-doctor-activation.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
 DEFAULT_SCHEDULER_APPLY_OUTPUT = Path("reports/runtime/scheduler-apply.json")
 DEFAULT_SCHEDULER_RUN_ONCE_OUTPUT = Path("reports/runtime/scheduler-run-once.json")
 DEFAULT_SCHEDULER_ACTIVATION_PREFLIGHT_OUTPUT = Path("reports/runtime/scheduler-activation-preflight.json")
+DEFAULT_SCHEDULER_ACTIVATION_VERIFY_OUTPUT = Path("reports/runtime/scheduler-activation-verify.json")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -506,6 +509,110 @@ def write_scheduler_activation_preflight(
             "requires_explicit_operator_approval": True,
             "preflight_does_not_install_or_load": True,
             "confirmed_activation_is_host_level": True,
+            "notification_send_remains_separate": True,
+        },
+        "policy": "research_only",
+    }
+    return write_json(payload, output_path)
+
+
+def write_scheduler_activation_verify(
+    *,
+    project_root: str | Path = ".",
+    output_path: str | Path = DEFAULT_SCHEDULER_ACTIVATION_VERIFY_OUTPUT,
+    freshness_hours: int = 36,
+) -> Path:
+    root = Path(project_root).resolve()
+    source_plist = root / DEFAULT_LOCAL_OPS_DIR / f"{LAUNCHD_LABEL}.plist"
+    installed_plist = Path.home() / "Library" / "LaunchAgents" / f"{LAUNCHD_LABEL}.plist"
+    status_path = write_scheduler_status(project_root=root, output_path=root / DEFAULT_SCHEDULER_STATUS_OUTPUT)
+    doctor_path = write_runtime_doctor(
+        project_root=root,
+        output_path=root / DEFAULT_RUNTIME_DOCTOR_ACTIVATION_OUTPUT,
+        freshness_hours=freshness_hours,
+        require_launchd_loaded=True,
+    )
+    scheduler_status = load_json(status_path)
+    doctor = load_json(doctor_path)
+    checks = [
+        _activation_verify_check(
+            "launchd_loaded",
+            bool(scheduler_status.get("launchd", {}).get("loaded")),
+            "LaunchAgent is loaded for the current user.",
+            evidence=scheduler_status.get("launchd", {}),
+        ),
+        _activation_verify_check(
+            "installed_plist_exists",
+            bool(scheduler_status.get("installed_plist", {}).get("exists")),
+            "LaunchAgent plist is installed under ~/Library/LaunchAgents.",
+            evidence=scheduler_status.get("installed_plist", {}),
+        ),
+        _activation_verify_check(
+            "installed_plist_matches_source",
+            _same_file_contents(source_plist, installed_plist),
+            "Installed plist matches the source scheduler asset.",
+            evidence={
+                "source": source_plist.as_posix(),
+                "installed": installed_plist.as_posix(),
+            },
+        ),
+        _activation_verify_check(
+            "runtime_doctor_strict",
+            doctor.get("status") == "ready" and int(doctor.get("fail_count", 1)) == 0,
+            "Runtime doctor passes with launchd loaded required.",
+            evidence={
+                "doctor_path": doctor_path.as_posix(),
+                "fail_count": doctor.get("fail_count"),
+                "warn_count": doctor.get("warn_count"),
+            },
+        ),
+        _activation_verify_check(
+            "today_surface_fresh",
+            _path_fresh(root / DEFAULT_TODAY_OUTPUT, freshness_hours),
+            f"Phone-readable today surface is fresher than {freshness_hours} hours.",
+            evidence={"path": (root / DEFAULT_TODAY_OUTPUT).as_posix()},
+        ),
+        _activation_verify_check(
+            "archive_manifest_fresh",
+            _path_fresh(_latest_archive_manifest(root / DEFAULT_ARCHIVE_ROOT), freshness_hours),
+            f"Latest daily archive manifest is fresher than {freshness_hours} hours.",
+            evidence={"path": (_latest_archive_manifest(root / DEFAULT_ARCHIVE_ROOT).as_posix() if _latest_archive_manifest(root / DEFAULT_ARCHIVE_ROOT) else "")},
+        ),
+    ]
+    stdout_log = root / "reports" / "runtime" / "daily-analyst.out.log"
+    stderr_log = root / "reports" / "runtime" / "daily-analyst.err.log"
+    warnings = []
+    if not stdout_log.exists() and not stderr_log.exists():
+        warnings.append("Scheduler log files do not exist yet. This is expected before the first launchd-triggered run.")
+    blockers = [check["message"] for check in checks if check["status"] == "fail"]
+    status = "active_verified" if not blockers else "blocked"
+    payload = {
+        "schema_version": SCHEDULER_ACTIVATION_VERIFY_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "project_root": root.as_posix(),
+        "label": LAUNCHD_LABEL,
+        "status": status,
+        "freshness_hours": freshness_hours,
+        "host_write_performed": False,
+        "checks": checks,
+        "blockers": blockers,
+        "warnings": warnings,
+        "artifacts": {
+            "scheduler_status": status_path.as_posix(),
+            "runtime_doctor": doctor_path.as_posix(),
+            "today": (root / DEFAULT_TODAY_OUTPUT).as_posix(),
+            "latest_archive_manifest": (_latest_archive_manifest(root / DEFAULT_ARCHIVE_ROOT).as_posix() if _latest_archive_manifest(root / DEFAULT_ARCHIVE_ROOT) else ""),
+            "stdout_log": stdout_log.as_posix(),
+            "stderr_log": stderr_log.as_posix(),
+        },
+        "next_action": (
+            "Activation is verified. Keep the Mac powered, inspect logs after the next scheduled run, and keep notification send as a separate gate."
+            if not blockers
+            else "Run activation-preflight, then perform the separate confirmed host-level activation before running verify again."
+        ),
+        "safety": {
+            "verify_does_not_install_or_load": True,
+            "confirmed_activation_is_separate": True,
             "notification_send_remains_separate": True,
         },
         "policy": "research_only",
@@ -1561,6 +1668,27 @@ def _preflight_artifact_check(
         "path": path.as_posix(),
         "age_hours": round(age_hours, 2),
     }
+
+
+def _activation_verify_check(name: str, condition: bool, message: str, *, evidence: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": name,
+        "status": "pass" if condition else "fail",
+        "message": message if condition else f"Required condition not met: {message}",
+        "evidence": evidence,
+    }
+
+
+def _same_file_contents(left: Path, right: Path) -> bool:
+    if not left.exists() or not right.exists():
+        return False
+    return left.read_bytes() == right.read_bytes()
+
+
+def _path_fresh(path: Path | None, freshness_hours: int) -> bool:
+    if not path or not path.exists():
+        return False
+    return _file_age_hours(path) <= freshness_hours
 
 
 def _dry_run_apply_is_activation_plan(payload: dict[str, Any]) -> bool:

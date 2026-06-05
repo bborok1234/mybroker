@@ -1,0 +1,91 @@
+{
+  "schema_version": "local_scheduler_activation_verify.v1",
+  "generated_at": "2026-06-05T07:40:38.398149+00:00",
+  "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
+  "label": "com.mybroker.daily-analyst",
+  "status": "blocked",
+  "freshness_hours": 36,
+  "host_write_performed": false,
+  "checks": [
+    {
+      "name": "launchd_loaded",
+      "status": "fail",
+      "message": "Required condition not met: LaunchAgent is loaded for the current user.",
+      "evidence": {
+        "loaded": false,
+        "command": "launchctl print gui/501/com.mybroker.daily-analyst",
+        "returncode": 113,
+        "stdout_excerpt": "",
+        "stderr_excerpt": "Bad request.\nCould not find service \"com.mybroker.daily-analyst\" in domain for user gui: 501\n"
+      }
+    },
+    {
+      "name": "installed_plist_exists",
+      "status": "fail",
+      "message": "Required condition not met: LaunchAgent plist is installed under ~/Library/LaunchAgents.",
+      "evidence": {
+        "path": "/Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
+        "exists": false
+      }
+    },
+    {
+      "name": "installed_plist_matches_source",
+      "status": "fail",
+      "message": "Required condition not met: Installed plist matches the source scheduler asset.",
+      "evidence": {
+        "source": "/Users/mirlim/sidejob/mybroker/mybroker/ops/local/com.mybroker.daily-analyst.plist",
+        "installed": "/Users/mirlim/Library/LaunchAgents/com.mybroker.daily-analyst.plist"
+      }
+    },
+    {
+      "name": "runtime_doctor_strict",
+      "status": "fail",
+      "message": "Required condition not met: Runtime doctor passes with launchd loaded required.",
+      "evidence": {
+        "doctor_path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/local-runtime-doctor-activation.json",
+        "fail_count": 1,
+        "warn_count": 0
+      }
+    },
+    {
+      "name": "today_surface_fresh",
+      "status": "pass",
+      "message": "Phone-readable today surface is fresher than 36 hours.",
+      "evidence": {
+        "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/today.html"
+      }
+    },
+    {
+      "name": "archive_manifest_fresh",
+      "status": "pass",
+      "message": "Latest daily archive manifest is fresher than 36 hours.",
+      "evidence": {
+        "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/archive/2026-06-05/manifest.json"
+      }
+    }
+  ],
+  "blockers": [
+    "Required condition not met: LaunchAgent is loaded for the current user.",
+    "Required condition not met: LaunchAgent plist is installed under ~/Library/LaunchAgents.",
+    "Required condition not met: Installed plist matches the source scheduler asset.",
+    "Required condition not met: Runtime doctor passes with launchd loaded required."
+  ],
+  "warnings": [
+    "Scheduler log files do not exist yet. This is expected before the first launchd-triggered run."
+  ],
+  "artifacts": {
+    "scheduler_status": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/scheduler-status.json",
+    "runtime_doctor": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/local-runtime-doctor-activation.json",
+    "today": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/today.html",
+    "latest_archive_manifest": "/Users/mirlim/sidejob/mybroker/mybroker/reports/archive/2026-06-05/manifest.json",
+    "stdout_log": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/daily-analyst.out.log",
+    "stderr_log": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/daily-analyst.err.log"
+  },
+  "next_action": "Run activation-preflight, then perform the separate confirmed host-level activation before running verify again.",
+  "safety": {
+    "verify_does_not_install_or_load": true,
+    "confirmed_activation_is_separate": true,
+    "notification_send_remains_separate": true
+  },
+  "policy": "research_only"
+}

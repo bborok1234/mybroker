@@ -41,10 +41,12 @@ launchd
   -> /memory accumulated research surface
   -> /memory-query local recall surface
   -> local_runtime_doctor.v1
+  -> local_runtime_doctor.v1 strict activation check
   -> local_scheduler_status.v1
   -> local_scheduler_apply.v1
   -> local_scheduler_run_once.v1
   -> local_scheduler_activation_preflight.v1
+  -> local_scheduler_activation_verify.v1
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -104,6 +106,7 @@ PYTHONPATH=src python3 -m mybroker appliance scheduler status
 PYTHONPATH=src python3 -m mybroker appliance scheduler apply --install --load --start-now
 PYTHONPATH=src python3 -m mybroker appliance scheduler run-once
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight
+PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance memory
@@ -162,6 +165,16 @@ launchd. It checks runtime doctor, scheduler assets, dry-run apply, run-once, an
 dry-run artifacts, then records `blocked`, `ready`, or `already_active`. A `ready` result means
 the operator has enough local proof to decide whether to run the separate host-level
 `--confirm-host-write` activation command.
+
+`appliance scheduler activation-verify` writes
+`reports/runtime/scheduler-activation-verify.json`. It is the post-activation proof step and
+also performs no host-level writes. It checks that launchd is loaded, the installed plist exists
+and matches the source asset, strict doctor passes with launchd required, and the latest phone
+surface plus archive manifest are fresh. Before confirmed activation it should return `blocked`;
+after successful activation it should return `active_verified`.
+The strict doctor evidence is written separately to
+`reports/runtime/local-runtime-doctor-activation.json` so ordinary readiness checks are not
+overwritten when activation has not happened yet.
 
 ## Safety Boundary
 
