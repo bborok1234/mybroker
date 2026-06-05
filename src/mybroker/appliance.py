@@ -303,6 +303,17 @@ def build_agent_pattern_radar(
             "priority": "high",
         },
         {
+            "source": "Browser-use / Playwright / Firecrawl",
+            "source_url": "https://github.com/browser-use/browser-use",
+            "observed_pattern": "agent-driven browser use and web extraction can gather current evidence beyond local cache",
+            "decision": "defer",
+            "mybroker_translation": "treat browser and scraper tools as live-source candidates behind source-refresh preflight, not as default daily behavior",
+            "why": "They can improve source freshness, but they also widen the authority and source-quality surface.",
+            "risk": "unreviewed web extraction can import weak, stale, or unsafe source content into memory",
+            "guardrail": "only move through source-refresh approval, preflight, cached output, and validation before it influences the daily brief",
+            "priority": "watch",
+        },
+        {
             "source": "work-buddy",
             "source_url": "https://github.com/gusye1234/work-buddy",
             "observed_pattern": "Claude Code plus local MCP gateway, Obsidian memory, task backlog, and cross-session context",
@@ -394,6 +405,7 @@ def build_agent_pattern_radar(
     adopted = [case for case in cases if case["decision"] in {"adopt", "adopt_partial"}]
     deferred = [case for case in cases if case["decision"] == "defer"]
     rejected = [case for case in cases if case["decision"] == "reject"]
+    dry_run_candidates = _pattern_dry_run_candidates(cases)
     payload = {
         "schema_version": AGENT_PATTERN_RADAR_SCHEMA_VERSION,
         "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
@@ -406,9 +418,33 @@ def build_agent_pattern_radar(
             "adopted_count": len(adopted),
             "deferred_count": len(deferred),
             "rejected_count": len(rejected),
+            "dry_run_candidate_count": len(dry_run_candidates),
+            "ready_dry_run_count": sum(1 for item in dry_run_candidates if item["status"] == "ready"),
+            "gated_dry_run_count": sum(1 for item in dry_run_candidates if item["status"] == "requires_approval"),
             "top_next_pattern": "pattern freshness audit before adding new runtime authority",
         },
         "cases": cases,
+        "dry_run_candidates": dry_run_candidates,
+        "adoption_gate": {
+            "allowed_transitions": [
+                "observed_to_candidate",
+                "candidate_to_dry_run",
+                "dry_run_to_adopted",
+                "dry_run_to_rejected",
+            ],
+            "required_evidence_before_adopted": [
+                "local proof artifact generated",
+                "validator covers the artifact schema",
+                "phone surface explains operator impact",
+                "source freshness or memory quality impact is explicit",
+                "external effects remain separated by approval scope",
+            ],
+            "blocked_transitions": [
+                "observed_to_adopted_without_dry_run",
+                "candidate_to_live_execution_without_preflight",
+                "dry_run_to_external_effect_without_scoped_approval",
+            ],
+        },
         "adopted_patterns": [
             {
                 "source": case["source"],
@@ -505,6 +541,22 @@ def validate_agent_pattern_radar_payload(payload: dict[str, Any]) -> list[str]:
                 errors.append(f"cases[{index}] missing {key}")
     if not payload.get("adopted_patterns"):
         errors.append("adopted_patterns must not be empty")
+    if not payload.get("dry_run_candidates"):
+        errors.append("dry_run_candidates must not be empty")
+    for index, candidate in enumerate(payload.get("dry_run_candidates", [])):
+        for key in ["candidate_id", "source", "status", "proof_command", "expected_artifact", "approval_scope", "promotion_rule"]:
+            if not str(candidate.get(key, "")).strip():
+                errors.append(f"dry_run_candidates[{index}] missing {key}")
+        if candidate.get("status") not in {"ready", "requires_approval", "blocked"}:
+            errors.append(f"dry_run_candidates[{index}] invalid status")
+        if candidate.get("external_effect_performed") is not False:
+            errors.append(f"dry_run_candidates[{index}] external_effect_performed must be false")
+        command = candidate.get("proof_command", "")
+        if candidate.get("approval_scope") == "local_dry_run_only" and any(fragment in command for fragment in ["--send", "--confirm-host-write", "launchctl", "tailscale serve --bg"]):
+            errors.append(f"dry_run_candidates[{index}] local proof command crosses external-effect boundary")
+    gate = payload.get("adoption_gate", {})
+    if "dry_run_to_adopted" not in gate.get("allowed_transitions", []):
+        errors.append("adoption_gate must include dry_run_to_adopted transition")
     if "does_not_execute_live_network" not in payload.get("safety_boundary", []):
         errors.append("safety_boundary must include does_not_execute_live_network")
     return errors
@@ -512,6 +564,61 @@ def validate_agent_pattern_radar_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_agent_pattern_radar_file(path: str | Path) -> list[str]:
     return validate_agent_pattern_radar_payload(load_json(path))
+
+
+def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_source = {case.get("source", ""): case for case in cases}
+    rows = [
+        {
+            "candidate_id": "pattern-memory-recall-quality",
+            "source": "Obsidian vault research workflow",
+            "status": "ready",
+            "why": "Local vault, memory, archive, and audit artifacts can be evaluated without external effects.",
+            "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance audit",
+            "expected_artifact": "reports/memory/audit.json",
+            "approval_scope": "local_dry_run_only",
+            "promotion_rule": "Adopt only if memory audit artifact validates and phone surface shows stale or weak coverage clearly.",
+            "source_decision": by_source.get("Obsidian vault research workflow", {}).get("decision", "observed"),
+            "external_effect_performed": False,
+        },
+        {
+            "candidate_id": "pattern-run-trace-observability",
+            "source": "TraceAgent",
+            "status": "ready",
+            "why": "Run trace already exists and can prove which local steps influenced the daily loop.",
+            "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-run-trace reports/runtime/run-trace.json",
+            "expected_artifact": "reports/runtime/run-trace.json",
+            "approval_scope": "local_dry_run_only",
+            "promotion_rule": "Adopt only if trace stays compact, fresh, and linked from daily home/readiness surfaces.",
+            "source_decision": by_source.get("TraceAgent", {}).get("decision", "observed"),
+            "external_effect_performed": False,
+        },
+        {
+            "candidate_id": "pattern-live-source-browser-gateway",
+            "source": "Browser-use / Playwright / Firecrawl",
+            "status": "requires_approval",
+            "why": "Browser/scraper tools can improve freshness but cross the live-network boundary.",
+            "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-live-preflight --intend-execute --confirm-live-network",
+            "expected_artifact": "reports/daily/source-refresh-live-preflight.json",
+            "approval_scope": "live_network_refresh",
+            "promotion_rule": "Adopt only after scoped approval, preflight, cached output validation, and source freshness labeling.",
+            "source_decision": by_source.get("Browser-use / Playwright / Firecrawl", {}).get("decision", "observed"),
+            "external_effect_performed": False,
+        },
+        {
+            "candidate_id": "pattern-code-analytics-sandbox",
+            "source": "TaskWeaver",
+            "status": "blocked",
+            "why": "Generated analysis code needs a deterministic sandbox and report schema before it can shape the daily brief.",
+            "proof_command": "not_available_until_sandbox_schema_exists",
+            "expected_artifact": "reports/runtime/analytics-sandbox-proof.json",
+            "approval_scope": "future_local_sandbox",
+            "promotion_rule": "Adopt only after deterministic inputs, saved outputs, validator, and no external effect proof exist.",
+            "source_decision": by_source.get("TaskWeaver", {}).get("decision", "observed"),
+            "external_effect_performed": False,
+        },
+    ]
+    return rows
 
 
 def render_agent_pattern_radar(payload: dict[str, Any]) -> str:
@@ -549,6 +656,19 @@ def render_agent_pattern_radar(payload: dict[str, Any]) -> str:
         "</article>"
         for item in payload.get("next_safe_slice_candidates", [])
     )
+    dry_run_cards = "".join(
+        "<article class='mini'>"
+        f"<strong>{esc(item.get('source', ''))}</strong>"
+        f"<p>{esc(item.get('why', ''))}</p>"
+        f"<small>{esc(item.get('status', ''))} · {esc(item.get('approval_scope', ''))}</small>"
+        f"<code>{esc(item.get('proof_command', ''))}</code>"
+        "</article>"
+        for item in payload.get("dry_run_candidates", [])
+    )
+    gate_items = "".join(
+        f"<li>{esc(item)}</li>"
+        for item in payload.get("adoption_gate", {}).get("required_evidence_before_adopted", [])
+    )
     return f"""<!doctype html>
 <html lang="ko">
 <head>
@@ -564,6 +684,7 @@ h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
 h2 {{ margin:0 0 8px; font-size:18px; }}
 p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
 .eyebrow,.card span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
 .hero,.section,.card,.mini {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
 .hero,.section {{ padding:16px; margin:14px 0; }}
 .metrics,.grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }}
@@ -588,8 +709,16 @@ p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
 <div class="metrics">
 <article class="metric"><span>Cases</span><strong>{esc(summary.get('case_count', 0))}</strong></article>
 <article class="metric"><span>Adopt</span><strong>{esc(summary.get('adopted_count', 0))}</strong></article>
-<article class="metric"><span>Reject</span><strong>{esc(summary.get('rejected_count', 0))}</strong></article>
+<article class="metric"><span>Dry-run</span><strong>{esc(summary.get('dry_run_candidate_count', 0))}</strong></article>
 </div>
+</section>
+<section class="section">
+<h2>Dry-run 승격 큐</h2>
+<div class="grid">{dry_run_cards}</div>
+</section>
+<section class="section">
+<h2>채택 게이트</h2>
+<ul>{gate_items}</ul>
 </section>
 <section class="section">
 <h2>사례별 채택/거부 판단</h2>
@@ -3283,6 +3412,7 @@ def build_source_refresh_brief(
     blocked_live = [action for action in actions if action.get("approval_required") == "live_network_refresh"]
     ready_local = [action for action in actions if action.get("decision") == "ready"]
     weak_evidence = _source_refresh_weak_evidence(evidence=evidence, scout=scout)
+    freshness_scorecard = _source_refresh_freshness_scorecard(evidence=evidence)
     status = _source_refresh_brief_status(
         actions=actions,
         live_gate=live_gate,
@@ -3303,7 +3433,11 @@ def build_source_refresh_brief(
             "approval_status": live_run.get("approval_status", "missing"),
             "live_run_status": live_run.get("execution", {}).get("status", "missing"),
             "preflight_status": preflight.get("status", "missing"),
+            "source_count": len(freshness_scorecard),
+            "fresh_source_count": sum(1 for row in freshness_scorecard if row["trust_state"] == "fresh_enough"),
+            "weak_source_count": sum(1 for row in freshness_scorecard if row["trust_state"] != "fresh_enough"),
         },
+        "source_freshness": freshness_scorecard,
         "weak_evidence": weak_evidence,
         "actions": actions,
         "operator_decision": _source_refresh_operator_decision(live_gate=live_gate, live_run=live_run, preflight=preflight),
@@ -3386,6 +3520,14 @@ def validate_source_refresh_brief_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("next_action must not be empty")
     if not payload.get("phone_links", {}).get("source_refresh"):
         errors.append("phone_links.source_refresh must not be empty")
+    if not payload.get("source_freshness"):
+        errors.append("source_freshness must not be empty")
+    for index, row in enumerate(payload.get("source_freshness", [])):
+        for field in ["source_name", "freshness_status", "relevance_label", "trust_state", "operator_rule"]:
+            if field not in row:
+                errors.append(f"source_freshness[{index}] missing {field}")
+        if row.get("trust_state") not in {"fresh_enough", "sample_or_fallback", "weak_or_unknown"}:
+            errors.append(f"source_freshness[{index}] invalid trust_state")
     if "does_not_fetch_live_network" not in payload.get("safety_boundary", []):
         errors.append("safety_boundary must include does_not_fetch_live_network")
     for index, action in enumerate(payload.get("actions", [])):
@@ -3434,6 +3576,15 @@ def render_source_refresh_brief(payload: dict[str, Any]) -> str:
         "</article>"
         for action in payload.get("actions", [])
     ) or "<p>오늘 계획된 source refresh action이 없습니다.</p>"
+    freshness_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(row.get('trust_state', ''))} · {esc(row.get('freshness_status', ''))}</span>"
+        f"<strong>{esc(row.get('source_name', ''))}</strong>"
+        f"<p>{esc(row.get('operator_rule', ''))}</p>"
+        f"<small>relevance {esc(row.get('relevance_label', ''))} · items {esc(row.get('item_count', '0'))}</small>"
+        "</article>"
+        for row in payload.get("source_freshness", [])
+    ) or "<p>표시할 source freshness가 없습니다.</p>"
     decision = payload.get("operator_decision", {})
     decision_card = (
         "<article class='decision'>"
@@ -3513,6 +3664,10 @@ code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; backgrou
 <section class="section">
 <h2>약한 근거</h2>
 <div class="stack">{weak_cards}</div>
+</section>
+<section class="section">
+<h2>Source freshness</h2>
+<div class="stack">{freshness_cards}</div>
 </section>
 <section class="section">
 <h2>Source actions</h2>
@@ -10548,6 +10703,44 @@ def _source_refresh_weak_evidence(*, evidence: dict[str, Any], scout: dict[str, 
         seen.add(key)
         deduped.append(row)
     return deduped[:6]
+
+
+def _source_refresh_freshness_scorecard(*, evidence: dict[str, Any]) -> list[dict[str, str]]:
+    rows = []
+    for source in evidence.get("source_status", []):
+        freshness = source.get("freshness_status", "unknown")
+        relevance = source.get("relevance_label", "unscored")
+        if freshness in {"fresh", "live"} and relevance in {"strong", "usable"}:
+            trust_state = "fresh_enough"
+            operator_rule = "오늘 brief에 직접 영향을 줘도 되지만 반대 근거는 별도로 확인합니다."
+        elif freshness in {"sample_cache", "live_error_fallback_sample"}:
+            trust_state = "sample_or_fallback"
+            operator_rule = "학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다."
+        else:
+            trust_state = "weak_or_unknown"
+            operator_rule = "결론을 보류하고 source refresh 또는 다른 출처군 확인을 먼저 검토합니다."
+        rows.append({
+            "source_name": source.get("source_name", ""),
+            "source_id": source.get("source_id", ""),
+            "freshness_status": freshness,
+            "relevance_label": relevance,
+            "relevance_score": source.get("relevance_score", "0.00"),
+            "item_count": source.get("item_count", "0"),
+            "trust_state": trust_state,
+            "operator_rule": operator_rule,
+        })
+    if rows:
+        return rows
+    return [{
+        "source_name": "missing",
+        "source_id": "missing",
+        "freshness_status": "missing",
+        "relevance_label": "unscored",
+        "relevance_score": "0.00",
+        "item_count": "0",
+        "trust_state": "weak_or_unknown",
+        "operator_rule": "source catalog를 먼저 생성해야 합니다.",
+    }]
 
 
 def _source_refresh_brief_status(

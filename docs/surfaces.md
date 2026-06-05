@@ -43,6 +43,7 @@ Must not show adapter IDs, schema names, raw validation logs, Flyhigh gates, or 
 `reports/product/handoff-response-apply.html` is not a chat surface and not an executor. It is the local proof after a copied handoff command records either review feedback or task status, refreshes the affected local artifacts, and regenerates handoff in the same run.
 
 `reports/product/source-refresh.html` is not a live data runner. It is the personal analyst's source refresh judgment screen: what evidence is weak, which free/no-key sources are proposed, what is blocked by approval, whether preflight has passed, and what the next safe action is before any live network call.
+It must show a source freshness scorecard so sample/cache/fallback evidence is not mistaken for current evidence.
 
 `reports/product/scheduler.html` is not the Flyhigh project dashboard and it is not a market brief. It is the personal analyst appliance operations screen: whether scheduler assets exist, whether run-once passed, whether activation preflight is ready, whether activation was verified, and which local command or separately approved host-write command comes next.
 
@@ -61,6 +62,7 @@ Must not show adapter IDs, schema names, raw validation logs, Flyhigh gates, or 
 `reports/product/council-response-apply.html` is not a chat surface and not an executor. It is the local handoff proof after a copied council command records feedback, refreshes review/scout/prompt/effect artifacts, and regenerates council in the same local run.
 
 `reports/product/pattern-radar.html` is not a project tracker and not a live web research tool. It is the personal analyst's local workflow-evolution surface: which external agentic workflow patterns were adopted, partially adopted, rejected, or kept behind approval before they influence the daily loop.
+It must expose the dry-run adoption queue and adoption gate before any new pattern changes product behavior.
 
 ## 4. Machine Artifacts
 

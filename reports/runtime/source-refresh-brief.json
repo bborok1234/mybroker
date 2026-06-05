@@ -1,6 +1,6 @@
 {
   "schema_version": "source_refresh_brief.v1",
-  "generated_at": "2026-06-05T21:42:36.932444+00:00",
+  "generated_at": "2026-06-05T21:53:41.430967+00:00",
   "status": "approval_required",
   "recommended_topic": {
     "topic_id": "semiconductors",
@@ -146,8 +146,43 @@
     "gate_status": "approval_required",
     "approval_status": "missing",
     "live_run_status": "not_requested",
-    "preflight_status": "blocked"
+    "preflight_status": "blocked",
+    "source_count": 3,
+    "fresh_source_count": 0,
+    "weak_source_count": 3
   },
+  "source_freshness": [
+    {
+      "source_name": "GDELT",
+      "source_id": "gdelt",
+      "freshness_status": "live_error_fallback_sample",
+      "relevance_label": "strong",
+      "relevance_score": "0.98",
+      "item_count": "2",
+      "trust_state": "sample_or_fallback",
+      "operator_rule": "학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다."
+    },
+    {
+      "source_name": "SEC EDGAR",
+      "source_id": "sec-edgar",
+      "freshness_status": "sample_cache",
+      "relevance_label": "strong",
+      "relevance_score": "0.98",
+      "item_count": "2",
+      "trust_state": "sample_or_fallback",
+      "operator_rule": "학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다."
+    },
+    {
+      "source_name": "Stooq",
+      "source_id": "stooq",
+      "freshness_status": "live_error_fallback_sample",
+      "relevance_label": "strong",
+      "relevance_score": "0.81",
+      "item_count": "1",
+      "trust_state": "sample_or_fallback",
+      "operator_rule": "학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다."
+    }
+  ],
   "weak_evidence": [
     {
       "kind": "catalog_gap",

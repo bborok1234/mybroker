@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-05T21:42:36.995350+00:00",
+  "generated_at": "2026-06-05T21:53:41.497104+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -320,7 +320,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T21:42:36.929150+00:00"
+      "generated_at": "2026-06-05T21:53:41.428716+00:00"
     },
     {
       "name": "agenda",
@@ -328,7 +328,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T21:42:36.933841+00:00"
+      "generated_at": "2026-06-05T21:53:41.431752+00:00"
     },
     {
       "name": "morning",
@@ -336,7 +336,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-05T21:42:36.982451+00:00"
+      "generated_at": "2026-06-05T21:53:41.483865+00:00"
     },
     {
       "name": "readiness",
@@ -344,7 +344,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T21:42:36.993186+00:00"
+      "generated_at": "2026-06-05T21:53:41.494672+00:00"
     },
     {
       "name": "handoff",
@@ -352,7 +352,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-05T21:42:36.988473+00:00"
+      "generated_at": "2026-06-05T21:53:41.489490+00:00"
     },
     {
       "name": "handoff_apply",
@@ -368,7 +368,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T21:42:36.987901+00:00"
+      "generated_at": "2026-06-05T21:53:41.488878+00:00"
     },
     {
       "name": "scheduler",
@@ -376,7 +376,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-05T21:42:36.975346+00:00"
+      "generated_at": "2026-06-05T21:53:41.478170+00:00"
     },
     {
       "name": "phone_access",
@@ -384,7 +384,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T21:42:29.988724+00:00"
+      "generated_at": "2026-06-05T21:53:34.841346+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -392,7 +392,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T21:42:36.992730+00:00"
+      "generated_at": "2026-06-05T21:53:41.494192+00:00"
     },
     {
       "name": "notification",
@@ -400,7 +400,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-05T21:42:36.963459+00:00"
+      "generated_at": "2026-06-05T21:53:41.467857+00:00"
     }
   ],
   "external_effect_performed": false,
