@@ -1,6 +1,6 @@
 {
   "schema_version": "operator_decision_packet.v1",
-  "generated_at": "2026-06-05T07:50:09.871393+00:00",
+  "generated_at": "2026-06-05T07:58:03.536488+00:00",
   "project_root": "/Users/mirlim/sidejob/mybroker/mybroker",
   "status": "pending_operator_decision",
   "host_write_performed": false,
@@ -65,8 +65,7 @@
       "operator_can_say": "approve private_phone_access private_network_exposure",
       "agent_will_run": [
         "cd <mybroker-repo> && python3 -m http.server 8787",
-        "tailscale serve --bg 8787",
-        "tailscale serve reset"
+        "tailscale serve --bg 8787"
       ],
       "risk": "Starts local/private serving so the phone can read the daily brief. Public exposure remains out of scope.",
       "reversibility": "reversible",

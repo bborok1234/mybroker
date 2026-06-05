@@ -1793,9 +1793,9 @@ def _notification_send_decision(*, notification: dict[str, Any]) -> dict[str, An
 
 
 def _private_phone_access_decision(*, phone_access: dict[str, Any]) -> dict[str, Any]:
-    commands = phone_access.get("commands", [])
-    serve_commands = [item.get("command", "") for item in commands if item.get("command")]
-    readiness = "ready" if phone_access.get("schema_version") == PHONE_ACCESS_SCHEMA_VERSION and serve_commands else "blocked"
+    enable_commands = _phone_access_enable_commands(phone_access=phone_access)
+    rollback_command = _phone_access_rollback_command(phone_access=phone_access)
+    readiness = "ready" if phone_access.get("schema_version") == PHONE_ACCESS_SCHEMA_VERSION and enable_commands else "blocked"
     return {
         "id": "private_phone_access",
         "title": "Enable private phone access",
@@ -1807,11 +1807,36 @@ def _private_phone_access_decision(*, phone_access: dict[str, Any]) -> dict[str,
             "private_phone_url": phone_access.get("private_phone_url", ""),
         },
         "operator_can_say": "approve private_phone_access private_network_exposure",
-        "agent_will_run": serve_commands,
+        "agent_will_run": enable_commands,
         "risk": "Starts local/private serving so the phone can read the daily brief. Public exposure remains out of scope.",
         "reversibility": "reversible",
-        "rollback_command": "tailscale serve reset",
+        "rollback_command": rollback_command,
     }
+
+
+def _phone_access_enable_commands(*, phone_access: dict[str, Any]) -> list[str]:
+    enable_commands = []
+    for item in phone_access.get("commands", []):
+        command = item.get("command", "")
+        purpose = item.get("purpose", "")
+        if not command or _phone_access_command_is_rollback(command=command, purpose=purpose):
+            continue
+        enable_commands.append(command)
+    return enable_commands
+
+
+def _phone_access_rollback_command(*, phone_access: dict[str, Any]) -> str:
+    for item in phone_access.get("commands", []):
+        command = item.get("command", "")
+        purpose = item.get("purpose", "")
+        if command and _phone_access_command_is_rollback(command=command, purpose=purpose):
+            return command
+    return "tailscale serve reset"
+
+
+def _phone_access_command_is_rollback(*, command: str, purpose: str) -> bool:
+    normalized = f"{purpose} {command}".lower()
+    return "stop" in normalized or "reset" in normalized or "unserve" in normalized
 
 
 def _same_file_contents(left: Path, right: Path) -> bool:
