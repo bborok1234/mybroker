@@ -33,6 +33,9 @@ from mybroker.appliance import (
     DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT,
     DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE,
     OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION,
+    DEFAULT_COUNCIL_RESPONSE_APPLY_OUTPUT,
+    DEFAULT_COUNCIL_RESPONSE_APPLY_SURFACE,
+    OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
@@ -79,6 +82,7 @@ from mybroker.appliance import (
     write_operator_review_prompt,
     write_operator_review_effect,
     write_operator_review_response_apply,
+    write_operator_council_response_apply,
     build_task_status_apply,
     record_daily_review_response,
     record_task_status_response,
@@ -113,6 +117,7 @@ from mybroker.appliance import (
     validate_operator_review_prompt_file,
     validate_operator_review_effect_file,
     validate_operator_review_response_apply_file,
+    validate_operator_council_response_apply_file,
     validate_task_status_apply_file,
     validate_morning_control_packet_file,
     validate_memory_audit_file,
@@ -338,6 +343,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_review_effect_parser.add_argument("review_effect_path")
     validate_review_response_apply_parser = subcommands.add_parser("validate-review-response-apply", help="Validate an operator_review_response_apply.v1 artifact.")
     validate_review_response_apply_parser.add_argument("review_response_apply_path")
+    validate_council_response_apply_parser = subcommands.add_parser("validate-council-response-apply", help="Validate an operator_council_response_apply.v1 artifact.")
+    validate_council_response_apply_parser.add_argument("council_response_apply_path")
     validate_memory_audit_parser = subcommands.add_parser("validate-memory-audit", help="Validate a personal_memory_audit.v1 artifact.")
     validate_memory_audit_parser.add_argument("memory_audit_path")
     validate_council_parser = subcommands.add_parser("validate-analyst-council", help="Validate an analyst_council.v1 artifact.")
@@ -569,6 +576,31 @@ def main(argv: list[str] | None = None) -> int:
     appliance_review_response_apply_parser.add_argument("--review-effect-surface", default=DEFAULT_REVIEW_EFFECT_SURFACE.as_posix())
     appliance_review_response_apply_parser.add_argument("--artifact-output", default=DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT.as_posix())
     appliance_review_response_apply_parser.add_argument("--output", default=DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE.as_posix())
+    appliance_council_response_apply_parser = appliance_subcommands.add_parser("council-response-apply", help="Record one local council response and refresh review/scout/effect/council proof.")
+    appliance_council_response_apply_parser.add_argument("response")
+    appliance_council_response_apply_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
+    appliance_council_response_apply_parser.add_argument("--plan", default=DEFAULT_RESEARCH_PLAN_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--responses", default=DEFAULT_DAILY_REVIEW_RESPONSES.as_posix())
+    appliance_council_response_apply_parser.add_argument("--task-status-apply", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
+    appliance_council_response_apply_parser.add_argument("--daily-review-output", default=DEFAULT_DAILY_REVIEW_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--daily-review-surface", default=DEFAULT_DAILY_REVIEW_SURFACE.as_posix())
+    appliance_council_response_apply_parser.add_argument("--scout-output", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--review-prompt-output", default=DEFAULT_REVIEW_PROMPT_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--review-prompt-surface", default=DEFAULT_REVIEW_PROMPT_SURFACE.as_posix())
+    appliance_council_response_apply_parser.add_argument("--review-effect-output", default=DEFAULT_REVIEW_EFFECT_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--review-effect-surface", default=DEFAULT_REVIEW_EFFECT_SURFACE.as_posix())
+    appliance_council_response_apply_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
+    appliance_council_response_apply_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
+    appliance_council_response_apply_parser.add_argument("--journal", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--council-output", default=DEFAULT_ANALYST_COUNCIL_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--council-surface", default=DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix())
+    appliance_council_response_apply_parser.add_argument("--artifact-output", default=DEFAULT_COUNCIL_RESPONSE_APPLY_OUTPUT.as_posix())
+    appliance_council_response_apply_parser.add_argument("--output", default=DEFAULT_COUNCIL_RESPONSE_APPLY_SURFACE.as_posix())
+    appliance_council_response_apply_parser.add_argument("--run-id", default="daily-research")
     appliance_review_parser = appliance_subcommands.add_parser("review", help="Render daily review memory and scout scoring signals.")
     appliance_review_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     appliance_review_parser.add_argument("--task-status-apply", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
@@ -1044,6 +1076,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-review-response-apply":
         errors = validate_operator_review_response_apply_file(args.review_response_apply_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-council-response-apply":
+        errors = validate_operator_council_response_apply_file(args.council_response_apply_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1681,6 +1720,121 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_review": args.daily_review_output,
                 "daily_scout": args.scout_output,
                 "review_effect": args.review_effect_output,
+                "effect_status": effect_payload.get("status", ""),
+                "external_effect_performed": False,
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "council-response-apply":
+            parsed_response = parse_daily_review_response(args.response)
+            responses_path = record_daily_review_response(response=args.response, responses_path=args.responses)
+            written_review = write_daily_review(
+                scout_path=args.scout_output,
+                task_status_apply_path=args.task_status_apply,
+                responses_path=responses_path,
+                artifact_output_path=args.daily_review_output,
+                surface_output_path=args.daily_review_surface,
+            )
+            scout_payload = build_daily_scout(
+                topics_path=args.topics,
+                plan_path=args.plan,
+                evidence_path=args.evidence,
+                memory_path=args.memory,
+                vault_path=args.vault,
+                review_path=args.daily_review_output,
+                output_path=args.scout_output,
+                run_id=args.run_id,
+            )
+            written_prompt = write_operator_review_prompt(
+                scout_path=args.scout_output,
+                daily_review_path=args.daily_review_output,
+                artifact_output_path=args.review_prompt_output,
+                surface_output_path=args.review_prompt_surface,
+            )
+            written_effect = write_operator_review_effect(
+                scout_path=args.scout_output,
+                daily_review_path=args.daily_review_output,
+                review_prompt_path=args.review_prompt_output,
+                artifact_output_path=args.review_effect_output,
+                surface_output_path=args.review_effect_surface,
+            )
+            written_council = write_analyst_council(
+                scenario_path=args.scenario,
+                verdict_path=args.verdict,
+                journal_path=args.journal,
+                memory_path=args.memory,
+                evidence_path=args.evidence,
+                memory_audit_path=args.memory_audit,
+                scout_path=args.scout_output,
+                artifact_output_path=args.council_output,
+                surface_output_path=args.council_surface,
+            )
+            review_payload = json.loads(Path(args.daily_review_output).read_text(encoding="utf-8"))
+            effect_payload = json.loads(Path(args.review_effect_output).read_text(encoding="utf-8"))
+            council_payload = json.loads(Path(args.council_output).read_text(encoding="utf-8"))
+            apply_payload = {
+                "schema_version": OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "status": "applied" if effect_payload.get("status") == "applied" else "blocked",
+                "operator_response": args.response,
+                "parsed_response": parsed_response,
+                "responses_path": Path(responses_path).as_posix(),
+                "daily_review": {
+                    "path": args.daily_review_output,
+                    "surface": written_review.as_posix(),
+                    "response_count": review_payload.get("summary", {}).get("response_count", 0),
+                    "signal_count": review_payload.get("summary", {}).get("signal_count", 0),
+                },
+                "daily_scout": {
+                    "path": args.scout_output,
+                    "recommended_topic": scout_payload.get("recommended_topic", {}).get("name", ""),
+                    "review_response_count": scout_payload.get("review_context", {}).get("response_count", 0),
+                    "review_signal_count": scout_payload.get("review_context", {}).get("signal_count", 0),
+                },
+                "review_prompt": {
+                    "path": args.review_prompt_output,
+                    "surface": written_prompt.as_posix(),
+                },
+                "review_effect": {
+                    "path": args.review_effect_output,
+                    "surface": written_effect.as_posix(),
+                    "status": effect_payload.get("status", ""),
+                    "applied_topic_count": effect_payload.get("summary", {}).get("applied_topic_count", 0),
+                },
+                "analyst_council": {
+                    "path": args.council_output,
+                    "surface": written_council.as_posix(),
+                    "status": council_payload.get("status", ""),
+                    "role_count": council_payload.get("summary", {}).get("role_count", 0),
+                    "caution_count": council_payload.get("summary", {}).get("caution_count", 0),
+                    "blocker_count": council_payload.get("summary", {}).get("blocker_count", 0),
+                },
+                "next_action": "council 응답이 review/scout/effect/council proof에 반영됐습니다. council과 review-effect 화면에서 반영 상태를 확인하세요." if effect_payload.get("status") == "applied" else "응답은 기록됐지만 effect proof가 applied가 아닙니다. review-effect와 council 화면의 다음 행동을 확인하세요.",
+                "external_effect_performed": False,
+                "host_write_performed": False,
+                "policy": "research_only",
+                "safety_boundary": [
+                    "local_council_response_apply_only",
+                    "does_not_fetch_live_network",
+                    "does_not_send_notifications",
+                    "does_not_write_host_scheduler",
+                    "does_not_use_credentials",
+                    "no_account_access",
+                    "no_order_execution",
+                ],
+            }
+            written_apply = write_operator_council_response_apply(
+                payload=apply_payload,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            print(json.dumps({
+                "council_response_apply": args.artifact_output,
+                "council_response_apply_surface": written_apply.as_posix(),
+                "daily_review": args.daily_review_output,
+                "daily_scout": args.scout_output,
+                "review_effect": args.review_effect_output,
+                "analyst_council": args.council_output,
+                "council_status": council_payload.get("status", ""),
                 "effect_status": effect_payload.get("status", ""),
                 "external_effect_performed": False,
             }, indent=2, ensure_ascii=False))

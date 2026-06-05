@@ -49,6 +49,7 @@ DAILY_REVIEW_SCHEMA_VERSION = "daily_review.v1"
 OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION = "operator_review_prompt.v1"
 OPERATOR_REVIEW_EFFECT_SCHEMA_VERSION = "operator_review_effect.v1"
 OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION = "operator_review_response_apply.v1"
+OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION = "operator_council_response_apply.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUN_TRACE_SCHEMA_VERSION = "local_run_trace.v1"
 DRIFT_REVIEW_SCHEMA_VERSION = "local_drift_review.v1"
@@ -100,6 +101,8 @@ DEFAULT_REVIEW_EFFECT_OUTPUT = Path("reports/runtime/review-effect.json")
 DEFAULT_REVIEW_EFFECT_SURFACE = Path("reports/product/review-effect.html")
 DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/review-response-apply.json")
 DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE = Path("reports/product/review-response-apply.html")
+DEFAULT_COUNCIL_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/council-response-apply.json")
+DEFAULT_COUNCIL_RESPONSE_APPLY_SURFACE = Path("reports/product/council-response-apply.html")
 DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
 DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
 DEFAULT_RUN_TRACE_OUTPUT = Path("reports/runtime/run-trace.json")
@@ -3511,6 +3514,7 @@ def build_analyst_council(
         "blockers": blockers,
         "beginner_reading_order": _analyst_council_reading_order(decision=decision, roles=roles),
         "next_questions": _analyst_council_next_questions(roles=roles, blockers=blockers, journal=journal, memory_audit=memory_audit),
+        "copy_ready_commands": _analyst_council_commands(decision=decision, roles=roles, scout=scout, journal=journal),
         "linked_surfaces": {
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "brief": "reports/product/market-brief.html",
@@ -3601,6 +3605,15 @@ def validate_analyst_council_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("beginner_reading_order must not be empty")
     if not payload.get("next_questions"):
         errors.append("next_questions must not be empty")
+    commands = payload.get("copy_ready_commands", [])
+    if not commands:
+        errors.append("copy_ready_commands must not be empty")
+    for index, command in enumerate(commands):
+        command_text = command.get("command", "")
+        if "council-response-apply" not in command_text:
+            errors.append(f"copy_ready_commands[{index}] must call council-response-apply")
+        if command.get("external_effect_performed") is not False:
+            errors.append(f"copy_ready_commands[{index}] external_effect_performed must be false")
     if "reads_local_artifacts_only" not in payload.get("safety_boundary", []):
         errors.append("safety_boundary must include reads_local_artifacts_only")
     if "no_order_execution" not in payload.get("safety_boundary", []):
@@ -3643,6 +3656,14 @@ def render_analyst_council(payload: dict[str, Any]) -> str:
     ) or "<p>오늘 브리프 읽기를 막는 high blocker는 없습니다.</p>"
     reading_order = "".join(f"<li>{esc(item)}</li>" for item in payload.get("beginner_reading_order", []))
     questions = "".join(f"<li>{esc(item)}</li>" for item in payload.get("next_questions", []))
+    commands = "".join(
+        "<article class='command'>"
+        f"<span>{esc(command.get('label', '응답'))}</span>"
+        f"<code>{esc(command.get('command', ''))}</code>"
+        f"<small>{esc(command.get('why', ''))}</small>"
+        "</article>"
+        for command in payload.get("copy_ready_commands", [])
+    )
     links = "".join(
         f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
         for label, path in payload.get("linked_surfaces", {}).items()
@@ -3670,6 +3691,8 @@ p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
 .metrics,.grid,.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
 .metric,.card,.links a {{ background:white; border:1px solid var(--line); border-radius:8px; padding:14px; min-width:0; }}
 .metric strong {{ display:block; font-size:26px; }}
+.command {{ border:1px solid var(--line); border-radius:8px; background:white; padding:14px; margin-top:10px; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
 .warn {{ border-color:#d7b36a; }}
 .block {{ border-color:#d99; }}
 @media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid,.links {{ grid-template-columns:1fr; }} }}
@@ -3712,6 +3735,10 @@ p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
 <section class="section">
 <h2>다음 질문</h2>
 <ul>{questions}</ul>
+</section>
+<section class="section">
+<h2>복사 가능한 council 응답</h2>
+{commands}
 </section>
 <section class="section">
 <h2>연결 화면</h2>
@@ -3935,6 +3962,163 @@ def _analyst_council_next_questions(
     if not questions:
         questions.append("오늘 브리프에서 내가 내일 다시 확인하고 싶은 한 문장은 무엇인가?")
     return questions[:5]
+
+
+def _analyst_council_commands(
+    *,
+    decision: dict[str, Any],
+    roles: list[dict[str, Any]],
+    scout: dict[str, Any],
+    journal: dict[str, Any],
+) -> list[dict[str, Any]]:
+    recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    focus = journal.get("today_focus", {}) if journal.get("schema_version") == ANALYST_JOURNAL_SCHEMA_VERSION else {}
+    topic = recommended.get("name", focus.get("recommended_topic", focus.get("title", "오늘 브리프")))
+    caution_roles = [role for role in roles if role.get("stance") in {"caution", "block"}]
+    first_caution = caution_roles[0] if caution_roles else {}
+    caution_note = first_caution.get("next_check", decision.get("operator_action", "조건을 먼저 확인한다"))
+    response_more = f'more "{topic}" "council: {caution_note}"'
+    response_confusing = f'confusing "{topic}" "council: 설명과 근거를 더 쉽게 다시 보고 싶다"'
+    commands = [
+        {
+            "label": "조건 확인 후 계속 보기",
+            "response": response_more,
+            "command": f"PYTHONPATH=src python3 -m mybroker appliance council-response-apply {shlex.quote(response_more)}",
+            "why": "council caution을 다음 scout와 review-effect에 반영합니다.",
+            "external_effect_performed": False,
+        },
+        {
+            "label": "헷갈림 표시",
+            "response": response_confusing,
+            "command": f"PYTHONPATH=src python3 -m mybroker appliance council-response-apply {shlex.quote(response_confusing)}",
+            "why": "다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.",
+            "external_effect_performed": False,
+        },
+    ]
+    if decision.get("status") == "ready_to_read":
+        response_read = f'read "{topic}" "council: 오늘 브리프를 읽었다"'
+        commands.insert(0, {
+            "label": "읽었음",
+            "response": response_read,
+            "command": f"PYTHONPATH=src python3 -m mybroker appliance council-response-apply {shlex.quote(response_read)}",
+            "why": "오늘 브리프를 읽었다는 최소 피드백을 남깁니다.",
+            "external_effect_performed": False,
+        })
+    return commands[:3]
+
+
+def write_operator_council_response_apply(
+    *,
+    payload: dict[str, Any],
+    artifact_output_path: str | Path = DEFAULT_COUNCIL_RESPONSE_APPLY_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_COUNCIL_RESPONSE_APPLY_SURFACE,
+) -> Path:
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_operator_council_response_apply(payload), encoding="utf-8")
+    return target
+
+
+def validate_operator_council_response_apply_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"applied", "blocked"}:
+        errors.append("status must be applied or blocked")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if "local_council_response_apply_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include local_council_response_apply_only")
+    for field in ["operator_response", "responses_path", "daily_review", "daily_scout", "review_effect", "analyst_council"]:
+        if field not in payload:
+            errors.append(f"missing {field}")
+    council = payload.get("analyst_council", {})
+    if council.get("status") not in {"ready_to_read", "read_with_caution", "blocked"}:
+        errors.append("analyst_council.status is invalid")
+    if not payload.get("next_action"):
+        errors.append("next_action must not be empty")
+    return errors
+
+
+def validate_operator_council_response_apply_file(path: str | Path) -> list[str]:
+    return validate_operator_council_response_apply_payload(load_json(path))
+
+
+def render_operator_council_response_apply(payload: dict[str, Any]) -> str:
+    council = payload.get("analyst_council", {})
+    effect = payload.get("review_effect", {})
+    review = payload.get("daily_review", {})
+    scout = payload.get("daily_scout", {})
+    status_label = {
+        "applied": "council 응답 적용됨",
+        "blocked": "council 응답 적용 차단됨",
+    }.get(payload.get("status", ""), payload.get("status", "unknown"))
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Council Response Apply</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+.eyebrow,.metric span {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small {{ color:var(--muted); }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics,.links {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Council Apply · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>council 응답 적용</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('next_action', ''))}</p>
+<code>{esc(payload.get('operator_response', ''))}</code>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Review responses</span><strong>{esc(review.get('response_count', 0))}</strong></article>
+<article class="metric"><span>Scout read</span><strong>{esc(scout.get('review_response_count', 0))}</strong></article>
+<article class="metric"><span>Council</span><strong>{esc(council.get('status', 'unknown'))}</strong></article>
+<article class="metric"><span>Effect</span><strong>{esc(effect.get('status', 'unknown'))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>갱신된 화면</h2>
+<div class="links">
+<a href="{esc(_relative_href(DEFAULT_DAILY_REVIEW_SURFACE))}">review</a>
+<a href="{esc(_relative_href(DEFAULT_REVIEW_EFFECT_SURFACE))}">review_effect</a>
+<a href="{esc(_relative_href(DEFAULT_ANALYST_COUNCIL_SURFACE))}">council</a>
+</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 handoff는 로컬 피드백과 로컬 proof만 갱신합니다. live network, 알림 전송, host write, credential, 계좌 접근, 주문 실행을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def render_analyst_journal(payload: dict[str, Any]) -> str:

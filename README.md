@@ -94,11 +94,13 @@ PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance council
+PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'more "Semiconductors" "council: source freshness를 더 확인하고 싶다"'
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
 PYTHONPATH=src python3 -m mybroker validate-vault reports/vault/compile.json
 PYTHONPATH=src python3 -m mybroker validate-memory-audit reports/memory/audit.json
 PYTHONPATH=src python3 -m mybroker validate-analyst-council reports/runtime/analyst-council.json
+PYTHONPATH=src python3 -m mybroker validate-council-response-apply reports/runtime/council-response-apply.json
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
 ```
@@ -241,6 +243,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `appliance source-refresh-response`: a one-command local handoff from the phone's copied approval response into refreshed live-run proof, preflight proof, and source refresh briefing. It does not execute live network calls;
 - `reports/product/journal.html` and `reports/memory/analyst-journal.json`: the daily analyst work log with today's focus, role notes, weak evidence, and follow-up questions;
 - `reports/runtime/analyst-council.json` and `reports/product/council.html`: local role review before reading today's brief, with source scout, evidence curator, market mapper, scenario analyst, skeptic, beginner tutor, and memory librarian agreement/disagreement;
+- `reports/runtime/council-response-apply.json` and `reports/product/council-response-apply.html`: one-command local proof that a copied council response was recorded, review/scout/effect artifacts were refreshed, and council was regenerated;
 - `reports/product/tasks.html` and `reports/memory/analyst-task-queue.json`: role-based analyst task queue for source scout, market mapper, skeptic, tutor, librarian, and publisher work;
 - `reports/product/task-ledger.html` and `reports/memory/analyst-task-ledger.json`: task status history for ready, carried, blocked, and retired analyst work;
 - `reports/product/morning.html` and `reports/runtime/morning-control.json`: an operator-facing morning control packet that says what to read first, what is blocked, which short responses can close carried tasks, and which phone links are ready;
@@ -295,6 +298,12 @@ writes `analyst_council.v1` plus `reports/product/council.html`. The output says
 beginner should read the brief normally, read it with caution, or treat it as blocked until local
 evidence/memory gaps are fixed. It does not fetch live data, send notifications, write host state,
 use credentials, access accounts, place orders, or provide discretionary management.
+`council-response-apply` is the council handoff. A phone user can copy a council command, and the
+laptop workspace records that response as local review memory, regenerates `daily_review`, reruns
+`daily_scout`, refreshes `review_prompt` and `review_effect`, then regenerates `analyst_council`.
+It writes `operator_council_response_apply.v1` plus `reports/product/council-response-apply.html`
+as proof. It performs no live network, notification, host-write, credential, account, order, or
+discretionary action.
 
 `appliance vault init` creates a local `research-vault/raw`, `research-vault/wiki`, and
 `research-vault/output` structure. `appliance vault compile` files local markdown/text notes from

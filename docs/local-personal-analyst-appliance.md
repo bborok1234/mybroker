@@ -132,6 +132,7 @@ PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance council
+PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'more "Semiconductors" "council: source freshness를 더 확인하고 싶다"'
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
@@ -160,6 +161,10 @@ The local loop now writes three memory-facing surfaces:
   verdict, journal, evidence, memory, scout, and memory audit.
 - `reports/product/council.html`: phone-readable analyst council with role agreement,
   disagreement, blockers, beginner reading order, and next questions.
+- `reports/runtime/council-response-apply.json`: machine-readable proof that a copied council
+  response refreshed review, scout, effect, and council artifacts in one local handoff.
+- `reports/product/council-response-apply.html`: phone-readable proof surface for the council
+  response handoff.
 - `reports/runtime/agent-pattern-radar.json`: machine-readable record of which external agentic workflow patterns are adopted, partially adopted, or rejected for the local daily analyst loop.
 - `reports/product/pattern-radar.html`: phone-readable workflow evolution radar for the next safe slice and safety guardrails.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
@@ -196,6 +201,11 @@ deterministic and local. The council reads existing artifacts only, then asks so
 evidence_curator, market_mapper, scenario_analyst, skeptic, beginner_tutor, and memory_librarian
 roles whether today's brief is ready, should be read with caution, or is blocked by evidence/memory
 quality. It is not a chat agent, executor, or advisor; it only creates a reading-quality gate.
+`council-response-apply` makes that gate actionable without adding authority. It records a copied
+council response as local review memory, regenerates review/scout/prompt/effect artifacts, and
+then regenerates council so the operator can see whether the feedback is now part of the loop. It
+does not fetch, notify, write host state, use credentials, access accounts, execute orders, or make
+discretionary decisions.
 `tasks.html` translates that journal into queued work for source_scout, market_mapper, skeptic,
 beginner_tutor, memory_librarian, and publisher roles. It does not execute commands; live network,
 host writes, notification send, credentials, and trading remain behind separate approval gates.
