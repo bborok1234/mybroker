@@ -93,10 +93,12 @@ PYTHONPATH=src python3 -m mybroker appliance pattern-radar
 PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
+PYTHONPATH=src python3 -m mybroker appliance council
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
 PYTHONPATH=src python3 -m mybroker validate-vault reports/vault/compile.json
 PYTHONPATH=src python3 -m mybroker validate-memory-audit reports/memory/audit.json
+PYTHONPATH=src python3 -m mybroker validate-analyst-council reports/runtime/analyst-council.json
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
 ```
@@ -238,6 +240,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/runtime/source-refresh-brief.json` and `reports/product/source-refresh.html`: phone-readable source refresh judgment that explains weak evidence, proposed free/no-key sources, approval status, preflight status, and the next safe action without calling the network;
 - `appliance source-refresh-response`: a one-command local handoff from the phone's copied approval response into refreshed live-run proof, preflight proof, and source refresh briefing. It does not execute live network calls;
 - `reports/product/journal.html` and `reports/memory/analyst-journal.json`: the daily analyst work log with today's focus, role notes, weak evidence, and follow-up questions;
+- `reports/runtime/analyst-council.json` and `reports/product/council.html`: local role review before reading today's brief, with source scout, evidence curator, market mapper, scenario analyst, skeptic, beginner tutor, and memory librarian agreement/disagreement;
 - `reports/product/tasks.html` and `reports/memory/analyst-task-queue.json`: role-based analyst task queue for source scout, market mapper, skeptic, tutor, librarian, and publisher work;
 - `reports/product/task-ledger.html` and `reports/memory/analyst-task-ledger.json`: task status history for ready, carried, blocked, and retired analyst work;
 - `reports/product/morning.html` and `reports/runtime/morning-control.json`: an operator-facing morning control packet that says what to read first, what is blocked, which short responses can close carried tasks, and which phone links are ready;
@@ -286,6 +289,12 @@ memory, archive manifests, compiled vault notes, source posture, and review feed
 `personal_memory_audit.v1` plus `reports/product/memory-audit.html`. It highlights stale or weak
 coverage before the daily loop widens authority, and it performs no live network, credential,
 notification, host-write, account, or execution action.
+`appliance council` is the TradingAgents/MiroFish-inspired review step without execution authority.
+It reads today's local scenario, verdict, journal, evidence, memory, scout, and memory audit, then
+writes `analyst_council.v1` plus `reports/product/council.html`. The output says whether the
+beginner should read the brief normally, read it with caution, or treat it as blocked until local
+evidence/memory gaps are fixed. It does not fetch live data, send notifications, write host state,
+use credentials, access accounts, place orders, or provide discretionary management.
 
 `appliance vault init` creates a local `research-vault/raw`, `research-vault/wiki`, and
 `research-vault/output` structure. `appliance vault compile` files local markdown/text notes from
