@@ -29,6 +29,7 @@ from mybroker.appliance import (
     write_operator_decision_apply,
     write_operator_decision_packet,
     write_phone_access_plan,
+    write_phone_access_verify,
     write_runtime_doctor,
     write_runtime_playbook,
     write_run_trace,
@@ -72,6 +73,7 @@ from mybroker.appliance import (
     validate_scheduler_operations_payload,
     validate_source_refresh_brief_file,
     validate_source_refresh_brief_payload,
+    validate_phone_access_verify_file,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
 from mybroker.scenario import run_market_simulation, write_scenario_report, write_verdict
@@ -333,12 +335,32 @@ class LocalApplianceTests(unittest.TestCase):
                 phone_access_path=access_plan,
                 notification_path=notification,
                 memory_audit_path=root / "missing-memory-audit.json",
-                artifact_output_path=root / "daily-home.json",
-                surface_output_path=root / "daily-home.html",
+                artifact_output_path=root / "reports" / "runtime" / "daily-home.json",
+                surface_output_path=root / "reports" / "product" / "daily-home.html",
             )
-            daily_home_payload = json.loads((root / "daily-home.json").read_text(encoding="utf-8"))
+            daily_home_payload = json.loads((root / "reports" / "runtime" / "daily-home.json").read_text(encoding="utf-8"))
             daily_home_html = daily_home.read_text(encoding="utf-8")
-            daily_home_errors = validate_daily_operator_home_file(root / "daily-home.json")
+            daily_home_errors = validate_daily_operator_home_file(root / "reports" / "runtime" / "daily-home.json")
+            for linked_path in daily_home_payload["phone_links"].values():
+                candidate = Path(linked_path)
+                if not candidate.is_absolute() and candidate.as_posix() not in {
+                    "reports/product/daily-home.html",
+                    "reports/product/phone-access.html",
+                }:
+                    linked_file = root / candidate
+                    linked_file.parent.mkdir(parents=True, exist_ok=True)
+                    linked_file.write_text("placeholder", encoding="utf-8")
+            access_verify = write_phone_access_verify(
+                project_root=root,
+                phone_access_path=access_plan,
+                daily_home_path=root / "reports" / "product" / "daily-home.html",
+                today_path=today,
+                artifact_output_path=root / "reports" / "runtime" / "phone-access-verify.json",
+                surface_output_path=root / "reports" / "product" / "phone-access.html",
+            )
+            access_verify_payload = json.loads((root / "reports" / "runtime" / "phone-access-verify.json").read_text(encoding="utf-8"))
+            access_verify_html = access_verify.read_text(encoding="utf-8")
+            access_verify_errors = validate_phone_access_verify_file(root / "reports" / "runtime" / "phone-access-verify.json")
 
         self.assertIn("MyBroker Today", html)
         self.assertIn("오늘 시장 5분 브리프", html)
@@ -384,6 +406,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("TELEGRAM_BOT_TOKEN", notification_payload["required_env"])
         self.assertEqual(access_payload["schema_version"], "phone_access_plan.v1")
         self.assertEqual(access_payload["recommended_path"], "tailscale_serve_private")
+        self.assertEqual(access_payload["entrypoint"], "reports/product/daily-home.html")
+        self.assertTrue(access_payload["local_url"].endswith("/reports/product/daily-home.html"))
         self.assertIn("tailscale serve --bg 8787", {item["command"] for item in access_payload["commands"]})
         self.assertEqual(manifest_payload["schema_version"], "daily_archive.v1")
         self.assertIn("source_refresh_plan", manifest_payload["artifacts"])
@@ -455,6 +479,17 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("복사할 수 있는 로컬 응답", daily_home_html)
         self.assertNotIn("schema_version", daily_home_html)
         self.assertNotIn("--send", daily_home_html)
+        self.assertEqual(access_verify_payload["schema_version"], "phone_access_verify.v1")
+        self.assertEqual(access_verify_errors, [])
+        self.assertEqual(access_verify_payload["status"], "ready")
+        self.assertFalse(access_verify_payload["external_effect_performed"])
+        self.assertFalse(access_verify_payload["host_write_performed"])
+        self.assertFalse(access_verify_payload["public_exposure_performed"])
+        self.assertEqual(access_verify_payload["summary"]["missing_link_count"], 0)
+        self.assertTrue(access_verify_payload["summary"]["daily_home_local_url"].endswith("/reports/product/daily-home.html"))
+        self.assertIn("폰 접근 검증", access_verify_html)
+        self.assertIn("수동 테스트 명령", access_verify_html)
+        self.assertNotIn("schema_version", access_verify_html)
 
     def test_scheduler_run_once_executes_local_runner_without_host_write(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -1047,6 +1082,8 @@ class LocalApplianceTests(unittest.TestCase):
             readiness_errors = validate_daily_readiness_file(root / "reports" / "runtime" / "daily-readiness.json")
             daily_home_payload = json.loads((root / "reports" / "runtime" / "daily-home.json").read_text(encoding="utf-8"))
             daily_home_errors = validate_daily_operator_home_file(root / "reports" / "runtime" / "daily-home.json")
+            access_verify_payload = json.loads((root / "reports" / "runtime" / "phone-access-verify.json").read_text(encoding="utf-8"))
+            access_verify_errors = validate_phone_access_verify_file(root / "reports" / "runtime" / "phone-access-verify.json")
             source_refresh_brief_payload = json.loads((root / "reports" / "runtime" / "source-refresh-brief.json").read_text(encoding="utf-8"))
             source_refresh_brief_errors = validate_source_refresh_brief_file(root / "reports" / "runtime" / "source-refresh-brief.json")
             pattern_radar_payload = json.loads((root / "reports" / "runtime" / "agent-pattern-radar.json").read_text(encoding="utf-8"))
@@ -1073,6 +1110,7 @@ class LocalApplianceTests(unittest.TestCase):
             agenda_html = (root / "reports" / "product" / "daily-agenda.html").read_text(encoding="utf-8")
             readiness_html = (root / "reports" / "product" / "readiness.html").read_text(encoding="utf-8")
             daily_home_html = (root / "reports" / "product" / "daily-home.html").read_text(encoding="utf-8")
+            access_verify_html = (root / "reports" / "product" / "phone-access.html").read_text(encoding="utf-8")
             source_refresh_html = (root / "reports" / "product" / "source-refresh.html").read_text(encoding="utf-8")
             pattern_radar_html = (root / "reports" / "product" / "pattern-radar.html").read_text(encoding="utf-8")
             run_trace_html = (root / "reports" / "product" / "run-trace.html").read_text(encoding="utf-8")
@@ -1105,6 +1143,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("handoff", morning_payload["phone_links"])
         self.assertIn("handoff_apply", morning_payload["phone_links"])
         self.assertIn("daily_home", morning_payload["phone_links"])
+        self.assertIn("phone_access", morning_payload["phone_links"])
         self.assertIn("drift_review", morning_payload["phone_links"])
         self.assertIn("review", morning_payload["phone_links"])
         self.assertIn("review_prompt", morning_payload["phone_links"])
@@ -1138,6 +1177,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(item["name"] == "daily_agenda" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "daily_home" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "daily_home_surface" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "phone_access_verify" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "phone_access_verify_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "source_refresh_brief" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "scheduler_operations" for item in readiness_payload["artifacts"]))
         self.assertIn("source_refresh", readiness_payload["phone_links"])
@@ -1147,6 +1188,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("handoff", readiness_payload["phone_links"])
         self.assertIn("handoff_apply", readiness_payload["phone_links"])
         self.assertIn("daily_home", readiness_payload["phone_links"])
+        self.assertIn("phone_access", readiness_payload["phone_links"])
         self.assertIn("drift_review", readiness_payload["phone_links"])
         self.assertIn("review_prompt", readiness_payload["phone_links"])
         self.assertIn("review_effect", readiness_payload["phone_links"])
@@ -1211,7 +1253,17 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(daily_home_payload["summary"]["read_first"])
         self.assertEqual(daily_home_payload["phone_links"]["today"], "reports/product/today.html")
         self.assertEqual(daily_home_payload["phone_links"]["daily_home"], "reports/product/daily-home.html")
+        self.assertEqual(daily_home_payload["phone_links"]["phone_access"], "reports/product/phone-access.html")
         self.assertGreaterEqual(len(daily_home_payload["daily_route"]), 6)
+        self.assertEqual(access_verify_payload["schema_version"], "phone_access_verify.v1")
+        self.assertEqual(access_verify_errors, [])
+        self.assertEqual(access_verify_payload["status"], "ready")
+        self.assertFalse(access_verify_payload["external_effect_performed"])
+        self.assertFalse(access_verify_payload["host_write_performed"])
+        self.assertFalse(access_verify_payload["live_network_performed"])
+        self.assertFalse(access_verify_payload["public_exposure_performed"])
+        self.assertEqual(access_verify_payload["summary"]["missing_link_count"], 0)
+        self.assertTrue(access_verify_payload["summary"]["daily_home_local_url"].endswith("/reports/product/daily-home.html"))
         self.assertEqual(drift_review_payload["schema_version"], "local_drift_review.v1")
         self.assertEqual(drift_review_errors, [])
         self.assertFalse(drift_review_payload["external_effect_performed"])
@@ -1265,6 +1317,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("daily_home", manifest_payload["artifacts"])
         self.assertIn("daily_home_surface", manifest_payload["artifacts"])
         self.assertIn("phone_access", manifest_payload["artifacts"])
+        self.assertIn("phone_access_verify", manifest_payload["artifacts"])
+        self.assertIn("phone_access_verify_surface", manifest_payload["artifacts"])
         self.assertIn("drift_review", manifest_payload["artifacts"])
         self.assertIn("drift_review_surface", manifest_payload["artifacts"])
         self.assertIn("source_refresh_brief", manifest_payload["artifacts"])
@@ -1288,6 +1342,9 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("복사할 수 있는 로컬 응답", daily_home_html)
         self.assertNotIn("schema_version", daily_home_html)
         self.assertNotIn("--send", daily_home_html)
+        self.assertIn("폰 접근 검증", access_verify_html)
+        self.assertIn("오늘 첫 화면을 폰에서 열 준비", access_verify_html)
+        self.assertNotIn("schema_version", access_verify_html)
         self.assertIn("오늘 근거 새로고침 판단", source_refresh_html)
         self.assertIn("Source actions", source_refresh_html)
         self.assertIn("개인 애널리스트 방식 업데이트", pattern_radar_html)

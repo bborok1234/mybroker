@@ -1,9 +1,10 @@
 {
   "schema_version": "phone_access_plan.v1",
-  "generated_at": "2026-06-05T06:42:15.649687+00:00",
+  "generated_at": "2026-06-05T21:24:40.161882+00:00",
   "recommended_path": "tailscale_serve_private",
-  "local_url": "http://localhost:8787/reports/product/today.html",
-  "private_phone_url": "https://mybroker-mac/reports/product/today.html",
+  "local_url": "http://localhost:8787/reports/product/daily-home.html",
+  "private_phone_url": "https://mybroker-mac/reports/product/daily-home.html",
+  "entrypoint": "reports/product/daily-home.html",
   "commands": [
     {
       "purpose": "serve local MyBroker artifacts",

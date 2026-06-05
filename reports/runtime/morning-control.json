@@ -1,6 +1,6 @@
 {
   "schema_version": "morning_control_packet.v1",
-  "generated_at": "2026-06-05T20:38:20.816052+00:00",
+  "generated_at": "2026-06-05T21:24:40.364830+00:00",
   "status": "operator_review",
   "run_id": "daily-research",
   "read_first": {
@@ -178,6 +178,8 @@
     }
   ],
   "phone_links": {
+    "daily_home": "reports/product/daily-home.html",
+    "phone_access": "reports/product/phone-access.html",
     "morning": "reports/product/morning.html",
     "readiness": "reports/product/readiness.html",
     "scheduler": "reports/product/scheduler.html",

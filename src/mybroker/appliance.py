@@ -36,6 +36,7 @@ ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
 AGENT_PATTERN_RADAR_SCHEMA_VERSION = "agent_pattern_radar.v1"
 PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
+PHONE_ACCESS_VERIFY_SCHEMA_VERSION = "phone_access_verify.v1"
 OPERATOR_DECISION_PACKET_SCHEMA_VERSION = "operator_decision_packet.v1"
 OPERATOR_DECISION_APPLY_SCHEMA_VERSION = "operator_decision_apply.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
@@ -81,6 +82,8 @@ DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.j
 DEFAULT_AGENT_PATTERN_RADAR_OUTPUT = Path("reports/runtime/agent-pattern-radar.json")
 DEFAULT_AGENT_PATTERN_RADAR_SURFACE = Path("reports/product/pattern-radar.html")
 DEFAULT_PHONE_ACCESS_OUTPUT = Path("reports/runtime/phone-access.json")
+DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT = Path("reports/runtime/phone-access-verify.json")
+DEFAULT_PHONE_ACCESS_VERIFY_SURFACE = Path("reports/product/phone-access.html")
 DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT = Path("reports/runtime/operator-decision-packet.json")
 DEFAULT_OPERATOR_DECISION_APPLY_OUTPUT = Path("reports/runtime/operator-decision-apply.json")
 DEFAULT_MEMORY_INDEX_OUTPUT = Path("reports/memory/index.json")
@@ -628,8 +631,9 @@ def write_phone_access_plan(
         "schema_version": PHONE_ACCESS_SCHEMA_VERSION,
         "generated_at": _now(),
         "recommended_path": "tailscale_serve_private",
-        "local_url": f"http://localhost:{port}/reports/product/today.html",
-        "private_phone_url": f"https://{tailnet_host}/reports/product/today.html",
+        "local_url": f"http://localhost:{port}/reports/product/daily-home.html",
+        "private_phone_url": f"https://{tailnet_host}/reports/product/daily-home.html",
+        "entrypoint": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
         "commands": [
             {
                 "purpose": "serve local MyBroker artifacts",
@@ -657,6 +661,303 @@ def write_phone_access_plan(
         ],
     }
     return write_json(payload, output_path)
+
+
+def _project_path(root: Path, path: str | Path) -> Path:
+    target = Path(path)
+    return target if target.is_absolute() else root / target
+
+
+def _local_href_targets(html_text: str) -> list[str]:
+    targets: list[str] = []
+    marker = "href='"
+    for part in html_text.split(marker)[1:]:
+        href = part.split("'", 1)[0].strip()
+        if href:
+            targets.append(href)
+    marker = 'href="'
+    for part in html_text.split(marker)[1:]:
+        href = part.split('"', 1)[0].strip()
+        if href:
+            targets.append(href)
+    return targets
+
+
+def _verify_check(name: str, passed: bool, message: str, *, evidence: dict[str, Any] | None = None) -> dict[str, Any]:
+    return {
+        "name": name,
+        "status": "pass" if passed else "fail",
+        "message": message,
+        "evidence": evidence or {},
+    }
+
+
+def build_phone_access_verify(
+    *,
+    project_root: str | Path = ".",
+    phone_access_path: str | Path = DEFAULT_PHONE_ACCESS_OUTPUT,
+    daily_home_path: str | Path = DEFAULT_DAILY_HOME_SURFACE,
+    today_path: str | Path = DEFAULT_TODAY_OUTPUT,
+    port: int = 8787,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    root = Path(project_root).resolve()
+    generated = generated_at or datetime.now(timezone.utc)
+    phone_access_file = _project_path(root, phone_access_path)
+    daily_home_file = _project_path(root, daily_home_path)
+    today_file = _project_path(root, today_path)
+    phone_access = load_json(phone_access_file) if phone_access_file.exists() else {}
+    commands = [item.get("command", "") for item in phone_access.get("commands", [])]
+    lowered_commands = " ".join(commands).lower()
+    public_fragments = ["funnel", "cloudflare", "ngrok", "public_tunnel", "0.0.0.0"]
+    hrefs: list[str] = []
+    missing_hrefs: list[str] = []
+    optional_missing_hrefs: list[str] = []
+    optional_hrefs = {
+        DEFAULT_PHONE_ACCESS_VERIFY_SURFACE.as_posix(),
+        DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix(),
+        DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE.as_posix(),
+        DEFAULT_COUNCIL_RESPONSE_APPLY_SURFACE.as_posix(),
+    }
+    if daily_home_file.exists():
+        html_text = daily_home_file.read_text(encoding="utf-8")
+        for href in _local_href_targets(html_text):
+            parsed = urllib.parse.urlparse(href)
+            if parsed.scheme in {"http", "https", "mailto", "tel"} or href.startswith("#"):
+                continue
+            href_path = parsed.path
+            if not href_path:
+                continue
+            hrefs.append(href_path)
+            if href_path in optional_hrefs:
+                if not _project_path(root, href_path).exists():
+                    optional_missing_hrefs.append(href_path)
+                continue
+            if not _project_path(root, href_path).exists():
+                missing_hrefs.append(href_path)
+    checks = [
+        _verify_check(
+            "phone_access_plan",
+            phone_access.get("schema_version") == PHONE_ACCESS_SCHEMA_VERSION,
+            "Private-first access plan exists.",
+            evidence={"path": phone_access_file.as_posix(), "schema_version": phone_access.get("schema_version", "missing")},
+        ),
+        _verify_check(
+            "daily_home_entrypoint",
+            daily_home_file.exists(),
+            "Daily home exists as the first phone entrypoint.",
+            evidence={"path": daily_home_file.as_posix()},
+        ),
+        _verify_check(
+            "today_surface",
+            today_file.exists(),
+            "Today surface exists for the first reading step.",
+            evidence={"path": today_file.as_posix()},
+        ),
+        _verify_check(
+            "local_static_server_command",
+            any("python3 -m http.server" in command for command in commands),
+            "A reversible local static server command is present but not executed.",
+            evidence={"commands": commands},
+        ),
+        _verify_check(
+            "private_share_command",
+            any("tailscale serve --bg" in command for command in commands),
+            "A private tailnet share command is present but not executed.",
+            evidence={"commands": commands},
+        ),
+        _verify_check(
+            "rollback_command",
+            any("tailscale serve reset" in command for command in commands),
+            "A private serving rollback command is present.",
+            evidence={"commands": commands},
+        ),
+        _verify_check(
+            "no_public_default",
+            not any(fragment in lowered_commands for fragment in public_fragments)
+            and {"public_tunnel", "funnel", "unauthenticated_public_hosting"}.issubset(set(phone_access.get("do_not_default_to", []))),
+            "Access guidance remains private-first and does not default to public exposure.",
+            evidence={"do_not_default_to": phone_access.get("do_not_default_to", []), "blocked_fragments": public_fragments},
+        ),
+        _verify_check(
+            "daily_home_local_links",
+            daily_home_file.exists() and not missing_hrefs,
+            "Daily home local links resolve to files in the project workspace.",
+            evidence={"checked_count": len(hrefs), "missing": missing_hrefs[:12], "optional_missing": optional_missing_hrefs[:12]},
+        ),
+    ]
+    fail_count = sum(1 for check in checks if check["status"] == "fail")
+    payload = {
+        "schema_version": PHONE_ACCESS_VERIFY_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": "ready" if fail_count == 0 else "blocked",
+        "summary": {
+            "entrypoint": Path(daily_home_path).as_posix(),
+            "daily_home_local_url": f"http://localhost:{port}/{Path(daily_home_path).as_posix()}",
+            "private_phone_url": phone_access.get("private_phone_url", ""),
+            "check_count": len(checks),
+            "fail_count": fail_count,
+            "missing_link_count": len(missing_hrefs),
+            "optional_missing_link_count": len(optional_missing_hrefs),
+        },
+        "checks": checks,
+        "safe_manual_commands": [
+            {
+                "label": "로컬 정적 서버",
+                "command": f"cd {root.as_posix()} && python3 -m http.server {port}",
+                "requires_approval": False,
+                "effect": "현재 터미널에서만 로컬 파일을 서빙합니다. 중지하려면 Ctrl-C를 누릅니다.",
+            },
+            {
+                "label": "비공개 tailnet 공유",
+                "command": f"tailscale serve --bg {port}",
+                "requires_approval": True,
+                "effect": "폰에서 tailnet URL로 접근할 수 있게 합니다. 별도 private_network_exposure 승인이 필요합니다.",
+            },
+        ],
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "live_network_performed": False,
+        "public_exposure_performed": False,
+        "safety_boundary": [
+            "verification_reads_existing_artifacts_only",
+            "does_not_start_server",
+            "does_not_run_tailscale",
+            "does_not_open_public_tunnel",
+            "does_not_send_notifications",
+            "does_not_write_host_state",
+            "no_account_access",
+            "no_live_trading",
+        ],
+        "next_action": (
+            "Phone access is ready to test locally. Start the local server manually, then use private phone access only after scoped approval."
+            if fail_count == 0
+            else "Regenerate appliance run/access artifacts before testing phone access."
+        ),
+    }
+    return payload
+
+
+def write_phone_access_verify(
+    *,
+    artifact_output_path: str | Path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_PHONE_ACCESS_VERIFY_SURFACE,
+    **paths: Any,
+) -> Path:
+    payload = build_phone_access_verify(**paths)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_phone_access_verify(payload), encoding="utf-8")
+    return target
+
+
+def validate_phone_access_verify_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != PHONE_ACCESS_VERIFY_SCHEMA_VERSION:
+        errors.append("schema_version must be phone_access_verify.v1")
+    if payload.get("status") not in {"ready", "blocked"}:
+        errors.append("status must be ready or blocked")
+    if not payload.get("checks"):
+        errors.append("checks must not be empty")
+    for field in ["external_effect_performed", "host_write_performed", "live_network_performed", "public_exposure_performed"]:
+        if payload.get(field) is not False:
+            errors.append(f"{field} must be false")
+    for item in payload.get("checks", []):
+        if item.get("status") not in {"pass", "fail"}:
+            errors.append(f"check {item.get('name', '<missing>')} has invalid status")
+    if "verification_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include verification_reads_existing_artifacts_only")
+    if not payload.get("summary", {}).get("daily_home_local_url", "").endswith("daily-home.html"):
+        errors.append("summary.daily_home_local_url must point to daily-home.html")
+    return errors
+
+
+def validate_phone_access_verify_file(path: str | Path) -> list[str]:
+    return validate_phone_access_verify_payload(load_json(path))
+
+
+def render_phone_access_verify(payload: dict[str, Any]) -> str:
+    status_label = "폰 접근 테스트 준비됨" if payload.get("status") == "ready" else "폰 접근 전 확인 필요"
+    check_rows = "".join(
+        "<tr>"
+        f"<td><strong>{esc(check.get('name', ''))}</strong><span>{esc(check.get('message', ''))}</span></td>"
+        f"<td>{esc(check.get('status', ''))}</td>"
+        "</tr>"
+        for check in payload.get("checks", [])
+    )
+    command_cards = "".join(
+        "<article class='command'>"
+        f"<span>{esc(command.get('label', 'command'))}</span>"
+        f"<code>{esc(command.get('command', ''))}</code>"
+        f"<p>{esc(command.get('effect', ''))}</p>"
+        "</article>"
+        for command in payload.get("safe_manual_commands", [])
+    )
+    summary = payload.get("summary", {})
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Phone Access</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:820px; margin:0 auto; padding:16px; }}
+a {{ color:var(--blue); font-weight:900; text-decoration:none; }}
+.eyebrow,.command span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 8px; font-size:20px; }}
+p,td span {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.command {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:30px; line-height:1.08; }}
+.grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.metric,.command {{ border:1px solid var(--line); border-radius:8px; background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:18px; overflow-wrap:anywhere; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+table {{ width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }}
+td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }}
+td strong,td span {{ display:block; }}
+@media (max-width:680px) {{ main {{ padding:12px; }} h1 {{ font-size:30px; }} .grid {{ grid-template-columns:1fr; }} table {{ font-size:13px; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Phone Access · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>폰 접근 검증</h1>
+<p>이 화면은 서버를 켜거나 Tailscale을 실행하지 않습니다. 오늘 첫 화면을 폰에서 열 준비가 되었는지만 확인합니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">검증 결과</span>
+<strong class="status">{esc(status_label)}</strong>
+<div class="grid">
+<article class="metric"><span>첫 화면</span><strong>{esc(summary.get('entrypoint', ''))}</strong></article>
+<article class="metric"><span>로컬 URL</span><strong>{esc(summary.get('daily_home_local_url', ''))}</strong></article>
+<article class="metric"><span>비공개 URL</span><strong>{esc(summary.get('private_phone_url', ''))}</strong></article>
+<article class="metric"><span>깨진 링크</span><strong>{esc(summary.get('missing_link_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>확인한 항목</h2>
+<table><tbody>{check_rows}</tbody></table>
+</section>
+<section class="section">
+<h2>수동 테스트 명령</h2>
+<div class="grid">{command_cards}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 proof는 기존 파일만 읽습니다. 서버 시작, Tailscale 실행, 공용 터널, 알림 전송, host write, 계좌 접근, 주문 실행을 하지 않습니다.</p>
+<p>{esc(payload.get('next_action', ''))}</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def write_runtime_doctor(
@@ -1665,6 +1966,8 @@ def build_daily_readiness(
     artifact_specs = [
         ("daily_home", DEFAULT_DAILY_HOME_OUTPUT, "control_artifact", False),
         ("daily_home_surface", DEFAULT_DAILY_HOME_SURFACE, "phone_surface", False),
+        ("phone_access_verify", DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT, "control_artifact", False),
+        ("phone_access_verify_surface", DEFAULT_PHONE_ACCESS_VERIFY_SURFACE, "phone_surface", False),
         ("today_surface", DEFAULT_TODAY_OUTPUT, "phone_surface", True),
         ("daily_agenda_surface", DEFAULT_DAILY_BRIEF_AGENDA_SURFACE, "phone_surface", True),
         ("daily_agenda", DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT, "machine_artifact", True),
@@ -1743,6 +2046,7 @@ def build_daily_readiness(
         "scheduler": scheduler,
         "phone_links": {
             "daily_home": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
+            "phone_access": DEFAULT_PHONE_ACCESS_VERIFY_SURFACE.as_posix(),
             "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
@@ -6444,6 +6748,7 @@ def build_morning_control_packet(
         "command_bar": command_bar,
         "phone_links": {
             "daily_home": Path(daily_home_surface_path).as_posix(),
+            "phone_access": DEFAULT_PHONE_ACCESS_VERIFY_SURFACE.as_posix(),
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "readiness": Path(readiness_surface_path).as_posix(),
             "scheduler": Path(scheduler_surface_path).as_posix(),
@@ -6660,6 +6965,7 @@ def build_daily_operator_home(
     run_ledger_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
     scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
     phone_access_path: str | Path = DEFAULT_PHONE_ACCESS_OUTPUT,
+    phone_access_verify_path: str | Path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT,
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
     generated_at: datetime | None = None,
@@ -6672,6 +6978,7 @@ def build_daily_operator_home(
     run_ledger = _load_optional_json(run_ledger_path)
     scheduler = _load_optional_json(scheduler_operations_path)
     phone_access = _load_optional_json(phone_access_path)
+    phone_access_verify = _load_optional_json(phone_access_verify_path)
     notification = _load_optional_json(notification_path)
     memory_audit = _load_optional_json(memory_audit_path)
     read_first = morning.get("read_first", {})
@@ -6698,6 +7005,7 @@ def build_daily_operator_home(
         "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
         "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
         "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
+        "phone_access": DEFAULT_PHONE_ACCESS_VERIFY_SURFACE.as_posix(),
         "phone_access_plan": Path(phone_access_path).as_posix(),
         "notification": Path(notification_path).as_posix(),
     }
@@ -6788,6 +7096,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="run_ledger", path=run_ledger_path, payload=run_ledger),
             _daily_home_artifact_status(name="scheduler", path=scheduler_operations_path, payload=scheduler),
             _daily_home_artifact_status(name="phone_access", path=phone_access_path, payload=phone_access),
+            _daily_home_artifact_status(name="phone_access_verify", path=phone_access_verify_path, payload=phone_access_verify),
             _daily_home_artifact_status(name="notification", path=notification_path, payload=notification),
         ],
         "external_effect_performed": False,

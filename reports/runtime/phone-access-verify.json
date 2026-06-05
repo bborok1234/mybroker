@@ -1,0 +1,135 @@
+{
+  "schema_version": "phone_access_verify.v1",
+  "generated_at": "2026-06-05T21:24:41.544050+00:00",
+  "status": "ready",
+  "summary": {
+    "entrypoint": "reports/product/daily-home.html",
+    "daily_home_local_url": "http://localhost:8787/reports/product/daily-home.html",
+    "private_phone_url": "https://mybroker-mac/reports/product/daily-home.html",
+    "check_count": 8,
+    "fail_count": 0,
+    "missing_link_count": 0,
+    "optional_missing_link_count": 0
+  },
+  "checks": [
+    {
+      "name": "phone_access_plan",
+      "status": "pass",
+      "message": "Private-first access plan exists.",
+      "evidence": {
+        "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/runtime/phone-access.json",
+        "schema_version": "phone_access_plan.v1"
+      }
+    },
+    {
+      "name": "daily_home_entrypoint",
+      "status": "pass",
+      "message": "Daily home exists as the first phone entrypoint.",
+      "evidence": {
+        "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/daily-home.html"
+      }
+    },
+    {
+      "name": "today_surface",
+      "status": "pass",
+      "message": "Today surface exists for the first reading step.",
+      "evidence": {
+        "path": "/Users/mirlim/sidejob/mybroker/mybroker/reports/product/today.html"
+      }
+    },
+    {
+      "name": "local_static_server_command",
+      "status": "pass",
+      "message": "A reversible local static server command is present but not executed.",
+      "evidence": {
+        "commands": [
+          "cd <mybroker-repo> && python3 -m http.server 8787",
+          "tailscale serve --bg 8787",
+          "tailscale serve reset"
+        ]
+      }
+    },
+    {
+      "name": "private_share_command",
+      "status": "pass",
+      "message": "A private tailnet share command is present but not executed.",
+      "evidence": {
+        "commands": [
+          "cd <mybroker-repo> && python3 -m http.server 8787",
+          "tailscale serve --bg 8787",
+          "tailscale serve reset"
+        ]
+      }
+    },
+    {
+      "name": "rollback_command",
+      "status": "pass",
+      "message": "A private serving rollback command is present.",
+      "evidence": {
+        "commands": [
+          "cd <mybroker-repo> && python3 -m http.server 8787",
+          "tailscale serve --bg 8787",
+          "tailscale serve reset"
+        ]
+      }
+    },
+    {
+      "name": "no_public_default",
+      "status": "pass",
+      "message": "Access guidance remains private-first and does not default to public exposure.",
+      "evidence": {
+        "do_not_default_to": [
+          "public_tunnel",
+          "funnel",
+          "unauthenticated_public_hosting"
+        ],
+        "blocked_fragments": [
+          "funnel",
+          "cloudflare",
+          "ngrok",
+          "public_tunnel",
+          "0.0.0.0"
+        ]
+      }
+    },
+    {
+      "name": "daily_home_local_links",
+      "status": "pass",
+      "message": "Daily home local links resolve to files in the project workspace.",
+      "evidence": {
+        "checked_count": 20,
+        "missing": [],
+        "optional_missing": []
+      }
+    }
+  ],
+  "safe_manual_commands": [
+    {
+      "label": "로컬 정적 서버",
+      "command": "cd /Users/mirlim/sidejob/mybroker/mybroker && python3 -m http.server 8787",
+      "requires_approval": false,
+      "effect": "현재 터미널에서만 로컬 파일을 서빙합니다. 중지하려면 Ctrl-C를 누릅니다."
+    },
+    {
+      "label": "비공개 tailnet 공유",
+      "command": "tailscale serve --bg 8787",
+      "requires_approval": true,
+      "effect": "폰에서 tailnet URL로 접근할 수 있게 합니다. 별도 private_network_exposure 승인이 필요합니다."
+    }
+  ],
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "live_network_performed": false,
+  "public_exposure_performed": false,
+  "safety_boundary": [
+    "verification_reads_existing_artifacts_only",
+    "does_not_start_server",
+    "does_not_run_tailscale",
+    "does_not_open_public_tunnel",
+    "does_not_send_notifications",
+    "does_not_write_host_state",
+    "no_account_access",
+    "no_live_trading"
+  ],
+  "next_action": "Phone access is ready to test locally. Start the local server manually, then use private phone access only after scoped approval."
+}

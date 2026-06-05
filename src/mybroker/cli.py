@@ -59,6 +59,8 @@ from mybroker.appliance import (
     DEFAULT_MORNING_CONTROL_OUTPUT,
     DEFAULT_MORNING_CONTROL_SURFACE,
     DEFAULT_PHONE_ACCESS_OUTPUT,
+    DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT,
+    DEFAULT_PHONE_ACCESS_VERIFY_SURFACE,
     DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
     DEFAULT_DAILY_RUN_LEDGER_SURFACE,
     DEFAULT_RUN_TRACE_OUTPUT,
@@ -108,6 +110,7 @@ from mybroker.appliance import (
     write_operator_decision_apply,
     write_operator_decision_packet,
     write_phone_access_plan,
+    write_phone_access_verify,
     write_daily_run_ledger,
     write_run_trace,
     write_runtime_doctor,
@@ -143,6 +146,7 @@ from mybroker.appliance import (
     validate_run_trace_file,
     validate_scheduler_operations_file,
     validate_source_refresh_brief_file,
+    validate_phone_access_verify_file,
 )
 from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
@@ -342,6 +346,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_agenda_parser.add_argument("agenda_path")
     validate_daily_home_parser = subcommands.add_parser("validate-daily-home", help="Validate a daily_operator_home.v1 artifact.")
     validate_daily_home_parser.add_argument("daily_home_path")
+    validate_phone_access_verify_parser = subcommands.add_parser("validate-phone-access-verify", help="Validate a phone_access_verify.v1 artifact.")
+    validate_phone_access_verify_parser.add_argument("phone_access_verify_path")
     validate_readiness_parser = subcommands.add_parser("validate-daily-readiness", help="Validate a daily_readiness.v1 artifact.")
     validate_readiness_parser.add_argument("readiness_path")
     validate_refresh_plan_parser = subcommands.add_parser("validate-source-refresh-plan", help="Validate a source_refresh_plan.v1 artifact.")
@@ -436,6 +442,14 @@ def main(argv: list[str] | None = None) -> int:
     appliance_access_parser.add_argument("--output", default=DEFAULT_PHONE_ACCESS_OUTPUT.as_posix())
     appliance_access_parser.add_argument("--port", type=int, default=8787)
     appliance_access_parser.add_argument("--tailnet-host", default="mybroker-mac")
+    appliance_access_verify_parser = appliance_subcommands.add_parser("access-verify", help="Verify local phone access readiness without starting services.")
+    appliance_access_verify_parser.add_argument("--project-root", default=".")
+    appliance_access_verify_parser.add_argument("--phone-access", default=DEFAULT_PHONE_ACCESS_OUTPUT.as_posix())
+    appliance_access_verify_parser.add_argument("--daily-home", default=DEFAULT_DAILY_HOME_SURFACE.as_posix())
+    appliance_access_verify_parser.add_argument("--today", default=DEFAULT_TODAY_OUTPUT.as_posix())
+    appliance_access_verify_parser.add_argument("--port", type=int, default=8787)
+    appliance_access_verify_parser.add_argument("--artifact-output", default=DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT.as_posix())
+    appliance_access_verify_parser.add_argument("--output", default=DEFAULT_PHONE_ACCESS_VERIFY_SURFACE.as_posix())
     appliance_decision_parser = appliance_subcommands.add_parser("decision-packet", help="Write pending operator decisions for external-effect appliance gates.")
     appliance_decision_parser.add_argument("--project-root", default=".")
     appliance_decision_parser.add_argument("--output", default=DEFAULT_OPERATOR_DECISION_PACKET_OUTPUT.as_posix())
@@ -516,6 +530,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_home_parser.add_argument("--run-ledger", default=DEFAULT_DAILY_RUN_LEDGER_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--scheduler-operations", default=DEFAULT_SCHEDULER_OPERATIONS_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--phone-access", default=DEFAULT_PHONE_ACCESS_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--phone-access-verify", default=DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_HOME_OUTPUT.as_posix())
@@ -1087,6 +1102,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-phone-access-verify":
+        errors = validate_phone_access_verify_file(args.phone_access_verify_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-daily-readiness":
         errors = validate_daily_readiness_file(args.readiness_path)
         if errors:
@@ -1389,6 +1411,24 @@ def main(argv: list[str] | None = None) -> int:
             path = write_phone_access_plan(output_path=args.output, port=args.port, tailnet_host=args.tailnet_host)
             print(json.dumps({"phone_access": path.as_posix()}, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "access-verify":
+            path = write_phone_access_verify(
+                project_root=args.project_root,
+                phone_access_path=args.phone_access,
+                daily_home_path=args.daily_home,
+                today_path=args.today,
+                port=args.port,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "phone_access_verify": args.artifact_output,
+                "phone_access_surface": path.as_posix(),
+                "status": payload["status"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "decision-packet":
             path = write_operator_decision_packet(project_root=args.project_root, output_path=args.output)
             payload = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -1568,6 +1608,7 @@ def main(argv: list[str] | None = None) -> int:
                 run_ledger_path=args.run_ledger,
                 scheduler_operations_path=args.scheduler_operations,
                 phone_access_path=args.phone_access,
+                phone_access_verify_path=args.phone_access_verify,
                 notification_path=args.notification,
                 memory_audit_path=args.memory_audit,
                 artifact_output_path=args.artifact_output,
@@ -2443,6 +2484,8 @@ def main(argv: list[str] | None = None) -> int:
             scheduler_operations_surface_path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE
             daily_home_artifact_path = DEFAULT_DAILY_HOME_OUTPUT
             daily_home_surface_path = DEFAULT_DAILY_HOME_SURFACE
+            phone_access_verify_artifact_path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT
+            phone_access_verify_surface_path = DEFAULT_PHONE_ACCESS_VERIFY_SURFACE
             memory_audit_artifact_path = DEFAULT_MEMORY_AUDIT_OUTPUT
             memory_audit_surface_path = DEFAULT_MEMORY_AUDIT_SURFACE
             analyst_council_artifact_path = DEFAULT_ANALYST_COUNCIL_OUTPUT
@@ -2884,6 +2927,14 @@ def main(argv: list[str] | None = None) -> int:
                 notification_path=notification_path,
                 memory_audit_path=memory_audit_artifact_path,
             )
+            written_phone_access_verify = write_phone_access_verify(
+                project_root=".",
+                phone_access_path=phone_access_path,
+                daily_home_path=daily_home_surface_path,
+                today_path=written_today,
+                artifact_output_path=phone_access_verify_artifact_path,
+                surface_output_path=phone_access_verify_surface_path,
+            )
             written_readiness = write_daily_readiness(
                 project_root=".",
                 artifact_output_path=readiness_artifact_path,
@@ -2903,12 +2954,22 @@ def main(argv: list[str] | None = None) -> int:
                 notification_path=notification_path,
                 memory_audit_path=memory_audit_artifact_path,
             )
+            written_phone_access_verify = write_phone_access_verify(
+                project_root=".",
+                phone_access_path=phone_access_path,
+                daily_home_path=daily_home_surface_path,
+                today_path=written_today,
+                artifact_output_path=phone_access_verify_artifact_path,
+                surface_output_path=phone_access_verify_surface_path,
+            )
             add_archive_artifacts(
                 manifest_path=archive_manifest,
                 artifacts={
                     "daily_home": daily_home_artifact_path,
                     "daily_home_surface": written_daily_home,
                     "phone_access": phone_access_path,
+                    "phone_access_verify": phone_access_verify_artifact_path,
+                    "phone_access_verify_surface": written_phone_access_verify,
                     "source_refresh_brief": source_refresh_brief_artifact_path,
                     "source_refresh_brief_surface": written_source_refresh_brief,
                     "scheduler_operations": scheduler_operations_artifact_path,
@@ -2951,6 +3012,8 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_agenda_surface": written_agenda.as_posix(),
                 "daily_home": daily_home_artifact_path.as_posix(),
                 "daily_home_surface": written_daily_home.as_posix(),
+                "phone_access_verify": phone_access_verify_artifact_path.as_posix(),
+                "phone_access_verify_surface": written_phone_access_verify.as_posix(),
                 "daily_readiness": readiness_artifact_path.as_posix(),
                 "daily_readiness_surface": written_readiness.as_posix(),
                 "daily_review": review_artifact_path.as_posix(),
