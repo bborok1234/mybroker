@@ -733,6 +733,7 @@ def write_today_surface(
     memory_path: str | Path,
     evidence_path: str | Path,
     brief_path: str | Path,
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -741,6 +742,7 @@ def write_today_surface(
     verdict = load_json(verdict_path)
     memory = load_json(memory_path)
     evidence = load_json(evidence_path)
+    vault = load_json(vault_path) if Path(vault_path).exists() else {}
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
@@ -749,6 +751,7 @@ def write_today_surface(
             verdict=verdict,
             memory=memory,
             evidence=evidence,
+            vault_notes=_vault_notes_for_memory(vault),
             brief_path=Path(brief_path),
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
@@ -764,6 +767,7 @@ def render_today_surface(
     verdict: dict[str, Any],
     memory: dict[str, Any],
     evidence: dict[str, Any],
+    vault_notes: list[dict[str, Any]],
     brief_path: Path,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
@@ -783,6 +787,15 @@ def render_today_surface(
         "</article>"
         for topic in memory_topics[:5]
     ) or "<p>아직 누적 주제 기억이 없습니다.</p>"
+    vault_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(note.get('topic_name', 'Vault'))}</span>"
+        f"<strong>{esc(note.get('title', ''))}</strong>"
+        f"<p>{esc(' · '.join(note.get('key_takeaways', [])[:2]))}</p>"
+        f"<small>{esc(note.get('source_path', ''))}</small>"
+        "</article>"
+        for note in _today_vault_notes(vault_notes=vault_notes, memory_topics=memory_topics)[:4]
+    ) or "<p>오늘 연결된 vault 원천 노트가 없습니다.</p>"
     path_cards = "".join(
         "<article class='path'>"
         f"<span>{esc(path.get('probability_label', ''))}</span>"
@@ -814,7 +827,7 @@ def render_today_surface(
         if memory_surface_path
         else "<span>누적 기억 없음</span>"
     )
-    questions = _daily_questions(memory_topics, evidence)
+    questions = _daily_questions(memory_topics, evidence, vault_notes)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
     return f"""<!doctype html>
@@ -831,7 +844,7 @@ a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
 main {{ max-width:760px; margin:0 auto; padding:16px; }}
 header {{ padding:26px 0 16px; }}
 .eyebrow {{ color:var(--green); font-size:12px; font-weight:900; }}
-h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }}
 h2 {{ margin:0 0 12px; font-size:20px; }}
 h3 {{ margin:0 0 8px; font-size:17px; }}
 p {{ margin:0; color:var(--muted); }}
@@ -848,14 +861,14 @@ p {{ margin:0; color:var(--muted); }}
 .links a,.links span {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
 ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 .boundary {{ border-left:4px solid var(--green); }}
-@media (max-width:520px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .links {{ grid-template-columns:1fr; }} }}
+@media (max-width:520px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; line-height:1.14; }} .links {{ grid-template-columns:1fr; }} }}
 </style>
 </head>
 <body>
 <main>
 <header>
 <span class="eyebrow">MyBroker Today · {esc(_short_date(generated_at))}</span>
-<h1>오늘 시장을 이해하기 위한 5분 브리프</h1>
+<h1>오늘 시장 5분 브리프</h1>
 </header>
 <section class="hero">
 <span class="eyebrow">가장 먼저 볼 것</span>
@@ -865,6 +878,10 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <section class="section">
 <h2>오늘의 주제 기억</h2>
 <div class="stack">{theme_cards}</div>
+</section>
+<section class="section">
+<h2>Vault에서 다시 볼 원천 노트</h2>
+<div class="stack">{vault_cards}</div>
 </section>
 <section class="section">
 <h2>가능한 세 가지 경로</h2>
@@ -1511,16 +1528,32 @@ def _post_form(url: str, data: bytes) -> dict[str, Any]:
     return parsed
 
 
-def _daily_questions(memory_topics: list[dict[str, Any]], evidence: dict[str, Any]) -> list[str]:
+def _daily_questions(memory_topics: list[dict[str, Any]], evidence: dict[str, Any], vault_notes: list[dict[str, Any]] | None = None) -> list[str]:
     questions = []
     for topic in memory_topics[:3]:
         daily = topic.get("daily_questions", [])
         if daily:
             questions.append(daily[0])
+    for note in (vault_notes or [])[:2]:
+        title = note.get("title", "")
+        if title:
+            questions.append(f"Vault 노트 '{title}'의 원천 근거가 오늘 자료와 같은 방향을 가리키나요?")
     if evidence.get("collection_gaps"):
         questions.append("오늘 부족한 근거가 결론의 강도를 얼마나 낮추나요?")
     questions.append("이 브리프가 틀렸다고 판단할 가장 빠른 반대 신호는 무엇인가요?")
     return questions[:5]
+
+
+def _today_vault_notes(*, vault_notes: list[dict[str, Any]], memory_topics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    topic_ids = {topic.get("topic_id", "") for topic in memory_topics[:5]}
+    topic_names = {topic.get("name", "").lower() for topic in memory_topics[:5]}
+    matched = []
+    fallback = []
+    for note in vault_notes:
+        fallback.append(note)
+        if note.get("topic_id") in topic_ids or note.get("topic_name", "").lower() in topic_names:
+            matched.append(note)
+    return matched or fallback
 
 
 def _vault_notes_for_memory(vault: dict[str, Any]) -> list[dict[str, Any]]:

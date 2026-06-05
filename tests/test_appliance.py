@@ -67,6 +67,7 @@ class LocalApplianceTests(unittest.TestCase):
                 memory_path=memory_path,
                 evidence_path=evidence_path,
                 brief_path=brief_path,
+                vault_path=root / "missing-vault.json",
                 output_path=today_path,
             )
             manifest = archive_daily_run(
@@ -85,6 +86,7 @@ class LocalApplianceTests(unittest.TestCase):
                 memory_path=memory_path,
                 evidence_path=evidence_path,
                 brief_path=brief_path,
+                vault_path=root / "missing-vault.json",
                 output_path=today_path,
                 archive_manifest_path=manifest,
             )
@@ -146,7 +148,7 @@ class LocalApplianceTests(unittest.TestCase):
             plist_exists = Path(assets["plist"]).exists()
 
         self.assertIn("MyBroker Today", html)
-        self.assertIn("오늘 시장을 이해하기 위한 5분 브리프", html)
+        self.assertIn("오늘 시장 5분 브리프", html)
         self.assertIn("근거 품질", html)
         self.assertIn("아카이브 manifest", html)
         self.assertIn("MyBroker Memory", memory_html)
@@ -473,6 +475,7 @@ class LocalApplianceTests(unittest.TestCase):
                 memory_path=memory_path,
                 evidence_path=evidence_path,
                 brief_path=brief_path,
+                vault_path=root / "missing-vault.json",
                 output_path=root / "today.html",
             )
             html = today.read_text(encoding="utf-8")
@@ -557,10 +560,26 @@ class LocalApplianceTests(unittest.TestCase):
                 output_path=root / "reports" / "memory" / "latest-query.json",
                 surface_path=root / "reports" / "product" / "memory-query.html",
             )
+            scenario_report = run_market_simulation(seed_sources=["examples/seeds"], run_id="vault-today")
+            scenario_path = write_scenario_report(scenario_report, root / "reports" / "scenario.json")
+            verdict_path = write_verdict(scenario_report, root / "reports" / "verdict.json")
+            brief_path = root / "reports" / "product" / "market-brief.html"
+            brief_path.parent.mkdir(parents=True, exist_ok=True)
+            brief_path.write_text("<html>brief</html>", encoding="utf-8")
+            today_surface = write_today_surface(
+                scenario_path=scenario_path,
+                verdict_path=verdict_path,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                brief_path=brief_path,
+                vault_path=output,
+                output_path=root / "reports" / "product" / "today.html",
+            )
             memory_index = json.loads((root / "reports" / "memory" / "index.json").read_text(encoding="utf-8"))
             query_payload = json.loads((root / "reports" / "memory" / "latest-query.json").read_text(encoding="utf-8"))
             memory_surface_html = memory_surface.read_text(encoding="utf-8")
             query_surface_html = query_surface.read_text(encoding="utf-8")
+            today_surface_html = today_surface.read_text(encoding="utf-8")
 
         self.assertEqual(init_payload["schema_version"], "knowledge_vault_init.v1")
         self.assertEqual(topics["schema_version"], "topic_config.v1")
@@ -579,6 +598,9 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(query_payload["matched_vault_note_count"], 1)
         self.assertEqual(query_payload["matched_vault_notes"][0]["title"], "Semiconductor cycle note")
         self.assertIn("관련 Vault 노트", query_surface_html)
+        self.assertIn("Vault에서 다시 볼 원천 노트", today_surface_html)
+        self.assertIn("Semiconductor cycle note", today_surface_html)
+        self.assertIn("Vault 노트 &#x27;Semiconductor cycle note&#x27;의 원천 근거", today_surface_html)
 
 
 if __name__ == "__main__":

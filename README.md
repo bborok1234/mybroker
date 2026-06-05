@@ -55,7 +55,7 @@ PYTHONPATH=src python3 -m mybroker appliance scheduler run-once
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
-PYTHONPATH=src python3 -m mybroker appliance today
+PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
@@ -178,7 +178,13 @@ question to inspect.
 `research-vault/output` structure. `appliance vault compile` files local markdown/text notes from
 raw into deterministic wiki notes, `_master-index.md`, `reports/vault/compile.json`, and
 `reports/product/vault.html`. Raw files are not deleted or moved. This keeps the Obsidian-style
-inbox and librarian workflow separate from generated daily market artifacts.
+inbox and librarian workflow separate from generated daily market artifacts, while still letting
+compiled source notes feed the daily analyst loop.
+
+`appliance today` reads `reports/vault/compile.json` by default when it exists. The phone-readable
+`reports/product/today.html` shows the most relevant raw-source notes as "Vault에서 다시 볼 원천 노트"
+and turns them into next inspection questions, so the morning brief can ask whether accumulated
+source notes still agree with the latest evidence instead of treating each day as a fresh chat.
 `appliance memory` and `appliance query` read `reports/vault/compile.json` by default, so compiled
 raw notes appear alongside topic memory and can be retrieved by the same deterministic local query
 surface.
