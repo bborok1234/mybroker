@@ -7,6 +7,8 @@ from pathlib import Path
 
 from mybroker.appliance import (
     DEFAULT_ARCHIVE_ROOT,
+    DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    DEFAULT_ANALYST_JOURNAL_OUTPUT,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
@@ -27,6 +29,7 @@ from mybroker.appliance import (
     archive_daily_run,
     send_notification_payload,
     write_launchd_assets,
+    write_analyst_journal,
     write_memory_query,
     write_memory_surface,
     write_notification_payload,
@@ -41,6 +44,7 @@ from mybroker.appliance import (
     write_scheduler_run_once,
     write_scheduler_status,
     write_today_surface,
+    validate_analyst_journal_file,
 )
 from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
@@ -246,6 +250,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_refresh_live_preflight_parser.add_argument("refresh_live_preflight_path")
     validate_memory_parser = subcommands.add_parser("validate-topic-memory", help="Validate a topic_memory.v1 artifact.")
     validate_memory_parser.add_argument("memory_path")
+    validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
+    validate_journal_parser.add_argument("journal_path")
 
     brief_parser = subcommands.add_parser("brief", help="Build a user-facing MyBroker product brief from scenario and verdict artifacts.")
     brief_parser.add_argument("--scenario", required=True, help="scenario_report.v1 artifact path.")
@@ -343,6 +349,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--archive-manifest")
     appliance_today_parser.add_argument("--memory-surface")
+    appliance_today_parser.add_argument("--journal-surface")
     appliance_memory_parser = appliance_subcommands.add_parser("memory", help="Render the mobile-friendly accumulated memory and archive surface.")
     appliance_memory_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
@@ -350,6 +357,16 @@ def main(argv: list[str] | None = None) -> int:
     appliance_memory_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--index-output", default=DEFAULT_MEMORY_INDEX_OUTPUT.as_posix())
     appliance_memory_parser.add_argument("--output", default=DEFAULT_MEMORY_OUTPUT.as_posix())
+    appliance_journal_parser = appliance_subcommands.add_parser("journal", help="Render today's personal analyst journal from daily artifacts.")
+    appliance_journal_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
+    appliance_journal_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
+    appliance_journal_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_journal_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_journal_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_journal_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    appliance_journal_parser.add_argument("--archive-manifest")
+    appliance_journal_parser.add_argument("--artifact-output", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
+    appliance_journal_parser.add_argument("--output", default=DEFAULT_ANALYST_JOURNAL_OUTPUT.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
     appliance_query_parser.add_argument("query")
     appliance_query_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
@@ -717,6 +734,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-analyst-journal":
+        errors = validate_analyst_journal_file(args.journal_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-vault":
         errors = validate_knowledge_vault_compile_file(args.vault_path)
         if errors:
@@ -970,6 +994,7 @@ def main(argv: list[str] | None = None) -> int:
                 output_path=args.output,
                 archive_manifest_path=args.archive_manifest,
                 memory_surface_path=args.memory_surface,
+                journal_surface_path=args.journal_surface,
             )
             print(json.dumps({"today": path.as_posix()}, indent=2, ensure_ascii=False))
             return 0
@@ -983,6 +1008,23 @@ def main(argv: list[str] | None = None) -> int:
                 output_path=args.output,
             )
             print(json.dumps({"memory": path.as_posix(), "index": args.index_output}, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "journal":
+            path = write_analyst_journal(
+                scenario_path=args.scenario,
+                verdict_path=args.verdict,
+                memory_path=args.memory,
+                evidence_path=args.evidence,
+                scout_path=args.scout,
+                archive_manifest_path=args.archive_manifest,
+                vault_path=args.vault,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            print(json.dumps({
+                "journal": path.as_posix(),
+                "artifact": args.artifact_output,
+            }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "query":
             path = write_memory_query(
@@ -1057,6 +1099,8 @@ def main(argv: list[str] | None = None) -> int:
             brief_path = Path("reports/product/market-brief.html")
             today_path = DEFAULT_TODAY_OUTPUT
             memory_surface_path = DEFAULT_MEMORY_OUTPUT
+            journal_path = DEFAULT_ANALYST_JOURNAL_OUTPUT
+            journal_artifact_path = DEFAULT_ANALYST_JOURNAL_ARTIFACT
             playbook_path = write_runtime_playbook(args.playbook_output)
             plan = build_research_plan(topics_path=topics_path, output_path=plan_path, run_id=args.run_id)
             catalog = collect_topic_evidence(
@@ -1109,6 +1153,15 @@ def main(argv: list[str] | None = None) -> int:
             written_dashboard = write_dashboard(rollup, dashboard_path)
             written_rollup = write_rollup(rollup, rollup_path)
             written_brief = write_product_brief(written_scenario, written_verdict, brief_path)
+            provisional_journal = write_analyst_journal(
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                scout_path=scout_path,
+                artifact_output_path=journal_artifact_path,
+                surface_output_path=journal_path,
+            )
             provisional_today = write_today_surface(
                 scenario_path=written_scenario,
                 verdict_path=written_verdict,
@@ -1123,6 +1176,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_preflight_path=refresh_live_preflight_path,
                 brief_path=written_brief,
                 output_path=today_path,
+                journal_surface_path=provisional_journal,
             )
             archive_manifest = archive_daily_run(
                 run_id=args.run_id,
@@ -1137,6 +1191,7 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_gate_path=refresh_live_gate_path,
                 refresh_live_run_path=refresh_live_run_path,
                 refresh_live_preflight_path=refresh_live_preflight_path,
+                journal_path=provisional_journal,
                 archive_root=args.archive_root,
             )
             written_memory = write_memory_surface(
@@ -1146,6 +1201,16 @@ def main(argv: list[str] | None = None) -> int:
                 vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
                 index_output_path=DEFAULT_MEMORY_INDEX_OUTPUT,
                 output_path=memory_surface_path,
+            )
+            written_journal = write_analyst_journal(
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                scout_path=scout_path,
+                archive_manifest_path=archive_manifest,
+                artifact_output_path=journal_artifact_path,
+                surface_output_path=journal_path,
             )
             written_today = write_today_surface(
                 scenario_path=written_scenario,
@@ -1163,6 +1228,7 @@ def main(argv: list[str] | None = None) -> int:
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,
                 memory_surface_path=written_memory,
+                journal_surface_path=written_journal,
             )
             notification_path = write_notification_payload(
                 provider=args.notification_provider,
@@ -1192,6 +1258,8 @@ def main(argv: list[str] | None = None) -> int:
                 "dashboard": written_dashboard.as_posix(),
                 "rollup": written_rollup.as_posix(),
                 "product_brief": written_brief.as_posix(),
+                "analyst_journal": written_journal.as_posix(),
+                "analyst_journal_artifact": journal_artifact_path.as_posix(),
                 "today": written_today.as_posix(),
                 "memory_surface": written_memory.as_posix(),
                 "memory_index": DEFAULT_MEMORY_INDEX_OUTPUT.as_posix(),

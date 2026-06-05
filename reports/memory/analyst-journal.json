@@ -1,0 +1,113 @@
+{
+  "schema_version": "personal_analyst_journal.v1",
+  "generated_at": "2026-06-05T13:21:46.618357+00:00",
+  "run_id": "daily-research",
+  "status": "stable_monitor",
+  "today_focus": {
+    "title": "먼저 시장 흐름을 학습",
+    "rationale": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
+    "recommended_topic": "Semiconductors",
+    "recommended_action": "monitor",
+    "confidence": "low-medium"
+  },
+  "what_changed": [],
+  "stable_observations": [
+    {
+      "topic_id": "ai-infrastructure",
+      "name": "AI infrastructure",
+      "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+    },
+    {
+      "topic_id": "semiconductors",
+      "name": "Semiconductors",
+      "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음."
+    },
+    {
+      "topic_id": "us-rates",
+      "name": "US rates",
+      "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음."
+    },
+    {
+      "topic_id": "consumer-weakness",
+      "name": "Consumer weakness",
+      "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+    },
+    {
+      "topic_id": "korea-semiconductors",
+      "name": "Korea semiconductors",
+      "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음."
+    }
+  ],
+  "role_notes": [
+    {
+      "role": "source_scout",
+      "finding": "3개 source 상태를 확인했고 0개는 약하거나 오래된 근거입니다.",
+      "next_check": "live refresh 승인 전에는 cached/sample 근거와 freshness를 분리해서 읽습니다."
+    },
+    {
+      "role": "market_mapper",
+      "finding": "이번 seed에서 먼저 볼 흐름은 리스크, AI 인프라, 소비입니다. 초보자는 가격보다 '왜 이 흐름이 생겼는지'와 '무엇이 바뀌면 틀리는지'를 먼저 확인해야 합니다.",
+      "next_check": "주제, 기업, 이벤트가 같은 방향인지와 충돌하는지 분리합니다."
+    },
+    {
+      "role": "skeptic",
+      "finding": "아직 실시간 새로고침은 아직 연결되지 않았습니다., 소스 이용조건 검토가 남아 있습니다. 문제가 있어 확신을 낮춰야 합니다.",
+      "next_check": "자료 부족을 매수/매도 결론으로 바꾸지 않습니다."
+    },
+    {
+      "role": "beginner_tutor",
+      "finding": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
+      "next_check": "초보자가 먼저 이해할 단어와 원인-결과 연결을 매일 하나씩 남깁니다."
+    },
+    {
+      "role": "memory_librarian",
+      "finding": "누적 실행 21회, vault note 1개를 연결했습니다.",
+      "next_check": "오늘 질문이 내일 다시 검색 가능한 표현인지 확인합니다."
+    }
+  ],
+  "source_posture": {
+    "source_count": 3,
+    "coverage_sources": [
+      "GDELT",
+      "SEC EDGAR",
+      "Stooq"
+    ],
+    "weak_or_stale_count": 0,
+    "collection_gaps": [
+      "live_refresh_not_enabled",
+      "source_license_review_pending"
+    ]
+  },
+  "follow_up_questions": [
+    "Vault 노트 'Semiconductor cycle learning note'가 오늘 근거와 같은 방향을 가리키나요?",
+    "오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+    "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+    "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?",
+    "오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+    "먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?"
+  ],
+  "linked_artifacts": {
+    "scenario": "reports/scenarios/daily-research-sim.json",
+    "verdict": "reports/scenarios/daily-research-verdict.json",
+    "memory": "reports/memory/topic-memory.json",
+    "evidence": "reports/evidence/daily-evidence-catalog.json",
+    "scout": "reports/daily/scout.json",
+    "archive_manifest": "reports/archive/2026-06-05/manifest.json",
+    "archive_dir": "reports/archive/2026-06-05"
+  },
+  "operator_reading_order": [
+    "today_focus",
+    "what_changed",
+    "role_notes",
+    "follow_up_questions",
+    "linked_artifacts"
+  ],
+  "policy": "research_only",
+  "safety_boundary": [
+    "education_and_research_only",
+    "no_account_access",
+    "no_live_trading",
+    "no_discretionary_management",
+    "no_unsupported_personalized_recommendation"
+  ]
+}
