@@ -1,0 +1,32 @@
+{
+  "schema_version": "phone_access_plan.v1",
+  "generated_at": "2026-06-05T06:06:14.997191+00:00",
+  "recommended_path": "tailscale_serve_private",
+  "local_url": "http://localhost:8787/reports/product/today.html",
+  "private_phone_url": "https://mybroker-mac/reports/product/today.html",
+  "commands": [
+    {
+      "purpose": "serve local MyBroker artifacts",
+      "command": "cd <mybroker-repo> && python3 -m http.server 8787"
+    },
+    {
+      "purpose": "share the local server only inside the tailnet",
+      "command": "tailscale serve --bg 8787"
+    },
+    {
+      "purpose": "stop private serving",
+      "command": "tailscale serve reset"
+    }
+  ],
+  "do_not_default_to": [
+    "public_tunnel",
+    "funnel",
+    "unauthenticated_public_hosting"
+  ],
+  "operator_checklist": [
+    "MacBook remains powered and awake enough for scheduled jobs.",
+    "Phone is on the same tailnet or private LAN.",
+    "No secret values are committed to the repository.",
+    "Notification sender is tested with dry-run before --send."
+  ]
+}

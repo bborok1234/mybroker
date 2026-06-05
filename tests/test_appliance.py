@@ -7,8 +7,10 @@ from pathlib import Path
 
 from mybroker.appliance import (
     archive_daily_run,
+    send_notification_payload,
     write_launchd_assets,
     write_notification_payload,
+    write_phone_access_plan,
     write_runtime_playbook,
     write_today_surface,
 )
@@ -81,11 +83,13 @@ class LocalApplianceTests(unittest.TestCase):
                 verdict_path=verdict_path,
                 output_path=root / "notification.json",
             )
+            access_plan = write_phone_access_plan(output_path=root / "phone-access.json", port=8787, tailnet_host="mybroker-mac")
             playbook = write_runtime_playbook(root / "playbook.json")
             assets = write_launchd_assets(project_root=root, output_dir=root / "ops", hour=7, minute=15)
 
             html = today.read_text(encoding="utf-8")
             notification_payload = json.loads(notification.read_text(encoding="utf-8"))
+            access_payload = json.loads(access_plan.read_text(encoding="utf-8"))
             manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
             playbook_payload = json.loads(playbook.read_text(encoding="utf-8"))
             script_exists = Path(assets["script"]).exists()
@@ -99,6 +103,9 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(notification_payload["schema_version"], "notification_delivery.v1")
         self.assertEqual(notification_payload["delivery_status"], "dry_run_ready")
         self.assertIn("TELEGRAM_BOT_TOKEN", notification_payload["required_env"])
+        self.assertEqual(access_payload["schema_version"], "phone_access_plan.v1")
+        self.assertEqual(access_payload["recommended_path"], "tailscale_serve_private")
+        self.assertIn("tailscale serve --bg 8787", {item["command"] for item in access_payload["commands"]})
         self.assertEqual(manifest_payload["schema_version"], "daily_archive.v1")
         self.assertIn("Hermes Agent", {item["source"] for item in playbook_payload["absorbed_patterns"]})
         self.assertTrue(script_exists)
@@ -134,6 +141,24 @@ class LocalApplianceTests(unittest.TestCase):
             html = today.read_text(encoding="utf-8")
 
         self.assertIn("아직 누적 주제 기억이 없습니다", html)
+
+    def test_notification_send_requires_provider_environment(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            payload = root / "notification.json"
+            payload.write_text(
+                json.dumps({
+                    "schema_version": "notification_delivery.v1",
+                    "provider": "telegram",
+                    "title": "MyBroker",
+                    "message": "ready",
+                    "url": "http://localhost",
+                }),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(RuntimeError):
+                send_notification_payload(payload)
 
 
 if __name__ == "__main__":

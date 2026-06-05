@@ -51,12 +51,48 @@ Preferred order:
 3. Static local file if no server is running.
 4. Public Cloudflare Tunnel only after access and secret boundaries are reviewed.
 
+Generate the local access artifact:
+
+```bash
+PYTHONPATH=src python3 -m mybroker appliance access
+```
+
+The artifact writes the local URL, the private tailnet URL shape, and the commands to run a
+local static server plus `tailscale serve --bg`. MyBroker deliberately does not enable Funnel
+or public exposure by default.
+
+## Live Evidence Refresh
+
+The default sample-cache path remains deterministic. For actual daily use, prefer no-key live
+refresh with cache fallback:
+
+```bash
+PYTHONPATH=src python3 -m mybroker ingest-public-evidence \
+  --source gdelt-live \
+  --source stooq-live \
+  --source sec-sample \
+  --output reports/evidence/live-evidence-catalog.json
+
+PYTHONPATH=src python3 -m mybroker appliance run \
+  --topics config/topics.json \
+  --profile examples/profiles/beginner-conservative.json \
+  --source gdelt-live \
+  --source stooq-live \
+  --source sec-sample \
+  --dry-run
+```
+
+`gdelt-live` and `stooq-live` try the live source first. If the network, source response, or
+parsing fails, they return the existing cached sample shape with `live_error_fallback_sample`
+freshness. This keeps the local morning loop useful while making weak or stale evidence visible.
+
 ## Commands
 
 ```bash
 PYTHONPATH=src python3 -m mybroker appliance playbook
 PYTHONPATH=src python3 -m mybroker appliance init --project-root .
-PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --dry-run
+PYTHONPATH=src python3 -m mybroker appliance access
+PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 ```

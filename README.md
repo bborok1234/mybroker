@@ -30,6 +30,7 @@ PYTHONPATH=src python3 -m mybroker scenario --seed examples/seeds --profile exam
 PYTHONPATH=src python3 -m mybroker validate-profile examples/profiles/beginner-conservative.json
 PYTHONPATH=src python3 -m mybroker evidence-sources
 PYTHONPATH=src python3 -m mybroker ingest-public-evidence --output reports/evidence/public-evidence-catalog.json
+PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json
 PYTHONPATH=src python3 -m mybroker validate-public-evidence reports/evidence/public-evidence-catalog.json
 PYTHONPATH=src python3 -m mybroker topics init --output config/topics.json
 PYTHONPATH=src python3 -m mybroker topics add "Korea semiconductors" --description "Korea memory exporters, AI demand, and cycle risk" --keyword korea --keyword memory --keyword chip --config config/topics.json
@@ -44,7 +45,8 @@ PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output
 PYTHONPATH=src python3 -m mybroker brief --scenario reports/scenarios/public-evidence-sim.json --verdict reports/scenarios/public-evidence-verdict.json --output reports/product/market-brief.html
 PYTHONPATH=src python3 -m mybroker appliance playbook
 PYTHONPATH=src python3 -m mybroker appliance init --project-root .
-PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --dry-run
+PYTHONPATH=src python3 -m mybroker appliance access
+PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 PYTHONPATH=src python3 -m mybroker policy --kind research_note
@@ -102,6 +104,10 @@ accounts, or execution are introduced.
 This proof is intentionally reproducible with local cached samples. Live refresh, source
 licensing review, deduplication, and stronger entity extraction remain explicit follow-up gates.
 
+No-key live refresh is available for `gdelt-live` and `stooq-live`. These adapters try the live
+source first and fall back to the cached sample shape when the network or source response is not
+usable, so scheduled local runs can still produce auditable artifacts.
+
 ## Autonomous Daily Research Loop
 
 The next product loop starts from broad interests rather than source dumps. A beginner can
@@ -128,6 +134,7 @@ The next operating shape is a local appliance rather than a hosted investment ap
 appliance run` uses the existing daily research loop, then writes:
 
 - `reports/runtime/local-analyst-playbook.json`: the runtime pattern MyBroker is following;
+- `reports/runtime/phone-access.json`: private phone access guidance, preferring Tailscale Serve;
 - `reports/product/today.html`: a mobile-first `/today` surface for the phone;
 - `reports/notifications/latest.json`: a dry-run notification payload for Telegram or Pushover;
 - `reports/archive/<date>/manifest.json`: a daily archive manifest with copied artifacts;
@@ -135,7 +142,7 @@ appliance run` uses the existing daily research loop, then writes:
   `appliance init` for launchd-compatible local scheduling.
 
 The recommended access path is private first: Tailscale Serve, private LAN, or local file. Public
-deployment is a later decision after access control and secret boundaries are reviewed. See
+Funnel/tunnel exposure is a later decision after access control and secret boundaries are reviewed. See
 `docs/local-personal-analyst-appliance.md`.
 
 ## First Pipeline Slice

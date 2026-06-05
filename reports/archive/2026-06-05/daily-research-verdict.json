@@ -1,7 +1,7 @@
 {
   "schema_version": "market_verdict.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T05:48:24.479892+00:00",
+  "generated_at": "2026-06-05T06:06:25.312072+00:00",
   "primary_next_step": {
     "action_type": "learn",
     "title": "먼저 시장 흐름을 학습",
@@ -99,7 +99,7 @@
         "source_name": "GDELT",
         "adapter_id": "sample_cache_topic_research",
         "item_count": "2",
-        "freshness_status": "sample_cache"
+        "freshness_status": "live_error_fallback_sample"
       },
       {
         "source_id": "sec-edgar",
@@ -113,7 +113,7 @@
         "source_name": "Stooq",
         "adapter_id": "sample_cache_topic_research",
         "item_count": "1",
-        "freshness_status": "sample_cache"
+        "freshness_status": "live_error_fallback_sample"
       }
     ],
     "freshness_status": "sample_cache",
@@ -209,13 +209,13 @@
     ],
     "research_plan": {
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T05:48:24.477943+00:00",
+      "generated_at": "2026-06-05T06:06:15.320406+00:00",
       "topic_count": 5,
       "next_step": "collect_free_public_evidence"
     },
     "topic_memory_snapshot": {
       "memory_path": "reports/memory/topic-memory.json",
-      "run_count": 4,
+      "run_count": 5,
       "topics": [
         {
           "topic_id": "ai-infrastructure",

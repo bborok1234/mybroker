@@ -387,12 +387,13 @@ def _source_status(items: list[dict[str, Any]]) -> list[dict[str, str]]:
     rows = []
     for source_name in sorted({item.get("source_name", "") for item in items if item.get("source_name")}):
         source_items = [item for item in items if item.get("source_name") == source_name]
+        freshness = sorted({item.get("freshness_status", "unknown") for item in source_items})
         rows.append({
             "source_id": _slugify(source_name),
             "source_name": source_name,
             "adapter_id": "sample_cache_topic_research",
             "item_count": str(len(source_items)),
-            "freshness_status": "sample_cache",
+            "freshness_status": freshness[0] if freshness else "unknown",
         })
     return rows
 
