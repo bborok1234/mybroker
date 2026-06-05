@@ -174,6 +174,14 @@ commands, and stale-context guards. `appliance run` creates it automatically, an
 renders it as "라이브 새로고침 게이트". This artifact does not execute live network calls; it only
 defines what a later explicit approval would authorize.
 
+`source-refresh-live-run` is the approval and execution-proof step. It writes
+`reports/daily/source-refresh-live-run.json` after reading the live gate. With the default empty
+response it records `approval_status: missing` and `external_effect_performed: false`. If the
+operator later supplies the exact copy-ready response, the artifact can become ready to execute;
+an actual live network refresh still requires explicit execution and live-network confirmation
+flags. `appliance run` creates the proof automatically, and `appliance today` renders it as
+"라이브 실행 증거".
+
 The launchd assets are written under `ops/local/`:
 
 - `run-daily-analyst.sh`
