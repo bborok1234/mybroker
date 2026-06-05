@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Handoff</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:860px; margin:0 auto; padding:16px; }
+a { color:var(--blue); font-weight:800; text-decoration:none; }
+.eyebrow,.card span,.command span { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 8px; font-size:18px; }
+p,small { color:var(--muted); overflow-wrap:anywhere; }
+.hero,.section,.card,.command { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:16px; margin:14px 0; }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.metric { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }
+.metric strong { display:block; font-size:24px; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.card,.command { background:white; padding:14px; min-width:0; }
+.warn { border-color:#d7b36a; }
+code { display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }
+@media (max-width:680px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.grid,.links { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Handoff · 2026-06-06 local</span>
+<h1>어제가 오늘에 반영됐나</h1>
+<p>전날 남은 질문, 피드백, task, council/memory 경고가 오늘 실행에 실제로 반영됐는지 확인하는 로컬 proof입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<h2>review</h2>
+<p>canonical run: daily-research · 2026-06-05</p>
+<div class="metrics">
+<article class="metric"><span>Carried</span><strong>15</strong></article>
+<article class="metric"><span>Reflected</span><strong>5</strong></article>
+<article class="metric"><span>Unresolved</span><strong>10</strong></article>
+<article class="metric"><span>Duplicates</span><strong>1</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>이월 항목 전체</h2>
+<div class="grid"><article class='card'><span>follow_up_question · 반영됨</span><h2>Vault 노트 &#x27;Semiconductor cycle learning note&#x27;가 오늘 근거와 같은 방향을 가리키나요?</h2><p>오늘 scout/review 문맥과 연결됩니다.</p><small>오늘 브리프를 읽을 때 이 질문이 해소됐는지 확인하세요.</small></article><article class='card'><span>follow_up_question · 반영됨</span><h2>오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</h2><p>오늘 scout/review 문맥과 연결됩니다.</p><small>오늘 브리프를 읽을 때 이 질문이 해소됐는지 확인하세요.</small></article><article class='card'><span>follow_up_question · 남아있음</span><h2>AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?</h2><p>오늘 scout/review 문맥에서 직접 연결을 찾지 못했습니다.</p><small>review-prompt에서 이 질문을 tomorrow focus로 남기세요.</small></article><article class='card'><span>follow_up_question · 반영됨</span><h2>다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?</h2><p>오늘 scout/review 문맥과 연결됩니다.</p><small>오늘 브리프를 읽을 때 이 질문이 해소됐는지 확인하세요.</small></article><article class='card'><span>follow_up_question · 반영됨</span><h2>오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</h2><p>오늘 scout/review 문맥과 연결됩니다.</p><small>오늘 브리프를 읽을 때 이 질문이 해소됐는지 확인하세요.</small></article><article class='card'><span>follow_up_question · 남아있음</span><h2>먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?</h2><p>오늘 scout/review 문맥에서 직접 연결을 찾지 못했습니다.</p><small>review-prompt에서 이 질문을 tomorrow focus로 남기세요.</small></article><article class='card'><span>task · 남아있음</span><h2>자료 신선도와 부족한 근거를 먼저 확인</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card'><span>task · 남아있음</span><h2>오늘 초점 주제를 시장 지도에 다시 연결</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card'><span>task · 남아있음</span><h2>가장 약한 결론을 반대 근거로 공격</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card'><span>task · 반영됨</span><h2>초보자가 이해할 질문 하나를 쉬운 언어로 풀기</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card'><span>task · 남아있음</span><h2>내일 다시 찾을 수 있게 질문과 원천을 정리</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card'><span>task · 남아있음</span><h2>폰에서 볼 표면과 dry-run 알림 상태 점검</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card'><span>operator_feedback · 남아있음</span><h2>어제/이전 review feedback이 오늘 scout scoring에 반영됐는지</h2><p>아직 기록된 review-response가 없어 scout가 개인 피드백을 반영할 수 없습니다.</p><small>반영됐으면 오늘 결과를 읽고, 아니면 review-response-apply 명령으로 선호를 다시 남기세요.</small></article><article class='card'><span>council_warning · 남아있음</span><h2>analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.</h2><p>읽기를 막는 high blocker는 없지만 source, memory, scenario 중 일부가 주의 상태입니다.</p><small>council.html에서 역할별 caution/blocker를 먼저 읽고 오늘 결론 강도를 낮추세요.</small></article><article class='card'><span>memory_warning · 남아있음</span><h2>누적 기억 품질 경고가 남아 있습니다.</h2><p>memory audit risk 1개</p><small>memory-audit.html에서 약한 source, vault gap, coverage gap을 먼저 확인하세요.</small></article></div>
+</section>
+<section class="section">
+<h2>아직 남은 것</h2>
+<div class="grid"><article class='card warn'><span>analyst_journal</span><h2>AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?</h2><p>오늘 scout/review 문맥에서 직접 연결을 찾지 못했습니다.</p><small>review-prompt에서 이 질문을 tomorrow focus로 남기세요.</small></article><article class='card warn'><span>analyst_journal</span><h2>먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?</h2><p>오늘 scout/review 문맥에서 직접 연결을 찾지 못했습니다.</p><small>review-prompt에서 이 질문을 tomorrow focus로 남기세요.</small></article><article class='card warn'><span>analyst_task_ledger</span><h2>자료 신선도와 부족한 근거를 먼저 확인</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card warn'><span>analyst_task_ledger</span><h2>오늘 초점 주제를 시장 지도에 다시 연결</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card warn'><span>analyst_task_ledger</span><h2>가장 약한 결론을 반대 근거로 공격</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card warn'><span>analyst_task_ledger</span><h2>내일 다시 찾을 수 있게 질문과 원천을 정리</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card warn'><span>analyst_task_ledger</span><h2>폰에서 볼 표면과 dry-run 알림 상태 점검</h2><p>task status: carried</p><small>이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.</small></article><article class='card warn'><span>review_effect</span><h2>어제/이전 review feedback이 오늘 scout scoring에 반영됐는지</h2><p>아직 기록된 review-response가 없어 scout가 개인 피드백을 반영할 수 없습니다.</p><small>반영됐으면 오늘 결과를 읽고, 아니면 review-response-apply 명령으로 선호를 다시 남기세요.</small></article><article class='card warn'><span>analyst_council</span><h2>analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.</h2><p>읽기를 막는 high blocker는 없지만 source, memory, scenario 중 일부가 주의 상태입니다.</p><small>council.html에서 역할별 caution/blocker를 먼저 읽고 오늘 결론 강도를 낮추세요.</small></article><article class='card warn'><span>memory_audit</span><h2>누적 기억 품질 경고가 남아 있습니다.</h2><p>memory audit risk 1개</p><small>memory-audit.html에서 약한 source, vault gap, coverage gap을 먼저 확인하세요.</small></article></div>
+</section>
+<section class="section">
+<h2>다음 로컬 응답</h2>
+<div class="grid"><article class='command'><span>오늘 읽음 기록</span><code>more &quot;Semiconductors&quot; &quot;오늘 읽고 더 보고 싶은 부분을 기록&quot;</code><small>review-response-apply에 넣으면 내일 scout scoring과 handoff에 반영됩니다.</small></article><article class='command'><span>남은 질문 강조</span><code>more &quot;Semiconductors&quot; &quot;AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?&quot;</code><small>가장 중요한 unresolved 질문을 내일 우선순위로 넘깁니다.</small></article><article class='command'><span>먼저 볼 화면</span><code>open reports/product/handoff.html reports/product/morning.html reports/product/today.html</code><small>로컬 파일 열기만 수행합니다. 외부 효과는 없습니다.</small></article></div>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links"><a href='reports/product/morning.html'>morning</a><a href='reports/product/today.html'>today</a><a href='reports/product/run-ledger.html'>run_ledger</a><a href='reports/product/review-prompt.html'>review_prompt</a><a href='reports/product/review-effect.html'>review_effect</a><a href='reports/product/council.html'>council</a><a href='reports/product/task-ledger.html'>tasks</a><a href='reports/product/memory-audit.html'>memory_audit</a><a href='reports/product/readiness.html'>readiness</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 handoff는 기존 로컬 artifact만 읽습니다. task 실행, live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

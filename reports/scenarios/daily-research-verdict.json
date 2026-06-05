@@ -1,7 +1,7 @@
 {
   "schema_version": "market_verdict.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-05T19:56:15.859262+00:00",
+  "generated_at": "2026-06-05T20:15:29.966829+00:00",
   "primary_next_step": {
     "action_type": "learn",
     "title": "먼저 시장 흐름을 학습",
@@ -215,13 +215,13 @@
     ],
     "research_plan": {
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T19:55:56.650956+00:00",
+      "generated_at": "2026-06-05T20:15:19.244415+00:00",
       "topic_count": 5,
       "next_step": "collect_free_public_evidence"
     },
     "topic_memory_snapshot": {
       "memory_path": "reports/memory/topic-memory.json",
-      "run_count": 47,
+      "run_count": 48,
       "topics": [
         {
           "topic_id": "ai-infrastructure",
