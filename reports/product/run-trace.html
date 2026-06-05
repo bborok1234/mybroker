@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Run Trace</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:860px; margin:0 auto; padding:16px; }
+.eyebrow { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 10px; font-size:20px; }
+p,li,small,td span { color:var(--muted); overflow-wrap:anywhere; }
+.hero,.section { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }
+.status { display:block; margin:8px 0; font-size:28px; line-height:1.1; }
+.metrics,.grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.metric,.mini { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; min-width:0; }
+.metric strong { display:block; font-size:24px; }
+table { width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }
+td,th { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+td strong,td span { display:block; }
+.pill { display:inline-block; border-radius:999px; padding:2px 8px; font-size:12px; font-weight:900; }
+.fresh { background:#e7f5ee; color:var(--green); }
+.stale { background:#fff3d8; color:var(--warn); }
+.missing { background:#ffe2e2; color:var(--bad); }
+.links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }
+@media (max-width:680px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.grid,.links { grid-template-columns:1fr; } table { font-size:13px; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Trace · 2026-06-06 local</span>
+<h1>오늘 실행 근거 추적</h1>
+<p>오늘 브리프, 메모리, task, 관제 화면이 어떤 로컬 단계와 artifact에서 만들어졌는지 확인하는 작은 proof입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">ready</strong>
+<div class="metrics">
+<article class="metric"><span>Steps</span><strong>16</strong></article>
+<article class="metric"><span>Fresh</span><strong>16</strong></article>
+<article class="metric"><span>Missing</span><strong>0</strong></article>
+<article class="metric"><span>External</span><strong>0</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>오늘 결과에 영향을 준 것</h2>
+<div class="grid"><article class='mini'><strong>오늘 먼저 볼 주제</strong><p>Semiconductors</p><small>daily_scout</small></article><article class='mini'><strong>근거 개수</strong><p>5</p><small>evidence_catalog</small></article><article class='mini'><strong>누적 실행</strong><p>37회</p><small>topic_memory</small></article><article class='mini'><strong>다음 안전 후보</strong><p>pattern freshness audit before adding new runtime authority</p><small>pattern_radar</small></article><article class='mini'><strong>review 응답</strong><p>0개</p><small>daily_review</small></article></div>
+</section>
+<section class="section">
+<h2>단계별 trace</h2>
+<table><thead><tr><th>Step</th><th>Freshness</th><th>Schema</th><th>Influence</th></tr></thead><tbody><tr><td><strong>runtime_playbook</strong><span>setup</span></td><td><span class='pill fresh'>fresh</span></td><td>personal_analyst_runtime_playbook.v1</td><td>Defines the local appliance operating pattern.</td></tr><tr><td><strong>pattern_radar</strong><span>strategy</span></td><td><span class='pill fresh'>fresh</span></td><td>agent_pattern_radar.v1</td><td>Classifies external workflow patterns before they shape future work.</td></tr><tr><td><strong>research_plan</strong><span>plan</span></td><td><span class='pill fresh'>fresh</span></td><td>daily_research_plan.v1</td><td>Turns configured interests into today&#x27;s candidate topics.</td></tr><tr><td><strong>daily_scout</strong><span>prioritize</span></td><td><span class='pill fresh'>fresh</span></td><td>daily_scout.v1</td><td>Chooses what the operator should inspect first.</td></tr><tr><td><strong>evidence_catalog</strong><span>evidence</span></td><td><span class='pill fresh'>fresh</span></td><td>public_evidence_catalog.v1</td><td>Records which local/free sources support the daily scenario.</td></tr><tr><td><strong>topic_memory</strong><span>memory</span></td><td><span class='pill fresh'>fresh</span></td><td>topic_memory.v1</td><td>Carries accumulated observations into today&#x27;s context.</td></tr><tr><td><strong>daily_agenda</strong><span>study</span></td><td><span class='pill fresh'>fresh</span></td><td>daily_brief_agenda.v1</td><td>Converts the scout recommendation into a phone-first study sequence.</td></tr><tr><td><strong>source_refresh_brief</strong><span>gate</span></td><td><span class='pill fresh'>fresh</span></td><td>source_refresh_brief.v1</td><td>Explains weak evidence and blocked refresh authority.</td></tr><tr><td><strong>scenario_report</strong><span>simulate</span></td><td><span class='pill fresh'>fresh</span></td><td>scenario_report.v1</td><td>Builds beginner-readable paths from available evidence.</td></tr><tr><td><strong>verdict</strong><span>summarize</span></td><td><span class='pill fresh'>fresh</span></td><td>market_verdict.v1</td><td>Summarizes the research-only next inspection posture.</td></tr><tr><td><strong>analyst_journal</strong><span>reflect</span></td><td><span class='pill fresh'>fresh</span></td><td>personal_analyst_journal.v1</td><td>Records role notes and follow-up questions.</td></tr><tr><td><strong>task_queue</strong><span>queue</span></td><td><span class='pill fresh'>fresh</span></td><td>personal_analyst_task_queue.v1</td><td>Turns the journal into local analyst tasks.</td></tr><tr><td><strong>task_ledger</strong><span>queue</span></td><td><span class='pill fresh'>fresh</span></td><td>personal_analyst_task_ledger.v1</td><td>Preserves task state across days.</td></tr><tr><td><strong>daily_review</strong><span>feedback</span></td><td><span class='pill fresh'>fresh</span></td><td>daily_review.v1</td><td>Records what the operator read, skipped, or wants more of.</td></tr><tr><td><strong>scheduler_operations</strong><span>ops</span></td><td><span class='pill fresh'>fresh</span></td><td>local_scheduler_operations.v1</td><td>Shows automation readiness without host writes.</td></tr><tr><td><strong>today_surface</strong><span>publish</span></td><td><span class='pill fresh'>fresh</span></td><td></td><td>Renders the phone-readable daily entry point.</td></tr></tbody></table>
+</section>
+<section class="section">
+<h2>약한 부분</h2>
+<ul><li>오늘 trace에서 즉시 막힌 항목은 없습니다.</li></ul>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links"><a href='reports/product/today.html'>today</a><a href='reports/product/morning.html'>morning</a><a href='reports/product/readiness.html'>readiness</a><a href='reports/product/pattern-radar.html'>pattern_radar</a><a href='reports/product/memory.html'>memory</a><a href='reports/product/tasks.html'>tasks</a><a href='reports/product/source-refresh.html'>source_refresh</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 trace는 기존 로컬 artifact만 읽습니다. live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

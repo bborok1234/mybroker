@@ -1,0 +1,284 @@
+{
+  "schema_version": "local_run_trace.v1",
+  "generated_at": "2026-06-05T17:50:21.621559+00:00",
+  "status": "ready",
+  "run_id": "daily-research",
+  "summary": {
+    "step_count": 16,
+    "fresh_count": 16,
+    "missing_required_count": 0,
+    "stale_count": 0,
+    "external_effect_flag_count": 0
+  },
+  "what_shaped_today": [
+    {
+      "label": "오늘 먼저 볼 주제",
+      "value": "Semiconductors",
+      "source": "daily_scout"
+    },
+    {
+      "label": "근거 개수",
+      "value": "5",
+      "source": "evidence_catalog"
+    },
+    {
+      "label": "누적 실행",
+      "value": "37회",
+      "source": "topic_memory"
+    },
+    {
+      "label": "다음 안전 후보",
+      "value": "pattern freshness audit before adding new runtime authority",
+      "source": "pattern_radar"
+    },
+    {
+      "label": "review 응답",
+      "value": "0개",
+      "source": "daily_review"
+    }
+  ],
+  "trace_steps": [
+    {
+      "name": "runtime_playbook",
+      "stage": "setup",
+      "path": "reports/runtime/local-analyst-playbook.json",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.589999+00:00",
+      "schema_version": "personal_analyst_runtime_playbook.v1",
+      "influence": "Defines the local appliance operating pattern."
+    },
+    {
+      "name": "pattern_radar",
+      "stage": "strategy",
+      "path": "reports/runtime/agent-pattern-radar.json",
+      "required": true,
+      "exists": true,
+      "status": "ready",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.590960+00:00",
+      "schema_version": "agent_pattern_radar.v1",
+      "influence": "Classifies external workflow patterns before they shape future work."
+    },
+    {
+      "name": "research_plan",
+      "stage": "plan",
+      "path": "reports/daily/research-plan.json",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.592616+00:00",
+      "schema_version": "daily_research_plan.v1",
+      "influence": "Turns configured interests into today's candidate topics."
+    },
+    {
+      "name": "daily_scout",
+      "stage": "prioritize",
+      "path": "reports/daily/scout.json",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.595148+00:00",
+      "schema_version": "daily_scout.v1",
+      "influence": "Chooses what the operator should inspect first."
+    },
+    {
+      "name": "evidence_catalog",
+      "stage": "evidence",
+      "path": "reports/evidence/daily-evidence-catalog.json",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.594213+00:00",
+      "schema_version": "public_evidence_catalog.v1",
+      "influence": "Records which local/free sources support the daily scenario."
+    },
+    {
+      "name": "topic_memory",
+      "stage": "memory",
+      "path": "reports/memory/topic-memory.json",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.594396+00:00",
+      "schema_version": "topic_memory.v1",
+      "influence": "Carries accumulated observations into today's context."
+    },
+    {
+      "name": "daily_agenda",
+      "stage": "study",
+      "path": "reports/daily/brief-agenda.json",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.597349+00:00",
+      "schema_version": "daily_brief_agenda.v1",
+      "influence": "Converts the scout recommendation into a phone-first study sequence."
+    },
+    {
+      "name": "source_refresh_brief",
+      "stage": "gate",
+      "path": "reports/runtime/source-refresh-brief.json",
+      "required": false,
+      "exists": true,
+      "status": "approval_required",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.596785+00:00",
+      "schema_version": "source_refresh_brief.v1",
+      "influence": "Explains weak evidence and blocked refresh authority."
+    },
+    {
+      "name": "scenario_report",
+      "stage": "simulate",
+      "path": "reports/scenarios/daily-research-sim.json",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.598854+00:00",
+      "schema_version": "scenario_report.v1",
+      "influence": "Builds beginner-readable paths from available evidence."
+    },
+    {
+      "name": "verdict",
+      "stage": "summarize",
+      "path": "reports/scenarios/daily-research-verdict.json",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.598854+00:00",
+      "schema_version": "market_verdict.v1",
+      "influence": "Summarizes the research-only next inspection posture."
+    },
+    {
+      "name": "analyst_journal",
+      "stage": "reflect",
+      "path": "reports/memory/analyst-journal.json",
+      "required": true,
+      "exists": true,
+      "status": "stable_monitor",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.611167+00:00",
+      "schema_version": "personal_analyst_journal.v1",
+      "influence": "Records role notes and follow-up questions."
+    },
+    {
+      "name": "task_queue",
+      "stage": "queue",
+      "path": "reports/memory/analyst-task-queue.json",
+      "required": true,
+      "exists": true,
+      "status": "queued",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.611666+00:00",
+      "schema_version": "personal_analyst_task_queue.v1",
+      "influence": "Turns the journal into local analyst tasks."
+    },
+    {
+      "name": "task_ledger",
+      "stage": "queue",
+      "path": "reports/memory/analyst-task-ledger.json",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.611964+00:00",
+      "schema_version": "personal_analyst_task_ledger.v1",
+      "influence": "Preserves task state across days."
+    },
+    {
+      "name": "daily_review",
+      "stage": "feedback",
+      "path": "reports/memory/daily-review.json",
+      "required": false,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.612206+00:00",
+      "schema_version": "daily_review.v1",
+      "influence": "Records what the operator read, skipped, or wants more of."
+    },
+    {
+      "name": "scheduler_operations",
+      "stage": "ops",
+      "path": "reports/runtime/scheduler-operations.json",
+      "required": false,
+      "exists": true,
+      "status": "activation_ready",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.620256+00:00",
+      "schema_version": "local_scheduler_operations.v1",
+      "influence": "Shows automation readiness without host writes."
+    },
+    {
+      "name": "today_surface",
+      "stage": "publish",
+      "path": "reports/product/today.html",
+      "required": true,
+      "exists": true,
+      "status": "present",
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": "",
+      "influence": "Renders the phone-readable daily entry point."
+    }
+  ],
+  "weak_spots": [],
+  "operator_debug_order": [
+    "daily_scout",
+    "evidence_catalog",
+    "topic_memory",
+    "scenario_report",
+    "verdict",
+    "source_refresh_brief",
+    "task_ledger",
+    "daily_review"
+  ],
+  "phone_links": {
+    "today": "reports/product/today.html",
+    "morning": "reports/product/morning.html",
+    "readiness": "reports/product/readiness.html",
+    "trace": "reports/product/run-trace.html",
+    "pattern_radar": "reports/product/pattern-radar.html",
+    "memory": "reports/product/memory.html",
+    "tasks": "reports/product/tasks.html",
+    "source_refresh": "reports/product/source-refresh.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "trace_reads_existing_artifacts_only",
+    "does_not_execute_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_live_trading",
+    "external_effects_require_separate_gate"
+  ]
+}

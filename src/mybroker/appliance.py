@@ -45,6 +45,7 @@ ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
 ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION = "personal_analyst_task_status_apply.v1"
 DAILY_REVIEW_SCHEMA_VERSION = "daily_review.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
+RUN_TRACE_SCHEMA_VERSION = "local_run_trace.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
@@ -85,6 +86,8 @@ DEFAULT_DAILY_REVIEW_RESPONSES = Path("reports/memory/daily-review-responses.jso
 DEFAULT_DAILY_REVIEW_SURFACE = Path("reports/product/review.html")
 DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
 DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
+DEFAULT_RUN_TRACE_OUTPUT = Path("reports/runtime/run-trace.json")
+DEFAULT_RUN_TRACE_SURFACE = Path("reports/product/run-trace.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_RUNTIME_DOCTOR_ACTIVATION_OUTPUT = Path("reports/runtime/local-runtime-doctor-activation.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
@@ -1605,6 +1608,8 @@ def build_daily_readiness(
         ("source_refresh_surface", DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE, "phone_surface", False),
         ("morning_control", DEFAULT_MORNING_CONTROL_OUTPUT, "control_artifact", True),
         ("morning_surface", DEFAULT_MORNING_CONTROL_SURFACE, "phone_surface", True),
+        ("run_trace", DEFAULT_RUN_TRACE_OUTPUT, "control_artifact", False),
+        ("run_trace_surface", DEFAULT_RUN_TRACE_SURFACE, "phone_surface", False),
         ("daily_scout", DEFAULT_DAILY_SCOUT_OUTPUT, "machine_artifact", True),
         ("daily_evidence", DEFAULT_DAILY_EVIDENCE_OUTPUT, "machine_artifact", True),
         ("topic_memory", DEFAULT_TOPIC_MEMORY_OUTPUT, "memory_artifact", True),
@@ -1661,6 +1666,7 @@ def build_daily_readiness(
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+            "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
@@ -1730,6 +1736,256 @@ def validate_daily_readiness_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_daily_readiness_file(path: str | Path) -> list[str]:
     return validate_daily_readiness_payload(load_json(path))
+
+
+def build_run_trace(
+    *,
+    playbook_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
+    pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
+    plan_path: str | Path = Path("reports/daily/research-plan.json"),
+    scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
+    source_refresh_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
+    scenario_path: str | Path = Path("reports/scenarios/daily-research-sim.json"),
+    verdict_path: str | Path = Path("reports/scenarios/daily-research-verdict.json"),
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    task_queue_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
+    task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
+    today_path: str | Path = DEFAULT_TODAY_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    step_specs = [
+        ("runtime_playbook", playbook_path, "setup", "Defines the local appliance operating pattern.", True),
+        ("pattern_radar", pattern_radar_path, "strategy", "Classifies external workflow patterns before they shape future work.", True),
+        ("research_plan", plan_path, "plan", "Turns configured interests into today's candidate topics.", True),
+        ("daily_scout", scout_path, "prioritize", "Chooses what the operator should inspect first.", True),
+        ("evidence_catalog", evidence_path, "evidence", "Records which local/free sources support the daily scenario.", True),
+        ("topic_memory", memory_path, "memory", "Carries accumulated observations into today's context.", True),
+        ("daily_agenda", agenda_path, "study", "Converts the scout recommendation into a phone-first study sequence.", True),
+        ("source_refresh_brief", source_refresh_brief_path, "gate", "Explains weak evidence and blocked refresh authority.", False),
+        ("scenario_report", scenario_path, "simulate", "Builds beginner-readable paths from available evidence.", True),
+        ("verdict", verdict_path, "summarize", "Summarizes the research-only next inspection posture.", True),
+        ("analyst_journal", journal_path, "reflect", "Records role notes and follow-up questions.", True),
+        ("task_queue", task_queue_path, "queue", "Turns the journal into local analyst tasks.", True),
+        ("task_ledger", task_ledger_path, "queue", "Preserves task state across days.", True),
+        ("daily_review", daily_review_path, "feedback", "Records what the operator read, skipped, or wants more of.", False),
+        ("scheduler_operations", scheduler_operations_path, "ops", "Shows automation readiness without host writes.", False),
+        ("today_surface", today_path, "publish", "Renders the phone-readable daily entry point.", True),
+    ]
+    trace_steps = [
+        _run_trace_step(name=name, path=path, stage=stage, influence=influence, required=required, now=generated)
+        for name, path, stage, influence, required in step_specs
+    ]
+    payloads = {step["name"]: _load_optional_json(step["path"]) for step in trace_steps}
+    missing_required = [step for step in trace_steps if step["required"] and step["status"] == "missing"]
+    stale_steps = [step for step in trace_steps if step["freshness_status"] == "stale"]
+    external_flags = _run_trace_external_flags(payloads)
+    payload = {
+        "schema_version": RUN_TRACE_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": "blocked" if missing_required else ("review" if stale_steps else "ready"),
+        "run_id": _run_trace_run_id(payloads),
+        "summary": {
+            "step_count": len(trace_steps),
+            "fresh_count": sum(1 for step in trace_steps if step["freshness_status"] == "fresh"),
+            "missing_required_count": len(missing_required),
+            "stale_count": len(stale_steps),
+            "external_effect_flag_count": len(external_flags),
+        },
+        "what_shaped_today": _run_trace_influences(payloads),
+        "trace_steps": trace_steps,
+        "weak_spots": _run_trace_weak_spots(trace_steps=trace_steps, payloads=payloads, external_flags=external_flags),
+        "operator_debug_order": [
+            "daily_scout",
+            "evidence_catalog",
+            "topic_memory",
+            "scenario_report",
+            "verdict",
+            "source_refresh_brief",
+            "task_ledger",
+            "daily_review",
+        ],
+        "phone_links": {
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+            "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+            "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
+            "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
+            "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
+            "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "trace_reads_existing_artifacts_only",
+            "does_not_execute_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_live_trading",
+            "external_effects_require_separate_gate",
+        ],
+    }
+    return payload
+
+
+def write_run_trace(
+    *,
+    artifact_output_path: str | Path = DEFAULT_RUN_TRACE_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
+    **paths: Any,
+) -> Path:
+    payload = build_run_trace(**paths)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_run_trace(payload), encoding="utf-8")
+    return target
+
+
+def validate_run_trace_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != RUN_TRACE_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"ready", "review", "blocked"}:
+        errors.append(f"invalid status {payload.get('status')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    steps = payload.get("trace_steps", [])
+    if not steps:
+        errors.append("trace_steps must not be empty")
+    names = {step.get("name") for step in steps}
+    for name in ["daily_scout", "evidence_catalog", "scenario_report", "verdict", "today_surface"]:
+        if name not in names:
+            errors.append(f"trace missing required step {name}")
+    for index, step in enumerate(steps):
+        for field in ["name", "stage", "path", "status", "freshness_status", "influence", "required"]:
+            if field not in step:
+                errors.append(f"trace_steps[{index}] missing {field}")
+        if step.get("freshness_status") not in {"fresh", "stale", "missing"}:
+            errors.append(f"trace_steps[{index}] invalid freshness_status")
+    boundary = payload.get("safety_boundary", [])
+    if "trace_reads_existing_artifacts_only" not in boundary:
+        errors.append("safety_boundary must include trace_reads_existing_artifacts_only")
+    if "does_not_execute_live_network" not in boundary:
+        errors.append("safety_boundary must include does_not_execute_live_network")
+    return errors
+
+
+def validate_run_trace_file(path: str | Path) -> list[str]:
+    return validate_run_trace_payload(load_json(path))
+
+
+def render_run_trace(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    influence_cards = "".join(
+        "<article class='mini'>"
+        f"<strong>{esc(item.get('label', ''))}</strong>"
+        f"<p>{esc(item.get('value', ''))}</p>"
+        f"<small>{esc(item.get('source', ''))}</small>"
+        "</article>"
+        for item in payload.get("what_shaped_today", [])
+    )
+    step_rows = "".join(
+        "<tr>"
+        f"<td><strong>{esc(step.get('name', ''))}</strong><span>{esc(step.get('stage', ''))}</span></td>"
+        f"<td><span class='pill {esc(_readiness_css(step.get('freshness_status', 'missing')))}'>{esc(step.get('freshness_status', ''))}</span></td>"
+        f"<td>{esc(step.get('schema_version', ''))}</td>"
+        f"<td>{esc(step.get('influence', ''))}</td>"
+        "</tr>"
+        for step in payload.get("trace_steps", [])
+    )
+    weak_items = "".join(f"<li>{esc(item)}</li>" for item in payload.get("weak_spots", [])) or "<li>오늘 trace에서 즉시 막힌 항목은 없습니다.</li>"
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if path and label != "trace"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Run Trace</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:860px; margin:0 auto; padding:16px; }}
+.eyebrow {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,li,small,td span {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.metrics,.grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
+.metric,.mini {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; }}
+table {{ width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }}
+td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }}
+td strong,td span {{ display:block; }}
+.pill {{ display:inline-block; border-radius:999px; padding:2px 8px; font-size:12px; font-weight:900; }}
+.fresh {{ background:#e7f5ee; color:var(--green); }}
+.stale {{ background:#fff3d8; color:var(--warn); }}
+.missing {{ background:#ffe2e2; color:var(--bad); }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:680px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid,.links {{ grid-template-columns:1fr; }} table {{ font-size:13px; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Trace · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>오늘 실행 근거 추적</h1>
+<p>오늘 브리프, 메모리, task, 관제 화면이 어떤 로컬 단계와 artifact에서 만들어졌는지 확인하는 작은 proof입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">{esc(payload.get('status', 'review'))}</strong>
+<div class="metrics">
+<article class="metric"><span>Steps</span><strong>{esc(summary.get('step_count', 0))}</strong></article>
+<article class="metric"><span>Fresh</span><strong>{esc(summary.get('fresh_count', 0))}</strong></article>
+<article class="metric"><span>Missing</span><strong>{esc(summary.get('missing_required_count', 0))}</strong></article>
+<article class="metric"><span>External</span><strong>{esc(summary.get('external_effect_flag_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>오늘 결과에 영향을 준 것</h2>
+<div class="grid">{influence_cards}</div>
+</section>
+<section class="section">
+<h2>단계별 trace</h2>
+<table><thead><tr><th>Step</th><th>Freshness</th><th>Schema</th><th>Influence</th></tr></thead><tbody>{step_rows}</tbody></table>
+</section>
+<section class="section">
+<h2>약한 부분</h2>
+<ul>{weak_items}</ul>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 trace는 기존 로컬 artifact만 읽습니다. live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def build_source_refresh_brief(
@@ -2237,6 +2493,7 @@ def write_today_surface(
     source_refresh_surface_path: str | Path | None = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     review_surface_path: str | Path | None = DEFAULT_DAILY_REVIEW_SURFACE,
     pattern_radar_surface_path: str | Path | None = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
+    run_trace_surface_path: str | Path | None = DEFAULT_RUN_TRACE_SURFACE,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -2277,6 +2534,7 @@ def write_today_surface(
             source_refresh_surface_path=Path(source_refresh_surface_path) if source_refresh_surface_path else None,
             review_surface_path=Path(review_surface_path) if review_surface_path else None,
             pattern_radar_surface_path=Path(pattern_radar_surface_path) if pattern_radar_surface_path else None,
+            run_trace_surface_path=Path(run_trace_surface_path) if run_trace_surface_path else None,
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
             journal_surface_path=Path(journal_surface_path) if journal_surface_path else None,
@@ -2307,6 +2565,7 @@ def render_today_surface(
     source_refresh_surface_path: Path | None = None,
     review_surface_path: Path | None = None,
     pattern_radar_surface_path: Path | None = None,
+    run_trace_surface_path: Path | None = None,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
     journal_surface_path: Path | None = None,
@@ -2475,6 +2734,11 @@ def render_today_surface(
         if pattern_radar_surface_path
         else "<span>방식 업데이트 없음</span>"
     )
+    run_trace_link = (
+        f"<a href='{esc(_relative_href(run_trace_surface_path))}'>오늘 실행 trace</a>"
+        if run_trace_surface_path
+        else "<span>오늘 실행 trace 없음</span>"
+    )
     questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
@@ -2597,6 +2861,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 {source_refresh_link}
 {review_link}
 {pattern_radar_link}
+{run_trace_link}
 {journal_link}
 {task_queue_link}
 {task_ledger_link}
@@ -2635,6 +2900,8 @@ def archive_daily_run(
     daily_review_surface_path: str | Path | None = None,
     pattern_radar_path: str | Path | None = None,
     pattern_radar_surface_path: str | Path | None = None,
+    run_trace_path: str | Path | None = None,
+    run_trace_surface_path: str | Path | None = None,
     vault_compile_path: str | Path | None = None,
     vault_surface_path: str | Path | None = None,
     agenda_path: str | Path | None = None,
@@ -2662,6 +2929,8 @@ def archive_daily_run(
         "daily_review_surface": daily_review_surface_path,
         "agent_pattern_radar": pattern_radar_path,
         "agent_pattern_radar_surface": pattern_radar_surface_path,
+        "run_trace": run_trace_path,
+        "run_trace_surface": run_trace_surface_path,
         "vault_compile": vault_compile_path,
         "vault": vault_surface_path,
         "daily_agenda": agenda_path,
@@ -3752,6 +4021,7 @@ def build_morning_control_packet(
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
+    run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
     task_queue_surface_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
@@ -3811,6 +4081,7 @@ def build_morning_control_packet(
             "agenda": Path(agenda_surface_path).as_posix(),
             "review": Path(review_surface_path).as_posix(),
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
+            "trace": Path(run_trace_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
             "journal": Path(journal_surface_path).as_posix(),
             "tasks": Path(task_queue_surface_path).as_posix(),
@@ -3870,6 +4141,7 @@ def write_morning_control_packet(
     agenda_surface_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
+    run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
 ) -> Path:
@@ -3890,6 +4162,7 @@ def write_morning_control_packet(
         agenda_surface_path=agenda_surface_path,
         review_surface_path=review_surface_path,
         pattern_radar_surface_path=pattern_radar_surface_path,
+        run_trace_surface_path=run_trace_surface_path,
     )
     write_json(payload, artifact_output_path)
     target = Path(surface_output_path)
@@ -5015,6 +5288,122 @@ def _load_optional_json(path: str | Path) -> dict[str, Any]:
         return load_json(target)
     except json.JSONDecodeError:
         return {}
+
+
+def _run_trace_step(
+    *,
+    name: str,
+    path: str | Path,
+    stage: str,
+    influence: str,
+    required: bool,
+    now: datetime,
+) -> dict[str, Any]:
+    target = Path(path)
+    payload = _load_optional_json(target)
+    exists = target.exists()
+    age_hours = _readiness_age_hours(target, payload=payload, now=now) if exists else None
+    freshness_status = "missing"
+    if exists and age_hours is not None:
+        freshness_status = "fresh" if age_hours <= 24 else "stale"
+    return {
+        "name": name,
+        "stage": stage,
+        "path": target.as_posix(),
+        "required": required,
+        "exists": exists,
+        "status": payload.get("status", "present" if exists else "missing"),
+        "freshness_status": freshness_status,
+        "age_hours": round(age_hours, 2) if age_hours is not None else None,
+        "generated_at": payload.get("generated_at", "") if payload else "",
+        "schema_version": payload.get("schema_version", "") if payload else "",
+        "influence": influence,
+    }
+
+
+def _run_trace_run_id(payloads: dict[str, dict[str, Any]]) -> str:
+    for name in ["scenario_report", "daily_scout", "analyst_journal", "topic_memory"]:
+        value = payloads.get(name, {}).get("run_id")
+        if value:
+            return str(value)
+    return "local-daily-loop"
+
+
+def _run_trace_influences(payloads: dict[str, dict[str, Any]]) -> list[dict[str, str]]:
+    scout = payloads.get("daily_scout", {})
+    evidence = payloads.get("evidence_catalog", {})
+    memory = payloads.get("topic_memory", {})
+    verdict = payloads.get("verdict", {})
+    pattern = payloads.get("pattern_radar", {})
+    review = payloads.get("daily_review", {})
+    recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    primary = verdict.get("primary_next_step", {}) if verdict else {}
+    pattern_summary = pattern.get("summary", {})
+    review_summary = review.get("summary", {})
+    return [
+        {
+            "label": "오늘 먼저 볼 주제",
+            "value": recommended.get("name", primary.get("title", "없음")),
+            "source": "daily_scout",
+        },
+        {
+            "label": "근거 개수",
+            "value": str(len(evidence.get("items", []))),
+            "source": "evidence_catalog",
+        },
+        {
+            "label": "누적 실행",
+            "value": f"{memory.get('run_count', 0)}회",
+            "source": "topic_memory",
+        },
+        {
+            "label": "다음 안전 후보",
+            "value": pattern_summary.get("top_next_pattern", "pattern review"),
+            "source": "pattern_radar",
+        },
+        {
+            "label": "review 응답",
+            "value": f"{review_summary.get('response_count', 0)}개",
+            "source": "daily_review",
+        },
+    ]
+
+
+def _run_trace_external_flags(payloads: dict[str, dict[str, Any]]) -> list[str]:
+    flags: list[str] = []
+    for name, payload in payloads.items():
+        if payload.get("external_effect_performed") is True:
+            flags.append(f"{name}.external_effect_performed")
+        if payload.get("host_write_performed") is True:
+            flags.append(f"{name}.host_write_performed")
+    return flags
+
+
+def _run_trace_weak_spots(
+    *,
+    trace_steps: list[dict[str, Any]],
+    payloads: dict[str, dict[str, Any]],
+    external_flags: list[str],
+) -> list[str]:
+    weak: list[str] = []
+    missing_required = [step["name"] for step in trace_steps if step["required"] and step["status"] == "missing"]
+    if missing_required:
+        weak.append(f"필수 trace step 누락: {', '.join(missing_required)}")
+    stale = [step["name"] for step in trace_steps if step["freshness_status"] == "stale"]
+    if stale:
+        weak.append(f"오래된 trace step: {', '.join(stale[:5])}")
+    evidence = payloads.get("evidence_catalog", {})
+    source_rows = evidence.get("source_status", [])
+    weak_sources = [
+        row.get("source_name", "source")
+        for row in source_rows
+        if row.get("freshness_status") in {"stale", "unknown"} or row.get("relevance_label") in {"weak", "unscored"}
+    ]
+    if weak_sources:
+        weak.append(f"약하거나 오래된 근거 source: {', '.join(weak_sources[:5])}")
+    if external_flags:
+        weak.append(f"외부효과 flag 확인 필요: {', '.join(external_flags)}")
+    return weak
 
 
 def _morning_pending_decisions(

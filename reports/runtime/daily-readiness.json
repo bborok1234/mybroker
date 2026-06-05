@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-05T17:38:36.011416+00:00",
+  "generated_at": "2026-06-05T17:50:21.625128+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:35.986207+00:00",
+      "generated_at": "2026-06-05T17:50:21.597349+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -52,7 +52,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:35.985381+00:00",
+      "generated_at": "2026-06-05T17:50:21.596785+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -74,7 +74,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:36.011024+00:00",
+      "generated_at": "2026-06-05T17:50:21.624723+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -89,6 +89,28 @@
       "schema_version": ""
     },
     {
+      "name": "run_trace",
+      "path": "reports/runtime/run-trace.json",
+      "kind": "control_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-05T17:50:21.621559+00:00",
+      "schema_version": "local_run_trace.v1"
+    },
+    {
+      "name": "run_trace_surface",
+      "path": "reports/product/run-trace.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
       "name": "daily_scout",
       "path": "reports/daily/scout.json",
       "kind": "machine_artifact",
@@ -96,7 +118,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:35.983834+00:00",
+      "generated_at": "2026-06-05T17:50:21.595148+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -107,7 +129,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:35.982698+00:00",
+      "generated_at": "2026-06-05T17:50:21.594213+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -118,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:35.983022+00:00",
+      "generated_at": "2026-06-05T17:50:21.594396+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -129,7 +151,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:35.987229+00:00",
+      "generated_at": "2026-06-05T17:50:21.598854+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -140,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:35.987229+00:00",
+      "generated_at": "2026-06-05T17:50:21.598854+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -151,7 +173,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:35.995596+00:00",
+      "generated_at": "2026-06-05T17:50:21.606257+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -161,7 +183,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 10.15,
+      "age_hours": 10.34,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -173,7 +195,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:36.008436+00:00",
+      "generated_at": "2026-06-05T17:50:21.619817+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -184,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T17:38:36.008858+00:00",
+      "generated_at": "2026-06-05T17:50:21.620256+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -233,6 +255,7 @@
     "morning": "reports/product/morning.html",
     "scheduler": "reports/product/scheduler.html",
     "source_refresh": "reports/product/source-refresh.html",
+    "trace": "reports/product/run-trace.html",
     "today": "reports/product/today.html",
     "agenda": "reports/product/daily-agenda.html",
     "memory": "reports/product/memory.html",

@@ -27,6 +27,7 @@ from mybroker.appliance import (
     write_phone_access_plan,
     write_runtime_doctor,
     write_runtime_playbook,
+    write_run_trace,
     write_daily_review,
     write_scheduler_activation_verify,
     write_scheduler_activation_preflight,
@@ -37,6 +38,7 @@ from mybroker.appliance import (
     write_source_refresh_brief,
     write_today_surface,
     validate_morning_control_packet_file,
+    validate_run_trace_file,
     validate_agent_pattern_radar_file,
     validate_daily_brief_agenda_file,
     validate_daily_brief_agenda_payload,
@@ -934,6 +936,8 @@ class LocalApplianceTests(unittest.TestCase):
             source_refresh_brief_errors = validate_source_refresh_brief_file(root / "reports" / "runtime" / "source-refresh-brief.json")
             pattern_radar_payload = json.loads((root / "reports" / "runtime" / "agent-pattern-radar.json").read_text(encoding="utf-8"))
             pattern_radar_errors = validate_agent_pattern_radar_file(root / "reports" / "runtime" / "agent-pattern-radar.json")
+            run_trace_payload = json.loads((root / "reports" / "runtime" / "run-trace.json").read_text(encoding="utf-8"))
+            run_trace_errors = validate_run_trace_file(root / "reports" / "runtime" / "run-trace.json")
             review_payload = json.loads((root / "reports" / "memory" / "daily-review.json").read_text(encoding="utf-8"))
             review_errors = validate_daily_review_file(root / "reports" / "memory" / "daily-review.json")
             scheduler_operations_payload = json.loads((root / "reports" / "runtime" / "scheduler-operations.json").read_text(encoding="utf-8"))
@@ -945,6 +949,7 @@ class LocalApplianceTests(unittest.TestCase):
             readiness_html = (root / "reports" / "product" / "readiness.html").read_text(encoding="utf-8")
             source_refresh_html = (root / "reports" / "product" / "source-refresh.html").read_text(encoding="utf-8")
             pattern_radar_html = (root / "reports" / "product" / "pattern-radar.html").read_text(encoding="utf-8")
+            run_trace_html = (root / "reports" / "product" / "run-trace.html").read_text(encoding="utf-8")
             review_html = (root / "reports" / "product" / "review.html").read_text(encoding="utf-8")
             scheduler_html = (root / "reports" / "product" / "scheduler.html").read_text(encoding="utf-8")
             vault_html = (root / "reports" / "product" / "vault.html").read_text(encoding="utf-8")
@@ -962,6 +967,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("scheduler", morning_payload["phone_links"])
         self.assertIn("source_refresh", morning_payload["phone_links"])
         self.assertIn("pattern_radar", morning_payload["phone_links"])
+        self.assertIn("trace", morning_payload["phone_links"])
         self.assertIn("review", morning_payload["phone_links"])
         self.assertEqual(agenda_payload["schema_version"], "daily_brief_agenda.v1")
         self.assertEqual(agenda_errors, [])
@@ -979,6 +985,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(item["name"] == "scheduler_operations" for item in readiness_payload["artifacts"]))
         self.assertIn("source_refresh", readiness_payload["phone_links"])
         self.assertIn("scheduler", readiness_payload["phone_links"])
+        self.assertIn("trace", readiness_payload["phone_links"])
+        self.assertTrue(any(item["name"] == "run_trace" for item in readiness_payload["artifacts"]))
         self.assertEqual(source_refresh_brief_payload["schema_version"], "source_refresh_brief.v1")
         self.assertEqual(source_refresh_brief_errors, [])
         self.assertFalse(source_refresh_brief_payload["external_effect_performed"])
@@ -995,6 +1003,13 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(case["source"] == "TraceAgent" for case in pattern_radar_payload["cases"]))
         self.assertTrue(any(case["source"] == "TaskWeaver" and case["decision"] == "defer" for case in pattern_radar_payload["cases"]))
         self.assertTrue(any(case["decision"] == "reject" for case in pattern_radar_payload["cases"]))
+        self.assertEqual(run_trace_payload["schema_version"], "local_run_trace.v1")
+        self.assertEqual(run_trace_errors, [])
+        self.assertFalse(run_trace_payload["external_effect_performed"])
+        self.assertFalse(run_trace_payload["host_write_performed"])
+        self.assertGreaterEqual(run_trace_payload["summary"]["step_count"], 10)
+        self.assertTrue(any(step["name"] == "daily_scout" for step in run_trace_payload["trace_steps"]))
+        self.assertTrue(any(step["name"] == "today_surface" for step in run_trace_payload["trace_steps"]))
         self.assertEqual(review_payload["schema_version"], "daily_review.v1")
         self.assertEqual(review_errors, [])
         self.assertEqual(validate_daily_review_payload(review_payload), [])
@@ -1014,6 +1029,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("daily_review_surface", manifest_payload["artifacts"])
         self.assertIn("agent_pattern_radar", manifest_payload["artifacts"])
         self.assertIn("agent_pattern_radar_surface", manifest_payload["artifacts"])
+        self.assertIn("run_trace", manifest_payload["artifacts"])
+        self.assertIn("run_trace_surface", manifest_payload["artifacts"])
         self.assertIn("source_refresh_brief", manifest_payload["artifacts"])
         self.assertIn("source_refresh_brief_surface", manifest_payload["artifacts"])
         self.assertIn("scheduler_operations", manifest_payload["artifacts"])
@@ -1021,6 +1038,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("오늘 20분 agenda", today_html)
         self.assertIn("오늘 review 기록", today_html)
         self.assertIn("방식 업데이트 레이더", today_html)
+        self.assertIn("오늘 실행 trace", today_html)
         self.assertIn("Semiconductor cycle note", today_html)
         self.assertIn("오늘 20분 시장 공부 순서", agenda_html)
         self.assertIn("아직 결론내리면 안 되는 이유", agenda_html)
@@ -1032,12 +1050,16 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("work-buddy", pattern_radar_html)
         self.assertIn("TraceAgent", pattern_radar_html)
         self.assertNotIn("schema_version", pattern_radar_html)
+        self.assertIn("오늘 실행 근거 추적", run_trace_html)
+        self.assertIn("단계별 trace", run_trace_html)
+        self.assertNotIn("schema_version", run_trace_html)
         self.assertIn("오늘 읽은 것과 내일 더 볼 것", review_html)
         self.assertIn("자동 실행 준비 상태", scheduler_html)
         self.assertIn("운영 증거", scheduler_html)
         self.assertIn("vault", morning_html)
         self.assertIn("readiness", morning_html)
         self.assertIn("source_refresh", morning_html)
+        self.assertIn("trace", morning_html)
         self.assertIn("pattern_radar", morning_html)
         self.assertIn("scheduler", morning_html)
         self.assertIn("컴파일된 리서치 노트", vault_html)
