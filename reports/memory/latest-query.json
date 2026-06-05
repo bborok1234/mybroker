@@ -1,10 +1,11 @@
 {
   "schema_version": "personal_memory_query.v1",
-  "generated_at": "2026-06-05T06:42:22.260538+00:00",
+  "generated_at": "2026-06-05T08:39:23.721226+00:00",
   "query": "semiconductor cycle",
   "status": "matched",
   "matched_topic_count": 2,
   "matched_archive_count": 1,
+  "matched_vault_note_count": 1,
   "matched_topics": [
     {
       "topic_id": "korea-semiconductors",
@@ -61,7 +62,7 @@
   "matched_archives": [
     {
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T06:42:22.078089+00:00",
+      "generated_at": "2026-06-05T07:15:47.041653+00:00",
       "score": 0.0,
       "archive_dir": "reports/archive/2026-06-05",
       "artifacts": {
@@ -74,11 +75,29 @@
       }
     }
   ],
+  "matched_vault_notes": [
+    {
+      "title": "Semiconductor cycle learning note",
+      "topic_name": "Semiconductors",
+      "score": 0.599,
+      "source_path": "examples/vault/raw/semiconductor-cycle.md",
+      "wiki_path": "reports/vault/wiki/semiconductors/semiconductor-cycle-learning-note.md",
+      "key_takeaways": [
+        "AI data center demand can lift chip suppliers before the effect is visible in every company's reported revenue.",
+        "Memory pricing remains cyclical, so a beginner should separate structural AI demand from short-term inventory swings.",
+        "Before trusting the trend, inspect source freshness, whether multiple sources agree, and whether the narrative is already crowded."
+      ],
+      "why_matched": [
+        "'semiconductor' 포함",
+        "'cycle' 포함"
+      ]
+    }
+  ],
   "source_relevance": [
     {
       "source_name": "GDELT",
-      "freshness_status": "live_error_fallback_sample",
-      "relevance_score": "0.98",
+      "freshness_status": "sample_cache",
+      "relevance_score": "0.97",
       "relevance_label": "strong",
       "item_count": "2"
     },
@@ -91,8 +110,8 @@
     },
     {
       "source_name": "Stooq",
-      "freshness_status": "live_error_fallback_sample",
-      "relevance_score": "0.81",
+      "freshness_status": "sample_cache",
+      "relevance_score": "0.78",
       "relevance_label": "strong",
       "item_count": "1"
     }

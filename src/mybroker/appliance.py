@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT
+
 
 TODAY_SURFACE_SCHEMA_VERSION = "today_surface.v1"
 NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
@@ -946,9 +948,11 @@ def build_memory_index(
     memory_path: str | Path = "reports/memory/topic-memory.json",
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
     evidence_path: str | Path = "reports/evidence/daily-evidence-catalog.json",
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
 ) -> dict[str, Any]:
     memory = load_json(memory_path)
     evidence = load_json(evidence_path) if Path(evidence_path).exists() else {}
+    vault = load_json(vault_path) if Path(vault_path).exists() else {}
     archive_manifests = []
     for manifest_path in sorted(Path(archive_root).glob("*/manifest.json"), reverse=True):
         try:
@@ -987,6 +991,8 @@ def build_memory_index(
             }
             for row in evidence.get("source_status", [])
         ],
+        "vault_path": Path(vault_path).as_posix(),
+        "vault_notes": _vault_notes_for_memory(vault),
         "policy": "research_only",
     }
 
@@ -996,10 +1002,11 @@ def write_memory_surface(
     memory_path: str | Path = "reports/memory/topic-memory.json",
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
     evidence_path: str | Path = "reports/evidence/daily-evidence-catalog.json",
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
     index_output_path: str | Path = DEFAULT_MEMORY_INDEX_OUTPUT,
     output_path: str | Path = DEFAULT_MEMORY_OUTPUT,
 ) -> Path:
-    index = build_memory_index(memory_path=memory_path, archive_root=archive_root, evidence_path=evidence_path)
+    index = build_memory_index(memory_path=memory_path, archive_root=archive_root, evidence_path=evidence_path, vault_path=vault_path)
     write_json(index, index_output_path)
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -1013,9 +1020,10 @@ def build_memory_query(
     memory_path: str | Path = "reports/memory/topic-memory.json",
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
     evidence_path: str | Path = "reports/evidence/daily-evidence-catalog.json",
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
     limit: int = 5,
 ) -> dict[str, Any]:
-    index = build_memory_index(memory_path=memory_path, archive_root=archive_root, evidence_path=evidence_path)
+    index = build_memory_index(memory_path=memory_path, archive_root=archive_root, evidence_path=evidence_path, vault_path=vault_path)
     tokens = _query_tokens(query)
     matched_topics = []
     for topic in index.get("topics", []):
@@ -1059,9 +1067,32 @@ def build_memory_query(
             })
     matched_archives.sort(key=lambda row: (row["score"], row.get("generated_at", "")), reverse=True)
 
+    matched_vault_notes = []
+    for note in index.get("vault_notes", []):
+        haystacks = [
+            note.get("title", ""),
+            note.get("topic_name", ""),
+            note.get("source_path", ""),
+            note.get("wiki_path", ""),
+            " ".join(note.get("key_takeaways", [])),
+        ]
+        score = _match_score(tokens, haystacks)
+        if score > 0:
+            matched_vault_notes.append({
+                "title": note.get("title", ""),
+                "topic_name": note.get("topic_name", ""),
+                "score": round(score, 3),
+                "source_path": note.get("source_path", ""),
+                "wiki_path": note.get("wiki_path", ""),
+                "key_takeaways": note.get("key_takeaways", [])[:5],
+                "why_matched": _match_reasons(tokens, haystacks),
+            })
+    matched_vault_notes.sort(key=lambda row: (-row["score"], row["title"]))
+
     selected_topics = matched_topics[:limit]
     selected_archives = matched_archives[:limit]
-    status = "matched" if selected_topics or selected_archives else "no_direct_match"
+    selected_vault_notes = matched_vault_notes[:limit]
+    status = "matched" if selected_topics or selected_archives or selected_vault_notes else "no_direct_match"
     next_questions = _query_next_questions(query=query, topics=selected_topics, status=status)
     return {
         "schema_version": MEMORY_QUERY_SCHEMA_VERSION,
@@ -1070,8 +1101,10 @@ def build_memory_query(
         "status": status,
         "matched_topic_count": len(selected_topics),
         "matched_archive_count": len(selected_archives),
+        "matched_vault_note_count": len(selected_vault_notes),
         "matched_topics": selected_topics,
         "matched_archives": selected_archives,
+        "matched_vault_notes": selected_vault_notes,
         "source_relevance": index.get("source_relevance", []),
         "next_questions": next_questions,
         "policy": "research_only",
@@ -1088,6 +1121,7 @@ def write_memory_query(
     memory_path: str | Path = "reports/memory/topic-memory.json",
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
     evidence_path: str | Path = "reports/evidence/daily-evidence-catalog.json",
+    vault_path: str | Path = DEFAULT_VAULT_COMPILE_OUTPUT,
     output_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
     surface_path: str | Path = DEFAULT_MEMORY_QUERY_SURFACE,
     limit: int = 5,
@@ -1097,6 +1131,7 @@ def write_memory_query(
         memory_path=memory_path,
         archive_root=archive_root,
         evidence_path=evidence_path,
+        vault_path=vault_path,
         limit=limit,
     )
     write_json(payload, output_path)
@@ -1134,6 +1169,16 @@ def render_memory_surface(index: dict[str, Any]) -> str:
         "</article>"
         for manifest in index.get("archives", [])
     ) or "<p>아직 archive manifest가 없습니다.</p>"
+    vault_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(note.get('topic_name', ''))}</span>"
+        f"<h3>{esc(note.get('title', ''))}</h3>"
+        f"<p>{esc(note.get('source_path', ''))}</p>"
+        f"<small>{esc(' · '.join(note.get('key_takeaways', [])[:2]))}</small>"
+        f"<p><a href='{esc(note.get('wiki_path', ''))}'>wiki note</a></p>"
+        "</article>"
+        for note in index.get("vault_notes", [])[:8]
+    ) or "<p>아직 컴파일된 vault note가 없습니다.</p>"
     run_items = "".join(
         f"<li><strong>{esc(run.get('run_id', ''))}</strong><span>{esc(run.get('generated_at', ''))} · changed {esc(', '.join(run.get('changed_topics', [])) or 'none')}</span></li>"
         for run in index.get("recent_runs", [])
@@ -1180,7 +1225,7 @@ ul {{ padding-left:18px; }}
 <section class="metrics">
 <article class="metric"><span>Memory runs</span><strong>{esc(index.get('run_count', 0))}</strong></article>
 <article class="metric"><span>Topics</span><strong>{esc(index.get('topic_count', 0))}</strong></article>
-<article class="metric"><span>Archives</span><strong>{esc(len(index.get('archives', [])))}</strong></article>
+<article class="metric"><span>Vault notes</span><strong>{esc(len(index.get('vault_notes', [])))}</strong></article>
 </section>
 <section class="section">
 <h2>주제별 누적 기억</h2>
@@ -1189,6 +1234,10 @@ ul {{ padding-left:18px; }}
 <section class="section">
 <h2>근거 품질 추적</h2>
 <table><thead><tr><th>Source</th><th>Label</th><th>Score</th><th>Freshness</th></tr></thead><tbody>{source_rows}</tbody></table>
+</section>
+<section class="section">
+<h2>Vault 원천 노트</h2>
+<div class="grid">{vault_cards}</div>
 </section>
 <section class="section">
 <h2>최근 실행</h2>
@@ -1223,6 +1272,16 @@ def render_memory_query_surface(payload: dict[str, Any]) -> str:
         "</article>"
         for archive in payload.get("matched_archives", [])
     ) or "<p>연결할 아카이브가 아직 없습니다.</p>"
+    vault_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(note.get('topic_name', ''))} · 관련도 {esc(note.get('score', 0))}</span>"
+        f"<h3>{esc(note.get('title', ''))}</h3>"
+        f"<p>{esc(note.get('source_path', ''))}</p>"
+        f"<small>{esc(' · '.join(note.get('why_matched', [])) or 'matched note')}</small>"
+        f"<p><a href='{esc(note.get('wiki_path', ''))}'>wiki note</a></p>"
+        "</article>"
+        for note in payload.get("matched_vault_notes", [])
+    ) or "<p>연결된 vault note가 없습니다.</p>"
     questions = "".join(f"<li>{esc(question)}</li>" for question in payload.get("next_questions", []))
     source_rows = "".join(
         "<tr>"
@@ -1278,6 +1337,10 @@ td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; }}
 <section class="section">
 <h2>관련 아카이브</h2>
 <div class="grid">{archive_cards}</div>
+</section>
+<section class="section">
+<h2>관련 Vault 노트</h2>
+<div class="grid">{vault_cards}</div>
 </section>
 <section class="section">
 <h2>자료 상태</h2>
@@ -1458,6 +1521,23 @@ def _daily_questions(memory_topics: list[dict[str, Any]], evidence: dict[str, An
         questions.append("오늘 부족한 근거가 결론의 강도를 얼마나 낮추나요?")
     questions.append("이 브리프가 틀렸다고 판단할 가장 빠른 반대 신호는 무엇인가요?")
     return questions[:5]
+
+
+def _vault_notes_for_memory(vault: dict[str, Any]) -> list[dict[str, Any]]:
+    if vault.get("schema_version") != "knowledge_vault_compile.v1":
+        return []
+    notes = []
+    for note in vault.get("compiled_notes", []):
+        notes.append({
+            "title": note.get("title", ""),
+            "topic_id": note.get("topic_id", ""),
+            "topic_name": note.get("topic_name", ""),
+            "source_path": note.get("source_path", ""),
+            "wiki_path": note.get("wiki_path", ""),
+            "source_hash": note.get("source_hash", ""),
+            "key_takeaways": note.get("key_takeaways", []),
+        })
+    return notes
 
 
 def _query_tokens(query: str) -> list[str]:
