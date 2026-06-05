@@ -294,7 +294,7 @@ def write_scheduler_apply(
         else:
             result = _execute_scheduler_action(action)
         results.append(result)
-    post_status_path = write_scheduler_status(project_root=root, output_path=DEFAULT_SCHEDULER_STATUS_OUTPUT)
+    post_status_path = write_scheduler_status(project_root=root, output_path=root / DEFAULT_SCHEDULER_STATUS_OUTPUT)
     payload = {
         "schema_version": SCHEDULER_APPLY_SCHEMA_VERSION,
         "generated_at": _now(),
