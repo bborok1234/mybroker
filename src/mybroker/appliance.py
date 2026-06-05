@@ -11,7 +11,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from mybroker.topics import DEFAULT_DAILY_SCOUT_OUTPUT, DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT, DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT
+from mybroker.topics import (
+    DEFAULT_DAILY_SCOUT_OUTPUT,
+    DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
+    DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
+)
 from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT
 
 
@@ -738,6 +743,7 @@ def write_today_surface(
     scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
     refresh_plan_path: str | Path = DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT,
     refresh_apply_path: str | Path = DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
+    refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -750,6 +756,7 @@ def write_today_surface(
     scout = load_json(scout_path) if Path(scout_path).exists() else {}
     refresh_plan = load_json(refresh_plan_path) if Path(refresh_plan_path).exists() else {}
     refresh_apply = load_json(refresh_apply_path) if Path(refresh_apply_path).exists() else {}
+    refresh_live_gate = load_json(refresh_live_gate_path) if Path(refresh_live_gate_path).exists() else {}
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
@@ -762,6 +769,7 @@ def write_today_surface(
             scout=scout,
             refresh_plan=refresh_plan,
             refresh_apply=refresh_apply,
+            refresh_live_gate=refresh_live_gate,
             brief_path=Path(brief_path),
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
@@ -781,6 +789,7 @@ def render_today_surface(
     scout: dict[str, Any],
     refresh_plan: dict[str, Any],
     refresh_apply: dict[str, Any],
+    refresh_live_gate: dict[str, Any],
     brief_path: Path,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
@@ -795,6 +804,7 @@ def render_today_surface(
     scout_recommendations = scout.get("recommendations", []) if scout.get("schema_version") == "daily_scout.v1" else []
     refresh_actions = refresh_plan.get("actions", []) if refresh_plan.get("schema_version") == "source_refresh_plan.v1" else []
     refresh_results = refresh_apply.get("results", []) if refresh_apply.get("schema_version") == "source_refresh_apply.v1" else []
+    live_gate_decisions = refresh_live_gate.get("decisions", []) if refresh_live_gate.get("schema_version") == "source_refresh_live_gate.v1" else []
     scout_cards = "".join(
         "<article class='card'>"
         f"<span>{esc(item.get('action', 'monitor'))} · #{esc(item.get('priority_rank', ''))}</span>"
@@ -822,6 +832,15 @@ def render_today_surface(
         "</article>"
         for result in refresh_results[:4]
     ) or "<p>오늘 source refresh apply 판정이 아직 없습니다.</p>"
+    live_gate_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(decision.get('status', 'review'))} · {esc(decision.get('approval_scope', ''))}</span>"
+        f"<strong>{esc(decision.get('id', 'live gate'))}</strong>"
+        f"<p>{esc(decision.get('stale_context_guard', ''))}</p>"
+        f"<small>{esc(decision.get('copy_ready_response', ''))}</small>"
+        "</article>"
+        for decision in live_gate_decisions[:3]
+    ) or "<p>오늘 승인 대기 중인 live refresh gate가 없습니다.</p>"
     theme_cards = "".join(
         "<article class='card'>"
         f"<span>{esc(topic.get('name', ''))}</span>"
@@ -934,6 +953,10 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <div class="stack">{refresh_apply_cards}</div>
 </section>
 <section class="section">
+<h2>라이브 새로고침 게이트</h2>
+<div class="stack">{live_gate_cards}</div>
+</section>
+<section class="section">
 <h2>오늘의 주제 기억</h2>
 <div class="stack">{theme_cards}</div>
 </section>
@@ -990,6 +1013,7 @@ def archive_daily_run(
     today_path: str | Path,
     refresh_plan_path: str | Path | None = None,
     refresh_apply_path: str | Path | None = None,
+    refresh_live_gate_path: str | Path | None = None,
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
 ) -> Path:
     timestamp = datetime.now(timezone.utc)
@@ -1003,6 +1027,7 @@ def archive_daily_run(
         "memory": memory_path,
         "source_refresh_plan": refresh_plan_path,
         "source_refresh_apply": refresh_apply_path,
+        "source_refresh_live_gate": refresh_live_gate_path,
         "brief": brief_path,
         "today": today_path,
     }.items():

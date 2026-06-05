@@ -1,0 +1,60 @@
+{
+  "schema_version": "source_refresh_live_gate.v1",
+  "generated_at": "2026-06-05T12:28:44.786723+00:00",
+  "inputs": {
+    "refresh_apply_path": "reports/daily/source-refresh-apply.json"
+  },
+  "status": "approval_required",
+  "blocked_action_count": 2,
+  "proposed_command_count": 1,
+  "decisions": [
+    {
+      "id": "live_network_refresh",
+      "status": "needs_operator_approval",
+      "approval_scope": "live_network_refresh",
+      "risk_level": "medium",
+      "reversibility": "cache_artifact_can_be_deleted",
+      "copy_ready_response": "approve live_network_refresh live_network_refresh",
+      "agent_will_run": [
+        "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json"
+      ],
+      "agent_will_not_run": [
+        "paid API calls",
+        "credentialed sources",
+        "host-level scheduler or private serving commands",
+        "notification send",
+        "account access",
+        "execution or personalized advice"
+      ],
+      "stale_context_guard": "Regenerate source_refresh_apply.v1 before approval if scout, evidence, or source plan changed."
+    }
+  ],
+  "blocked_actions": [
+    {
+      "source_name": "GDELT",
+      "adapter_id": "gdelt-live",
+      "reason": "GDELT 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.",
+      "command": "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json",
+      "expected_artifact": "reports/evidence/live-evidence-catalog.json"
+    },
+    {
+      "source_name": "Stooq",
+      "adapter_id": "stooq-live",
+      "reason": "Stooq 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.",
+      "command": "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json",
+      "expected_artifact": "reports/evidence/live-evidence-catalog.json"
+    }
+  ],
+  "external_effect_performed": false,
+  "policy": {
+    "output_boundary": "research_only",
+    "disallowed": [
+      "paid_api_operations",
+      "account_credentials",
+      "live_trading",
+      "discretionary_management",
+      "unsupported_personalized_recommendations"
+    ]
+  },
+  "next_step": "operator_may_approve_live_network_refresh_scope"
+}
