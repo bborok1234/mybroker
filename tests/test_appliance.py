@@ -8,6 +8,8 @@ from pathlib import Path
 from mybroker.appliance import (
     archive_daily_run,
     send_notification_payload,
+    build_task_status_apply,
+    record_task_status_response,
     write_analyst_journal,
     write_analyst_task_queue,
     write_analyst_task_ledger,
@@ -789,6 +791,77 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("Vault에서 다시 볼 원천 노트", today_surface_html)
         self.assertIn("Semiconductor cycle note", today_surface_html)
         self.assertIn("Vault 노트 &#x27;Semiconductor cycle note&#x27;가 오늘 근거와 같은 방향", today_surface_html)
+
+    def test_task_status_response_apply_updates_ledger_locally(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task_queue = root / "tasks.json"
+            ledger = root / "ledger.json"
+            responses = root / "responses.jsonl"
+            apply_path = root / "apply.json"
+            updated_ledger = root / "ledger-updated.json"
+            surface = root / "ledger.html"
+            task_queue.write_text(
+                json.dumps({
+                    "schema_version": "personal_analyst_task_queue.v1",
+                    "generated_at": "2026-06-05T00:00:00+00:00",
+                    "run_id": "daily-test",
+                    "status": "queued",
+                    "source_journal": "journal.json",
+                    "task_count": 1,
+                    "tasks": [{
+                        "task_id": "AT-001",
+                        "role": "source_scout",
+                        "title": "자료 신선도 확인",
+                        "why": "gap 확인",
+                        "priority": "high",
+                        "status": "queued",
+                        "autonomy_level": "autonomous_local",
+                        "approval_scope": "local_dry_run_only",
+                        "external_effect_allowed": False,
+                        "requires_operator_approval": False,
+                        "inputs": ["evidence.json"],
+                        "suggested_command": "mybroker source-refresh-plan",
+                        "stop_condition": "local_artifact_written",
+                    }],
+                    "reading_order": ["source_scout"],
+                    "policy": "research_only",
+                    "safety_boundary": ["queued_tasks_do_not_execute"],
+                }),
+                encoding="utf-8",
+            )
+            write_analyst_task_ledger(
+                task_queue_path=task_queue,
+                previous_ledger_path=root / "missing.json",
+                status_apply_path=root / "missing-apply.json",
+                artifact_output_path=ledger,
+                surface_output_path=root / "initial.html",
+            )
+            record_task_status_response(
+                response='AT-001 complete "checked dry-run source plan"',
+                responses_path=responses,
+            )
+            apply_payload = build_task_status_apply(
+                ledger_path=ledger,
+                responses_path=responses,
+                output_path=apply_path,
+            )
+            write_analyst_task_ledger(
+                task_queue_path=task_queue,
+                previous_ledger_path=ledger,
+                status_apply_path=apply_path,
+                artifact_output_path=updated_ledger,
+                surface_output_path=surface,
+            )
+            updated = json.loads(updated_ledger.read_text(encoding="utf-8"))
+            html = surface.read_text(encoding="utf-8")
+
+        self.assertEqual(apply_payload["schema_version"], "personal_analyst_task_status_apply.v1")
+        self.assertEqual(apply_payload["applied_count"], 1)
+        self.assertFalse(apply_payload["external_effect_performed"])
+        self.assertEqual(updated["entries"][0]["status"], "completed")
+        self.assertEqual(updated["summary"]["completed"], 1)
+        self.assertIn("checked dry-run source plan", html)
 
 
 if __name__ == "__main__":

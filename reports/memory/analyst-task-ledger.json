@@ -1,6 +1,6 @@
 {
   "schema_version": "personal_analyst_task_ledger.v1",
-  "generated_at": "2026-06-05T13:50:36.037267+00:00",
+  "generated_at": "2026-06-05T14:06:30.073007+00:00",
   "run_id": "daily-research",
   "source_task_queue": "reports/memory/analyst-task-queue.json",
   "previous_ledger": "reports/memory/analyst-task-ledger.json",
@@ -9,7 +9,10 @@
     "ready_for_local_work": 0,
     "carried": 6,
     "blocked_requires_approval": 0,
-    "retired_not_in_current_queue": 0
+    "retired_not_in_current_queue": 0,
+    "completed": 0,
+    "deferred": 0,
+    "blocked_by_operator": 0
   },
   "entries": [
     {
@@ -20,16 +23,17 @@
       "title": "자료 신선도와 부족한 근거를 먼저 확인",
       "priority": "high",
       "status": "carried",
-      "previous_status": "ready_for_local_work",
+      "previous_status": "carried",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T13:50:36.037267+00:00",
+      "last_seen_at": "2026-06-05T14:06:30.073007+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_dry_run_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker source-refresh-plan",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
+      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+      "operator_override": {}
     },
     {
       "ledger_id": "daily-research-AT-002",
@@ -39,16 +43,17 @@
       "title": "오늘 초점 주제를 시장 지도에 다시 연결",
       "priority": "high",
       "status": "carried",
-      "previous_status": "ready_for_local_work",
+      "previous_status": "carried",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T13:50:36.037267+00:00",
+      "last_seen_at": "2026-06-05T14:06:30.073007+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_render_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance today",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
+      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+      "operator_override": {}
     },
     {
       "ledger_id": "daily-research-AT-003",
@@ -58,16 +63,17 @@
       "title": "가장 약한 결론을 반대 근거로 공격",
       "priority": "high",
       "status": "carried",
-      "previous_status": "ready_for_local_work",
+      "previous_status": "carried",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T13:50:36.037267+00:00",
+      "last_seen_at": "2026-06-05T14:06:30.073007+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_render_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance journal",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
+      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+      "operator_override": {}
     },
     {
       "ledger_id": "daily-research-AT-004",
@@ -77,16 +83,17 @@
       "title": "초보자가 이해할 질문 하나를 쉬운 언어로 풀기",
       "priority": "medium",
       "status": "carried",
-      "previous_status": "ready_for_local_work",
+      "previous_status": "carried",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T13:50:36.037267+00:00",
+      "last_seen_at": "2026-06-05T14:06:30.073007+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_query_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance query \"오늘 먼저 볼 주제\"",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
+      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+      "operator_override": {}
     },
     {
       "ledger_id": "daily-research-AT-005",
@@ -96,16 +103,17 @@
       "title": "내일 다시 찾을 수 있게 질문과 원천을 정리",
       "priority": "medium",
       "status": "carried",
-      "previous_status": "ready_for_local_work",
+      "previous_status": "carried",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T13:50:36.037267+00:00",
+      "last_seen_at": "2026-06-05T14:06:30.073007+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_render_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance memory",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
+      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+      "operator_override": {}
     },
     {
       "ledger_id": "daily-research-AT-006",
@@ -115,16 +123,17 @@
       "title": "폰에서 볼 표면과 dry-run 알림 상태 점검",
       "priority": "medium",
       "status": "carried",
-      "previous_status": "ready_for_local_work",
+      "previous_status": "carried",
       "first_seen_at": "2026-06-05T13:50:36.032200+00:00",
-      "last_seen_at": "2026-06-05T13:50:36.037267+00:00",
+      "last_seen_at": "2026-06-05T14:06:30.073007+00:00",
       "run_id": "daily-research",
       "approval_scope": "local_dry_run_only",
       "external_effect_allowed": false,
       "requires_operator_approval": false,
       "suggested_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance notify --dry-run",
       "stop_condition": "write_or_refresh_local_artifact_without_external_effect",
-      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요."
+      "operator_note": "이전 run에서도 남아 있던 작업입니다. 오늘 완료할지, 계속 이월할지 판단하세요.",
+      "operator_override": {}
     }
   ],
   "policy": "research_only",

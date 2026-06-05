@@ -117,6 +117,8 @@ PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
 PYTHONPATH=src python3 -m mybroker appliance tasks
 PYTHONPATH=src python3 -m mybroker appliance task-ledger
+PYTHONPATH=src python3 -m mybroker appliance task-response 'AT-001 complete "checked source freshness"'
+PYTHONPATH=src python3 -m mybroker appliance task-status-apply
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
@@ -149,6 +151,9 @@ beginner_tutor, memory_librarian, and publisher roles. It does not execute comma
 host writes, notification send, credentials, and trading remain behind separate approval gates.
 `task-ledger.html` keeps the queue from being a daily reset: it records whether work is newly ready,
 carried from an earlier run, blocked by approval, or no longer present in the current queue.
+`task-response` appends a local JSONL response, and `task-status-apply` validates those responses
+against the current ledger. Supported actions are `complete`, `carry`, `defer`, and `block`.
+The apply artifact records `external_effect_performed: false`; it updates status only.
 
 The local vault is the raw inbox side of the same pattern:
 

@@ -13,6 +13,8 @@ from mybroker.appliance import (
     DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
     DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
     DEFAULT_ANALYST_TASK_LEDGER_OUTPUT,
+    DEFAULT_ANALYST_TASK_RESPONSES,
+    DEFAULT_ANALYST_TASK_STATUS_APPLY,
     DEFAULT_LOCAL_OPS_DIR,
     DEFAULT_MEMORY_INDEX_OUTPUT,
     DEFAULT_MEMORY_QUERY_OUTPUT,
@@ -36,6 +38,8 @@ from mybroker.appliance import (
     write_analyst_journal,
     write_analyst_task_queue,
     write_analyst_task_ledger,
+    build_task_status_apply,
+    record_task_status_response,
     write_memory_query,
     write_memory_surface,
     write_notification_payload,
@@ -53,6 +57,7 @@ from mybroker.appliance import (
     validate_analyst_journal_file,
     validate_analyst_task_queue_file,
     validate_analyst_task_ledger_file,
+    validate_task_status_apply_file,
 )
 from mybroker.data import load_price_csv
 from mybroker.dashboard import build_report_rollup, write_dashboard, write_rollup
@@ -264,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_tasks_parser.add_argument("task_queue_path")
     validate_task_ledger_parser = subcommands.add_parser("validate-analyst-task-ledger", help="Validate a personal_analyst_task_ledger.v1 artifact.")
     validate_task_ledger_parser.add_argument("task_ledger_path")
+    validate_task_apply_parser = subcommands.add_parser("validate-analyst-task-status-apply", help="Validate a personal_analyst_task_status_apply.v1 artifact.")
+    validate_task_apply_parser.add_argument("task_status_apply_path")
 
     brief_parser = subcommands.add_parser("brief", help="Build a user-facing MyBroker product brief from scenario and verdict artifacts.")
     brief_parser.add_argument("--scenario", required=True, help="scenario_report.v1 artifact path.")
@@ -391,8 +398,16 @@ def main(argv: list[str] | None = None) -> int:
     appliance_task_ledger_parser = appliance_subcommands.add_parser("task-ledger", help="Render task state history from the current analyst task queue.")
     appliance_task_ledger_parser.add_argument("--task-queue", default=DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT.as_posix())
     appliance_task_ledger_parser.add_argument("--previous-ledger", default=DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT.as_posix())
+    appliance_task_ledger_parser.add_argument("--status-apply", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
     appliance_task_ledger_parser.add_argument("--artifact-output", default=DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT.as_posix())
     appliance_task_ledger_parser.add_argument("--output", default=DEFAULT_ANALYST_TASK_LEDGER_OUTPUT.as_posix())
+    appliance_task_response_parser = appliance_subcommands.add_parser("task-response", help="Record one local operator task status response.")
+    appliance_task_response_parser.add_argument("response", help='Example: AT-001 complete "checked source freshness"')
+    appliance_task_response_parser.add_argument("--responses", default=DEFAULT_ANALYST_TASK_RESPONSES.as_posix())
+    appliance_task_apply_parser = appliance_subcommands.add_parser("task-status-apply", help="Apply local task status responses to the task ledger.")
+    appliance_task_apply_parser.add_argument("--ledger", default=DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT.as_posix())
+    appliance_task_apply_parser.add_argument("--responses", default=DEFAULT_ANALYST_TASK_RESPONSES.as_posix())
+    appliance_task_apply_parser.add_argument("--output", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
     appliance_query_parser = appliance_subcommands.add_parser("query", help="Search accumulated memory and archives for a beginner-readable question.")
     appliance_query_parser.add_argument("query")
     appliance_query_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
@@ -781,6 +796,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-analyst-task-status-apply":
+        errors = validate_task_status_apply_file(args.task_status_apply_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-vault":
         errors = validate_knowledge_vault_compile_file(args.vault_path)
         if errors:
@@ -1086,12 +1108,33 @@ def main(argv: list[str] | None = None) -> int:
             path = write_analyst_task_ledger(
                 task_queue_path=args.task_queue,
                 previous_ledger_path=args.previous_ledger,
+                status_apply_path=args.status_apply,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
             print(json.dumps({
                 "task_ledger": path.as_posix(),
                 "artifact": args.artifact_output,
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "task-response":
+            path = record_task_status_response(response=args.response, responses_path=args.responses)
+            print(json.dumps({
+                "responses": path.as_posix(),
+                "external_effect_performed": False,
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "task-status-apply":
+            payload = build_task_status_apply(
+                ledger_path=args.ledger,
+                responses_path=args.responses,
+                output_path=args.output,
+            )
+            print(json.dumps({
+                "task_status_apply": args.output,
+                "applied_count": payload["applied_count"],
+                "ignored_count": payload["ignored_count"],
+                "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "query":
@@ -1173,6 +1216,7 @@ def main(argv: list[str] | None = None) -> int:
             task_queue_artifact_path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT
             task_ledger_path = DEFAULT_ANALYST_TASK_LEDGER_OUTPUT
             task_ledger_artifact_path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT
+            task_status_apply_path = DEFAULT_ANALYST_TASK_STATUS_APPLY
             playbook_path = write_runtime_playbook(args.playbook_output)
             plan = build_research_plan(topics_path=topics_path, output_path=plan_path, run_id=args.run_id)
             catalog = collect_topic_evidence(
@@ -1245,6 +1289,7 @@ def main(argv: list[str] | None = None) -> int:
             provisional_task_ledger = write_analyst_task_ledger(
                 task_queue_path=task_queue_artifact_path,
                 previous_ledger_path=task_ledger_artifact_path,
+                status_apply_path=task_status_apply_path,
                 artifact_output_path=task_ledger_artifact_path,
                 surface_output_path=task_ledger_path,
             )
@@ -1313,6 +1358,7 @@ def main(argv: list[str] | None = None) -> int:
             written_task_ledger = write_analyst_task_ledger(
                 task_queue_path=task_queue_artifact_path,
                 previous_ledger_path=task_ledger_artifact_path,
+                status_apply_path=task_status_apply_path,
                 artifact_output_path=task_ledger_artifact_path,
                 surface_output_path=task_ledger_path,
             )

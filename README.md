@@ -72,6 +72,8 @@ PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
 PYTHONPATH=src python3 -m mybroker appliance tasks
 PYTHONPATH=src python3 -m mybroker appliance task-ledger
+PYTHONPATH=src python3 -m mybroker appliance task-response 'AT-001 complete "checked source freshness"'
+PYTHONPATH=src python3 -m mybroker appliance task-status-apply
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
@@ -217,6 +219,9 @@ This follows the Obsidian-vault pattern: each daily run remains a local artifact
 `journal.html` records what the personal analyst concluded, doubted, and queued for tomorrow.
 `tasks.html` turns that journal into role-based next work without executing it.
 `task-ledger.html` records whether queued work is new, carried forward, blocked by approval, or retired from the current queue.
+`task-response` and `task-status-apply` let the operator mark local task status with short
+responses such as `AT-001 complete "checked source freshness"`; this updates ledger state without
+executing tasks or external effects.
 `memory.html` gives the phone-readable view of what has accumulated across runs. `appliance
 query` is the librarian step: it searches accumulated topic memory and archive manifests,
 writes a reproducible query artifact, and renders a phone-readable recall page for the next
