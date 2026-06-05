@@ -1,6 +1,6 @@
 {
   "schema_version": "operator_review_prompt.v1",
-  "generated_at": "2026-06-05T18:27:55.849462+00:00",
+  "generated_at": "2026-06-05T18:45:58.898640+00:00",
   "status": "needs_feedback",
   "summary": {
     "prompt_count": 3,
@@ -21,28 +21,28 @@
         {
           "action": "read",
           "label": "읽었음",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'read \"Semiconductors\" \"Semiconductors을 읽었다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'read \"Semiconductors\" \"Semiconductors을 읽었다\"'",
           "why": "오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다.",
           "external_effect_performed": false
         },
         {
           "action": "more",
           "label": "더 보기",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'more \"Semiconductors\" \"Semiconductors을 내일도 더 보고 싶다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more \"Semiconductors\" \"Semiconductors을 내일도 더 보고 싶다\"'",
           "why": "내일도 이 주제를 더 높은 우선순위로 보게 합니다.",
           "external_effect_performed": false
         },
         {
           "action": "confusing",
           "label": "헷갈림",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'confusing \"Semiconductors\" \"Semiconductors 설명이 아직 어렵다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'confusing \"Semiconductors\" \"Semiconductors 설명이 아직 어렵다\"'",
           "why": "다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.",
           "external_effect_performed": false
         },
         {
           "action": "skip",
           "label": "건너뜀",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'skip \"Semiconductors\" \"Semiconductors은 오늘은 건너뛴다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'skip \"Semiconductors\" \"Semiconductors은 오늘은 건너뛴다\"'",
           "why": "이 주제를 당장은 낮은 우선순위로 내리게 합니다.",
           "external_effect_performed": false
         }
@@ -59,28 +59,28 @@
         {
           "action": "read",
           "label": "읽었음",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'read \"Consumer weakness\" \"Consumer weakness을 읽었다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'read \"Consumer weakness\" \"Consumer weakness을 읽었다\"'",
           "why": "오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다.",
           "external_effect_performed": false
         },
         {
           "action": "more",
           "label": "더 보기",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'more \"Consumer weakness\" \"Consumer weakness을 내일도 더 보고 싶다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more \"Consumer weakness\" \"Consumer weakness을 내일도 더 보고 싶다\"'",
           "why": "내일도 이 주제를 더 높은 우선순위로 보게 합니다.",
           "external_effect_performed": false
         },
         {
           "action": "confusing",
           "label": "헷갈림",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'confusing \"Consumer weakness\" \"Consumer weakness 설명이 아직 어렵다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'confusing \"Consumer weakness\" \"Consumer weakness 설명이 아직 어렵다\"'",
           "why": "다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.",
           "external_effect_performed": false
         },
         {
           "action": "skip",
           "label": "건너뜀",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'skip \"Consumer weakness\" \"Consumer weakness은 오늘은 건너뛴다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'skip \"Consumer weakness\" \"Consumer weakness은 오늘은 건너뛴다\"'",
           "why": "이 주제를 당장은 낮은 우선순위로 내리게 합니다.",
           "external_effect_performed": false
         }
@@ -97,28 +97,28 @@
         {
           "action": "read",
           "label": "읽었음",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'read \"Korea semiconductors\" \"Korea semiconductors을 읽었다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'read \"Korea semiconductors\" \"Korea semiconductors을 읽었다\"'",
           "why": "오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다.",
           "external_effect_performed": false
         },
         {
           "action": "more",
           "label": "더 보기",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'more \"Korea semiconductors\" \"Korea semiconductors을 내일도 더 보고 싶다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more \"Korea semiconductors\" \"Korea semiconductors을 내일도 더 보고 싶다\"'",
           "why": "내일도 이 주제를 더 높은 우선순위로 보게 합니다.",
           "external_effect_performed": false
         },
         {
           "action": "confusing",
           "label": "헷갈림",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'confusing \"Korea semiconductors\" \"Korea semiconductors 설명이 아직 어렵다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'confusing \"Korea semiconductors\" \"Korea semiconductors 설명이 아직 어렵다\"'",
           "why": "다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.",
           "external_effect_performed": false
         },
         {
           "action": "skip",
           "label": "건너뜀",
-          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response 'skip \"Korea semiconductors\" \"Korea semiconductors은 오늘은 건너뛴다\"'",
+          "command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'skip \"Korea semiconductors\" \"Korea semiconductors은 오늘은 건너뛴다\"'",
           "why": "이 주제를 당장은 낮은 우선순위로 내리게 합니다.",
           "external_effect_performed": false
         }
@@ -126,7 +126,7 @@
       "next_agent_effect": "응답은 local review memory에만 저장되고 다음 scout 점수에 반영됩니다."
     }
   ],
-  "next_agent_effect": "review-response를 남기고 appliance run을 다시 실행하면 daily_review가 갱신되고 다음 scout score에 operator_review가 반영됩니다.",
+  "next_agent_effect": "review-response-apply를 남기면 daily_review, daily_scout, review_prompt, review_effect가 같은 local run에서 갱신되고 operator_review 반영 여부가 증명됩니다.",
   "input_artifacts": {
     "scout": "reports/daily/scout.json",
     "daily_review": "reports/memory/daily-review.json",

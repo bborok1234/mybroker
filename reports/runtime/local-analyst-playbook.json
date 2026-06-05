@@ -1,6 +1,6 @@
 {
   "schema_version": "personal_analyst_runtime_playbook.v1",
-  "generated_at": "2026-06-05T18:27:48.355526+00:00",
+  "generated_at": "2026-06-05T18:45:49.091348+00:00",
   "goal": "Run MyBroker as a local personal analyst appliance, not as a generic web app.",
   "absorbed_patterns": [
     {
@@ -27,6 +27,11 @@
       "source": "Obsidian research vault workflows",
       "pattern": "local markdown/file memory that compounds over time",
       "mybroker_translation": "archive manifests, topic memory, source-linked artifacts, daily brief history"
+    },
+    {
+      "source": "Claude Code finance research appliance workflows",
+      "pattern": "plain-language operator commands, Obsidian-style memory, browser/scraper tools, recurring compile/query/audit loops",
+      "mybroker_translation": "phone copy-ready commands, local vault compile, deterministic recall, review-response-apply handoff, and explicit no-external-effect proof"
     }
   ],
   "recommended_runtime": {

@@ -52,6 +52,7 @@ from mybroker.appliance import (
     validate_drift_review_file,
     validate_operator_review_prompt_file,
     validate_operator_review_effect_file,
+    validate_operator_review_response_apply_file,
     validate_scheduler_operations_file,
     validate_scheduler_operations_payload,
     validate_source_refresh_brief_file,
@@ -1049,7 +1050,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertFalse(review_prompt_payload["external_effect_performed"])
         self.assertFalse(review_prompt_payload["host_write_performed"])
         self.assertGreaterEqual(review_prompt_payload["summary"]["prompt_count"], 1)
-        self.assertTrue(any("review-response" in command["command"] for card in review_prompt_payload["prompt_cards"] for command in card["copy_ready_commands"]))
+        self.assertTrue(any("review-response-apply" in command["command"] for card in review_prompt_payload["prompt_cards"] for command in card["copy_ready_commands"]))
         self.assertEqual(review_effect_payload["schema_version"], "operator_review_effect.v1")
         self.assertEqual(review_effect_errors, [])
         self.assertFalse(review_effect_payload["external_effect_performed"])
@@ -1108,7 +1109,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertNotIn("schema_version", drift_review_html)
         self.assertIn("오늘 읽은 것과 내일 더 볼 것", review_html)
         self.assertIn("오늘 남길 피드백", review_prompt_html)
-        self.assertIn("review-response", review_prompt_html)
+        self.assertIn("review-response-apply", review_prompt_html)
         self.assertIn("피드백 반영 확인", review_effect_html)
         self.assertIn("자동 실행 준비 상태", scheduler_html)
         self.assertIn("운영 증거", scheduler_html)
@@ -1395,12 +1396,107 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(factor["name"] == "operator_review" for factor in after_topic["score_factors"]))
         self.assertIn("오늘 읽은 것과 내일 더 볼 것", review_html)
         self.assertIn("오늘 남길 피드백", review_prompt_html)
-        self.assertIn("review-response", review_prompt_html)
+        self.assertIn("review-response-apply", review_prompt_html)
         self.assertIn("피드백 반영 확인", review_effect_html)
         self.assertIn("피드백 반영됨", review_effect_html)
         self.assertIn(topic_name, review_html)
         self.assertIn(topic_name, review_prompt_html)
         self.assertIn(topic_name, review_effect_html)
+
+    def test_review_response_apply_refreshes_review_scout_and_effect_locally(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            topics_path = root / "topics.json"
+            plan_path = root / "research-plan.json"
+            evidence_path = root / "daily-evidence.json"
+            memory_path = root / "topic-memory.json"
+            scout_path = root / "scout.json"
+            responses_path = root / "daily-review-responses.jsonl"
+            review_path = root / "daily-review.json"
+            review_surface_path = root / "review.html"
+            review_prompt_path = root / "review-prompt.json"
+            review_prompt_surface_path = root / "review-prompt.html"
+            review_effect_path = root / "review-effect.json"
+            review_effect_surface_path = root / "review-effect.html"
+            apply_path = root / "review-response-apply.json"
+            apply_surface_path = root / "review-response-apply.html"
+
+            init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="review-apply")
+            collect_topic_evidence(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                output_path=evidence_path,
+                memory_path=memory_path,
+            )
+            scout_before = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                review_path=root / "missing-review.json",
+                output_path=scout_path,
+                run_id="review-apply",
+            )
+            topic_name = scout_before["recommended_topic"]["name"]
+            result = cli_main([
+                "appliance",
+                "review-response-apply",
+                f'more "{topic_name}" "이 주제를 내일도 더 보고 싶다"',
+                "--topics",
+                topics_path.as_posix(),
+                "--plan",
+                plan_path.as_posix(),
+                "--evidence",
+                evidence_path.as_posix(),
+                "--memory",
+                memory_path.as_posix(),
+                "--vault",
+                (root / "missing-vault.json").as_posix(),
+                "--responses",
+                responses_path.as_posix(),
+                "--daily-review-output",
+                review_path.as_posix(),
+                "--daily-review-surface",
+                review_surface_path.as_posix(),
+                "--scout-output",
+                scout_path.as_posix(),
+                "--review-prompt-output",
+                review_prompt_path.as_posix(),
+                "--review-prompt-surface",
+                review_prompt_surface_path.as_posix(),
+                "--review-effect-output",
+                review_effect_path.as_posix(),
+                "--review-effect-surface",
+                review_effect_surface_path.as_posix(),
+                "--artifact-output",
+                apply_path.as_posix(),
+                "--output",
+                apply_surface_path.as_posix(),
+            ])
+
+            review_payload = json.loads(review_path.read_text(encoding="utf-8"))
+            scout_after = json.loads(scout_path.read_text(encoding="utf-8"))
+            effect_payload = json.loads(review_effect_path.read_text(encoding="utf-8"))
+            apply_payload = json.loads(apply_path.read_text(encoding="utf-8"))
+            apply_html = apply_surface_path.read_text(encoding="utf-8")
+            topic_after = next(row for row in scout_after["recommendations"] if row["name"] == topic_name)
+            apply_errors = validate_operator_review_response_apply_file(apply_path)
+            effect_errors = validate_operator_review_effect_file(review_effect_path)
+
+        self.assertEqual(result, 0)
+        self.assertEqual(apply_errors, [])
+        self.assertEqual(effect_errors, [])
+        self.assertEqual(review_payload["summary"]["response_count"], 1)
+        self.assertEqual(scout_after["review_context"]["response_count"], 1)
+        self.assertEqual(effect_payload["status"], "applied")
+        self.assertEqual(apply_payload["status"], "applied")
+        self.assertFalse(apply_payload["external_effect_performed"])
+        self.assertFalse(apply_payload["host_write_performed"])
+        self.assertTrue(any(factor["name"] == "operator_review" for factor in topic_after["score_factors"]))
+        self.assertIn("피드백 응답 적용", apply_html)
+        self.assertIn("응답 적용됨", apply_html)
 
 
 if __name__ == "__main__":
