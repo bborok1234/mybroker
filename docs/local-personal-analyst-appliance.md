@@ -38,6 +38,7 @@ launchd
   -> topic_memory.v1
   -> scenario_report.v1 + market_verdict.v1
   -> product brief + /today mobile surface
+  -> /memory accumulated research surface
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -94,8 +95,19 @@ PYTHONPATH=src python3 -m mybroker appliance init --project-root .
 PYTHONPATH=src python3 -m mybroker appliance access
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today
+PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance notify --provider telegram --dry-run
 ```
+
+## Compounding Memory
+
+The local loop now writes two memory surfaces:
+
+- `reports/memory/index.json`: machine-readable topic memory, source relevance, run history, and archive links.
+- `reports/product/memory.html`: phone-readable accumulated research notebook.
+
+This is the Obsidian vault pattern in product form: every run is still a plain local artifact,
+but the daily user surface can link back to what MyBroker has learned over time.
 
 The launchd assets are written under `ops/local/`:
 

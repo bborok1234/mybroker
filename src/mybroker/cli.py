@@ -8,6 +8,8 @@ from pathlib import Path
 from mybroker.appliance import (
     DEFAULT_ARCHIVE_ROOT,
     DEFAULT_LOCAL_OPS_DIR,
+    DEFAULT_MEMORY_INDEX_OUTPUT,
+    DEFAULT_MEMORY_OUTPUT,
     DEFAULT_NOTIFICATION_OUTPUT,
     DEFAULT_PHONE_ACCESS_OUTPUT,
     DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
@@ -15,6 +17,7 @@ from mybroker.appliance import (
     archive_daily_run,
     send_notification_payload,
     write_launchd_assets,
+    write_memory_surface,
     write_notification_payload,
     write_phone_access_plan,
     write_runtime_playbook,
@@ -186,6 +189,12 @@ def main(argv: list[str] | None = None) -> int:
     appliance_today_parser.add_argument("--brief", default="reports/product/market-brief.html")
     appliance_today_parser.add_argument("--output", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_today_parser.add_argument("--archive-manifest")
+    appliance_memory_parser = appliance_subcommands.add_parser("memory", help="Render the mobile-friendly accumulated memory and archive surface.")
+    appliance_memory_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_memory_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
+    appliance_memory_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_memory_parser.add_argument("--index-output", default=DEFAULT_MEMORY_INDEX_OUTPUT.as_posix())
+    appliance_memory_parser.add_argument("--output", default=DEFAULT_MEMORY_OUTPUT.as_posix())
     appliance_notify_parser = appliance_subcommands.add_parser("notify", help="Prepare a phone notification payload. Dry-run by default.")
     appliance_notify_parser.add_argument("--provider", choices=["telegram", "pushover"], default="telegram")
     appliance_notify_parser.add_argument("--today-url", default="http://localhost:8787/reports/product/today.html")
@@ -458,6 +467,16 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(json.dumps({"today": path.as_posix()}, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "memory":
+            path = write_memory_surface(
+                memory_path=args.memory,
+                archive_root=args.archive_root,
+                evidence_path=args.evidence,
+                index_output_path=args.index_output,
+                output_path=args.output,
+            )
+            print(json.dumps({"memory": path.as_posix(), "index": args.index_output}, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "notify":
             path = write_notification_payload(
                 provider=args.provider,
@@ -486,6 +505,7 @@ def main(argv: list[str] | None = None) -> int:
             rollup_path = Path("reports/report-rollup.json")
             brief_path = Path("reports/product/market-brief.html")
             today_path = DEFAULT_TODAY_OUTPUT
+            memory_surface_path = DEFAULT_MEMORY_OUTPUT
             playbook_path = write_runtime_playbook(args.playbook_output)
             plan = build_research_plan(topics_path=topics_path, output_path=plan_path, run_id=args.run_id)
             catalog = collect_topic_evidence(
@@ -525,6 +545,13 @@ def main(argv: list[str] | None = None) -> int:
                 today_path=provisional_today,
                 archive_root=args.archive_root,
             )
+            written_memory = write_memory_surface(
+                memory_path=memory_path,
+                archive_root=args.archive_root,
+                evidence_path=evidence_path,
+                index_output_path=DEFAULT_MEMORY_INDEX_OUTPUT,
+                output_path=memory_surface_path,
+            )
             written_today = write_today_surface(
                 scenario_path=written_scenario,
                 verdict_path=written_verdict,
@@ -533,6 +560,7 @@ def main(argv: list[str] | None = None) -> int:
                 brief_path=written_brief,
                 output_path=today_path,
                 archive_manifest_path=archive_manifest,
+                memory_surface_path=written_memory,
             )
             notification_path = write_notification_payload(
                 provider=args.notification_provider,
@@ -557,6 +585,8 @@ def main(argv: list[str] | None = None) -> int:
                 "rollup": written_rollup.as_posix(),
                 "product_brief": written_brief.as_posix(),
                 "today": written_today.as_posix(),
+                "memory_surface": written_memory.as_posix(),
+                "memory_index": DEFAULT_MEMORY_INDEX_OUTPUT.as_posix(),
                 "archive_manifest": archive_manifest.as_posix(),
                 "notification": notification_path.as_posix(),
                 "notification_status": notification_status,

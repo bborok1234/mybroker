@@ -9,6 +9,7 @@ from mybroker.appliance import (
     archive_daily_run,
     send_notification_payload,
     write_launchd_assets,
+    write_memory_surface,
     write_notification_payload,
     write_phone_access_plan,
     write_runtime_playbook,
@@ -84,10 +85,18 @@ class LocalApplianceTests(unittest.TestCase):
                 output_path=root / "notification.json",
             )
             access_plan = write_phone_access_plan(output_path=root / "phone-access.json", port=8787, tailnet_host="mybroker-mac")
+            memory_surface = write_memory_surface(
+                memory_path=memory_path,
+                archive_root=root / "archive",
+                evidence_path=evidence_path,
+                index_output_path=root / "memory-index.json",
+                output_path=root / "memory.html",
+            )
             playbook = write_runtime_playbook(root / "playbook.json")
             assets = write_launchd_assets(project_root=root, output_dir=root / "ops", hour=7, minute=15)
 
             html = today.read_text(encoding="utf-8")
+            memory_html = memory_surface.read_text(encoding="utf-8")
             notification_payload = json.loads(notification.read_text(encoding="utf-8"))
             access_payload = json.loads(access_plan.read_text(encoding="utf-8"))
             manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
@@ -97,7 +106,11 @@ class LocalApplianceTests(unittest.TestCase):
 
         self.assertIn("MyBroker Today", html)
         self.assertIn("오늘 시장을 이해하기 위한 5분 브리프", html)
+        self.assertIn("근거 품질", html)
         self.assertIn("아카이브 manifest", html)
+        self.assertIn("MyBroker Memory", memory_html)
+        self.assertIn("주제별 누적 기억", memory_html)
+        self.assertIn("근거 품질 추적", memory_html)
         self.assertNotIn("schema_version", html)
         self.assertNotIn("Flyhigh", html)
         self.assertEqual(notification_payload["schema_version"], "notification_delivery.v1")

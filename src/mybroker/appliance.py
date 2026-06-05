@@ -16,12 +16,15 @@ NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
 PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
+MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
 DEFAULT_PHONE_ACCESS_OUTPUT = Path("reports/runtime/phone-access.json")
+DEFAULT_MEMORY_INDEX_OUTPUT = Path("reports/memory/index.json")
+DEFAULT_MEMORY_OUTPUT = Path("reports/product/memory.html")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -150,6 +153,7 @@ def write_today_surface(
     brief_path: str | Path,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
+    memory_surface_path: str | Path | None = None,
 ) -> Path:
     scenario = load_json(scenario_path)
     verdict = load_json(verdict_path)
@@ -165,6 +169,7 @@ def write_today_surface(
             evidence=evidence,
             brief_path=Path(brief_path),
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
+            memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
         ),
         encoding="utf-8",
     )
@@ -179,6 +184,7 @@ def render_today_surface(
     evidence: dict[str, Any],
     brief_path: Path,
     archive_manifest_path: Path | None = None,
+    memory_surface_path: Path | None = None,
 ) -> str:
     market_map = scenario.get("market_map", {})
     primary = verdict.get("primary_next_step") or {}
@@ -204,14 +210,27 @@ def render_today_surface(
         for path in scenarios[:3]
     )
     source_chips = "".join(
-        f"<span class='chip'>{esc(row.get('source_name', 'source'))} · {esc(row.get('freshness_status', 'unknown'))}</span>"
+        f"<span class='chip'>{esc(row.get('source_name', 'source'))} · {esc(row.get('freshness_status', 'unknown'))} · {esc(row.get('relevance_label', 'unscored'))}</span>"
         for row in source_rows[:8]
     ) or "<span class='chip'>로컬 seed</span>"
+    relevance_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(row.get('source_name', 'source'))}</span>"
+        f"<strong>{esc(row.get('relevance_label', 'unscored'))}</strong>"
+        f"<p>관련도 {esc(row.get('relevance_score', '0.00'))} · 신선도 {esc(row.get('freshness_status', 'unknown'))}</p>"
+        "</article>"
+        for row in source_rows[:4]
+    )
     gap_items = "".join(f"<li>{esc(_gap_label(gap))}</li>" for gap in gaps[:6]) or "<li>오늘 기록된 차단 이슈는 없습니다.</li>"
     archive_link = (
         f"<a href='{esc(_relative_href(archive_manifest_path))}'>아카이브 manifest</a>"
         if archive_manifest_path
         else "<span>아카이브 manifest 없음</span>"
+    )
+    memory_link = (
+        f"<a href='{esc(_relative_href(memory_surface_path))}'>누적 기억 보기</a>"
+        if memory_surface_path
+        else "<span>누적 기억 없음</span>"
     )
     questions = _daily_questions(memory_topics, evidence)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
@@ -274,6 +293,10 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <div class="chips">{source_chips}</div>
 </section>
 <section class="section">
+<h2>근거 품질</h2>
+<div class="stack">{relevance_cards}</div>
+</section>
+<section class="section">
 <h2>아직 약한 부분</h2>
 <ul>{gap_items}</ul>
 </section>
@@ -285,6 +308,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 <h2>연결된 산출물</h2>
 <div class="links">
 <a href="{esc(_relative_href(brief_path))}">상세 시장 브리프</a>
+{memory_link}
 {archive_link}
 </div>
 </section>
@@ -335,6 +359,170 @@ def archive_daily_run(
         "policy": "research_only",
     }
     return write_json(manifest, archive_dir / "manifest.json")
+
+
+def build_memory_index(
+    *,
+    memory_path: str | Path = "reports/memory/topic-memory.json",
+    archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
+    evidence_path: str | Path = "reports/evidence/daily-evidence-catalog.json",
+) -> dict[str, Any]:
+    memory = load_json(memory_path)
+    evidence = load_json(evidence_path) if Path(evidence_path).exists() else {}
+    archive_manifests = []
+    for manifest_path in sorted(Path(archive_root).glob("*/manifest.json"), reverse=True):
+        try:
+            archive_manifests.append(load_json(manifest_path))
+        except json.JSONDecodeError:
+            continue
+    topic_rows = []
+    for topic in memory.get("topics", []):
+        topic_rows.append({
+            "topic_id": topic.get("topic_id", ""),
+            "name": topic.get("name", ""),
+            "latest_summary": topic.get("latest_summary", ""),
+            "daily_questions": topic.get("daily_questions", []),
+            "latest_titles": topic.get("latest_titles", []),
+            "source_names": topic.get("source_names", []),
+            "collection_gaps": topic.get("collection_gaps", []),
+            "changed_since_previous": topic.get("changed_since_previous", False),
+        })
+    return {
+        "schema_version": MEMORY_INDEX_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "memory_path": Path(memory_path).as_posix(),
+        "archive_root": Path(archive_root).as_posix(),
+        "run_count": memory.get("run_count", 0),
+        "topic_count": len(topic_rows),
+        "topics": topic_rows,
+        "recent_runs": list(reversed(memory.get("runs", [])[-10:])),
+        "archives": archive_manifests[:12],
+        "source_relevance": [
+            {
+                "source_name": row.get("source_name", ""),
+                "freshness_status": row.get("freshness_status", ""),
+                "relevance_score": row.get("relevance_score", "0.00"),
+                "relevance_label": row.get("relevance_label", "unscored"),
+                "item_count": row.get("item_count", "0"),
+            }
+            for row in evidence.get("source_status", [])
+        ],
+        "policy": "research_only",
+    }
+
+
+def write_memory_surface(
+    *,
+    memory_path: str | Path = "reports/memory/topic-memory.json",
+    archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
+    evidence_path: str | Path = "reports/evidence/daily-evidence-catalog.json",
+    index_output_path: str | Path = DEFAULT_MEMORY_INDEX_OUTPUT,
+    output_path: str | Path = DEFAULT_MEMORY_OUTPUT,
+) -> Path:
+    index = build_memory_index(memory_path=memory_path, archive_root=archive_root, evidence_path=evidence_path)
+    write_json(index, index_output_path)
+    target = Path(output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_memory_surface(index), encoding="utf-8")
+    return target
+
+
+def render_memory_surface(index: dict[str, Any]) -> str:
+    topic_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc('새 변화' if topic.get('changed_since_previous') else '누적')}</span>"
+        f"<h3>{esc(topic.get('name', ''))}</h3>"
+        f"<p>{esc(topic.get('latest_summary', ''))}</p>"
+        f"<small>{esc(', '.join(topic.get('source_names', [])) or 'source 없음')}</small>"
+        "</article>"
+        for topic in index.get("topics", [])
+    ) or "<p>아직 topic memory가 없습니다.</p>"
+    source_rows = "".join(
+        "<tr>"
+        f"<td>{esc(row.get('source_name', ''))}</td>"
+        f"<td>{esc(row.get('relevance_label', 'unscored'))}</td>"
+        f"<td>{esc(row.get('relevance_score', '0.00'))}</td>"
+        f"<td>{esc(row.get('freshness_status', 'unknown'))}</td>"
+        "</tr>"
+        for row in index.get("source_relevance", [])
+    ) or "<tr><td colspan='4'>아직 source relevance가 없습니다.</td></tr>"
+    archive_cards = "".join(
+        "<article class='archive'>"
+        f"<strong>{esc(manifest.get('generated_at', '')[:10])}</strong>"
+        f"<span>{esc(manifest.get('run_id', ''))}</span>"
+        f"<a href='{esc(manifest.get('archive_dir', ''))}/today.html'>today</a>"
+        f"<a href='{esc(manifest.get('archive_dir', ''))}/market-brief.html'>brief</a>"
+        "</article>"
+        for manifest in index.get("archives", [])
+    ) or "<p>아직 archive manifest가 없습니다.</p>"
+    run_items = "".join(
+        f"<li><strong>{esc(run.get('run_id', ''))}</strong><span>{esc(run.get('generated_at', ''))} · changed {esc(', '.join(run.get('changed_topics', [])) or 'none')}</span></li>"
+        for run in index.get("recent_runs", [])
+    ) or "<li>아직 run history가 없습니다.</li>"
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Memory</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ max-width:860px; margin:0 auto; padding:18px; }}
+a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
+header {{ padding:26px 0 16px; }}
+.eyebrow {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 12px; font-size:20px; }}
+h3 {{ margin:0 0 8px; font-size:17px; }}
+p,small,li span {{ color:var(--muted); }}
+.grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.section,.card,.archive {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.section {{ margin:14px 0; padding:16px; }}
+.card,.archive {{ padding:14px; background:white; }}
+.card span,.archive span {{ display:block; color:var(--blue); font-size:12px; font-weight:900; }}
+.metrics {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+.metric {{ padding:14px; border:1px solid var(--line); border-radius:8px; background:white; }}
+.metric strong {{ display:block; font-size:24px; }}
+table {{ width:100%; border-collapse:collapse; overflow:hidden; border-radius:8px; }}
+td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; }}
+ul {{ padding-left:18px; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .grid,.metrics {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Memory · {esc(index.get('generated_at', '')[:10])}</span>
+<h1>내가 매일 쌓아온 시장 이해</h1>
+<p>오늘 브리프가 끝이 아니라, 주제별 기억과 과거 브리프가 계속 누적되는 개인 리서치 노트입니다.</p>
+</header>
+<section class="metrics">
+<article class="metric"><span>Memory runs</span><strong>{esc(index.get('run_count', 0))}</strong></article>
+<article class="metric"><span>Topics</span><strong>{esc(index.get('topic_count', 0))}</strong></article>
+<article class="metric"><span>Archives</span><strong>{esc(len(index.get('archives', [])))}</strong></article>
+</section>
+<section class="section">
+<h2>주제별 누적 기억</h2>
+<div class="grid">{topic_cards}</div>
+</section>
+<section class="section">
+<h2>근거 품질 추적</h2>
+<table><thead><tr><th>Source</th><th>Label</th><th>Score</th><th>Freshness</th></tr></thead><tbody>{source_rows}</tbody></table>
+</section>
+<section class="section">
+<h2>최근 실행</h2>
+<ul>{run_items}</ul>
+</section>
+<section class="section">
+<h2>아카이브</h2>
+<div class="grid">{archive_cards}</div>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def write_notification_payload(

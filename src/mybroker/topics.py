@@ -388,14 +388,32 @@ def _source_status(items: list[dict[str, Any]]) -> list[dict[str, str]]:
     for source_name in sorted({item.get("source_name", "") for item in items if item.get("source_name")}):
         source_items = [item for item in items if item.get("source_name") == source_name]
         freshness = sorted({item.get("freshness_status", "unknown") for item in source_items})
+        relevance_scores = [
+            float(item.get("relevance", {}).get("score", 0))
+            for item in source_items
+            if item.get("relevance")
+        ]
+        average_relevance = sum(relevance_scores) / len(relevance_scores) if relevance_scores else 0.0
         rows.append({
             "source_id": _slugify(source_name),
             "source_name": source_name,
             "adapter_id": "sample_cache_topic_research",
             "item_count": str(len(source_items)),
             "freshness_status": freshness[0] if freshness else "unknown",
+            "relevance_score": f"{average_relevance:.2f}",
+            "relevance_label": _relevance_label(average_relevance),
         })
     return rows
+
+
+def _relevance_label(score: float) -> str:
+    if score >= 0.75:
+        return "strong"
+    if score >= 0.50:
+        return "usable"
+    if score >= 0.30:
+        return "thin"
+    return "weak"
 
 
 def _plan_summary(plan: dict[str, Any]) -> dict[str, Any]:

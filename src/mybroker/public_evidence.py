@@ -315,12 +315,16 @@ def build_public_evidence_catalog(source_ids: list[str] | None = None) -> dict[s
         adapter_items = adapter.load_items()
         items.extend(adapter_items)
         freshness = _source_freshness(adapter_items)
+        relevance_rows = [_item_relevance(item) for item in adapter_items]
+        average_relevance = _average_score(relevance_rows)
         source_status.append({
             "source_id": source_id,
             "source_name": adapter.source_name,
             "adapter_id": adapter.adapter_id,
             "item_count": str(len(adapter_items)),
             "freshness_status": freshness,
+            "relevance_score": f"{average_relevance:.2f}",
+            "relevance_label": _relevance_label(average_relevance),
         })
     graph = build_public_evidence_graph(items)
     return {
@@ -329,7 +333,7 @@ def build_public_evidence_catalog(source_ids: list[str] | None = None) -> dict[s
         "mode": _catalog_mode(selected, items),
         "source_status": source_status,
         "source_matrix": SOURCE_MATRIX,
-        "items": [asdict(item) for item in items],
+        "items": [_item_to_payload(item) for item in items],
         "graph": graph,
         "feasibility": evaluate_feasibility(items, graph),
     }
@@ -404,6 +408,14 @@ def validate_public_evidence_catalog_payload(payload: dict[str, Any]) -> list[st
     source_names = {item.get("source_name") for item in payload.get("items", [])}
     if len(source_names) < 2:
         errors.append("catalog must include at least two source families")
+    for index, item in enumerate(payload.get("items", [])):
+        relevance = item.get("relevance")
+        if not relevance:
+            errors.append(f"items[{index}] missing relevance")
+            continue
+        score = relevance.get("score")
+        if not isinstance(score, (int, float)) or not 0 <= score <= 1:
+            errors.append(f"items[{index}] relevance.score must be between 0 and 1")
     graph = payload.get("graph", {})
     if not graph.get("nodes") or not graph.get("edges"):
         errors.append("graph.nodes and graph.edges must not be empty")
@@ -428,6 +440,60 @@ def _detect_topics(text: str) -> list[str]:
     }
     topics = [topic for topic, keywords in mapping.items() if any(keyword in lowered for keyword in keywords)]
     return topics or ["risk"]
+
+
+def _item_to_payload(item: PublicEvidenceItem) -> dict[str, Any]:
+    payload = asdict(item)
+    payload["relevance"] = _item_relevance(item)
+    return payload
+
+
+def _item_relevance(item: PublicEvidenceItem) -> dict[str, Any]:
+    reasons = []
+    score = 0.15
+    if item.freshness_status == "live":
+        score += 0.25
+        reasons.append("live source")
+    elif item.freshness_status == "live_error_fallback_sample":
+        score += 0.08
+        reasons.append("fallback sample")
+    else:
+        score += 0.05
+        reasons.append("cached sample")
+    topic_count = len(set(item.topics))
+    entity_count = len(set(item.entities))
+    score += min(topic_count, 4) * 0.10
+    score += min(entity_count, 3) * 0.06
+    if item.url:
+        score += 0.08
+        reasons.append("source URL")
+    if len(item.text) >= 120:
+        score += 0.10
+        reasons.append("context text")
+    if item.evidence_type in {"news_narrative", "company_filing", "market_price_context"}:
+        score += 0.08
+        reasons.append(item.evidence_type)
+    score = max(0.0, min(score, 1.0))
+    return {
+        "score": round(score, 2),
+        "label": _relevance_label(score),
+        "reasons": reasons[:5],
+    }
+
+
+def _average_score(rows: list[dict[str, Any]]) -> float:
+    scores = [float(row.get("score", 0)) for row in rows]
+    return sum(scores) / len(scores) if scores else 0.0
+
+
+def _relevance_label(score: float) -> str:
+    if score >= 0.75:
+        return "strong"
+    if score >= 0.50:
+        return "usable"
+    if score >= 0.30:
+        return "thin"
+    return "weak"
 
 
 def _fetch_json(url: str, timeout: int = 15) -> dict[str, Any]:

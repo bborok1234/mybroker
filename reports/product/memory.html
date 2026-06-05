@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Memory</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { max-width:860px; margin:0 auto; padding:18px; }
+a { color:var(--blue); font-weight:800; text-decoration:none; }
+header { padding:26px 0 16px; }
+.eyebrow { color:var(--green); font-size:12px; font-weight:900; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 12px; font-size:20px; }
+h3 { margin:0 0 8px; font-size:17px; }
+p,small,li span { color:var(--muted); }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.section,.card,.archive { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.section { margin:14px 0; padding:16px; }
+.card,.archive { padding:14px; background:white; }
+.card span,.archive span { display:block; color:var(--blue); font-size:12px; font-weight:900; }
+.metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.metric { padding:14px; border:1px solid var(--line); border-radius:8px; background:white; }
+.metric strong { display:block; font-size:24px; }
+table { width:100%; border-collapse:collapse; overflow:hidden; border-radius:8px; }
+td,th { padding:10px; border-bottom:1px solid var(--line); text-align:left; }
+ul { padding-left:18px; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:29px; } .grid,.metrics { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Memory · 2026-06-05</span>
+<h1>내가 매일 쌓아온 시장 이해</h1>
+<p>오늘 브리프가 끝이 아니라, 주제별 기억과 과거 브리프가 계속 누적되는 개인 리서치 노트입니다.</p>
+</header>
+<section class="metrics">
+<article class="metric"><span>Memory runs</span><strong>6</strong></article>
+<article class="metric"><span>Topics</span><strong>5</strong></article>
+<article class="metric"><span>Archives</span><strong>1</strong></article>
+</section>
+<section class="section">
+<h2>주제별 누적 기억</h2>
+<div class="grid"><article class='card'><span>누적</span><h3>AI infrastructure</h3><p>AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.</p><small>GDELT, SEC EDGAR</small></article><article class='card'><span>누적</span><h3>Semiconductors</h3><p>Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.</p><small>GDELT, SEC EDGAR</small></article><article class='card'><span>누적</span><h3>US rates</h3><p>US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음.</p><small>GDELT, Stooq</small></article><article class='card'><span>누적</span><h3>Consumer weakness</h3><p>Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.</p><small>GDELT, SEC EDGAR, Stooq</small></article><article class='card'><span>누적</span><h3>Korea semiconductors</h3><p>Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.</p><small>GDELT, SEC EDGAR, Stooq</small></article></div>
+</section>
+<section class="section">
+<h2>근거 품질 추적</h2>
+<table><thead><tr><th>Source</th><th>Label</th><th>Score</th><th>Freshness</th></tr></thead><tbody><tr><td>GDELT</td><td>strong</td><td>0.98</td><td>live_error_fallback_sample</td></tr><tr><td>SEC EDGAR</td><td>strong</td><td>0.98</td><td>sample_cache</td></tr><tr><td>Stooq</td><td>strong</td><td>0.81</td><td>live_error_fallback_sample</td></tr></tbody></table>
+</section>
+<section class="section">
+<h2>최근 실행</h2>
+<ul><li><strong>daily-research</strong><span>2026-06-05T06:20:19.028252+00:00 · changed none</span></li><li><strong>daily-research</strong><span>2026-06-05T06:06:25.311077+00:00 · changed none</span></li><li><strong>daily-research</strong><span>2026-06-05T05:48:24.479043+00:00 · changed none</span></li><li><strong>daily-research</strong><span>2026-05-29T09:53:26.580628+00:00 · changed none</span></li><li><strong>daily-research</strong><span>2026-05-29T09:51:11.869011+00:00 · changed none</span></li><li><strong>daily-research</strong><span>2026-05-29T09:50:43.859798+00:00 · changed ai-infrastructure, semiconductors, us-rates, consumer-weakness, korea-semiconductors</span></li></ul>
+</section>
+<section class="section">
+<h2>아카이브</h2>
+<div class="grid"><article class='archive'><strong>2026-06-05</strong><span>daily-research</span><a href='reports/archive/2026-06-05/today.html'>today</a><a href='reports/archive/2026-06-05/market-brief.html'>brief</a></article></div>
+</section>
+</main>
+</body>
+</html>
