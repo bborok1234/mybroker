@@ -10,12 +10,14 @@ from mybroker.topics import (
     build_daily_scout,
     build_research_plan,
     build_source_refresh_apply,
+    build_source_refresh_live_gate,
     build_source_refresh_plan,
     collect_topic_evidence,
     init_topic_config,
     validate_daily_scout_file,
     validate_research_plan_file,
     validate_source_refresh_apply_file,
+    validate_source_refresh_live_gate_file,
     validate_source_refresh_plan_file,
     validate_topic_config_file,
     validate_topic_memory_file,
@@ -78,11 +80,17 @@ class TopicResearchLoopTests(unittest.TestCase):
                 refresh_plan_path=refresh_plan_path,
                 output_path=refresh_apply_path,
             )
+            refresh_live_gate_path = root / "source-refresh-live-gate.json"
+            refresh_live_gate = build_source_refresh_live_gate(
+                refresh_apply_path=refresh_apply_path,
+                output_path=refresh_live_gate_path,
+            )
 
             plan_errors = validate_research_plan_file(plan_path)
             scout_errors = validate_daily_scout_file(scout_path)
             refresh_plan_errors = validate_source_refresh_plan_file(refresh_plan_path)
             refresh_apply_errors = validate_source_refresh_apply_file(refresh_apply_path)
+            refresh_live_gate_errors = validate_source_refresh_live_gate_file(refresh_live_gate_path)
             catalog_errors = validate_public_evidence_catalog_payload(catalog)
             memory_errors = validate_topic_memory_file(memory_path)
 
@@ -91,6 +99,7 @@ class TopicResearchLoopTests(unittest.TestCase):
         self.assertEqual(scout_errors, [])
         self.assertEqual(refresh_plan_errors, [])
         self.assertEqual(refresh_apply_errors, [])
+        self.assertEqual(refresh_live_gate_errors, [])
         self.assertEqual(catalog_errors, [])
         self.assertEqual(memory_errors, [])
         self.assertEqual(catalog["mode"], "sample_cache_topic_research")
@@ -106,6 +115,10 @@ class TopicResearchLoopTests(unittest.TestCase):
         self.assertEqual(refresh_apply["summary"]["action_count"], len(refresh_plan["actions"]))
         self.assertTrue(all(result["will_execute"] is False for result in refresh_apply["results"]))
         self.assertTrue(any(result["decision"] in {"ready", "blocked"} for result in refresh_apply["results"]))
+        self.assertEqual(refresh_live_gate["schema_version"], "source_refresh_live_gate.v1")
+        self.assertFalse(refresh_live_gate["external_effect_performed"])
+        if refresh_live_gate["decisions"]:
+            self.assertEqual(refresh_live_gate["decisions"][0]["copy_ready_response"], "approve live_network_refresh live_network_refresh")
         self.assertGreaterEqual(len(catalog["items"]), 2)
 
 

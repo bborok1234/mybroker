@@ -168,6 +168,12 @@ sample-cache actions can be marked ready, while live network actions remain bloc
 separate operator gate. `appliance run` creates it automatically, and `appliance today` renders it
 as "오늘 실행 판정". This artifact also records `external_effect_performed: false`.
 
+`source-refresh-live-gate` is the scoped approval step for blocked live network candidates. It
+writes `reports/daily/source-refresh-live-gate.json` with copy-ready approval text, proposed
+commands, and stale-context guards. `appliance run` creates it automatically, and `appliance today`
+renders it as "라이브 새로고침 게이트". This artifact does not execute live network calls; it only
+defines what a later explicit approval would authorize.
+
 The launchd assets are written under `ops/local/`:
 
 - `run-daily-analyst.sh`

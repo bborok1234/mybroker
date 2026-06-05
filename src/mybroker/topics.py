@@ -24,12 +24,14 @@ TOPIC_MEMORY_SCHEMA_VERSION = "topic_memory.v1"
 DAILY_SCOUT_SCHEMA_VERSION = "daily_scout.v1"
 SOURCE_REFRESH_PLAN_SCHEMA_VERSION = "source_refresh_plan.v1"
 SOURCE_REFRESH_APPLY_SCHEMA_VERSION = "source_refresh_apply.v1"
+SOURCE_REFRESH_LIVE_GATE_SCHEMA_VERSION = "source_refresh_live_gate.v1"
 
 DEFAULT_TOPICS_PATH = Path("config/topics.json")
 DEFAULT_RESEARCH_PLAN_OUTPUT = Path("reports/daily/research-plan.json")
 DEFAULT_DAILY_SCOUT_OUTPUT = Path("reports/daily/scout.json")
 DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT = Path("reports/daily/source-refresh-plan.json")
 DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT = Path("reports/daily/source-refresh-apply.json")
+DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT = Path("reports/daily/source-refresh-live-gate.json")
 DEFAULT_TOPIC_MEMORY_OUTPUT = Path("reports/memory/topic-memory.json")
 DEFAULT_DAILY_EVIDENCE_OUTPUT = Path("reports/evidence/daily-evidence-catalog.json")
 
@@ -471,6 +473,100 @@ def validate_source_refresh_apply_file(path: str | Path) -> list[str]:
     return validate_source_refresh_apply_payload(load_json(path))
 
 
+def build_source_refresh_live_gate(
+    *,
+    refresh_apply_path: str | Path = DEFAULT_SOURCE_REFRESH_APPLY_OUTPUT,
+    output_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+) -> dict[str, Any]:
+    refresh_apply = load_json(refresh_apply_path)
+    apply_errors = validate_source_refresh_apply_payload(refresh_apply)
+    if apply_errors:
+        raise ValueError("; ".join(apply_errors))
+    blocked_live = [
+        result for result in refresh_apply.get("results", [])
+        if result.get("decision") == "blocked" and result.get("approval_required") == "live_network_refresh"
+    ]
+    commands = _unique_preserve_order(result.get("command", "") for result in blocked_live if result.get("command"))
+    decisions = []
+    if blocked_live:
+        decisions.append({
+            "id": "live_network_refresh",
+            "status": "needs_operator_approval",
+            "approval_scope": "live_network_refresh",
+            "risk_level": "medium",
+            "reversibility": "cache_artifact_can_be_deleted",
+            "copy_ready_response": "approve live_network_refresh live_network_refresh",
+            "agent_will_run": commands,
+            "agent_will_not_run": [
+                "paid API calls",
+                "credentialed sources",
+                "host-level scheduler or private serving commands",
+                "notification send",
+                "account access",
+                "execution or personalized advice",
+            ],
+            "stale_context_guard": "Regenerate source_refresh_apply.v1 before approval if scout, evidence, or source plan changed.",
+        })
+    payload = {
+        "schema_version": SOURCE_REFRESH_LIVE_GATE_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "inputs": {
+            "refresh_apply_path": Path(refresh_apply_path).as_posix(),
+        },
+        "status": "approval_required" if decisions else "no_live_refresh_requested",
+        "blocked_action_count": len(blocked_live),
+        "proposed_command_count": len(commands),
+        "decisions": decisions,
+        "blocked_actions": [
+            {
+                "source_name": result.get("source_name", ""),
+                "adapter_id": result.get("adapter_id", ""),
+                "reason": result.get("reason", ""),
+                "command": result.get("command", ""),
+                "expected_artifact": result.get("expected_artifact", ""),
+            }
+            for result in blocked_live
+        ],
+        "external_effect_performed": False,
+        "policy": _research_only_policy(),
+        "next_step": "operator_may_approve_live_network_refresh_scope",
+    }
+    return write_json(payload, output_path)
+
+
+def validate_source_refresh_live_gate_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != SOURCE_REFRESH_LIVE_GATE_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("status") not in {"approval_required", "no_live_refresh_requested"}:
+        errors.append("status must be approval_required or no_live_refresh_requested")
+    if payload.get("status") == "approval_required" and not payload.get("decisions"):
+        errors.append("approval_required gates must include decisions")
+    for index, decision in enumerate(payload.get("decisions", [])):
+        for field in ["id", "approval_scope", "copy_ready_response", "agent_will_run", "agent_will_not_run", "stale_context_guard"]:
+            if field not in decision:
+                errors.append(f"decisions[{index}] missing {field}")
+        if decision.get("approval_scope") != "live_network_refresh":
+            errors.append(f"decisions[{index}] approval_scope must be live_network_refresh")
+        if not str(decision.get("copy_ready_response", "")).startswith("approve "):
+            errors.append(f"decisions[{index}] copy_ready_response must start with approve")
+        for command in decision.get("agent_will_run", []):
+            if any(blocked in command for blocked in ["--send", "--confirm-host-write", "launchctl", "tailscale serve --bg"]):
+                errors.append(f"decisions[{index}] command crosses non-network external-effect boundary")
+    if int(payload.get("blocked_action_count", 0) or 0) != len(payload.get("blocked_actions", [])):
+        errors.append("blocked_action_count must equal blocked_actions length")
+    policy = payload.get("policy", {})
+    if policy.get("output_boundary") != "research_only":
+        errors.append("policy.output_boundary must be research_only")
+    return errors
+
+
+def validate_source_refresh_live_gate_file(path: str | Path) -> list[str]:
+    return validate_source_refresh_live_gate_payload(load_json(path))
+
+
 def collect_topic_evidence(
     *,
     topics_path: str | Path = DEFAULT_TOPICS_PATH,
@@ -885,6 +981,16 @@ def _refresh_apply_result(index: int, action: dict[str, Any]) -> dict[str, Any]:
         "command": command,
         "expected_artifact": expected_artifact,
     }
+
+
+def _unique_preserve_order(values: Any) -> list[str]:
+    seen = set()
+    rows = []
+    for value in values:
+        if value and value not in seen:
+            seen.add(value)
+            rows.append(value)
+    return rows
 
 
 def _needs_news_refresh(recommendations: list[dict[str, Any]], source_status: dict[str, dict[str, Any]]) -> bool:
