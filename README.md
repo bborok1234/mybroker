@@ -67,6 +67,7 @@ PYTHONPATH=src python3 -m mybroker appliance scheduler run-once
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
+PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --vault-raw-dir research-vault/raw --vault-wiki-dir research-vault/wiki --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
@@ -195,6 +196,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/runtime/scheduler-run-once.json`: local runner execution proof without launchd install/load;
 - `reports/runtime/scheduler-activation-preflight.json`: readiness gate before confirmed host-level activation;
 - `reports/runtime/scheduler-activation-verify.json`: post-activation proof for loaded state, installed plist, strict doctor, and fresh artifacts;
+- `reports/vault/compile.json` and `reports/product/vault.html`: deterministic local compile proof and phone-readable vault note list when `research-vault/raw` exists;
 - `reports/product/today.html`: a mobile-first `/today` surface for the phone;
 - `reports/daily/scout.json`: local scout recommendations for what to inspect first;
 - `reports/daily/source-refresh-plan.json`: dry-run source refresh actions for the scout recommendation;
@@ -238,6 +240,11 @@ raw into deterministic wiki notes, `_master-index.md`, `reports/vault/compile.js
 `reports/product/vault.html`. Raw files are not deleted or moved. This keeps the Obsidian-style
 inbox and librarian workflow separate from generated daily market artifacts, while still letting
 compiled source notes feed the daily analyst loop.
+
+`appliance run` auto-compiles `research-vault/raw` before the daily scout when the raw folder
+exists. Use `--skip-vault-compile` for manual-only vault handling, or pass `--vault-raw-dir`,
+`--vault-wiki-dir`, `--vault-output`, and `--vault-surface-output` to point the daily loop at a
+different local vault. The archive manifest records both the compile proof and the vault surface.
 
 `appliance today` reads `reports/vault/compile.json` by default when it exists. The phone-readable
 `reports/product/today.html` shows the most relevant raw-source notes as "Vault에서 다시 볼 원천 노트"

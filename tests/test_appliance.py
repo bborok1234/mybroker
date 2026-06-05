@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
 
+from mybroker.cli import main as cli_main
 from mybroker.appliance import (
     archive_daily_run,
     send_notification_payload,
@@ -821,6 +823,68 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("Vault에서 다시 볼 원천 노트", today_surface_html)
         self.assertIn("Semiconductor cycle note", today_surface_html)
         self.assertIn("Vault 노트 &#x27;Semiconductor cycle note&#x27;가 오늘 근거와 같은 방향", today_surface_html)
+
+    def test_appliance_run_auto_compiles_local_vault_before_daily_scout(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "examples" / "seeds").mkdir(parents=True)
+            (root / "examples" / "seeds" / "market.md").write_text(
+                "# AI infrastructure demand\n\n"
+                "AI data center demand keeps semiconductors and power in focus.\n",
+                encoding="utf-8",
+            )
+            raw_dir = root / "research-vault" / "raw"
+            raw_dir.mkdir(parents=True)
+            (raw_dir / "semiconductor-cycle.md").write_text(
+                "# Semiconductor cycle note\n\n"
+                "AI demand is lifting chip suppliers.\n"
+                "Memory pricing remains cyclical.\n"
+                "Check source freshness before trusting the trend.\n",
+                encoding="utf-8",
+            )
+            previous_cwd = Path.cwd()
+            try:
+                os.chdir(root)
+                result = cli_main([
+                    "appliance",
+                    "run",
+                    "--topics",
+                    "config/topics.json",
+                    "--vault-raw-dir",
+                    "research-vault/raw",
+                    "--vault-wiki-dir",
+                    "research-vault/wiki",
+                    "--vault-output",
+                    "reports/vault/compile.json",
+                    "--vault-surface-output",
+                    "reports/product/vault.html",
+                    "--dry-run",
+                ])
+            finally:
+                os.chdir(previous_cwd)
+            vault_payload = json.loads((root / "reports" / "vault" / "compile.json").read_text(encoding="utf-8"))
+            scout_payload = json.loads((root / "reports" / "daily" / "scout.json").read_text(encoding="utf-8"))
+            memory_index = json.loads((root / "reports" / "memory" / "index.json").read_text(encoding="utf-8"))
+            journal_payload = json.loads((root / "reports" / "memory" / "analyst-journal.json").read_text(encoding="utf-8"))
+            morning_payload = json.loads((root / "reports" / "runtime" / "morning-control.json").read_text(encoding="utf-8"))
+            manifest_payload = json.loads((root / "reports" / "archive" / "2026-06-05" / "manifest.json").read_text(encoding="utf-8"))
+            today_html = (root / "reports" / "product" / "today.html").read_text(encoding="utf-8")
+            morning_html = (root / "reports" / "product" / "morning.html").read_text(encoding="utf-8")
+            vault_html = (root / "reports" / "product" / "vault.html").read_text(encoding="utf-8")
+
+        self.assertEqual(result, 0)
+        self.assertEqual(vault_payload["schema_version"], "knowledge_vault_compile.v1")
+        self.assertEqual(vault_payload["compiled_count"], 1)
+        self.assertEqual(vault_payload["compiled_notes"][0]["title"], "Semiconductor cycle note")
+        self.assertTrue(any(item.get("linked_vault_notes") for item in scout_payload["recommendations"]))
+        self.assertEqual(memory_index["vault_notes"][0]["title"], "Semiconductor cycle note")
+        self.assertIn("vault note 1개", journal_payload["role_notes"][4]["finding"])
+        self.assertIn("vault", morning_payload["phone_links"])
+        self.assertIn("vault_compile", manifest_payload["artifacts"])
+        self.assertIn("vault", manifest_payload["artifacts"])
+        self.assertIn("Semiconductor cycle note", today_html)
+        self.assertIn("vault", morning_html)
+        self.assertIn("컴파일된 리서치 노트", vault_html)
 
     def test_task_status_response_apply_updates_ledger_locally(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

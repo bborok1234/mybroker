@@ -113,6 +113,7 @@ PYTHONPATH=src python3 -m mybroker appliance scheduler run-once
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-preflight
 PYTHONPATH=src python3 -m mybroker appliance scheduler activation-verify
 PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --profile examples/profiles/beginner-conservative.json --source gdelt-live --source stooq-live --source sec-sample --dry-run
+PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --vault-raw-dir research-vault/raw --vault-wiki-dir research-vault/wiki --dry-run
 PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
 PYTHONPATH=src python3 -m mybroker appliance memory
 PYTHONPATH=src python3 -m mybroker appliance journal
@@ -167,6 +168,10 @@ The local vault is the raw inbox side of the same pattern:
 `appliance vault compile` does not delete or move raw files. It classifies notes against configured
 interests when possible, writes wiki notes with source paths and hashes, and keeps the result
 research-only.
+`appliance run` auto-compiles `research-vault/raw` before `daily-scout` when the raw folder exists.
+Use `--skip-vault-compile` for manual-only compile, or pass `--vault-raw-dir`, `--vault-wiki-dir`,
+`--vault-output`, and `--vault-surface-output` for a different local vault. The daily archive
+records both `vault_compile` and `vault` artifacts.
 `appliance memory` and `appliance query` read the compile artifact by default, so raw-source notes
 are visible in the same accumulated memory and recall surfaces as generated daily artifacts.
 `appliance today` also reads the compile artifact by default. It renders the most relevant compiled

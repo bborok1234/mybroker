@@ -464,6 +464,11 @@ def main(argv: list[str] | None = None) -> int:
     appliance_run_parser.add_argument("--send", action="store_true", help="Send notification after writing payload. Requires provider environment variables.")
     appliance_run_parser.add_argument("--source", action="append", help="Public evidence adapter id. Use gdelt-live/stooq-live for no-key live refresh with cache fallback.")
     appliance_run_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
+    appliance_run_parser.add_argument("--vault-raw-dir", default=DEFAULT_VAULT_RAW_DIR.as_posix())
+    appliance_run_parser.add_argument("--vault-wiki-dir", default=DEFAULT_VAULT_WIKI_DIR.as_posix())
+    appliance_run_parser.add_argument("--vault-output", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    appliance_run_parser.add_argument("--vault-surface-output", default=DEFAULT_VAULT_SURFACE_OUTPUT.as_posix())
+    appliance_run_parser.add_argument("--skip-vault-compile", action="store_true", help="Do not auto-compile local raw vault notes before the daily scout.")
     appliance_run_parser.add_argument("--playbook-output", default=DEFAULT_RUNTIME_PLAYBOOK_OUTPUT.as_posix())
     appliance_run_parser.add_argument("--scout-output", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     appliance_run_parser.add_argument("--refresh-plan-output", default=DEFAULT_SOURCE_REFRESH_PLAN_OUTPUT.as_posix())
@@ -1267,7 +1272,20 @@ def main(argv: list[str] | None = None) -> int:
             task_status_apply_path = DEFAULT_ANALYST_TASK_STATUS_APPLY
             morning_path = DEFAULT_MORNING_CONTROL_SURFACE
             morning_artifact_path = DEFAULT_MORNING_CONTROL_OUTPUT
+            vault_compile_path = Path(args.vault_output)
+            vault_surface_path = Path(args.vault_surface_output)
             playbook_path = write_runtime_playbook(args.playbook_output)
+            vault_compile = None
+            if not args.skip_vault_compile and Path(args.vault_raw_dir).exists():
+                vault_compile = compile_knowledge_vault(
+                    raw_dir=args.vault_raw_dir,
+                    wiki_dir=args.vault_wiki_dir,
+                    output_path=vault_compile_path,
+                    surface_path=vault_surface_path,
+                    topics_path=topics_path,
+                )
+            active_vault_path = vault_compile_path if vault_compile_path.exists() else DEFAULT_VAULT_COMPILE_OUTPUT
+            active_vault_surface = vault_surface_path if vault_surface_path.exists() else DEFAULT_VAULT_SURFACE_OUTPUT
             plan = build_research_plan(topics_path=topics_path, output_path=plan_path, run_id=args.run_id)
             catalog = collect_topic_evidence(
                 topics_path=topics_path,
@@ -1281,14 +1299,14 @@ def main(argv: list[str] | None = None) -> int:
                 plan_path=plan_path,
                 evidence_path=evidence_path,
                 memory_path=memory_path,
-                vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
+                vault_path=active_vault_path,
                 output_path=scout_path,
                 run_id=args.run_id,
             )
             refresh_plan = build_source_refresh_plan(
                 scout_path=scout_path,
                 evidence_path=evidence_path,
-                vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
+                vault_path=active_vault_path,
                 output_path=refresh_plan_path,
             )
             refresh_apply = build_source_refresh_apply(
@@ -1325,6 +1343,7 @@ def main(argv: list[str] | None = None) -> int:
                 memory_path=memory_path,
                 evidence_path=evidence_path,
                 scout_path=scout_path,
+                vault_path=active_vault_path,
                 artifact_output_path=journal_artifact_path,
                 surface_output_path=journal_path,
             )
@@ -1348,7 +1367,7 @@ def main(argv: list[str] | None = None) -> int:
                 verdict_path=written_verdict,
                 memory_path=memory_path,
                 evidence_path=evidence_path,
-                vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
+                vault_path=active_vault_path,
                 scout_path=scout_path,
                 refresh_plan_path=refresh_plan_path,
                 refresh_apply_path=refresh_apply_path,
@@ -1377,13 +1396,15 @@ def main(argv: list[str] | None = None) -> int:
                 journal_path=provisional_journal,
                 task_queue_path=provisional_task_queue,
                 task_ledger_path=provisional_task_ledger,
+                vault_compile_path=active_vault_path,
+                vault_surface_path=active_vault_surface,
                 archive_root=args.archive_root,
             )
             written_memory = write_memory_surface(
                 memory_path=memory_path,
                 archive_root=args.archive_root,
                 evidence_path=evidence_path,
-                vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
+                vault_path=active_vault_path,
                 index_output_path=DEFAULT_MEMORY_INDEX_OUTPUT,
                 output_path=memory_surface_path,
             )
@@ -1394,6 +1415,7 @@ def main(argv: list[str] | None = None) -> int:
                 evidence_path=evidence_path,
                 scout_path=scout_path,
                 archive_manifest_path=archive_manifest,
+                vault_path=active_vault_path,
                 artifact_output_path=journal_artifact_path,
                 surface_output_path=journal_path,
             )
@@ -1417,7 +1439,7 @@ def main(argv: list[str] | None = None) -> int:
                 verdict_path=written_verdict,
                 memory_path=memory_path,
                 evidence_path=evidence_path,
-                vault_path=DEFAULT_VAULT_COMPILE_OUTPUT,
+                vault_path=active_vault_path,
                 scout_path=scout_path,
                 refresh_plan_path=refresh_plan_path,
                 refresh_apply_path=refresh_apply_path,
@@ -1482,6 +1504,9 @@ def main(argv: list[str] | None = None) -> int:
                 "today": written_today.as_posix(),
                 "memory_surface": written_memory.as_posix(),
                 "memory_index": DEFAULT_MEMORY_INDEX_OUTPUT.as_posix(),
+                "vault_compile": active_vault_path.as_posix(),
+                "vault_surface": active_vault_surface.as_posix(),
+                "vault_compiled_count": vault_compile["compiled_count"] if vault_compile else 0,
                 "morning_control": written_morning.as_posix(),
                 "morning_control_artifact": morning_artifact_path.as_posix(),
                 "archive_manifest": archive_manifest.as_posix(),
