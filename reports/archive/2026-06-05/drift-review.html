@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Drift Review</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:840px; margin:0 auto; padding:16px; }
+.eyebrow { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 10px; font-size:20px; }
+p,li,small,td { color:var(--muted); overflow-wrap:anywhere; }
+.hero,.section { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }
+.status { display:block; margin:8px 0; font-size:28px; line-height:1.1; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.mini { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; min-width:0; }
+.links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }
+table { width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }
+td,th { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+@media (max-width:680px) { main { padding:12px; } h1 { font-size:29px; } .grid,.links { grid-template-columns:1fr; } table { font-size:13px; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Drift Review · 2026-06-06 local</span>
+<h1>오늘 방향 이탈 점검</h1>
+<p>trace와 운영 artifact를 읽어 현재 루프가 계속 진행 가능한지, 점검이 필요한지, 별도 승인 gate가 필요한지 판단합니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">approval_required</strong>
+<h2>hold_external_effect_until_scoped_approval</h2>
+<p>근거 새로고침 쪽은 별도 승인 gate가 필요하므로 로컬-only 작업과 분리해야 합니다.</p>
+</section>
+<section class="section">
+<h2>판단 신호</h2>
+<div class="grid"><article class='mini'><strong>trace_health</strong><p>ready</p><small>missing required 0, stale 0</small></article><article class='mini'><strong>pattern_next</strong><p>pattern freshness audit before adding new runtime authority</p><small>다음 slice 후보가 pattern radar에 남아 있는지 확인합니다.</small></article><article class='mini'><strong>readiness</strong><p>ready</p><small>fresh required 11, stale required 0</small></article><article class='mini'><strong>source_authority</strong><p>approval_required</p><small>live source 실행이 필요한 상태라면 별도 승인 gate가 필요합니다.</small></article><article class='mini'><strong>task_pressure</strong><p>0</p><small>blocked task가 많으면 새 기능보다 운영 정리가 먼저입니다.</small></article><article class='mini'><strong>operator_feedback</strong><p>0</p><small>operator review가 적으면 방향 판단 confidence를 낮춥니다.</small></article></div>
+</section>
+<section class="section">
+<h2>다음 행동</h2>
+<ul><li>추천 branch를 확인합니다: hold_external_effect_until_scoped_approval</li><li>새 외부효과 작업은 source/host/notification approval gate와 분리합니다.</li><li>operator가 명시 승인하기 전까지 live/source/host 작업은 진행하지 않습니다.</li><li>operator review 응답이 없으므로 다음 daily review surface에서 피드백을 남깁니다.</li></ul>
+</section>
+<section class="section">
+<h2>입력 artifact</h2>
+<table><thead><tr><th>Input</th><th>Path</th></tr></thead><tbody><tr><td>run_trace</td><td>reports/runtime/run-trace.json</td></tr><tr><td>pattern_radar</td><td>reports/runtime/agent-pattern-radar.json</td></tr><tr><td>readiness</td><td>reports/runtime/daily-readiness.json</td></tr><tr><td>source_refresh_brief</td><td>reports/runtime/source-refresh-brief.json</td></tr><tr><td>task_ledger</td><td>reports/memory/analyst-task-ledger.json</td></tr><tr><td>daily_review</td><td>reports/memory/daily-review.json</td></tr></tbody></table>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links"><a href='reports/product/today.html'>today</a><a href='reports/product/morning.html'>morning</a><a href='reports/product/readiness.html'>readiness</a><a href='reports/product/run-trace.html'>trace</a><a href='reports/product/pattern-radar.html'>pattern_radar</a><a href='reports/product/source-refresh.html'>source_refresh</a><a href='reports/product/tasks.html'>tasks</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 review는 기존 로컬 artifact만 읽습니다. live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

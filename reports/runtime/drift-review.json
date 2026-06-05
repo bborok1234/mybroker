@@ -1,0 +1,81 @@
+{
+  "schema_version": "local_drift_review.v1",
+  "generated_at": "2026-06-05T18:01:00.344076+00:00",
+  "status": "approval_required",
+  "run_id": "daily-research",
+  "decision": {
+    "status": "approval_required",
+    "recommended_branch": "hold_external_effect_until_scoped_approval",
+    "rationale": "근거 새로고침 쪽은 별도 승인 gate가 필요하므로 로컬-only 작업과 분리해야 합니다.",
+    "confidence": "high"
+  },
+  "signals": [
+    {
+      "name": "trace_health",
+      "value": "ready",
+      "interpretation": "missing required 0, stale 0"
+    },
+    {
+      "name": "pattern_next",
+      "value": "pattern freshness audit before adding new runtime authority",
+      "interpretation": "다음 slice 후보가 pattern radar에 남아 있는지 확인합니다."
+    },
+    {
+      "name": "readiness",
+      "value": "ready",
+      "interpretation": "fresh required 11, stale required 0"
+    },
+    {
+      "name": "source_authority",
+      "value": "approval_required",
+      "interpretation": "live source 실행이 필요한 상태라면 별도 승인 gate가 필요합니다."
+    },
+    {
+      "name": "task_pressure",
+      "value": "0",
+      "interpretation": "blocked task가 많으면 새 기능보다 운영 정리가 먼저입니다."
+    },
+    {
+      "name": "operator_feedback",
+      "value": "0",
+      "interpretation": "operator review가 적으면 방향 판단 confidence를 낮춥니다."
+    }
+  ],
+  "operator_next_steps": [
+    "추천 branch를 확인합니다: hold_external_effect_until_scoped_approval",
+    "새 외부효과 작업은 source/host/notification approval gate와 분리합니다.",
+    "operator가 명시 승인하기 전까지 live/source/host 작업은 진행하지 않습니다.",
+    "operator review 응답이 없으므로 다음 daily review surface에서 피드백을 남깁니다."
+  ],
+  "input_artifacts": {
+    "run_trace": "reports/runtime/run-trace.json",
+    "pattern_radar": "reports/runtime/agent-pattern-radar.json",
+    "readiness": "reports/runtime/daily-readiness.json",
+    "source_refresh_brief": "reports/runtime/source-refresh-brief.json",
+    "task_ledger": "reports/memory/analyst-task-ledger.json",
+    "daily_review": "reports/memory/daily-review.json"
+  },
+  "phone_links": {
+    "today": "reports/product/today.html",
+    "morning": "reports/product/morning.html",
+    "readiness": "reports/product/readiness.html",
+    "trace": "reports/product/run-trace.html",
+    "drift_review": "reports/product/drift-review.html",
+    "pattern_radar": "reports/product/pattern-radar.html",
+    "source_refresh": "reports/product/source-refresh.html",
+    "tasks": "reports/product/tasks.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "drift_review_reads_existing_artifacts_only",
+    "does_not_execute_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_live_trading",
+    "external_effects_require_separate_gate"
+  ]
+}

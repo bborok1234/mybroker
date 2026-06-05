@@ -46,6 +46,7 @@ ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION = "personal_analyst_task_status_apply.v
 DAILY_REVIEW_SCHEMA_VERSION = "daily_review.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
 RUN_TRACE_SCHEMA_VERSION = "local_run_trace.v1"
+DRIFT_REVIEW_SCHEMA_VERSION = "local_drift_review.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
 SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
 SCHEDULER_APPLY_SCHEMA_VERSION = "local_scheduler_apply.v1"
@@ -88,6 +89,8 @@ DEFAULT_MORNING_CONTROL_OUTPUT = Path("reports/runtime/morning-control.json")
 DEFAULT_MORNING_CONTROL_SURFACE = Path("reports/product/morning.html")
 DEFAULT_RUN_TRACE_OUTPUT = Path("reports/runtime/run-trace.json")
 DEFAULT_RUN_TRACE_SURFACE = Path("reports/product/run-trace.html")
+DEFAULT_DRIFT_REVIEW_OUTPUT = Path("reports/runtime/drift-review.json")
+DEFAULT_DRIFT_REVIEW_SURFACE = Path("reports/product/drift-review.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
 DEFAULT_RUNTIME_DOCTOR_ACTIVATION_OUTPUT = Path("reports/runtime/local-runtime-doctor-activation.json")
 DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
@@ -1610,6 +1613,8 @@ def build_daily_readiness(
         ("morning_surface", DEFAULT_MORNING_CONTROL_SURFACE, "phone_surface", True),
         ("run_trace", DEFAULT_RUN_TRACE_OUTPUT, "control_artifact", False),
         ("run_trace_surface", DEFAULT_RUN_TRACE_SURFACE, "phone_surface", False),
+        ("drift_review", DEFAULT_DRIFT_REVIEW_OUTPUT, "control_artifact", False),
+        ("drift_review_surface", DEFAULT_DRIFT_REVIEW_SURFACE, "phone_surface", False),
         ("daily_scout", DEFAULT_DAILY_SCOUT_OUTPUT, "machine_artifact", True),
         ("daily_evidence", DEFAULT_DAILY_EVIDENCE_OUTPUT, "machine_artifact", True),
         ("topic_memory", DEFAULT_TOPIC_MEMORY_OUTPUT, "memory_artifact", True),
@@ -1667,6 +1672,7 @@ def build_daily_readiness(
             "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+            "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
             "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
@@ -1886,6 +1892,208 @@ def validate_run_trace_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_run_trace_file(path: str | Path) -> list[str]:
     return validate_run_trace_payload(load_json(path))
+
+
+def build_drift_review(
+    *,
+    run_trace_path: str | Path = DEFAULT_RUN_TRACE_OUTPUT,
+    pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
+    readiness_path: str | Path = DEFAULT_DAILY_READINESS_OUTPUT,
+    source_refresh_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
+    task_ledger_path: str | Path = DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
+    daily_review_path: str | Path = DEFAULT_DAILY_REVIEW_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    trace = _load_optional_json(run_trace_path)
+    pattern = _load_optional_json(pattern_radar_path)
+    readiness = _load_optional_json(readiness_path)
+    source_refresh = _load_optional_json(source_refresh_brief_path)
+    ledger = _load_optional_json(task_ledger_path)
+    review = _load_optional_json(daily_review_path)
+    signals = _drift_review_signals(
+        trace=trace,
+        pattern=pattern,
+        readiness=readiness,
+        source_refresh=source_refresh,
+        ledger=ledger,
+        review=review,
+    )
+    decision = _drift_review_decision(signals=signals)
+    payload = {
+        "schema_version": DRIFT_REVIEW_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": decision["status"],
+        "run_id": trace.get("run_id", "local-daily-loop"),
+        "decision": decision,
+        "signals": signals,
+        "operator_next_steps": _drift_review_next_steps(decision=decision, signals=signals),
+        "input_artifacts": {
+            "run_trace": Path(run_trace_path).as_posix(),
+            "pattern_radar": Path(pattern_radar_path).as_posix(),
+            "readiness": Path(readiness_path).as_posix(),
+            "source_refresh_brief": Path(source_refresh_brief_path).as_posix(),
+            "task_ledger": Path(task_ledger_path).as_posix(),
+            "daily_review": Path(daily_review_path).as_posix(),
+        },
+        "phone_links": {
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
+            "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+            "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+            "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
+            "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
+            "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+            "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "drift_review_reads_existing_artifacts_only",
+            "does_not_execute_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_live_trading",
+            "external_effects_require_separate_gate",
+        ],
+    }
+    return payload
+
+
+def write_drift_review(
+    *,
+    artifact_output_path: str | Path = DEFAULT_DRIFT_REVIEW_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
+    **paths: Any,
+) -> Path:
+    payload = build_drift_review(**paths)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_drift_review(payload), encoding="utf-8")
+    return target
+
+
+def validate_drift_review_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != DRIFT_REVIEW_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"aligned", "inspect", "approval_required", "blocked"}:
+        errors.append(f"invalid status {payload.get('status')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if not payload.get("signals"):
+        errors.append("signals must not be empty")
+    decision = payload.get("decision", {})
+    if not decision.get("recommended_branch"):
+        errors.append("decision.recommended_branch must not be empty")
+    if not payload.get("operator_next_steps"):
+        errors.append("operator_next_steps must not be empty")
+    boundary = payload.get("safety_boundary", [])
+    if "drift_review_reads_existing_artifacts_only" not in boundary:
+        errors.append("safety_boundary must include drift_review_reads_existing_artifacts_only")
+    if "does_not_execute_live_network" not in boundary:
+        errors.append("safety_boundary must include does_not_execute_live_network")
+    return errors
+
+
+def validate_drift_review_file(path: str | Path) -> list[str]:
+    return validate_drift_review_payload(load_json(path))
+
+
+def render_drift_review(payload: dict[str, Any]) -> str:
+    decision = payload.get("decision", {})
+    signal_cards = "".join(
+        "<article class='mini'>"
+        f"<strong>{esc(signal.get('name', ''))}</strong>"
+        f"<p>{esc(signal.get('value', ''))}</p>"
+        f"<small>{esc(signal.get('interpretation', ''))}</small>"
+        "</article>"
+        for signal in payload.get("signals", [])
+    )
+    step_items = "".join(f"<li>{esc(step)}</li>" for step in payload.get("operator_next_steps", []))
+    inputs = "".join(
+        "<tr>"
+        f"<td>{esc(name)}</td>"
+        f"<td>{esc(path)}</td>"
+        "</tr>"
+        for name, path in payload.get("input_artifacts", {}).items()
+    )
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if path and label != "drift_review"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Drift Review</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:840px; margin:0 auto; padding:16px; }}
+.eyebrow {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,li,small,td {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
+.grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.mini {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; min-width:0; }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+table {{ width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; }}
+td,th {{ padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }}
+@media (max-width:680px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .grid,.links {{ grid-template-columns:1fr; }} table {{ font-size:13px; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Drift Review · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>오늘 방향 이탈 점검</h1>
+<p>trace와 운영 artifact를 읽어 현재 루프가 계속 진행 가능한지, 점검이 필요한지, 별도 승인 gate가 필요한지 판단합니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">{esc(payload.get('status', 'inspect'))}</strong>
+<h2>{esc(decision.get('recommended_branch', 'inspect'))}</h2>
+<p>{esc(decision.get('rationale', ''))}</p>
+</section>
+<section class="section">
+<h2>판단 신호</h2>
+<div class="grid">{signal_cards}</div>
+</section>
+<section class="section">
+<h2>다음 행동</h2>
+<ul>{step_items}</ul>
+</section>
+<section class="section">
+<h2>입력 artifact</h2>
+<table><thead><tr><th>Input</th><th>Path</th></tr></thead><tbody>{inputs}</tbody></table>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 review는 기존 로컬 artifact만 읽습니다. live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def render_run_trace(payload: dict[str, Any]) -> str:
@@ -2494,6 +2702,7 @@ def write_today_surface(
     review_surface_path: str | Path | None = DEFAULT_DAILY_REVIEW_SURFACE,
     pattern_radar_surface_path: str | Path | None = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path | None = DEFAULT_RUN_TRACE_SURFACE,
+    drift_review_surface_path: str | Path | None = DEFAULT_DRIFT_REVIEW_SURFACE,
     output_path: str | Path = DEFAULT_TODAY_OUTPUT,
     archive_manifest_path: str | Path | None = None,
     memory_surface_path: str | Path | None = None,
@@ -2535,6 +2744,7 @@ def write_today_surface(
             review_surface_path=Path(review_surface_path) if review_surface_path else None,
             pattern_radar_surface_path=Path(pattern_radar_surface_path) if pattern_radar_surface_path else None,
             run_trace_surface_path=Path(run_trace_surface_path) if run_trace_surface_path else None,
+            drift_review_surface_path=Path(drift_review_surface_path) if drift_review_surface_path else None,
             archive_manifest_path=Path(archive_manifest_path) if archive_manifest_path else None,
             memory_surface_path=Path(memory_surface_path) if memory_surface_path else None,
             journal_surface_path=Path(journal_surface_path) if journal_surface_path else None,
@@ -2566,6 +2776,7 @@ def render_today_surface(
     review_surface_path: Path | None = None,
     pattern_radar_surface_path: Path | None = None,
     run_trace_surface_path: Path | None = None,
+    drift_review_surface_path: Path | None = None,
     archive_manifest_path: Path | None = None,
     memory_surface_path: Path | None = None,
     journal_surface_path: Path | None = None,
@@ -2739,6 +2950,11 @@ def render_today_surface(
         if run_trace_surface_path
         else "<span>오늘 실행 trace 없음</span>"
     )
+    drift_review_link = (
+        f"<a href='{esc(_relative_href(drift_review_surface_path))}'>방향 이탈 점검</a>"
+        if drift_review_surface_path
+        else "<span>방향 이탈 점검 없음</span>"
+    )
     questions = _daily_questions(memory_topics, evidence, vault_notes, scout_recommendations)
     question_cards = "".join(f"<article class='question'><p>{esc(question)}</p></article>" for question in questions)
 
@@ -2862,6 +3078,7 @@ ul {{ margin:0; padding-left:18px; color:var(--muted); }}
 {review_link}
 {pattern_radar_link}
 {run_trace_link}
+{drift_review_link}
 {journal_link}
 {task_queue_link}
 {task_ledger_link}
@@ -2902,6 +3119,8 @@ def archive_daily_run(
     pattern_radar_surface_path: str | Path | None = None,
     run_trace_path: str | Path | None = None,
     run_trace_surface_path: str | Path | None = None,
+    drift_review_path: str | Path | None = None,
+    drift_review_surface_path: str | Path | None = None,
     vault_compile_path: str | Path | None = None,
     vault_surface_path: str | Path | None = None,
     agenda_path: str | Path | None = None,
@@ -2931,6 +3150,8 @@ def archive_daily_run(
         "agent_pattern_radar_surface": pattern_radar_surface_path,
         "run_trace": run_trace_path,
         "run_trace_surface": run_trace_surface_path,
+        "drift_review": drift_review_path,
+        "drift_review_surface": drift_review_surface_path,
         "vault_compile": vault_compile_path,
         "vault": vault_surface_path,
         "daily_agenda": agenda_path,
@@ -4022,6 +4243,7 @@ def build_morning_control_packet(
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
+    drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     memory_surface_path: str | Path = DEFAULT_MEMORY_OUTPUT,
     journal_surface_path: str | Path = DEFAULT_ANALYST_JOURNAL_OUTPUT,
     task_queue_surface_path: str | Path = DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
@@ -4082,6 +4304,7 @@ def build_morning_control_packet(
             "review": Path(review_surface_path).as_posix(),
             "pattern_radar": Path(pattern_radar_surface_path).as_posix(),
             "trace": Path(run_trace_surface_path).as_posix(),
+            "drift_review": Path(drift_review_surface_path).as_posix(),
             "vault": Path(vault_surface_path).as_posix(),
             "journal": Path(journal_surface_path).as_posix(),
             "tasks": Path(task_queue_surface_path).as_posix(),
@@ -4142,6 +4365,7 @@ def write_morning_control_packet(
     review_surface_path: str | Path = DEFAULT_DAILY_REVIEW_SURFACE,
     pattern_radar_surface_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
     run_trace_surface_path: str | Path = DEFAULT_RUN_TRACE_SURFACE,
+    drift_review_surface_path: str | Path = DEFAULT_DRIFT_REVIEW_SURFACE,
     artifact_output_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     surface_output_path: str | Path = DEFAULT_MORNING_CONTROL_SURFACE,
 ) -> Path:
@@ -4163,6 +4387,7 @@ def write_morning_control_packet(
         review_surface_path=review_surface_path,
         pattern_radar_surface_path=pattern_radar_surface_path,
         run_trace_surface_path=run_trace_surface_path,
+        drift_review_surface_path=drift_review_surface_path,
     )
     write_json(payload, artifact_output_path)
     target = Path(surface_output_path)
@@ -5404,6 +5629,111 @@ def _run_trace_weak_spots(
     if external_flags:
         weak.append(f"외부효과 flag 확인 필요: {', '.join(external_flags)}")
     return weak
+
+
+def _drift_review_signals(
+    *,
+    trace: dict[str, Any],
+    pattern: dict[str, Any],
+    readiness: dict[str, Any],
+    source_refresh: dict[str, Any],
+    ledger: dict[str, Any],
+    review: dict[str, Any],
+) -> list[dict[str, str]]:
+    trace_summary = trace.get("summary", {})
+    pattern_summary = pattern.get("summary", {})
+    readiness_summary = readiness.get("summary", {})
+    ledger_summary = ledger.get("summary", {})
+    review_summary = review.get("summary", {})
+    return [
+        {
+            "name": "trace_health",
+            "value": trace.get("status", "missing"),
+            "interpretation": f"missing required {trace_summary.get('missing_required_count', 'unknown')}, stale {trace_summary.get('stale_count', 'unknown')}",
+        },
+        {
+            "name": "pattern_next",
+            "value": pattern_summary.get("top_next_pattern", "missing"),
+            "interpretation": "다음 slice 후보가 pattern radar에 남아 있는지 확인합니다.",
+        },
+        {
+            "name": "readiness",
+            "value": readiness.get("status", "missing"),
+            "interpretation": f"fresh required {readiness_summary.get('fresh_required_count', 'unknown')}, stale required {readiness_summary.get('stale_required_count', 'unknown')}",
+        },
+        {
+            "name": "source_authority",
+            "value": source_refresh.get("status", "missing"),
+            "interpretation": "live source 실행이 필요한 상태라면 별도 승인 gate가 필요합니다.",
+        },
+        {
+            "name": "task_pressure",
+            "value": str(ledger_summary.get("blocked_requires_approval", 0) + ledger_summary.get("blocked_by_operator", 0)),
+            "interpretation": "blocked task가 많으면 새 기능보다 운영 정리가 먼저입니다.",
+        },
+        {
+            "name": "operator_feedback",
+            "value": str(review_summary.get("response_count", 0)),
+            "interpretation": "operator review가 적으면 방향 판단 confidence를 낮춥니다.",
+        },
+    ]
+
+
+def _drift_review_decision(*, signals: list[dict[str, str]]) -> dict[str, str]:
+    values = {signal["name"]: signal["value"] for signal in signals}
+    if values.get("trace_health") in {"missing", "blocked"}:
+        return {
+            "status": "blocked",
+            "recommended_branch": "repair_trace_inputs",
+            "rationale": "trace proof 자체가 없거나 필수 단계가 누락되어 다음 작업 방향을 믿기 어렵습니다.",
+            "confidence": "high",
+        }
+    if values.get("source_authority") in {"approval_required", "preflight_required", "ready_to_execute"}:
+        return {
+            "status": "approval_required",
+            "recommended_branch": "hold_external_effect_until_scoped_approval",
+            "rationale": "근거 새로고침 쪽은 별도 승인 gate가 필요하므로 로컬-only 작업과 분리해야 합니다.",
+            "confidence": "high",
+        }
+    if values.get("readiness") in {"stale", "blocked"}:
+        return {
+            "status": "inspect",
+            "recommended_branch": "refresh_local_artifacts_before_new_work",
+            "rationale": "준비 상태가 오래되었거나 막혀 있어 새 slice보다 로컬 산출물 재생성이 먼저입니다.",
+            "confidence": "medium",
+        }
+    if values.get("pattern_next") in {"missing", ""}:
+        return {
+            "status": "inspect",
+            "recommended_branch": "refresh_pattern_radar",
+            "rationale": "다음 안전 slice 후보가 명확하지 않아 pattern radar 갱신이 필요합니다.",
+            "confidence": "medium",
+        }
+    return {
+        "status": "aligned",
+        "recommended_branch": values.get("pattern_next", "continue_local_loop"),
+        "rationale": "trace, readiness, pattern radar가 모두 로컬-only 다음 작업을 지지합니다.",
+        "confidence": "medium",
+    }
+
+
+def _drift_review_next_steps(*, decision: dict[str, str], signals: list[dict[str, str]]) -> list[str]:
+    branch = decision.get("recommended_branch", "")
+    steps = [
+        f"추천 branch를 확인합니다: {branch}",
+        "새 외부효과 작업은 source/host/notification approval gate와 분리합니다.",
+    ]
+    if decision.get("status") == "aligned":
+        steps.append("다음 로컬-only slice를 Flyhigh direction review와 merge gate에 올립니다.")
+    elif decision.get("status") == "approval_required":
+        steps.append("operator가 명시 승인하기 전까지 live/source/host 작업은 진행하지 않습니다.")
+    elif decision.get("status") == "blocked":
+        steps.append("누락된 trace input을 먼저 재생성하고 validate-drift-review를 다시 실행합니다.")
+    else:
+        steps.append("readiness, trace, pattern radar 중 약한 신호를 먼저 확인합니다.")
+    if any(signal["name"] == "operator_feedback" and signal["value"] == "0" for signal in signals):
+        steps.append("operator review 응답이 없으므로 다음 daily review surface에서 피드백을 남깁니다.")
+    return steps
 
 
 def _morning_pending_decisions(

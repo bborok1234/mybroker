@@ -236,6 +236,12 @@ review, scheduler operations, and today surface. It summarizes what shaped today
 missing or stale steps, and links the relevant phone surfaces. It does not execute live network,
 send notifications, write host scheduler state, use credentials, or touch account flows.
 
+`appliance drift-review` is the local direction check that uses trace evidence. It writes
+`local_drift_review.v1` and `reports/product/drift-review.html` by reading the run trace, pattern
+radar, readiness, source refresh brief, task ledger, and daily review. It recommends whether the
+next branch is aligned, needs inspection, is blocked, or requires a separate approval gate. It does
+not execute the recommended branch; it only records the evidence-backed operating judgment.
+
 `source-refresh-plan` is the no-execution source cadence step. It writes
 `reports/daily/source-refresh-plan.json` with dry-run-only actions such as GDELT live, Stooq live,
 SEC sample review, or vault compile. `appliance run` creates it automatically, and `appliance
