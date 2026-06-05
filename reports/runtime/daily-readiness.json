@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-05T22:51:41.358272+00:00",
+  "generated_at": "2026-06-05T23:18:49.889118+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -19,7 +19,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.355563+00:00",
+      "generated_at": "2026-06-05T23:18:49.886767+00:00",
       "schema_version": "daily_operator_home.v1"
     },
     {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.357410+00:00",
+      "generated_at": "2026-06-05T23:18:49.888442+00:00",
       "schema_version": "phone_access_verify.v1"
     },
     {
@@ -85,7 +85,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.299308+00:00",
+      "generated_at": "2026-06-05T23:18:49.841273+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -96,7 +96,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.298150+00:00",
+      "generated_at": "2026-06-05T23:18:49.840539+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -118,7 +118,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.341821+00:00",
+      "generated_at": "2026-06-05T23:18:49.874971+00:00",
       "schema_version": "pattern_dry_run_proof.v1"
     },
     {
@@ -140,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.343986+00:00",
+      "generated_at": "2026-06-05T23:18:49.877157+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -162,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.338284+00:00",
+      "generated_at": "2026-06-05T23:18:49.871946+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
@@ -184,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.350875+00:00",
+      "generated_at": "2026-06-05T23:18:49.882174+00:00",
       "schema_version": "daily_run_ledger.v1"
     },
     {
@@ -206,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.351517+00:00",
+      "generated_at": "2026-06-05T23:18:49.882799+00:00",
       "schema_version": "daily_handoff.v1"
     },
     {
@@ -227,7 +227,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 2.23,
+      "age_hours": 2.68,
       "generated_at": "2026-06-05T20:38:09.499318+00:00",
       "schema_version": "operator_handoff_response_apply.v1"
     },
@@ -238,7 +238,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 2.13,
+      "age_hours": 2.59,
       "generated_at": "",
       "schema_version": ""
     },
@@ -250,7 +250,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.349041+00:00",
+      "generated_at": "2026-06-05T23:18:49.880768+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
@@ -272,7 +272,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.350232+00:00",
+      "generated_at": "2026-06-05T23:18:49.881585+00:00",
       "schema_version": "operator_review_prompt.v1"
     },
     {
@@ -294,7 +294,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.350683+00:00",
+      "generated_at": "2026-06-05T23:18:49.881991+00:00",
       "schema_version": "operator_review_effect.v1"
     },
     {
@@ -316,7 +316,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.325449+00:00",
+      "generated_at": "2026-06-05T23:18:49.860056+00:00",
       "schema_version": "analyst_council.v1"
     },
     {
@@ -338,7 +338,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.296047+00:00",
+      "generated_at": "2026-06-05T23:18:49.838815+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -349,7 +349,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.294790+00:00",
+      "generated_at": "2026-06-05T23:18:49.837652+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -360,7 +360,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.295098+00:00",
+      "generated_at": "2026-06-05T23:18:49.837986+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -371,7 +371,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.301137+00:00",
+      "generated_at": "2026-06-05T23:18:49.842176+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -382,7 +382,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.301137+00:00",
+      "generated_at": "2026-06-05T23:18:49.842176+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -393,7 +393,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.311678+00:00",
+      "generated_at": "2026-06-05T23:18:49.851416+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -403,7 +403,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 15.37,
+      "age_hours": 15.82,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -415,7 +415,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.335804+00:00",
+      "generated_at": "2026-06-05T23:18:49.870058+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -426,7 +426,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.336424+00:00",
+      "generated_at": "2026-06-05T23:18:49.870510+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -447,7 +447,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 4.84,
+      "age_hours": 5.3,
       "generated_at": "",
       "schema_version": ""
     },
@@ -470,7 +470,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.323681+00:00",
+      "generated_at": "2026-06-05T23:18:49.858582+00:00",
       "schema_version": "personal_memory_query.v1"
     },
     {
@@ -492,7 +492,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-05T22:51:41.323098+00:00",
+      "generated_at": "2026-06-05T23:18:49.858061+00:00",
       "schema_version": "personal_memory_audit.v1"
     },
     {
