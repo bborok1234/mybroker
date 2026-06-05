@@ -20,6 +20,8 @@ PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
 MEMORY_INDEX_SCHEMA_VERSION = "personal_memory_index.v1"
 MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 RUNTIME_DOCTOR_SCHEMA_VERSION = "local_runtime_doctor.v1"
+SCHEDULER_STATUS_SCHEMA_VERSION = "local_scheduler_status.v1"
+LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
@@ -31,6 +33,7 @@ DEFAULT_MEMORY_OUTPUT = Path("reports/product/memory.html")
 DEFAULT_MEMORY_QUERY_OUTPUT = Path("reports/memory/latest-query.json")
 DEFAULT_MEMORY_QUERY_SURFACE = Path("reports/product/memory-query.html")
 DEFAULT_RUNTIME_DOCTOR_OUTPUT = Path("reports/runtime/local-runtime-doctor.json")
+DEFAULT_SCHEDULER_STATUS_OUTPUT = Path("reports/runtime/scheduler-status.json")
 DEFAULT_LOCAL_OPS_DIR = Path("ops/local")
 
 
@@ -199,6 +202,56 @@ def write_runtime_doctor(
                 "rm ~/Library/LaunchAgents/com.mybroker.daily-analyst.plist",
             ],
         },
+        "policy": "research_only",
+    }
+    return write_json(payload, output_path)
+
+
+def write_scheduler_status(
+    *,
+    project_root: str | Path = ".",
+    output_path: str | Path = DEFAULT_SCHEDULER_STATUS_OUTPUT,
+) -> Path:
+    root = Path(project_root).resolve()
+    source_plist = root / DEFAULT_LOCAL_OPS_DIR / f"{LAUNCHD_LABEL}.plist"
+    source_script = root / DEFAULT_LOCAL_OPS_DIR / "run-daily-analyst.sh"
+    installed_plist = Path.home() / "Library" / "LaunchAgents" / f"{LAUNCHD_LABEL}.plist"
+    launchd = _launchd_state()
+    log_paths = {
+        "stdout": (root / "reports" / "runtime" / "daily-analyst.out.log").as_posix(),
+        "stderr": (root / "reports" / "runtime" / "daily-analyst.err.log").as_posix(),
+    }
+    payload = {
+        "schema_version": SCHEDULER_STATUS_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "project_root": root.as_posix(),
+        "label": LAUNCHD_LABEL,
+        "host_write_performed": False,
+        "status": _scheduler_status(source_plist=source_plist, source_script=source_script, installed_plist=installed_plist, loaded=launchd["loaded"]),
+        "source_assets": {
+            "script": source_script.as_posix(),
+            "script_exists": source_script.exists(),
+            "script_executable": source_script.exists() and os.access(source_script, os.X_OK),
+            "plist": source_plist.as_posix(),
+            "plist_exists": source_plist.exists(),
+        },
+        "installed_plist": {
+            "path": installed_plist.as_posix(),
+            "exists": installed_plist.exists(),
+        },
+        "launchd": launchd,
+        "logs": {
+            "paths": log_paths,
+            "stdout_exists": Path(log_paths["stdout"]).exists(),
+            "stderr_exists": Path(log_paths["stderr"]).exists(),
+        },
+        "commands": _scheduler_commands(source_plist=source_plist, installed_plist=installed_plist),
+        "next_actions": _scheduler_next_actions(
+            source_plist=source_plist,
+            source_script=source_script,
+            installed_plist=installed_plist,
+            loaded=launchd["loaded"],
+        ),
         "policy": "research_only",
     }
     return write_json(payload, output_path)
@@ -1049,19 +1102,16 @@ def _doctor_check_notification(path: Path) -> dict[str, Any]:
 
 
 def _doctor_check_launchd(plist_path: Path, *, require_launchd_loaded: bool) -> dict[str, Any]:
-    label = "com.mybroker.daily-analyst"
-    command = ["launchctl", "print", f"gui/{os.getuid()}/{label}"]
-    try:
-        result = subprocess.run(command, text=True, capture_output=True, timeout=8, check=False)
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    launchd = _launchd_state()
+    if launchd.get("inspect_error"):
         return {
             "name": "launchd_loaded",
             "status": "fail" if require_launchd_loaded else "warn",
-            "message": f"Could not inspect launchd state: {exc}",
+            "message": f"Could not inspect launchd state: {launchd['inspect_error']}",
             "plist": plist_path.as_posix(),
             "loaded": False,
         }
-    loaded = result.returncode == 0
+    loaded = bool(launchd["loaded"])
     if loaded:
         status = "pass"
         message = "LaunchAgent is loaded for the current user."
@@ -1074,8 +1124,60 @@ def _doctor_check_launchd(plist_path: Path, *, require_launchd_loaded: bool) -> 
         "message": message,
         "plist": plist_path.as_posix(),
         "loaded": loaded,
-        "command": " ".join(command),
+        "command": launchd["command"],
     }
+
+
+def _launchd_state() -> dict[str, Any]:
+    command = ["launchctl", "print", f"gui/{os.getuid()}/{LAUNCHD_LABEL}"]
+    try:
+        result = subprocess.run(command, text=True, capture_output=True, timeout=8, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {
+            "loaded": False,
+            "command": " ".join(command),
+            "returncode": None,
+            "inspect_error": str(exc),
+        }
+    return {
+        "loaded": result.returncode == 0,
+        "command": " ".join(command),
+        "returncode": result.returncode,
+        "stdout_excerpt": result.stdout[:500],
+        "stderr_excerpt": result.stderr[:500],
+    }
+
+
+def _scheduler_status(*, source_plist: Path, source_script: Path, installed_plist: Path, loaded: bool) -> str:
+    if loaded:
+        return "loaded"
+    if installed_plist.exists():
+        return "installed_not_loaded"
+    if source_plist.exists() and source_script.exists() and os.access(source_script, os.X_OK):
+        return "assets_ready"
+    return "not_ready"
+
+
+def _scheduler_commands(*, source_plist: Path, installed_plist: Path) -> dict[str, str]:
+    return {
+        "prepare_assets": "PYTHONPATH=src python3 -m mybroker appliance init --project-root .",
+        "install": f"mkdir -p ~/Library/LaunchAgents && cp {source_plist.as_posix()} {installed_plist.as_posix()}",
+        "load": f"launchctl bootstrap gui/$(id -u) {installed_plist.as_posix()}",
+        "start_now": f"launchctl kickstart -k gui/$(id -u)/{LAUNCHD_LABEL}",
+        "status": f"launchctl print gui/$(id -u)/{LAUNCHD_LABEL}",
+        "unload": f"launchctl bootout gui/$(id -u)/{LAUNCHD_LABEL}",
+        "uninstall": f"rm {installed_plist.as_posix()}",
+    }
+
+
+def _scheduler_next_actions(*, source_plist: Path, source_script: Path, installed_plist: Path, loaded: bool) -> list[str]:
+    if not source_plist.exists() or not source_script.exists() or not os.access(source_script, os.X_OK):
+        return ["Run `PYTHONPATH=src python3 -m mybroker appliance init --project-root .` to prepare scheduler assets."]
+    if not installed_plist.exists():
+        return ["Review reports/runtime/scheduler-status.json, then run the install and load commands if you want the daily schedule active."]
+    if not loaded:
+        return ["The LaunchAgent plist is installed but not loaded. Run the load command, then `appliance scheduler status` again."]
+    return ["Scheduler is loaded. Use the start_now command for an immediate proof run, then inspect reports/runtime logs and tomorrow's archive."]
 
 
 def _doctor_next_actions(checks: list[dict[str, Any]]) -> list[str]:

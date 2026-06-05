@@ -15,6 +15,7 @@ from mybroker.appliance import (
     write_phone_access_plan,
     write_runtime_doctor,
     write_runtime_playbook,
+    write_scheduler_status,
     write_today_surface,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
@@ -111,6 +112,10 @@ class LocalApplianceTests(unittest.TestCase):
                 output_path=root / "runtime-doctor.json",
                 freshness_hours=36,
             )
+            scheduler = write_scheduler_status(
+                project_root=root,
+                output_path=root / "scheduler-status.json",
+            )
 
             html = today.read_text(encoding="utf-8")
             memory_html = memory_surface.read_text(encoding="utf-8")
@@ -121,6 +126,7 @@ class LocalApplianceTests(unittest.TestCase):
             manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
             playbook_payload = json.loads(playbook.read_text(encoding="utf-8"))
             doctor_payload = json.loads(doctor.read_text(encoding="utf-8"))
+            scheduler_payload = json.loads(scheduler.read_text(encoding="utf-8"))
             script_exists = Path(assets["script"]).exists()
             plist_exists = Path(assets["plist"]).exists()
 
@@ -152,6 +158,10 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(doctor_payload["fail_count"], 0)
         self.assertIn("launchd_loaded", {item["name"] for item in doctor_payload["checks"]})
         self.assertTrue(doctor_payload["install_boundary"]["launchd_install_is_host_level"])
+        self.assertEqual(scheduler_payload["schema_version"], "local_scheduler_status.v1")
+        self.assertIn(scheduler_payload["status"], {"assets_ready", "installed_not_loaded", "loaded"})
+        self.assertFalse(scheduler_payload["host_write_performed"])
+        self.assertIn("install", scheduler_payload["commands"])
         self.assertTrue(script_exists)
         self.assertTrue(plist_exists)
 
