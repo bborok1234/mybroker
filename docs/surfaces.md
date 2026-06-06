@@ -67,6 +67,7 @@ It must show a source freshness scorecard so sample/cache/fallback evidence is n
 `reports/product/council-response-apply.html` is not a chat surface and not an executor. It is the local handoff proof after a copied council command records feedback, refreshes review/scout/prompt/effect artifacts, and regenerates council in the same local run.
 
 `reports/product/pattern-radar.html` is not a project tracker and not a live web research tool. It is the personal analyst's local workflow-evolution surface: which external agentic workflow patterns were adopted, partially adopted, rejected, or kept behind approval before they influence the daily loop.
+It must include a phone-readable pattern scout: the next local-only workflow experiment, why it is next, its proof command, done-when criteria, deferred watchlist, and boundaries that must not be crossed.
 It must expose the dry-run adoption queue and adoption gate before any new pattern changes product behavior.
 
 `reports/product/pattern-dry-run.html` is not a live workflow runner and not a schema/debug console. It reads existing local artifacts only and answers one operator question: which queued agentic workflow patterns have enough local proof to be wired deeper into the daily loop? It must keep browser/scraper/live-source candidates behind scoped approval and must not execute candidate commands.

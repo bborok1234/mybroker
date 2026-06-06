@@ -1,6 +1,6 @@
 {
   "schema_version": "local_run_trace.v1",
-  "generated_at": "2026-06-06T00:27:05.769103+00:00",
+  "generated_at": "2026-06-06T00:54:38.606764+00:00",
   "status": "ready",
   "run_id": "daily-research",
   "summary": {
@@ -23,12 +23,12 @@
     },
     {
       "label": "누적 실행",
-      "value": "58회",
+      "value": "59회",
       "source": "topic_memory"
     },
     {
       "label": "다음 안전 후보",
-      "value": "pattern freshness audit before adding new runtime authority",
+      "value": "pattern freshness intake before new runtime authority",
       "source": "pattern_radar"
     },
     {
@@ -47,7 +47,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.734243+00:00",
+      "generated_at": "2026-06-06T00:54:38.542787+00:00",
       "schema_version": "personal_analyst_runtime_playbook.v1",
       "influence": "Defines the local appliance operating pattern."
     },
@@ -60,7 +60,7 @@
       "status": "ready",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.734991+00:00",
+      "generated_at": "2026-06-06T00:54:38.544274+00:00",
       "schema_version": "agent_pattern_radar.v1",
       "influence": "Classifies external workflow patterns before they shape future work."
     },
@@ -73,7 +73,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.735780+00:00",
+      "generated_at": "2026-06-06T00:54:38.544974+00:00",
       "schema_version": "daily_research_plan.v1",
       "influence": "Turns configured interests into today's candidate topics."
     },
@@ -86,7 +86,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.737072+00:00",
+      "generated_at": "2026-06-06T00:54:38.548563+00:00",
       "schema_version": "daily_scout.v1",
       "influence": "Chooses what the operator should inspect first."
     },
@@ -99,7 +99,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.736245+00:00",
+      "generated_at": "2026-06-06T00:54:38.546948+00:00",
       "schema_version": "public_evidence_catalog.v1",
       "influence": "Records which local/free sources support the daily scenario."
     },
@@ -112,7 +112,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.736398+00:00",
+      "generated_at": "2026-06-06T00:54:38.547358+00:00",
       "schema_version": "topic_memory.v1",
       "influence": "Carries accumulated observations into today's context."
     },
@@ -125,7 +125,7 @@
       "status": "matched",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.755936+00:00",
+      "generated_at": "2026-06-06T00:54:38.591622+00:00",
       "schema_version": "personal_memory_query.v1",
       "influence": "Recalls prior local context for the scout-selected topic."
     },
@@ -138,7 +138,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.739703+00:00",
+      "generated_at": "2026-06-06T00:54:38.551392+00:00",
       "schema_version": "daily_brief_agenda.v1",
       "influence": "Converts the scout recommendation into a phone-first study sequence."
     },
@@ -151,7 +151,7 @@
       "status": "approval_required",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.738609+00:00",
+      "generated_at": "2026-06-06T00:54:38.550601+00:00",
       "schema_version": "source_refresh_brief.v1",
       "influence": "Explains weak evidence and blocked refresh authority."
     },
@@ -164,7 +164,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.740686+00:00",
+      "generated_at": "2026-06-06T00:54:38.553307+00:00",
       "schema_version": "scenario_report.v1",
       "influence": "Builds beginner-readable paths from available evidence."
     },
@@ -177,7 +177,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.740686+00:00",
+      "generated_at": "2026-06-06T00:54:38.553307+00:00",
       "schema_version": "market_verdict.v1",
       "influence": "Summarizes the research-only next inspection posture."
     },
@@ -190,7 +190,7 @@
       "status": "stable_monitor",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.756641+00:00",
+      "generated_at": "2026-06-06T00:54:38.592570+00:00",
       "schema_version": "personal_analyst_journal.v1",
       "influence": "Records role notes and follow-up questions."
     },
@@ -203,7 +203,7 @@
       "status": "queued",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.757919+00:00",
+      "generated_at": "2026-06-06T00:54:38.593974+00:00",
       "schema_version": "personal_analyst_task_queue.v1",
       "influence": "Turns the journal into local analyst tasks."
     },
@@ -216,7 +216,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.758200+00:00",
+      "generated_at": "2026-06-06T00:54:38.594282+00:00",
       "schema_version": "personal_analyst_task_ledger.v1",
       "influence": "Preserves task state across days."
     },
@@ -229,7 +229,7 @@
       "status": "present",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.758651+00:00",
+      "generated_at": "2026-06-06T00:54:38.594749+00:00",
       "schema_version": "daily_review.v1",
       "influence": "Records what the operator read, skipped, or wants more of."
     },
@@ -242,7 +242,7 @@
       "status": "ready",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.759073+00:00",
+      "generated_at": "2026-06-06T00:54:38.595175+00:00",
       "schema_version": "operator_review_prompt.v1",
       "influence": "Suggests copy-ready responses so operator feedback can shape the next run."
     },
@@ -255,7 +255,7 @@
       "status": "applied",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.759492+00:00",
+      "generated_at": "2026-06-06T00:54:38.595594+00:00",
       "schema_version": "operator_review_effect.v1",
       "influence": "Proves whether recorded review feedback actually shaped scout scoring."
     },
@@ -268,7 +268,7 @@
       "status": "read_with_caution",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.757343+00:00",
+      "generated_at": "2026-06-06T00:54:38.593370+00:00",
       "schema_version": "analyst_council.v1",
       "influence": "Checks today's brief through role-specific agreement, disagreement, and beginner-readiness."
     },
@@ -281,7 +281,7 @@
       "status": "ready",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.755415+00:00",
+      "generated_at": "2026-06-06T00:54:38.591023+00:00",
       "schema_version": "personal_memory_audit.v1",
       "influence": "Audits accumulated memory, vault notes, archives, source posture, and review feedback."
     },
@@ -294,7 +294,7 @@
       "status": "activation_ready",
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:27:05.768060+00:00",
+      "generated_at": "2026-06-06T00:54:38.604971+00:00",
       "schema_version": "local_scheduler_operations.v1",
       "influence": "Shows automation readiness without host writes."
     },

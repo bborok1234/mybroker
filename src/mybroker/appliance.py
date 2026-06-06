@@ -328,6 +328,39 @@ def build_agent_pattern_radar(
             "priority": "high",
         },
         {
+            "source": "Hermes Studio",
+            "source_url": "https://github.com/JPeetz/Hermes-Studio",
+            "observed_pattern": "agent operations console with cron jobs, approvals, memory graph, audit trail, cost awareness, and Kanban-style work state",
+            "decision": "adopt_partial",
+            "mybroker_translation": "keep the phone home, morning control, run ledger, handoff, and pattern radar as local control surfaces before building a hosted frontend",
+            "why": "The useful pattern is an operator control plane over long-running work, not a generic web app first.",
+            "risk": "too much console surface can bury the beginner in operational noise",
+            "guardrail": "first screen shows only the next reading/action queue; detailed traces and gates stay one link away",
+            "priority": "high",
+        },
+        {
+            "source": "OpenClaw safety research",
+            "source_url": "https://arxiv.org/abs/2604.04759",
+            "observed_pattern": "personal agent systems need explicit protection against capability, identity, and knowledge poisoning before broad tool use",
+            "decision": "adopt",
+            "mybroker_translation": "treat source freshness, memory audit warnings, and scoped approvals as first-class daily artifacts before any browser, account, or host authority expands",
+            "why": "A personal analyst becomes dangerous when stale memory or untrusted sources silently steer automated actions.",
+            "risk": "new live-source tools can look helpful while increasing poisoning and authority risk",
+            "guardrail": "live network, browser/scraper, credentials, notifications, host writes, and account access remain separate approval scopes",
+            "priority": "high",
+        },
+        {
+            "source": "SemaClaw",
+            "source_url": "https://arxiv.org/abs/2604.11548",
+            "observed_pattern": "agent-native work improves through harness engineering: typed DAGs, permission bridges, layered context, and agentic wiki memory",
+            "decision": "adopt_partial",
+            "mybroker_translation": "prefer typed local artifacts, validators, archive manifests, and vault/wiki compounding over a larger prompt-only assistant",
+            "why": "The daily analyst should improve by strengthening the harness and evidence contracts, not by trusting larger unstructured prompts.",
+            "risk": "overbuilding the harness can slow the actual daily learning loop",
+            "guardrail": "new harness pieces must produce a phone-readable operator outcome and a validator before adoption",
+            "priority": "high",
+        },
+        {
             "source": "Dexter",
             "source_url": "https://github.com/kamalkraj/Dexter",
             "observed_pattern": "autonomous research-agent loops with planning, source gathering, synthesis, and evaluation",
@@ -409,6 +442,7 @@ def build_agent_pattern_radar(
     deferred = [case for case in cases if case["decision"] == "defer"]
     rejected = [case for case in cases if case["decision"] == "reject"]
     dry_run_candidates = _pattern_dry_run_candidates(cases)
+    pattern_scout = _build_pattern_scout(cases=cases, dry_run_candidates=dry_run_candidates)
     payload = {
         "schema_version": AGENT_PATTERN_RADAR_SCHEMA_VERSION,
         "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
@@ -424,9 +458,10 @@ def build_agent_pattern_radar(
             "dry_run_candidate_count": len(dry_run_candidates),
             "ready_dry_run_count": sum(1 for item in dry_run_candidates if item["status"] == "ready"),
             "gated_dry_run_count": sum(1 for item in dry_run_candidates if item["status"] == "requires_approval"),
-            "top_next_pattern": "pattern freshness audit before adding new runtime authority",
+            "top_next_pattern": pattern_scout["recommended_next"]["title"],
         },
         "cases": cases,
+        "pattern_scout": pattern_scout,
         "dry_run_candidates": dry_run_candidates,
         "adoption_gate": {
             "allowed_transitions": [
@@ -522,6 +557,64 @@ def write_agent_pattern_radar(
     return target
 
 
+def _build_pattern_scout(*, cases: list[dict[str, Any]], dry_run_candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    ready_local = [
+        candidate
+        for candidate in dry_run_candidates
+        if candidate.get("status") == "ready" and candidate.get("approval_scope") == "local_dry_run_only"
+    ]
+    recommended = next(
+        (candidate for candidate in ready_local if candidate.get("candidate_id") == "pattern-freshness-intake"),
+        ready_local[0] if ready_local else {},
+    )
+    watchlist = [
+        {
+            "source": case.get("source", ""),
+            "why_watch": case.get("why", ""),
+            "blocked_by": case.get("guardrail", ""),
+            "decision": case.get("decision", ""),
+        }
+        for case in cases
+        if case.get("decision") == "defer"
+    ]
+    rejected = [
+        {
+            "source": case.get("source", ""),
+            "why_rejected": case.get("why", ""),
+            "boundary": case.get("guardrail", ""),
+        }
+        for case in cases
+        if case.get("decision") == "reject"
+    ]
+    return {
+        "status": "ready" if recommended else "blocked",
+        "cadence": "run inside the daily appliance loop before adopting or widening any agent workflow pattern",
+        "recommended_next": {
+            "candidate_id": recommended.get("candidate_id", ""),
+            "title": "pattern freshness intake before new runtime authority",
+            "source": recommended.get("source", ""),
+            "why_now": recommended.get(
+                "why",
+                "새 agent 사례가 빠르게 바뀌므로 live authority를 넓히기 전에 로컬 레이더와 증거 계약부터 갱신합니다.",
+            ),
+            "proof_command": recommended.get("proof_command", ""),
+            "approval_scope": recommended.get("approval_scope", ""),
+            "operator_decision_needed": recommended.get("approval_scope") != "local_dry_run_only",
+            "done_when": [
+                "agent_pattern_radar.v1 validates",
+                "pattern-radar phone surface shows the recommended next local experiment",
+                "deferred and rejected patterns remain explicit",
+                "external_effect_performed and host_write_performed remain false",
+            ],
+        },
+        "deferred_watchlist": watchlist,
+        "rejected_boundary": rejected,
+        "operator_rule": "새 사례는 바로 채택하지 않습니다. 먼저 local-only proof, validator, phone-readable impact, safety boundary를 통과해야 합니다.",
+        "external_effect_performed": False,
+        "host_write_performed": False,
+    }
+
+
 def validate_agent_pattern_radar_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if payload.get("schema_version") != AGENT_PATTERN_RADAR_SCHEMA_VERSION:
@@ -546,6 +639,21 @@ def validate_agent_pattern_radar_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("adopted_patterns must not be empty")
     if not payload.get("dry_run_candidates"):
         errors.append("dry_run_candidates must not be empty")
+    scout = payload.get("pattern_scout", {})
+    if scout.get("status") not in {"ready", "blocked"}:
+        errors.append("pattern_scout status must be ready or blocked")
+    recommended = scout.get("recommended_next", {})
+    for key in ["candidate_id", "title", "source", "why_now", "proof_command", "approval_scope", "done_when"]:
+        if not recommended.get(key):
+            errors.append(f"pattern_scout recommended_next missing {key}")
+    if scout.get("external_effect_performed") is not False:
+        errors.append("pattern_scout external_effect_performed must be false")
+    if scout.get("host_write_performed") is not False:
+        errors.append("pattern_scout host_write_performed must be false")
+    if not scout.get("deferred_watchlist"):
+        errors.append("pattern_scout deferred_watchlist must not be empty")
+    if not scout.get("rejected_boundary"):
+        errors.append("pattern_scout rejected_boundary must not be empty")
     for index, candidate in enumerate(payload.get("dry_run_candidates", [])):
         for key in ["candidate_id", "source", "status", "proof_command", "expected_artifact", "approval_scope", "promotion_rule"]:
             if not str(candidate.get(key, "")).strip():
@@ -599,6 +707,18 @@ def _pattern_proof_artifact_check(*, candidate: dict[str, Any], payload: dict[st
         if not surface_path.exists():
             status = "failed"
             reasons.append("phone-readable run trace surface가 없습니다.")
+    elif candidate_id == "pattern-freshness-intake":
+        errors = validate_agent_pattern_radar_payload(payload)
+        if errors:
+            status = "failed"
+            reasons.extend(errors)
+        recommended = payload.get("pattern_scout", {}).get("recommended_next", {})
+        if recommended.get("candidate_id") != "pattern-freshness-intake":
+            status = "failed"
+            reasons.append("pattern scout가 freshness intake를 다음 local 실험으로 선택하지 않았습니다.")
+        if not surface_path.exists():
+            status = "failed"
+            reasons.append("phone-readable pattern radar surface가 없습니다.")
     else:
         status = "blocked"
         reasons.append("이 후보에 대한 local proof 규칙이 아직 없습니다.")
@@ -618,6 +738,8 @@ def _pattern_proof_surface_for_candidate(candidate_id: str) -> Path:
         return DEFAULT_MEMORY_AUDIT_SURFACE
     if candidate_id == "pattern-run-trace-observability":
         return DEFAULT_RUN_TRACE_SURFACE
+    if candidate_id == "pattern-freshness-intake":
+        return DEFAULT_AGENT_PATTERN_RADAR_SURFACE
     if candidate_id == "pattern-live-source-browser-gateway":
         return DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE
     return Path("reports/product/missing.html")
@@ -869,6 +991,18 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
     by_source = {case.get("source", ""): case for case in cases}
     rows = [
         {
+            "candidate_id": "pattern-freshness-intake",
+            "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
+            "status": "ready",
+            "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+            "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
+            "expected_artifact": "reports/runtime/agent-pattern-radar.json",
+            "approval_scope": "local_dry_run_only",
+            "promotion_rule": "Adopt only if pattern_scout recommends a local next experiment, deferred/rejected boundaries remain explicit, and the phone surface validates.",
+            "source_decision": "adopt_partial",
+            "external_effect_performed": False,
+        },
+        {
             "candidate_id": "pattern-memory-recall-quality",
             "source": "Obsidian vault research workflow",
             "status": "ready",
@@ -922,6 +1056,25 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
 
 def render_agent_pattern_radar(payload: dict[str, Any]) -> str:
     summary = payload.get("summary", {})
+    scout = payload.get("pattern_scout", {})
+    recommended = scout.get("recommended_next", {})
+    done_when = "".join(f"<li>{esc(item)}</li>" for item in recommended.get("done_when", []))
+    deferred_cards = "".join(
+        "<article class='mini'>"
+        f"<strong>{esc(item.get('source', ''))}</strong>"
+        f"<p>{esc(item.get('why_watch', ''))}</p>"
+        f"<small>{esc(item.get('blocked_by', ''))}</small>"
+        "</article>"
+        for item in scout.get("deferred_watchlist", [])
+    ) or "<p>오늘 보류 중인 패턴은 없습니다.</p>"
+    boundary_cards = "".join(
+        "<article class='mini reject'>"
+        f"<strong>{esc(item.get('source', ''))}</strong>"
+        f"<p>{esc(item.get('why_rejected', ''))}</p>"
+        f"<small>{esc(item.get('boundary', ''))}</small>"
+        "</article>"
+        for item in scout.get("rejected_boundary", [])
+    ) or "<p>명시적으로 거부한 경계가 없습니다.</p>"
     case_cards = "".join(
         "<article class='card'>"
         f"<span>{esc(case.get('decision', 'review'))} · {esc(case.get('priority', ''))}</span>"
@@ -1001,22 +1154,49 @@ code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; backgrou
 <h1>개인 애널리스트 방식 업데이트</h1>
 <p>최신 agentic workflow 사례에서 검증된 패턴만 로컬 daily analyst loop에 흡수하기 위한 운영 레이더입니다.</p>
 </header>
-<section class="hero">
-<span class="eyebrow">이번 판단</span>
-<h2>{esc(summary.get('top_next_pattern', 'pattern freshness audit'))}</h2>
-<p>{esc(payload.get('objective', ''))}</p>
+	<section class="hero">
+	<span class="eyebrow">이번 판단</span>
+	<h2>{esc(summary.get('top_next_pattern', 'pattern freshness audit'))}</h2>
+	<p>{esc(payload.get('objective', ''))}</p>
 <div class="metrics">
 <article class="metric"><span>Cases</span><strong>{esc(summary.get('case_count', 0))}</strong></article>
 <article class="metric"><span>Adopt</span><strong>{esc(summary.get('adopted_count', 0))}</strong></article>
 <article class="metric"><span>Dry-run</span><strong>{esc(summary.get('dry_run_candidate_count', 0))}</strong></article>
-</div>
-</section>
-<section class="section">
-<h2>Dry-run 승격 큐</h2>
-<div class="grid">{dry_run_cards}</div>
-</section>
-<section class="section">
-<h2>채택 게이트</h2>
+	</div>
+	</section>
+	<section class="section">
+	<h2>오늘의 방식 Scout</h2>
+	<div class="grid">
+	<article class="mini">
+	<strong>{esc(recommended.get('title', '다음 local 실험 없음'))}</strong>
+	<p>{esc(recommended.get('why_now', ''))}</p>
+	<small>{esc(recommended.get('source', ''))} · {esc(recommended.get('approval_scope', ''))}</small>
+	<code>{esc(recommended.get('proof_command', ''))}</code>
+	</article>
+	<article class="mini">
+	<strong>Done when</strong>
+	<ul>{done_when}</ul>
+	</article>
+	<article class="mini">
+	<strong>운영 규칙</strong>
+	<p>{esc(scout.get('operator_rule', '새 패턴은 proof 없이 채택하지 않습니다.'))}</p>
+	</article>
+	</div>
+	</section>
+	<section class="section">
+	<h2>Dry-run 승격 큐</h2>
+	<div class="grid">{dry_run_cards}</div>
+	</section>
+	<section class="section">
+	<h2>보류 중인 최신 패턴</h2>
+	<div class="grid">{deferred_cards}</div>
+	</section>
+	<section class="section">
+	<h2>넘지 않을 경계</h2>
+	<div class="stack">{boundary_cards}</div>
+	</section>
+	<section class="section">
+	<h2>채택 게이트</h2>
 <ul>{gate_items}</ul>
 </section>
 <section class="section">

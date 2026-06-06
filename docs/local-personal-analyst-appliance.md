@@ -267,6 +267,9 @@ lessons explicit: adopted patterns become local surfaces, memory, review, role s
 maps, recall quality, or future trace proofs; deferred patterns wait for stronger schemas and
 sandboxing; rejected patterns remain outside the product when they imply credentials, live
 execution, account access, or unsupported personalized recommendations.
+It also emits a pattern scout: one next local-only workflow experiment, the reason it is next, the
+proof command, done-when criteria, deferred watchlist, and rejected boundaries. This keeps new agent
+techniques from becoming product behavior merely because they are popular today.
 New external agent or research patterns do not become product behavior directly. They must move
 through the radar's dry-run queue first: local proof command, expected artifact, validator,
 operator-facing explanation, and explicit approval scope. Browser/scraper/live-source patterns

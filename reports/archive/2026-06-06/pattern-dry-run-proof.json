@@ -1,16 +1,22 @@
 {
   "schema_version": "pattern_dry_run_proof.v1",
-  "generated_at": "2026-06-06T00:27:05.772227+00:00",
+  "generated_at": "2026-06-06T00:54:38.610852+00:00",
   "status": "proof_ready",
   "source_artifact": "reports/runtime/agent-pattern-radar.json",
   "summary": {
-    "candidate_count": 4,
-    "passed_count": 2,
+    "candidate_count": 5,
+    "passed_count": 3,
     "approval_required_count": 1,
     "blocked_count": 1,
     "failed_count": 0
   },
   "promotion_decisions": [
+    {
+      "candidate_id": "pattern-freshness-intake",
+      "decision": "adopted_proof_ready",
+      "reason": "로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.",
+      "requires_operator_approval": false
+    },
     {
       "candidate_id": "pattern-memory-recall-quality",
       "decision": "adopted_proof_ready",
@@ -25,6 +31,24 @@
     }
   ],
   "candidate_results": [
+    {
+      "candidate_id": "pattern-freshness-intake",
+      "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
+      "input_status": "ready",
+      "approval_scope": "local_dry_run_only",
+      "proof_status": "passed",
+      "expected_artifact": "reports/runtime/agent-pattern-radar.json",
+      "artifact_exists": true,
+      "artifact_schema_version": "agent_pattern_radar.v1",
+      "surface": "reports/product/pattern-radar.html",
+      "surface_exists": true,
+      "promotion_rule": "Adopt only if pattern_scout recommends a local next experiment, deferred/rejected boundaries remain explicit, and the phone surface validates.",
+      "proof_notes": [
+        "로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다."
+      ],
+      "external_effect_performed": false,
+      "host_write_performed": false
+    },
     {
       "candidate_id": "pattern-memory-recall-quality",
       "source": "Obsidian vault research workflow",

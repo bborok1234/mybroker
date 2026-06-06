@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T00:27:05.788873+00:00",
+  "generated_at": "2026-06-06T00:54:38.629205+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -308,12 +308,12 @@
       },
       {
         "label": "누적 실행",
-        "value": "58회",
+        "value": "59회",
         "source": "topic_memory"
       },
       {
         "label": "다음 안전 후보",
-        "value": "pattern freshness audit before adding new runtime authority",
+        "value": "pattern freshness intake before new runtime authority",
         "source": "pattern_radar"
       },
       {
@@ -515,7 +515,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T00:27:05.737072+00:00"
+      "generated_at": "2026-06-06T00:54:38.548563+00:00"
     },
     {
       "name": "agenda",
@@ -523,7 +523,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T00:27:05.739703+00:00"
+      "generated_at": "2026-06-06T00:54:38.551392+00:00"
     },
     {
       "name": "morning",
@@ -531,7 +531,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-06T00:27:05.773840+00:00"
+      "generated_at": "2026-06-06T00:54:38.612950+00:00"
     },
     {
       "name": "readiness",
@@ -539,7 +539,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T00:27:05.786273+00:00"
+      "generated_at": "2026-06-06T00:54:38.626379+00:00"
     },
     {
       "name": "handoff",
@@ -547,7 +547,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-06T00:27:05.779804+00:00"
+      "generated_at": "2026-06-06T00:54:38.619828+00:00"
     },
     {
       "name": "handoff_apply",
@@ -563,7 +563,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T00:27:05.779088+00:00"
+      "generated_at": "2026-06-06T00:54:38.618632+00:00"
     },
     {
       "name": "run_trace",
@@ -571,7 +571,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T00:27:05.769103+00:00"
+      "generated_at": "2026-06-06T00:54:38.606764+00:00"
     },
     {
       "name": "task_ledger",
@@ -579,7 +579,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T00:27:05.758200+00:00"
+      "generated_at": "2026-06-06T00:54:38.594282+00:00"
     },
     {
       "name": "scheduler",
@@ -587,7 +587,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-06T00:27:05.768060+00:00"
+      "generated_at": "2026-06-06T00:54:38.604971+00:00"
     },
     {
       "name": "phone_access",
@@ -595,7 +595,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T00:27:05.734706+00:00"
+      "generated_at": "2026-06-06T00:54:38.543995+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -603,7 +603,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T00:27:05.785395+00:00"
+      "generated_at": "2026-06-06T00:54:38.625533+00:00"
     },
     {
       "name": "notification",
@@ -611,7 +611,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-06T00:27:05.760908+00:00"
+      "generated_at": "2026-06-06T00:54:38.596908+00:00"
     },
     {
       "name": "memory_query",
@@ -619,7 +619,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-06T00:27:05.755936+00:00"
+      "generated_at": "2026-06-06T00:54:38.591622+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -627,7 +627,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-06T00:27:05.772227+00:00"
+      "generated_at": "2026-06-06T00:54:38.610852+00:00"
     }
   ],
   "external_effect_performed": false,

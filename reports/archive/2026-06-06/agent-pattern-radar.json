@@ -1,19 +1,19 @@
 {
   "schema_version": "agent_pattern_radar.v1",
-  "generated_at": "2026-06-06T00:27:05.734991+00:00",
+  "generated_at": "2026-06-06T00:54:38.544274+00:00",
   "status": "ready",
   "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
   "playbook_source": "reports/runtime/local-analyst-playbook.json",
   "playbook_pattern_count": 6,
   "summary": {
-    "case_count": 16,
-    "adopted_count": 12,
+    "case_count": 19,
+    "adopted_count": 15,
     "deferred_count": 2,
     "rejected_count": 2,
-    "dry_run_candidate_count": 4,
-    "ready_dry_run_count": 2,
+    "dry_run_candidate_count": 5,
+    "ready_dry_run_count": 3,
     "gated_dry_run_count": 1,
-    "top_next_pattern": "pattern freshness audit before adding new runtime authority"
+    "top_next_pattern": "pattern freshness intake before new runtime authority"
   },
   "cases": [
     {
@@ -116,6 +116,39 @@
       "priority": "high"
     },
     {
+      "source": "Hermes Studio",
+      "source_url": "https://github.com/JPeetz/Hermes-Studio",
+      "observed_pattern": "agent operations console with cron jobs, approvals, memory graph, audit trail, cost awareness, and Kanban-style work state",
+      "decision": "adopt_partial",
+      "mybroker_translation": "keep the phone home, morning control, run ledger, handoff, and pattern radar as local control surfaces before building a hosted frontend",
+      "why": "The useful pattern is an operator control plane over long-running work, not a generic web app first.",
+      "risk": "too much console surface can bury the beginner in operational noise",
+      "guardrail": "first screen shows only the next reading/action queue; detailed traces and gates stay one link away",
+      "priority": "high"
+    },
+    {
+      "source": "OpenClaw safety research",
+      "source_url": "https://arxiv.org/abs/2604.04759",
+      "observed_pattern": "personal agent systems need explicit protection against capability, identity, and knowledge poisoning before broad tool use",
+      "decision": "adopt",
+      "mybroker_translation": "treat source freshness, memory audit warnings, and scoped approvals as first-class daily artifacts before any browser, account, or host authority expands",
+      "why": "A personal analyst becomes dangerous when stale memory or untrusted sources silently steer automated actions.",
+      "risk": "new live-source tools can look helpful while increasing poisoning and authority risk",
+      "guardrail": "live network, browser/scraper, credentials, notifications, host writes, and account access remain separate approval scopes",
+      "priority": "high"
+    },
+    {
+      "source": "SemaClaw",
+      "source_url": "https://arxiv.org/abs/2604.11548",
+      "observed_pattern": "agent-native work improves through harness engineering: typed DAGs, permission bridges, layered context, and agentic wiki memory",
+      "decision": "adopt_partial",
+      "mybroker_translation": "prefer typed local artifacts, validators, archive manifests, and vault/wiki compounding over a larger prompt-only assistant",
+      "why": "The daily analyst should improve by strengthening the harness and evidence contracts, not by trusting larger unstructured prompts.",
+      "risk": "overbuilding the harness can slow the actual daily learning loop",
+      "guardrail": "new harness pieces must produce a phone-readable operator outcome and a validator before adoption",
+      "priority": "high"
+    },
+    {
       "source": "Dexter",
       "source_url": "https://github.com/kamalkraj/Dexter",
       "observed_pattern": "autonomous research-agent loops with planning, source gathering, synthesis, and evaluation",
@@ -193,7 +226,67 @@
       "priority": "blocked"
     }
   ],
+  "pattern_scout": {
+    "status": "ready",
+    "cadence": "run inside the daily appliance loop before adopting or widening any agent workflow pattern",
+    "recommended_next": {
+      "candidate_id": "pattern-freshness-intake",
+      "title": "pattern freshness intake before new runtime authority",
+      "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
+      "why_now": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
+      "approval_scope": "local_dry_run_only",
+      "operator_decision_needed": false,
+      "done_when": [
+        "agent_pattern_radar.v1 validates",
+        "pattern-radar phone surface shows the recommended next local experiment",
+        "deferred and rejected patterns remain explicit",
+        "external_effect_performed and host_write_performed remain false"
+      ]
+    },
+    "deferred_watchlist": [
+      {
+        "source": "Browser-use / Playwright / Firecrawl",
+        "why_watch": "They can improve source freshness, but they also widen the authority and source-quality surface.",
+        "blocked_by": "only move through source-refresh approval, preflight, cached output, and validation before it influences the daily brief",
+        "decision": "defer"
+      },
+      {
+        "source": "TaskWeaver",
+        "why_watch": "Code-first analytics could improve scenario simulation, but it should not precede memory quality, source quality, and clear user surfaces.",
+        "blocked_by": "only run generated analysis in a sandbox with deterministic inputs, saved outputs, and validation",
+        "decision": "defer"
+      }
+    ],
+    "rejected_boundary": [
+      {
+        "source": "Hosted trading bots and broker-connected agents",
+        "why_rejected": "This violates the current local research-only objective.",
+        "boundary": "no brokerage credentials, no live trading, no discretionary management"
+      },
+      {
+        "source": "Farol-style exchange-connected bots",
+        "why_rejected": "This is outside the current personal learning and research appliance boundary.",
+        "boundary": "no exchange credentials, no account connection, no live orders, no autonomous execution"
+      }
+    ],
+    "operator_rule": "새 사례는 바로 채택하지 않습니다. 먼저 local-only proof, validator, phone-readable impact, safety boundary를 통과해야 합니다.",
+    "external_effect_performed": false,
+    "host_write_performed": false
+  },
   "dry_run_candidates": [
+    {
+      "candidate_id": "pattern-freshness-intake",
+      "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
+      "status": "ready",
+      "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
+      "expected_artifact": "reports/runtime/agent-pattern-radar.json",
+      "approval_scope": "local_dry_run_only",
+      "promotion_rule": "Adopt only if pattern_scout recommends a local next experiment, deferred/rejected boundaries remain explicit, and the phone surface validates.",
+      "source_decision": "adopt_partial",
+      "external_effect_performed": false
+    },
     {
       "candidate_id": "pattern-memory-recall-quality",
       "source": "Obsidian vault research workflow",
@@ -311,6 +404,24 @@
       "priority": "high",
       "translation": "treat the local vault, task ledger, review log, and recall page as the first narrow gateway before adding broader tool access",
       "guardrail": "keep gateway-like commands narrow, artifact-backed, and separately validated before any external effect"
+    },
+    {
+      "source": "Hermes Studio",
+      "priority": "high",
+      "translation": "keep the phone home, morning control, run ledger, handoff, and pattern radar as local control surfaces before building a hosted frontend",
+      "guardrail": "first screen shows only the next reading/action queue; detailed traces and gates stay one link away"
+    },
+    {
+      "source": "OpenClaw safety research",
+      "priority": "high",
+      "translation": "treat source freshness, memory audit warnings, and scoped approvals as first-class daily artifacts before any browser, account, or host authority expands",
+      "guardrail": "live network, browser/scraper, credentials, notifications, host writes, and account access remain separate approval scopes"
+    },
+    {
+      "source": "SemaClaw",
+      "priority": "high",
+      "translation": "prefer typed local artifacts, validators, archive manifests, and vault/wiki compounding over a larger prompt-only assistant",
+      "guardrail": "new harness pieces must produce a phone-readable operator outcome and a validator before adoption"
     },
     {
       "source": "Dexter",
