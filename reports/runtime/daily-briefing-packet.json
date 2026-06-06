@@ -1,0 +1,143 @@
+{
+  "schema_version": "daily_briefing_packet.v1",
+  "generated_at": "2026-06-06T04:56:41.081177+00:00",
+  "policy": "research_only",
+  "status": "review",
+  "title": "MyBroker 오늘의 개인 애널리스트",
+  "headline": "Semiconductors: 사람 확인 필요",
+  "topic": "Semiconductors",
+  "why_today": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+  "briefing_goal": "폰에서 바로 읽거나 메시지로 붙여넣을 수 있는 하루의 압축 handoff",
+  "copy_ready_message": "MyBroker 오늘의 개인 애널리스트\n1. 먼저 볼 주제: Semiconductors\n2. 왜 지금: 최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.\n3. 신뢰/준비: readiness=ready, run=ready, caveat=3, blocked=0\n4. 오늘 확인: live source refresh 승인 여부\n5. 열기: reports/product/daily-home.html\n주의: 교육/리서치/시뮬레이션 전용. 알림 전송, live source, host write, 계좌/주문은 별도 승인 전까지 실행하지 않음.",
+  "recommended_first_link": "reports/product/daily-home.html",
+  "reading_route": [
+    {
+      "step": 1,
+      "label": "오늘 주제 잡기",
+      "title": "Semiconductors",
+      "why": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+      "href": "reports/product/daily-agenda.html",
+      "status": "ready"
+    },
+    {
+      "step": 2,
+      "label": "먼저 읽기",
+      "title": "Semiconductors",
+      "why": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
+      "href": "reports/product/today.html",
+      "status": "ready"
+    },
+    {
+      "step": 3,
+      "label": "오늘 배운 것 남기기",
+      "title": "learning ledger",
+      "why": "오늘 배운 개념, 반복 관찰, 내일 질문을 한 화면에 누적합니다.",
+      "href": "reports/product/learning.html",
+      "status": "review"
+    },
+    {
+      "step": 4,
+      "label": "과거 기억 먼저 불러오기",
+      "title": "memory recall",
+      "why": "Semiconductors에 대해 로컬 vault, archive, memory가 무엇을 기억하는지 먼저 확인합니다.",
+      "href": "reports/product/memory-query.html",
+      "status": "matched"
+    },
+    {
+      "step": 5,
+      "label": "근거 신선도 승인 전 점검",
+      "title": "source freshness intake",
+      "why": "sample/cache 근거와 blocked live refresh 후보를 한 화면에서 보고, 승인 범위를 복사 전에 확인합니다.",
+      "href": "reports/product/source-freshness-intake.html",
+      "status": "approval_packet_ready"
+    }
+  ],
+  "action_items": [
+    {
+      "kind": "approval_gate",
+      "id": "live_network_refresh",
+      "title": "live source refresh 승인 여부",
+      "why": "무료 공개 자료 live refresh 후보가 있지만 실제 네트워크 호출은 별도 승인 전까지 실행하지 않습니다.",
+      "status": "requires_separate_approval",
+      "href": "reports/product/morning.html",
+      "requires_separate_approval": true
+    },
+    {
+      "kind": "approval_gate",
+      "id": "live_refresh_preflight",
+      "title": "live execution preflight 차단",
+      "why": "approval_not_approved; live_run_status_not_requested; execute_intent_missing",
+      "status": "requires_separate_approval",
+      "href": "reports/product/morning.html",
+      "requires_separate_approval": true
+    },
+    {
+      "kind": "source_freshness_intake",
+      "id": "source-freshness-intake",
+      "title": "승인 전 근거 신선도 확인",
+      "why": "필요하면 이 응답을 복사해 local approval proof를 만드세요: approve live_network_refresh live_network_refresh",
+      "status": "approval_packet_ready",
+      "href": "reports/product/source-freshness-intake.html",
+      "requires_separate_approval": true
+    }
+  ],
+  "trust": {
+    "readiness_status": "ready",
+    "run_ledger_status": "ready",
+    "memory_recall_quality": "strong",
+    "learning_status": "review",
+    "handoff_resolution_status": "review",
+    "handoff_resolution_ready_count": 1,
+    "handoff_resolution_caveat_count": 3,
+    "handoff_resolution_blocked_count": 0,
+    "source_freshness_status": "approval_packet_ready"
+  },
+  "learning": {
+    "concept_count": 4,
+    "question_count": 8,
+    "next_questions": [
+      "오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+      "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+      "오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?"
+    ]
+  },
+  "notification": {
+    "provider": "telegram",
+    "delivery_status": "dry_run_ready",
+    "dry_run": true,
+    "required_env": [
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_CHAT_ID"
+    ]
+  },
+  "source_artifacts": {
+    "daily_home": "reports/runtime/daily-home.json",
+    "today": "reports/product/today.html",
+    "readiness": "reports/runtime/daily-readiness.json",
+    "run_ledger": "reports/runtime/daily-run-ledger.json",
+    "handoff_study_resolution": "reports/runtime/handoff-study-resolution.json",
+    "learning_ledger": "reports/memory/learning-ledger.json",
+    "memory_query": "reports/memory/latest-query.json",
+    "notification": "reports/notifications/latest.json"
+  },
+  "phone_links": {
+    "daily_home": "reports/product/daily-home.html",
+    "today": "reports/product/today.html",
+    "learning": "reports/product/learning.html",
+    "memory_query": "reports/product/memory-query.html",
+    "handoff_study_resolution": "reports/product/handoff-study-resolution.html",
+    "readiness": "reports/product/readiness.html"
+  },
+  "safety_boundary": [
+    "briefing_packet_reads_existing_artifacts_only",
+    "does_not_send_notifications",
+    "does_not_fetch_live_sources",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "does_not_access_accounts",
+    "does_not_execute_orders",
+    "research_only_not_personalized_advice"
+  ],
+  "external_effect_performed": false,
+  "host_write_performed": false
+}

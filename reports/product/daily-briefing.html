@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Briefing</title>
+<style>
+:root { --bg:#f8f7f2; --ink:#17202a; --muted:#68727c; --line:#dfe3dc; --paper:#fffef9; --accent:#1f5f8b; --green:#1e6b53; --warn:#9a6a1d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-x:hidden; }
+main { width:100%; max-width:760px; margin:0 auto; padding:16px; overflow:hidden; }
+.eyebrow, article span, .metric span { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; word-break:break-all; }
+h2 { margin:0 0 8px; font-size:19px; }
+p, li, small { color:var(--muted); overflow-wrap:anywhere; word-break:break-all; }
+.hero, section, article { border:1px solid var(--line); border-radius:8px; background:var(--paper); }
+.hero, section { padding:16px; margin:14px 0; }
+.status { display:block; font-size:28px; line-height:1.1; margin:10px 0; overflow-wrap:anywhere; word-break:break-all; }
+.metrics, .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.metric, article { padding:13px; background:white; min-width:0; }
+.metric strong, article strong { display:block; font-size:21px; overflow-wrap:anywhere; }
+code { display:block; box-sizing:border-box; max-width:100%; padding:12px; border-radius:8px; background:#edf3f7; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; line-break:anywhere; font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+a { color:var(--accent); font-weight:900; text-decoration:none; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:30px; } .metrics, .grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Daily Briefing · 2026-06-06 local</span>
+<h1>오늘의 브리핑</h1>
+<p>폰에서 바로 읽고 메시지로 붙여넣는 하루 요약입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">오늘 한 줄</span>
+<strong class="status">Semiconductors</strong>
+<p>Semiconductors: 사람 확인 필요</p>
+<p>최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.</p>
+<div class="metrics">
+<article class="metric"><span>Status</span><strong>review</strong></article>
+<article class="metric"><span>Readiness</span><strong>ready</strong></article>
+<article class="metric"><span>Caveat</span><strong>3</strong></article>
+<article class="metric"><span>Blocked</span><strong>0</strong></article>
+</div>
+</section>
+<section>
+<h2>복사할 메시지</h2>
+<code>MyBroker 오늘의 개인 애널리스트
+1. 먼저 볼 주제: Semiconductors
+2. 왜 지금: 최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.
+3. 신뢰/준비: readiness=ready, run=ready, caveat=3, blocked=0
+4. 오늘 확인: live source refresh 승인 여부
+5. 열기: reports/product/daily-home.html
+주의: 교육/리서치/시뮬레이션 전용. 알림 전송, live source, host write, 계좌/주문은 별도 승인 전까지 실행하지 않음.</code>
+</section>
+<section>
+<h2>먼저 열 순서</h2>
+<div class="grid"><article><span>오늘 주제 잡기</span><strong>Semiconductors</strong><p>최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.</p><a href='reports/product/daily-agenda.html'>열기</a></article><article><span>먼저 읽기</span><strong>Semiconductors</strong><p>최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.</p><a href='reports/product/today.html'>열기</a></article><article><span>오늘 배운 것 남기기</span><strong>learning ledger</strong><p>오늘 배운 개념, 반복 관찰, 내일 질문을 한 화면에 누적합니다.</p><a href='reports/product/learning.html'>열기</a></article><article><span>과거 기억 먼저 불러오기</span><strong>memory recall</strong><p>Semiconductors에 대해 로컬 vault, archive, memory가 무엇을 기억하는지 먼저 확인합니다.</p><a href='reports/product/memory-query.html'>열기</a></article><article><span>근거 신선도 승인 전 점검</span><strong>source freshness intake</strong><p>sample/cache 근거와 blocked live refresh 후보를 한 화면에서 보고, 승인 범위를 복사 전에 확인합니다.</p><a href='reports/product/source-freshness-intake.html'>열기</a></article></div>
+</section>
+<section>
+<h2>오늘 처리할 것</h2>
+<div class="grid"><article><span>approval_gate · requires_separate_approval</span><strong>live source refresh 승인 여부</strong><p>무료 공개 자료 live refresh 후보가 있지만 실제 네트워크 호출은 별도 승인 전까지 실행하지 않습니다.</p><a href='reports/product/morning.html'>관련 화면</a></article><article><span>approval_gate · requires_separate_approval</span><strong>live execution preflight 차단</strong><p>approval_not_approved; live_run_status_not_requested; execute_intent_missing</p><a href='reports/product/morning.html'>관련 화면</a></article><article><span>source_freshness_intake · approval_packet_ready</span><strong>승인 전 근거 신선도 확인</strong><p>필요하면 이 응답을 복사해 local approval proof를 만드세요: approve live_network_refresh live_network_refresh</p><a href='reports/product/source-freshness-intake.html'>관련 화면</a></article></div>
+</section>
+<section>
+<h2>학습 누적</h2>
+<div class="metrics">
+<article class="metric"><span>Concepts</span><strong>4</strong></article>
+<article class="metric"><span>Questions</span><strong>8</strong></article>
+</div>
+<ul><li>오늘 Korea semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</li><li>AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?</li><li>오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?</li></ul>
+</section>
+<section>
+<h2>안전 경계</h2>
+<p>이 packet은 기존 로컬 산출물을 읽어 요약할 뿐입니다. 알림 전송, live source, host scheduler, credential, 계좌 접근, 주문 실행, 일임/개인화 추천은 별도 승인 전까지 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

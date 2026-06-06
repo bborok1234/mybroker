@@ -28,6 +28,8 @@ from mybroker.appliance import (
     DEFAULT_DAILY_BRIEF_AGENDA_SURFACE,
     DEFAULT_DAILY_HOME_OUTPUT,
     DEFAULT_DAILY_HOME_SURFACE,
+    DEFAULT_DAILY_BRIEFING_PACKET_OUTPUT,
+    DEFAULT_DAILY_BRIEFING_PACKET_SURFACE,
     DEFAULT_DAILY_READINESS_OUTPUT,
     DEFAULT_DAILY_READINESS_SURFACE,
     DEFAULT_DAILY_HANDOFF_OUTPUT,
@@ -104,6 +106,7 @@ from mybroker.appliance import (
     write_analyst_task_ledger,
     write_daily_brief_agenda,
     write_daily_operator_home,
+    write_daily_briefing_packet,
     write_daily_readiness,
     write_daily_handoff,
     write_daily_review,
@@ -151,6 +154,7 @@ from mybroker.appliance import (
     validate_pattern_dry_run_proof_file,
     validate_daily_brief_agenda_file,
     validate_daily_operator_home_file,
+    validate_daily_briefing_packet_file,
     validate_daily_readiness_file,
     validate_daily_handoff_file,
     validate_daily_review_file,
@@ -371,6 +375,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_agenda_parser.add_argument("agenda_path")
     validate_daily_home_parser = subcommands.add_parser("validate-daily-home", help="Validate a daily_operator_home.v1 artifact.")
     validate_daily_home_parser.add_argument("daily_home_path")
+    validate_daily_briefing_parser = subcommands.add_parser("validate-daily-briefing-packet", help="Validate a daily_briefing_packet.v1 artifact.")
+    validate_daily_briefing_parser.add_argument("briefing_packet_path")
     validate_phone_access_verify_parser = subcommands.add_parser("validate-phone-access-verify", help="Validate a phone_access_verify.v1 artifact.")
     validate_phone_access_verify_parser.add_argument("phone_access_verify_path")
     validate_readiness_parser = subcommands.add_parser("validate-daily-readiness", help="Validate a daily_readiness.v1 artifact.")
@@ -584,6 +590,17 @@ def main(argv: list[str] | None = None) -> int:
     appliance_home_parser.add_argument("--pattern-evidence-intake", default=DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_HOME_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--output", default=DEFAULT_DAILY_HOME_SURFACE.as_posix())
+    appliance_briefing_parser = appliance_subcommands.add_parser("briefing", help="Render the phone/message-ready daily briefing packet from existing local artifacts.")
+    appliance_briefing_parser.add_argument("--daily-home", default=DEFAULT_DAILY_HOME_OUTPUT.as_posix())
+    appliance_briefing_parser.add_argument("--today", default=DEFAULT_TODAY_OUTPUT.as_posix())
+    appliance_briefing_parser.add_argument("--readiness", default=DEFAULT_DAILY_READINESS_OUTPUT.as_posix())
+    appliance_briefing_parser.add_argument("--run-ledger", default=DEFAULT_DAILY_RUN_LEDGER_OUTPUT.as_posix())
+    appliance_briefing_parser.add_argument("--handoff-study-resolution", default=DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT.as_posix())
+    appliance_briefing_parser.add_argument("--learning-ledger", default=DEFAULT_LEARNING_LEDGER_OUTPUT.as_posix())
+    appliance_briefing_parser.add_argument("--memory-query", default=DEFAULT_MEMORY_QUERY_OUTPUT.as_posix())
+    appliance_briefing_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
+    appliance_briefing_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_BRIEFING_PACKET_OUTPUT.as_posix())
+    appliance_briefing_parser.add_argument("--output", default=DEFAULT_DAILY_BRIEFING_PACKET_SURFACE.as_posix())
     appliance_agenda_parser = appliance_subcommands.add_parser("agenda", help="Render the phone-first daily study agenda from scout and evidence artifacts.")
     appliance_agenda_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
     appliance_agenda_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
@@ -868,6 +885,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_notify_parser.add_argument("--today", default=DEFAULT_TODAY_OUTPUT.as_posix())
     appliance_notify_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
     appliance_notify_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
+    appliance_notify_parser.add_argument("--briefing-packet", default=DEFAULT_DAILY_BRIEFING_PACKET_OUTPUT.as_posix())
     appliance_notify_parser.add_argument("--output", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
     appliance_notify_parser.add_argument("--dry-run", action="store_true", default=True)
     appliance_notify_parser.add_argument("--send", action="store_true", help="Send using provider environment variables instead of dry-run.")
@@ -887,6 +905,8 @@ def main(argv: list[str] | None = None) -> int:
     appliance_run_parser.add_argument("--run-id", default="daily-research")
     appliance_run_parser.add_argument("--today-url", default="http://localhost:8787/reports/product/today.html")
     appliance_run_parser.add_argument("--notification-provider", choices=["telegram", "pushover"], default="telegram")
+    appliance_run_parser.add_argument("--briefing-packet-output", default=DEFAULT_DAILY_BRIEFING_PACKET_OUTPUT.as_posix())
+    appliance_run_parser.add_argument("--briefing-packet-surface", default=DEFAULT_DAILY_BRIEFING_PACKET_SURFACE.as_posix())
     appliance_run_parser.add_argument("--dry-run", action="store_true", default=True)
     appliance_run_parser.add_argument("--send", action="store_true", help="Send notification after writing payload. Requires provider environment variables.")
     appliance_run_parser.add_argument("--source", action="append", help="Public evidence adapter id. Use gdelt-live/stooq-live for no-key live refresh with cache fallback.")
@@ -1193,6 +1213,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-daily-home":
         errors = validate_daily_operator_home_file(args.daily_home_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-daily-briefing-packet":
+        errors = validate_daily_briefing_packet_file(args.briefing_packet_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1776,6 +1803,29 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_home_surface": path.as_posix(),
                 "status": payload["status"],
                 "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "briefing":
+            path = write_daily_briefing_packet(
+                daily_home_path=args.daily_home,
+                today_path=args.today,
+                readiness_path=args.readiness,
+                run_ledger_path=args.run_ledger,
+                handoff_study_resolution_path=args.handoff_study_resolution,
+                learning_ledger_path=args.learning_ledger,
+                memory_query_path=args.memory_query,
+                notification_path=args.notification,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "daily_briefing_packet": args.artifact_output,
+                "daily_briefing_surface": path.as_posix(),
+                "status": payload.get("status", ""),
+                "topic": payload.get("topic", ""),
+                "external_effect_performed": payload.get("external_effect_performed", False),
+                "host_write_performed": payload.get("host_write_performed", False),
             }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "handoff-study-resolution":
@@ -2677,6 +2727,7 @@ def main(argv: list[str] | None = None) -> int:
                 today_path=args.today,
                 scenario_path=args.scenario,
                 verdict_path=args.verdict,
+                briefing_packet_path=args.briefing_packet,
                 output_path=args.output,
                 dry_run=not args.send,
             )
@@ -2773,6 +2824,8 @@ def main(argv: list[str] | None = None) -> int:
             scheduler_operations_surface_path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE
             daily_home_artifact_path = DEFAULT_DAILY_HOME_OUTPUT
             daily_home_surface_path = DEFAULT_DAILY_HOME_SURFACE
+            briefing_packet_artifact_path = Path(args.briefing_packet_output)
+            briefing_packet_surface_path = Path(args.briefing_packet_surface)
             phone_access_verify_artifact_path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT
             phone_access_verify_surface_path = DEFAULT_PHONE_ACCESS_VERIFY_SURFACE
             memory_query_artifact_path = DEFAULT_MEMORY_QUERY_OUTPUT
@@ -3147,9 +3200,7 @@ def main(argv: list[str] | None = None) -> int:
                 verdict_path=written_verdict,
                 dry_run=not args.send,
             )
-            notification_status = "dry_run_ready"
-            if args.send:
-                notification_status = send_notification_payload(notification_path).get("delivery_status", "unknown")
+            notification_status = "pending_packet_rewrite" if args.send else "dry_run_ready"
             write_scheduler_status(project_root=".", output_path=DEFAULT_SCHEDULER_STATUS_OUTPUT)
             written_scheduler_operations = write_scheduler_operations(
                 project_root=".",
@@ -3372,11 +3423,38 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=phone_access_verify_artifact_path,
                 surface_output_path=phone_access_verify_surface_path,
             )
+            written_briefing_packet = write_daily_briefing_packet(
+                artifact_output_path=briefing_packet_artifact_path,
+                surface_output_path=briefing_packet_surface_path,
+                daily_home_path=daily_home_artifact_path,
+                today_path=written_today,
+                readiness_path=readiness_artifact_path,
+                run_ledger_path=run_ledger_artifact_path,
+                handoff_study_resolution_path=handoff_resolution_artifact_path,
+                learning_ledger_path=learning_ledger_artifact_path,
+                memory_query_path=memory_query_artifact_path,
+                notification_path=notification_path,
+            )
+            notification_path = write_notification_payload(
+                provider=args.notification_provider,
+                today_url=args.today_url,
+                today_path=written_today,
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                briefing_packet_path=briefing_packet_artifact_path,
+                dry_run=not args.send,
+            )
+            if args.send:
+                notification_status = send_notification_payload(notification_path).get("delivery_status", "unknown")
+            else:
+                notification_status = "dry_run_ready"
             add_archive_artifacts(
                 manifest_path=archive_manifest,
                 artifacts={
                     "daily_home": daily_home_artifact_path,
                     "daily_home_surface": written_daily_home,
+                    "daily_briefing_packet": briefing_packet_artifact_path,
+                    "daily_briefing_surface": written_briefing_packet,
                     "phone_access": phone_access_path,
                     "phone_access_verify": phone_access_verify_artifact_path,
                     "phone_access_verify_surface": written_phone_access_verify,
@@ -3436,6 +3514,8 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_agenda_surface": written_agenda.as_posix(),
                 "daily_home": daily_home_artifact_path.as_posix(),
                 "daily_home_surface": written_daily_home.as_posix(),
+                "daily_briefing_packet": briefing_packet_artifact_path.as_posix(),
+                "daily_briefing_surface": written_briefing_packet.as_posix(),
                 "phone_access_verify": phone_access_verify_artifact_path.as_posix(),
                 "phone_access_verify_surface": written_phone_access_verify.as_posix(),
                 "daily_readiness": readiness_artifact_path.as_posix(),

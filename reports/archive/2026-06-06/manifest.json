@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_archive.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-06T04:19:32.423271+00:00",
+  "generated_at": "2026-06-06T04:49:26.524955+00:00",
   "archive_dir": "reports/archive/2026-06-06",
   "artifacts": {
     "scenario": "reports/archive/2026-06-06/daily-research-sim.json",
@@ -38,6 +38,8 @@
     "today": "reports/archive/2026-06-06/today.html",
     "daily_home": "reports/archive/2026-06-06/daily-home.json",
     "daily_home_surface": "reports/archive/2026-06-06/daily-home.html",
+    "daily_briefing_packet": "reports/archive/2026-06-06/daily-briefing-packet.json",
+    "daily_briefing_surface": "reports/archive/2026-06-06/daily-briefing.html",
     "phone_access": "reports/archive/2026-06-06/phone-access.json",
     "phone_access_verify": "reports/archive/2026-06-06/phone-access-verify.json",
     "phone_access_verify_surface": "reports/archive/2026-06-06/phone-access.html",
@@ -69,5 +71,5 @@
     "handoff_study_resolution_surface": "reports/archive/2026-06-06/handoff-study-resolution.html"
   },
   "policy": "research_only",
-  "updated_at": "2026-06-06T04:19:32.507440+00:00"
+  "updated_at": "2026-06-06T04:49:26.599549+00:00"
 }

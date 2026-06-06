@@ -28,6 +28,7 @@ from mybroker.vault import DEFAULT_VAULT_COMPILE_OUTPUT, DEFAULT_VAULT_SURFACE_O
 
 TODAY_SURFACE_SCHEMA_VERSION = "today_surface.v1"
 DAILY_OPERATOR_HOME_SCHEMA_VERSION = "daily_operator_home.v1"
+DAILY_BRIEFING_PACKET_SCHEMA_VERSION = "daily_briefing_packet.v1"
 DAILY_BRIEF_AGENDA_SCHEMA_VERSION = "daily_brief_agenda.v1"
 DAILY_READINESS_SCHEMA_VERSION = "daily_readiness.v1"
 SOURCE_REFRESH_BRIEF_SCHEMA_VERSION = "source_refresh_brief.v1"
@@ -76,6 +77,8 @@ LAUNCHD_LABEL = "com.mybroker.daily-analyst"
 DEFAULT_TODAY_OUTPUT = Path("reports/product/today.html")
 DEFAULT_DAILY_HOME_OUTPUT = Path("reports/runtime/daily-home.json")
 DEFAULT_DAILY_HOME_SURFACE = Path("reports/product/daily-home.html")
+DEFAULT_DAILY_BRIEFING_PACKET_OUTPUT = Path("reports/runtime/daily-briefing-packet.json")
+DEFAULT_DAILY_BRIEFING_PACKET_SURFACE = Path("reports/product/daily-briefing.html")
 DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT = Path("reports/daily/brief-agenda.json")
 DEFAULT_DAILY_BRIEF_AGENDA_SURFACE = Path("reports/product/daily-agenda.html")
 DEFAULT_DAILY_READINESS_OUTPUT = Path("reports/runtime/daily-readiness.json")
@@ -1280,7 +1283,7 @@ def render_pattern_dry_run_proof(payload: dict[str, Any]) -> str:
 body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
 main {{ width:100%; max-width:900px; margin:0 auto; padding:16px; }}
 .eyebrow {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
-h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }}
 h2 {{ margin:0 0 8px; font-size:20px; }}
 p,small {{ color:var(--muted); overflow-wrap:anywhere; }}
 .hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
@@ -1516,7 +1519,7 @@ def render_agent_pattern_radar(payload: dict[str, Any]) -> str:
 * {{ box-sizing:border-box; }}
 body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
 main {{ width:100%; max-width:860px; margin:0 auto; padding:18px; }}
-h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }}
 h2 {{ margin:0 0 8px; font-size:18px; }}
 p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
 .eyebrow,.card span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
@@ -10256,6 +10259,271 @@ def validate_daily_operator_home_file(path: str | Path) -> list[str]:
     return validate_daily_operator_home_payload(load_json(path))
 
 
+def build_daily_briefing_packet(
+    *,
+    daily_home_path: str | Path = DEFAULT_DAILY_HOME_OUTPUT,
+    today_path: str | Path = DEFAULT_TODAY_OUTPUT,
+    readiness_path: str | Path = DEFAULT_DAILY_READINESS_OUTPUT,
+    run_ledger_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
+    handoff_study_resolution_path: str | Path = DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT,
+    learning_ledger_path: str | Path = DEFAULT_LEARNING_LEDGER_OUTPUT,
+    memory_query_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
+    notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    home = _load_optional_json(daily_home_path)
+    readiness = _load_optional_json(readiness_path)
+    run_ledger = _load_optional_json(run_ledger_path)
+    handoff = _load_optional_json(handoff_study_resolution_path)
+    learning = _load_optional_json(learning_ledger_path)
+    memory_query = _load_optional_json(memory_query_path)
+    notification = _load_optional_json(notification_path)
+    summary = home.get("summary", {})
+    scout = home.get("autonomous_scout", {})
+    recommended_topic = scout.get("recommended_topic", {}) if isinstance(scout.get("recommended_topic", {}), dict) else {}
+    action_inbox = home.get("operator_action_inbox", {})
+    selected_topic = (
+        recommended_topic.get("name")
+        or summary.get("autonomous_topic")
+        or summary.get("read_first")
+        or scout.get("topic")
+        or scout.get("selected_topic")
+        or scout.get("topic_name")
+        or "오늘의 시장 흐름"
+    )
+    why_today = scout.get("why_today") or summary.get("operator_brief", {}).get("message") or "로컬 산출물이 준비되었습니다."
+    home_link = home.get("phone_links", {}).get("daily_home", DEFAULT_DAILY_HOME_SURFACE.as_posix())
+    top_items = _briefing_priority_items(action_inbox.get("priority_items", []))
+    reading_route = _briefing_reading_route(home.get("daily_route", []), home.get("phone_links", {}))
+    caveat_count = int(summary.get("handoff_resolution_caveat_count", 0) or 0)
+    blocked_count = int(summary.get("handoff_resolution_blocked_count", 0) or 0)
+    handoff_summary = handoff.get("summary", {})
+    learning_summary = learning.get("summary", {})
+    recall = memory_query.get("recall_quality", {})
+    readiness_status = readiness.get("status", "missing")
+    run_status = run_ledger.get("status", "missing")
+    headline = f"{selected_topic}: {summary.get('status_label') or _briefing_status_label(home.get('status', 'operator_review'))}"
+    message_lines = [
+        "MyBroker 오늘의 개인 애널리스트",
+        f"1. 먼저 볼 주제: {selected_topic}",
+        f"2. 왜 지금: {why_today}",
+        f"3. 신뢰/준비: readiness={readiness_status}, run={run_status}, caveat={caveat_count}, blocked={blocked_count}",
+    ]
+    if top_items:
+        message_lines.append(f"4. 오늘 확인: {top_items[0]['title']}")
+    else:
+        message_lines.append("4. 오늘 확인: daily-home에서 읽기 순서를 확인")
+    message_lines.append(f"5. 열기: {home_link}")
+    message_lines.append("주의: 교육/리서치/시뮬레이션 전용. 알림 전송, live source, host write, 계좌/주문은 별도 승인 전까지 실행하지 않음.")
+    payload = {
+        "schema_version": DAILY_BRIEFING_PACKET_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "policy": "research_only",
+        "status": _briefing_packet_status(home=home, readiness=readiness, handoff=handoff),
+        "title": "MyBroker 오늘의 개인 애널리스트",
+        "headline": headline,
+        "topic": selected_topic,
+        "why_today": why_today,
+        "briefing_goal": "폰에서 바로 읽거나 메시지로 붙여넣을 수 있는 하루의 압축 handoff",
+        "copy_ready_message": "\n".join(message_lines),
+        "recommended_first_link": home_link,
+        "reading_route": reading_route,
+        "action_items": top_items,
+        "trust": {
+            "readiness_status": readiness_status,
+            "run_ledger_status": run_status,
+            "memory_recall_quality": recall.get("level", home.get("memory_recall_adoption", {}).get("quality_level", "missing")),
+            "learning_status": learning.get("status", "missing"),
+            "handoff_resolution_status": handoff.get("status", "missing"),
+            "handoff_resolution_ready_count": int(handoff_summary.get("ready_to_study_count", 0) or 0),
+            "handoff_resolution_caveat_count": caveat_count,
+            "handoff_resolution_blocked_count": blocked_count,
+            "source_freshness_status": home.get("source_freshness_intake_adoption", {}).get("status", "missing"),
+        },
+        "learning": {
+            "concept_count": int(learning_summary.get("concept_count", summary.get("learning_concept_count", 0)) or 0),
+            "question_count": int(learning_summary.get("question_count", summary.get("learning_question_count", 0)) or 0),
+            "next_questions": _briefing_strings(memory_query.get("next_questions", []), limit=3),
+        },
+        "notification": {
+            "provider": notification.get("provider", "missing"),
+            "delivery_status": notification.get("delivery_status", "missing"),
+            "dry_run": notification.get("dry_run", True),
+            "required_env": notification.get("required_env", []),
+        },
+        "source_artifacts": {
+            "daily_home": Path(daily_home_path).as_posix(),
+            "today": Path(today_path).as_posix(),
+            "readiness": Path(readiness_path).as_posix(),
+            "run_ledger": Path(run_ledger_path).as_posix(),
+            "handoff_study_resolution": Path(handoff_study_resolution_path).as_posix(),
+            "learning_ledger": Path(learning_ledger_path).as_posix(),
+            "memory_query": Path(memory_query_path).as_posix(),
+            "notification": Path(notification_path).as_posix(),
+        },
+        "phone_links": {
+            "daily_home": home_link,
+            "today": home.get("phone_links", {}).get("today", DEFAULT_TODAY_OUTPUT.as_posix()),
+            "learning": home.get("phone_links", {}).get("learning", DEFAULT_LEARNING_LEDGER_SURFACE.as_posix()),
+            "memory_query": home.get("phone_links", {}).get("memory_query", DEFAULT_MEMORY_QUERY_SURFACE.as_posix()),
+            "handoff_study_resolution": home.get("phone_links", {}).get("handoff_study_resolution", DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE.as_posix()),
+            "readiness": home.get("phone_links", {}).get("readiness", DEFAULT_DAILY_READINESS_SURFACE.as_posix()),
+        },
+        "safety_boundary": [
+            "briefing_packet_reads_existing_artifacts_only",
+            "does_not_send_notifications",
+            "does_not_fetch_live_sources",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "does_not_access_accounts",
+            "does_not_execute_orders",
+            "research_only_not_personalized_advice",
+        ],
+        "external_effect_performed": False,
+        "host_write_performed": False,
+    }
+    return payload
+
+
+def write_daily_briefing_packet(
+    *,
+    artifact_output_path: str | Path = DEFAULT_DAILY_BRIEFING_PACKET_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_DAILY_BRIEFING_PACKET_SURFACE,
+    **paths: Any,
+) -> Path:
+    payload = build_daily_briefing_packet(**paths)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_daily_briefing_packet(payload), encoding="utf-8")
+    return target
+
+
+def validate_daily_briefing_packet_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != DAILY_BRIEFING_PACKET_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("status") not in {"ready", "review", "blocked"}:
+        errors.append(f"invalid status {payload.get('status')}")
+    for field in ["title", "headline", "topic", "why_today", "copy_ready_message", "recommended_first_link"]:
+        if not payload.get(field):
+            errors.append(f"{field} must not be empty")
+    if len(payload.get("copy_ready_message", "")) < 120:
+        errors.append("copy_ready_message is too thin")
+    if not payload.get("reading_route"):
+        errors.append("reading_route must not be empty")
+    if not payload.get("phone_links", {}).get("daily_home"):
+        errors.append("phone_links.daily_home must not be empty")
+    trust = payload.get("trust", {})
+    for field in ["readiness_status", "run_ledger_status", "memory_recall_quality", "handoff_resolution_caveat_count", "handoff_resolution_blocked_count"]:
+        if field not in trust:
+            errors.append(f"trust missing {field}")
+    if "briefing_packet_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include briefing_packet_reads_existing_artifacts_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    forbidden = [" --send", "--execute", "--confirm-host-write", "launchctl bootstrap"]
+    if any(fragment in payload.get("copy_ready_message", "") for fragment in forbidden):
+        errors.append("copy_ready_message includes gated execution fragment")
+    return errors
+
+
+def validate_daily_briefing_packet_file(path: str | Path) -> list[str]:
+    return validate_daily_briefing_packet_payload(load_json(path))
+
+
+def render_daily_briefing_packet(payload: dict[str, Any]) -> str:
+    route_cards = "".join(
+        f"<article><span>{esc(item.get('label', ''))}</span><strong>{esc(item.get('title', ''))}</strong><p>{esc(item.get('why', ''))}</p><a href='{esc(_relative_href(Path(item.get('href', ''))))}'>열기</a></article>"
+        for item in payload.get("reading_route", [])
+    )
+    action_cards = "".join(
+        f"<article><span>{esc(item.get('kind', ''))} · {esc(item.get('status', ''))}</span><strong>{esc(item.get('title', ''))}</strong><p>{esc(item.get('why', ''))}</p><a href='{esc(_relative_href(Path(item.get('href', ''))))}'>관련 화면</a></article>"
+        for item in payload.get("action_items", [])
+    ) or "<p>오늘 바로 처리할 action item은 없습니다.</p>"
+    trust = payload.get("trust", {})
+    learning = payload.get("learning", {})
+    questions = "".join(f"<li>{esc(question)}</li>" for question in learning.get("next_questions", [])) or "<li>오늘 읽은 뒤 한 줄 피드백을 남기세요.</li>"
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Daily Briefing</title>
+<style>
+:root {{ --bg:#f8f7f2; --ink:#17202a; --muted:#68727c; --line:#dfe3dc; --paper:#fffef9; --accent:#1f5f8b; --green:#1e6b53; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-x:hidden; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; overflow:hidden; }}
+.eyebrow, article span, .metric span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; word-break:break-all; }}
+h2 {{ margin:0 0 8px; font-size:19px; }}
+p, li, small {{ color:var(--muted); overflow-wrap:anywhere; word-break:break-all; }}
+.hero, section, article {{ border:1px solid var(--line); border-radius:8px; background:var(--paper); }}
+.hero, section {{ padding:16px; margin:14px 0; }}
+.status {{ display:block; font-size:28px; line-height:1.1; margin:10px 0; overflow-wrap:anywhere; word-break:break-all; }}
+.metrics, .grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.metric, article {{ padding:13px; background:white; min-width:0; }}
+.metric strong, article strong {{ display:block; font-size:21px; overflow-wrap:anywhere; }}
+code {{ display:block; box-sizing:border-box; max-width:100%; padding:12px; border-radius:8px; background:#edf3f7; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; line-break:anywhere; font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+a {{ color:var(--accent); font-weight:900; text-decoration:none; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:30px; }} .metrics, .grid {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Daily Briefing · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>오늘의 브리핑</h1>
+<p>폰에서 바로 읽고 메시지로 붙여넣는 하루 요약입니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">오늘 한 줄</span>
+<strong class="status">{esc(payload.get('topic', ''))}</strong>
+<p>{esc(payload.get('headline', ''))}</p>
+<p>{esc(payload.get('why_today', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Status</span><strong>{esc(payload.get('status', ''))}</strong></article>
+<article class="metric"><span>Readiness</span><strong>{esc(trust.get('readiness_status', ''))}</strong></article>
+<article class="metric"><span>Caveat</span><strong>{esc(trust.get('handoff_resolution_caveat_count', 0))}</strong></article>
+<article class="metric"><span>Blocked</span><strong>{esc(trust.get('handoff_resolution_blocked_count', 0))}</strong></article>
+</div>
+</section>
+<section>
+<h2>복사할 메시지</h2>
+<code>{esc(payload.get('copy_ready_message', ''))}</code>
+</section>
+<section>
+<h2>먼저 열 순서</h2>
+<div class="grid">{route_cards}</div>
+</section>
+<section>
+<h2>오늘 처리할 것</h2>
+<div class="grid">{action_cards}</div>
+</section>
+<section>
+<h2>학습 누적</h2>
+<div class="metrics">
+<article class="metric"><span>Concepts</span><strong>{esc(learning.get('concept_count', 0))}</strong></article>
+<article class="metric"><span>Questions</span><strong>{esc(learning.get('question_count', 0))}</strong></article>
+</div>
+<ul>{questions}</ul>
+</section>
+<section>
+<h2>안전 경계</h2>
+<p>이 packet은 기존 로컬 산출물을 읽어 요약할 뿐입니다. 알림 전송, live source, host scheduler, credential, 계좌 접근, 주문 실행, 일임/개인화 추천은 별도 승인 전까지 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
 def render_daily_operator_home(payload: dict[str, Any]) -> str:
     summary = payload.get("summary", {})
     autonomous = payload.get("autonomous_scout", {})
@@ -11676,21 +11944,29 @@ def write_notification_payload(
     today_path: str | Path,
     scenario_path: str | Path,
     verdict_path: str | Path,
+    briefing_packet_path: str | Path | None = None,
     output_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     dry_run: bool = True,
 ) -> Path:
     scenario = load_json(scenario_path)
     verdict = load_json(verdict_path)
+    packet = _load_optional_json(briefing_packet_path) if briefing_packet_path else {}
     primary = verdict.get("primary_next_step") or {}
+    message = packet.get("copy_ready_message") or primary.get("title", "오늘 브리프가 준비되었습니다.")
+    title = packet.get("title") or "MyBroker 오늘의 시장 브리프"
+    packet_path = Path(briefing_packet_path).as_posix() if briefing_packet_path else ""
     payload = {
         "schema_version": NOTIFICATION_SCHEMA_VERSION,
         "generated_at": _now(),
         "provider": provider,
         "dry_run": dry_run,
-        "title": "MyBroker 오늘의 시장 브리프",
-        "message": primary.get("title", "오늘 브리프가 준비되었습니다."),
+        "title": title,
+        "message": message,
         "url": today_url,
         "local_path": Path(today_path).as_posix(),
+        "briefing_packet": packet_path,
+        "briefing_packet_status": packet.get("status", ""),
+        "recommended_first_link": packet.get("recommended_first_link", Path(today_path).as_posix()),
         "required_env": _provider_env(provider),
         "run_id": scenario.get("run_id", ""),
         "policy": "research_only",
@@ -14263,6 +14539,77 @@ def _relative_href(path: Path | None) -> str:
     if not path:
         return ""
     return path.as_posix()
+
+
+def _briefing_packet_status(*, home: dict[str, Any], readiness: dict[str, Any], handoff: dict[str, Any]) -> str:
+    if home.get("status") == "blocked" or readiness.get("status") == "blocked":
+        return "blocked"
+    if handoff.get("summary", {}).get("blocked_by_source_freshness_count", 0):
+        return "review"
+    if home.get("status") == "ready" and readiness.get("status") == "ready":
+        return "ready"
+    return "review"
+
+
+def _briefing_status_label(status: str) -> str:
+    return {
+        "ready": "읽기 가능",
+        "operator_review": "사람 확인 필요",
+        "review": "확인 필요",
+        "blocked": "차단",
+    }.get(status, status or "확인 필요")
+
+
+def _briefing_priority_items(items: list[dict[str, Any]], *, limit: int = 3) -> list[dict[str, Any]]:
+    compact: list[dict[str, Any]] = []
+    for item in items[:limit]:
+        compact.append({
+            "kind": item.get("kind", ""),
+            "id": item.get("id", ""),
+            "title": item.get("title", ""),
+            "why": item.get("why", ""),
+            "status": item.get("status", ""),
+            "href": item.get("href", ""),
+            "requires_separate_approval": bool(item.get("requires_separate_approval", False)),
+        })
+    return compact
+
+
+def _briefing_reading_route(route: list[dict[str, Any]], phone_links: dict[str, Any], *, limit: int = 5) -> list[dict[str, Any]]:
+    compact: list[dict[str, Any]] = []
+    for item in route[:limit]:
+        compact.append({
+            "step": item.get("step", len(compact) + 1),
+            "label": item.get("label", ""),
+            "title": item.get("title", ""),
+            "why": item.get("why", ""),
+            "href": item.get("href", ""),
+            "status": item.get("status", ""),
+        })
+    if not compact:
+        compact.append({
+            "step": 1,
+            "label": "start",
+            "title": "daily home",
+            "why": "오늘의 전체 읽기 순서를 확인합니다.",
+            "href": phone_links.get("daily_home", DEFAULT_DAILY_HOME_SURFACE.as_posix()),
+            "status": "ready",
+        })
+    return compact
+
+
+def _briefing_strings(values: list[Any], *, limit: int) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        if isinstance(value, str) and value:
+            result.append(value)
+        elif isinstance(value, dict):
+            text = value.get("question") or value.get("title") or value.get("text") or value.get("summary")
+            if text:
+                result.append(str(text))
+        if len(result) >= limit:
+            break
+    return result
 
 
 def _short_date(value: str) -> str:

@@ -24,6 +24,7 @@ from mybroker.appliance import (
     write_launchd_assets,
     write_morning_control_packet,
     write_daily_operator_home,
+    write_daily_briefing_packet,
     write_memory_query,
     write_memory_audit,
     write_memory_surface,
@@ -65,6 +66,7 @@ from mybroker.appliance import (
     validate_daily_brief_agenda_file,
     validate_daily_brief_agenda_payload,
     validate_daily_operator_home_file,
+    validate_daily_briefing_packet_file,
     validate_daily_readiness_file,
     validate_daily_readiness_payload,
     validate_daily_review_file,
@@ -403,6 +405,31 @@ class LocalApplianceTests(unittest.TestCase):
             access_verify_payload = json.loads((root / "reports" / "runtime" / "phone-access-verify.json").read_text(encoding="utf-8"))
             access_verify_html = access_verify.read_text(encoding="utf-8")
             access_verify_errors = validate_phone_access_verify_file(root / "reports" / "runtime" / "phone-access-verify.json")
+            briefing = write_daily_briefing_packet(
+                daily_home_path=root / "reports" / "runtime" / "daily-home.json",
+                today_path=today,
+                readiness_path=root / "missing-readiness.json",
+                run_ledger_path=root / "missing-run-ledger.json",
+                handoff_study_resolution_path=root / "missing-handoff-study.json",
+                learning_ledger_path=learning_artifact_path,
+                memory_query_path=root / "memory-query.json",
+                notification_path=notification,
+                artifact_output_path=root / "reports" / "runtime" / "daily-briefing-packet.json",
+                surface_output_path=root / "reports" / "product" / "daily-briefing.html",
+            )
+            notification = write_notification_payload(
+                provider="telegram",
+                today_url="http://localhost:8787/today.html",
+                today_path=today,
+                scenario_path=scenario_path,
+                verdict_path=verdict_path,
+                briefing_packet_path=root / "reports" / "runtime" / "daily-briefing-packet.json",
+                output_path=root / "notification.json",
+            )
+            briefing_payload = json.loads((root / "reports" / "runtime" / "daily-briefing-packet.json").read_text(encoding="utf-8"))
+            briefing_html = briefing.read_text(encoding="utf-8")
+            briefing_errors = validate_daily_briefing_packet_file(root / "reports" / "runtime" / "daily-briefing-packet.json")
+            notification_payload = json.loads(notification.read_text(encoding="utf-8"))
 
         self.assertIn("MyBroker Today", html)
         self.assertIn("오늘 시장 5분 브리프", html)
@@ -452,6 +479,17 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(notification_payload["schema_version"], "notification_delivery.v1")
         self.assertEqual(notification_payload["delivery_status"], "dry_run_ready")
         self.assertIn("TELEGRAM_BOT_TOKEN", notification_payload["required_env"])
+        self.assertTrue(notification_payload["briefing_packet"].endswith("reports/runtime/daily-briefing-packet.json"))
+        self.assertIn("MyBroker 오늘의 개인 애널리스트", notification_payload["message"])
+        self.assertEqual(briefing_payload["schema_version"], "daily_briefing_packet.v1")
+        self.assertEqual(briefing_errors, [])
+        self.assertFalse(briefing_payload["external_effect_performed"])
+        self.assertFalse(briefing_payload["host_write_performed"])
+        self.assertIn("copy_ready_message", briefing_payload)
+        self.assertIn("daily-home", briefing_payload["recommended_first_link"])
+        self.assertIn("MyBroker Daily Briefing", briefing_html)
+        self.assertIn("복사할 메시지", briefing_html)
+        self.assertNotIn("schema_version", briefing_html)
         self.assertEqual(access_payload["schema_version"], "phone_access_plan.v1")
         self.assertEqual(access_payload["recommended_path"], "tailscale_serve_private")
         self.assertEqual(access_payload["entrypoint"], "reports/product/daily-home.html")

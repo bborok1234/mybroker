@@ -59,6 +59,7 @@ launchd
   -> morning_control_packet.v1 + /morning control surface
   -> daily_run_ledger.v1 + /run-ledger heartbeat surface
   -> daily_handoff.v1 + /handoff continuity surface
+  -> daily_briefing_packet.v1 + /daily-briefing copy-ready phone/message packet
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -143,6 +144,7 @@ PYTHONPATH=src python3 -m mybroker appliance task-status-apply
 PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance run-ledger
 PYTHONPATH=src python3 -m mybroker appliance handoff
+PYTHONPATH=src python3 -m mybroker appliance briefing
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance council
@@ -197,6 +199,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/handoff.html`: phone-readable handoff surface that answers whether yesterday's context affected today's run or still needs a short local response.
 - `reports/runtime/handoff-study-resolution.json`: machine-readable study closure packet for unresolved handoff questions, answer candidates, evidence refs, source freshness caveats, and done-when criteria.
 - `reports/product/handoff-study-resolution.html`: phone-readable handoff study surface to inspect before copying a local handoff response; it does not auto-close questions or execute anything.
+- `reports/runtime/daily-briefing-packet.json`: machine-readable compact daily handoff for phone and message workflows.
+- `reports/product/daily-briefing.html`: phone-readable copy-ready daily briefing packet with today's topic, trust status, first links, caveats, and one message suitable for Telegram, iMessage, Slack, or manual paste.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
 - `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
 - `reports/runtime/source-freshness-intake.json`: machine-readable approval intake that turns source freshness, sample/cache status, blocked live candidates, stale-context guard, and scoped approval response into one local proof packet.
@@ -244,6 +248,11 @@ council response as local review memory, regenerates review/scout/prompt/effect 
 then regenerates council so the operator can see whether the feedback is now part of the loop. It
 does not fetch, notify, write host state, use credentials, access accounts, execute orders, or make
 discretionary decisions.
+`appliance briefing` is the phone/message compression step. It reads existing daily-home, today,
+readiness, run-ledger, handoff study, learning, memory-query, and notification artifacts, then writes
+`daily_briefing_packet.v1` plus `daily-briefing.html`. It does not send messages, fetch sources,
+write scheduler state, use credentials, or widen authority. `appliance notify` may reuse the packet
+as its dry-run message, but actual delivery still requires the separate notification send gate.
 `tasks.html` translates that journal into queued work for source_scout, market_mapper, skeptic,
 beginner_tutor, memory_librarian, and publisher roles. It does not execute commands; live network,
 host writes, notification send, credentials, and trading remain behind separate approval gates.
