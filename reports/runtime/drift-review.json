@@ -1,6 +1,6 @@
 {
   "schema_version": "local_drift_review.v1",
-  "generated_at": "2026-06-06T00:27:05.777409+00:00",
+  "generated_at": "2026-06-06T00:54:38.616899+00:00",
   "status": "approval_required",
   "run_id": "daily-research",
   "decision": {
@@ -17,7 +17,7 @@
     },
     {
       "name": "pattern_next",
-      "value": "pattern freshness audit before adding new runtime authority",
+      "value": "pattern freshness intake before new runtime authority",
       "interpretation": "다음 slice 후보가 pattern radar에 남아 있는지 확인합니다."
     },
     {
