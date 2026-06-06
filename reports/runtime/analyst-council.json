@@ -1,6 +1,6 @@
 {
   "schema_version": "analyst_council.v1",
-  "generated_at": "2026-06-06T02:34:38.257400+00:00",
+  "generated_at": "2026-06-06T03:01:57.717074+00:00",
   "run_id": "daily-research",
   "status": "read_with_caution",
   "council_mode": "local_role_review_before_daily_reading",
@@ -12,18 +12,18 @@
   },
   "summary": {
     "role_count": 7,
-    "agreement_count": 4,
-    "caution_count": 3,
+    "agreement_count": 3,
+    "caution_count": 4,
     "blocker_count": 0,
     "disagreement_count": 1,
-    "average_confidence": 0.85
+    "average_confidence": 0.81
   },
   "roles": [
     {
       "role": "source_scout",
-      "stance": "agree",
-      "finding": "3개 source 중 0개는 약하거나 오래됐고 0개는 fallback 상태입니다.",
-      "confidence": 0.9,
+      "stance": "caution",
+      "finding": "3개 source 중 0개는 약하거나 오래됐고 2개는 fallback 상태입니다.",
+      "confidence": 0.78,
       "evidence": [
         "GDELT",
         "SEC EDGAR",
@@ -36,7 +36,7 @@
       "role": "evidence_curator",
       "stance": "caution",
       "finding": "수집 gap 2개와 evidence item 5개를 확인했습니다.",
-      "confidence": 0.8,
+      "confidence": 0.68,
       "evidence": [
         "실시간 새로고침은 아직 연결되지 않았습니다.",
         "소스 이용조건 검토가 남아 있습니다."
@@ -91,7 +91,7 @@
     {
       "role": "memory_librarian",
       "stance": "caution",
-      "finding": "누적 실행 63회, vault note 1개, changed topic 0개입니다.",
+      "finding": "누적 실행 66회, vault note 1개, changed topic 0개입니다.",
       "confidence": 0.95,
       "evidence": [
         "AI infrastructure",
@@ -107,14 +107,14 @@
   "disagreement": [
     {
       "type": "confidence_split",
-      "title": "4개 역할은 읽기 가능, 3개 역할은 주의 필요",
+      "title": "3개 역할은 읽기 가능, 4개 역할은 주의 필요",
       "why_it_matters": "초보자는 agree 카드보다 caution 카드의 조건을 먼저 읽어야 과신을 줄일 수 있습니다."
     }
   ],
   "blockers": [],
   "beginner_reading_order": [
     "판정: 오늘 브리프는 읽되 조건을 먼저 확인",
-    "주의 역할 먼저 읽기: evidence_curator, skeptic, memory_librarian",
+    "주의 역할 먼저 읽기: source_scout, evidence_curator, skeptic, memory_librarian",
     "skeptic과 source_scout 카드에서 근거 약점을 먼저 확인",
     "scenario_analyst 카드에서 base/upside/downside 경로를 비교",
     "beginner_tutor 카드의 쉬운 설명을 읽고 오늘 질문 하나를 고르기",
@@ -125,13 +125,13 @@
     "오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
     "AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?",
     "오늘 브리프의 가장 약한 source는 무엇이고 왜 약한가?",
-    "evidence_curator가 지적한 약점은 오늘 결론의 강도를 얼마나 낮추는가?"
+    "source_scout가 지적한 약점은 오늘 결론의 강도를 얼마나 낮추는가?"
   ],
   "copy_ready_commands": [
     {
       "label": "조건 확인 후 계속 보기",
-      "response": "more \"Semiconductors\" \"council: 오늘 브리프의 핵심 문장마다 어떤 source가 받치는지 하나씩 연결합니다.\"",
-      "command": "PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'more \"Semiconductors\" \"council: 오늘 브리프의 핵심 문장마다 어떤 source가 받치는지 하나씩 연결합니다.\"'",
+      "response": "more \"Semiconductors\" \"council: source-refresh 화면에서 어떤 원천이 실제 최신인지와 어떤 원천이 승인 대기인지 확인합니다.\"",
+      "command": "PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'more \"Semiconductors\" \"council: source-refresh 화면에서 어떤 원천이 실제 최신인지와 어떤 원천이 승인 대기인지 확인합니다.\"'",
       "why": "council caution을 다음 scout와 review-effect에 반영합니다.",
       "external_effect_performed": false
     },

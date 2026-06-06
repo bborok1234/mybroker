@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Source Refresh Execution</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }
+* { box-sizing:border-box; }
+html,body { max-width:100%; overflow-x:hidden; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:430px; margin:0; padding:14px; }
+a { color:var(--blue); font-weight:900; text-decoration:none; }
+.eyebrow,.metric span { color:var(--green); font-size:12px; font-weight:900; }
+h1 { margin:8px 0 10px; font-size:31px; line-height:1.12; overflow-wrap:anywhere; }
+h2 { margin:0 0 10px; font-size:19px; }
+p,li,small { color:var(--muted); overflow-wrap:anywhere; }
+.hero,.section,.metric { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:15px; margin:12px 0; }
+.status { display:block; margin:10px 0; font-size:24px; line-height:1.15; }
+.metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.metric { padding:12px; background:white; min-width:0; }
+.metric strong { display:block; font-size:24px; overflow-wrap:anywhere; }
+code { display:block; white-space:pre-wrap; word-break:break-word; border:1px solid var(--line); border-radius:8px; background:#f1f5f7; padding:10px; color:var(--ink); font-size:12px; }
+.links { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:11px; }
+.boundary { border-left:4px solid var(--green); }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Source Refresh Execution · 2026-06-06 local</span>
+<h1>실행 전 최종 확인</h1>
+<p>이 화면은 live source refresh를 실행하지 않습니다. 승인, preflight, stop 조건, 실행 후 흡수 경로를 한 번에 확인합니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">승인 먼저 필요</strong>
+<div class="metrics">
+<article class="metric"><span>Approval</span><strong>missing</strong></article>
+<article class="metric"><span>Preflight</span><strong>blocked</strong></article>
+<article class="metric"><span>Sources</span><strong>3</strong></article>
+<article class="metric"><span>Blockers</span><strong>5</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>다음 로컬 확인 명령</h2>
+<p>아직 live 실행 조건이 충족되지 않았습니다. 아래 명령은 이 확인 화면을 다시 생성하는 로컬 명령입니다.</p>
+<code>PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-execution</code>
+<ul><li>이 명령은 기존 로컬 artifact만 읽고 확인 화면을 다시 생성합니다.</li><li>approval/preflight가 통과하기 전까지 live network 실행 명령을 노출하지 않습니다.</li><li>실행 결과는 research evidence artifact일 뿐 투자 추천이나 주문이 아닙니다.</li></ul>
+</section>
+<section class="section">
+<h2>현재 blocker</h2>
+<ul><li>approval_not_approved</li><li>live_run_status_not_requested</li><li>execute_intent_missing</li><li>confirm_live_network_missing</li><li>live_network_refresh_not_approved</li></ul>
+<h2>Warning</h2>
+<ul><li>현재 기록된 warning은 없습니다.</li></ul>
+</section>
+<section class="section">
+<h2>멈춤 조건</h2>
+<ul><li>approval_status가 approved가 아니면 실행하지 않습니다.</li><li>preflight status가 passed가 아니면 실행하지 않습니다.</li><li>proposed command 안에 알림, host write, credential, account, order 관련 fragment가 보이면 실행하지 않습니다.</li><li>source plan, scout, evidence가 바뀌었으면 approval/preflight를 다시 생성합니다.</li></ul>
+</section>
+<section class="section">
+<h2>Rollback / 재시도 원칙</h2>
+<ul><li>생성된 live evidence artifact를 삭제하거나 archive에서 제외하면 로컬 상태를 되돌릴 수 있습니다.</li><li>실행 후 daily brief가 약해지면 source freshness intake와 run trace를 비교해 해당 source를 보류합니다.</li><li>네트워크 실패는 실패 artifact로 남기고 같은 run에서 재시도하지 않습니다.</li></ul>
+</section>
+<section class="section">
+<h2>다음 로컬 단계</h2>
+<ul><li>실행하지 않을 때: source-refresh-intake와 handoff-study-resolution을 읽고 어떤 근거가 약한지 공부용 응답으로 남깁니다.</li><li>승인만 기록할 때: appliance source-refresh-response 명령으로 live-run/preflight proof를 갱신합니다.</li><li>preflight가 passed일 때만: 별도 최종 확인 후 source-refresh-live-run --execute --confirm-live-network를 사용합니다.</li><li>실행 후: live evidence validator를 통과시키고 appliance run --dry-run으로 daily brief에 흡수합니다.</li></ul>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links"><a href='reports/product/source-freshness-intake.html'>source_freshness_intake</a><a href='reports/product/source-refresh.html'>source_refresh</a><a href='reports/product/daily-home.html'>daily_home</a><a href='reports/product/readiness.html'>readiness</a><a href='reports/product/run-trace.html'>trace</a></div>
+</section>
+<section class="section boundary">
+<h2>안전 경계</h2>
+<p>이 화면은 기존 로컬 artifact만 읽습니다. live network, paid API, credential, 알림, host scheduler, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

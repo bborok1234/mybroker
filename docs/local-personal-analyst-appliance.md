@@ -199,6 +199,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
 - `reports/runtime/source-freshness-intake.json`: machine-readable approval intake that turns source freshness, sample/cache status, blocked live candidates, stale-context guard, and scoped approval response into one local proof packet.
 - `reports/product/source-freshness-intake.html`: phone-readable approval-before-execution screen for deciding whether a free/no-key live refresh is worth approving. It does not call the network.
+- `reports/runtime/source-refresh-execution-brief.json`: machine-readable final-confirmation packet between source approval/preflight and actual live source execution.
+- `reports/product/source-refresh-execution.html`: phone-readable final confirmation screen that shows approval state, preflight state, blockers, stop conditions, rollback rules, and the separate live-run command preview. It does not call the network.
 - `reports/runtime/daily-readiness.json`: machine-readable freshness/readiness proof for required daily artifacts.
 - `reports/product/readiness.html`: phone-readable control page that says whether today's brief is fresh enough, what is stale or missing, and what local run command to use next.
 - `reports/runtime/daily-home.json`: machine-readable phone entrypoint over existing daily artifacts.
@@ -437,10 +439,11 @@ flags. `appliance run` creates the proof automatically, and `appliance today` re
 
 `appliance source-refresh-response "approve live_network_refresh live_network_refresh"` is the
 phone-to-local handoff step. It takes the copied approval response, rewrites the live-run proof,
-rewrites the preflight proof, and refreshes `reports/product/source-refresh.html` in one local
-command. It never calls the live network. Passing `--intend-execute --confirm-live-network` can make
-the preflight proof pass, but the actual fetch still requires the separate
-`source-refresh-live-run --execute --confirm-live-network` path.
+rewrites the preflight proof, and refreshes `reports/product/source-refresh.html` plus
+`reports/product/source-refresh-execution.html` in one local command. It never calls the live
+network. Passing `--intend-execute --confirm-live-network` can make the preflight proof pass, but the
+actual fetch still requires the separate `source-refresh-live-run --execute --confirm-live-network`
+path after the execution brief says `ready_for_final_confirmation`.
 
 `source-refresh-live-preflight` is the final no-network proof before approved source execution. It
 reads `reports/daily/source-refresh-live-run.json` and checks the exact approval state, live-run

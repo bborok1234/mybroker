@@ -32,6 +32,7 @@ DAILY_BRIEF_AGENDA_SCHEMA_VERSION = "daily_brief_agenda.v1"
 DAILY_READINESS_SCHEMA_VERSION = "daily_readiness.v1"
 SOURCE_REFRESH_BRIEF_SCHEMA_VERSION = "source_refresh_brief.v1"
 SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION = "source_freshness_intake.v1"
+SOURCE_REFRESH_EXECUTION_BRIEF_SCHEMA_VERSION = "source_refresh_execution_brief.v1"
 HANDOFF_STUDY_RESOLUTION_SCHEMA_VERSION = "handoff_study_resolution.v1"
 NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
@@ -82,6 +83,8 @@ DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT = Path("reports/runtime/source-refresh-brief
 DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE = Path("reports/product/source-refresh.html")
 DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT = Path("reports/runtime/source-freshness-intake.json")
 DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE = Path("reports/product/source-freshness-intake.html")
+DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT = Path("reports/runtime/source-refresh-execution-brief.json")
+DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE = Path("reports/product/source-refresh-execution.html")
 DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT = Path("reports/runtime/handoff-study-resolution.json")
 DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE = Path("reports/product/handoff-study-resolution.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
@@ -2595,6 +2598,8 @@ def build_daily_readiness(
         ("source_refresh_surface", DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE, "phone_surface", False),
         ("source_freshness_intake", DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT, "control_artifact", False),
         ("source_freshness_intake_surface", DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE, "phone_surface", False),
+        ("source_refresh_execution_brief", DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT, "control_artifact", False),
+        ("source_refresh_execution_surface", DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE, "phone_surface", False),
         ("pattern_dry_run_proof", DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT, "control_artifact", False),
         ("pattern_dry_run_proof_surface", DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE, "phone_surface", False),
         ("morning_control", DEFAULT_MORNING_CONTROL_OUTPUT, "control_artifact", True),
@@ -2682,6 +2687,7 @@ def build_daily_readiness(
             "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
+            "source_refresh_execution": DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE.as_posix(),
             "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
@@ -2777,6 +2783,7 @@ def build_run_trace(
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     source_refresh_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
     source_freshness_intake_path: str | Path = DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT,
+    source_refresh_execution_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT,
     scenario_path: str | Path = Path("reports/scenarios/daily-research-sim.json"),
     verdict_path: str | Path = Path("reports/scenarios/daily-research-verdict.json"),
     journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
@@ -2805,6 +2812,7 @@ def build_run_trace(
         ("daily_agenda", agenda_path, "study", "Converts the scout recommendation into a phone-first study sequence.", True),
         ("source_refresh_brief", source_refresh_brief_path, "gate", "Explains weak evidence and blocked refresh authority.", False),
         ("source_freshness_intake", source_freshness_intake_path, "gate", "Packages source freshness, blocked live candidates, and scoped approval response before any live refresh.", False),
+        ("source_refresh_execution_brief", source_refresh_execution_brief_path, "gate", "Shows final-confirmation, stop conditions, rollback, and absorption path before any live source execution.", False),
         ("scenario_report", scenario_path, "simulate", "Builds beginner-readable paths from available evidence.", True),
         ("verdict", verdict_path, "summarize", "Summarizes the research-only next inspection posture.", True),
         ("analyst_journal", journal_path, "reflect", "Records role notes and follow-up questions.", True),
@@ -2850,6 +2858,7 @@ def build_run_trace(
             "scenario_report",
             "verdict",
             "source_refresh_brief",
+            "source_refresh_execution_brief",
             "task_ledger",
             "daily_review",
             "review_prompt",
@@ -2877,6 +2886,7 @@ def build_run_trace(
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
+            "source_refresh_execution": DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE.as_posix(),
         },
         "external_effect_performed": False,
         "host_write_performed": False,
@@ -4500,6 +4510,7 @@ def build_source_freshness_intake(
         "next_action": _source_freshness_intake_next_action(status=status, response=copy_ready_response),
         "phone_links": {
             "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
+            "source_refresh_execution": DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "daily_home": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
             "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
@@ -4592,6 +4603,327 @@ def validate_source_freshness_intake_payload(payload: dict[str, Any]) -> list[st
 
 def validate_source_freshness_intake_file(path: str | Path) -> list[str]:
     return validate_source_freshness_intake_payload(load_json(path))
+
+
+def build_source_refresh_execution_brief(
+    *,
+    source_refresh_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
+    refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    refresh_live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    brief = _load_optional_json(source_refresh_brief_path)
+    gate = _load_optional_json(refresh_live_gate_path)
+    live_run = _load_optional_json(refresh_live_run_path)
+    preflight = _load_optional_json(refresh_live_preflight_path)
+    execution = live_run.get("execution", {}) if live_run.get("schema_version") == "source_refresh_live_run.v1" else {}
+    approval_status = live_run.get("approval_status", "missing")
+    live_run_status = execution.get("status", "missing")
+    preflight_status = preflight.get("status", "missing")
+    blockers = list(preflight.get("blockers", [])) + list(execution.get("blockers", []))
+    warnings = list(preflight.get("warnings", []))
+    proposed_commands = list(execution.get("proposed_commands", []))
+    source_ids = list(execution.get("source_ids", []))
+    status = "blocked"
+    if gate.get("status") == "no_live_refresh_requested" or approval_status == "not_required":
+        status = "not_required"
+    elif live_run_status == "executed":
+        status = "executed"
+    elif preflight_status == "passed" and approval_status == "approved" and live_run_status == "ready_to_execute":
+        status = "ready_for_final_confirmation"
+    elif approval_status == "approved":
+        status = "preflight_required"
+    elif gate.get("status") == "approval_required":
+        status = "approval_required"
+    run_command = "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-execution"
+    if status == "ready_for_final_confirmation":
+        run_command = (
+            "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker source-refresh-live-run "
+            f"--live-gate {Path(refresh_live_gate_path).as_posix()} "
+            f"--response {shlex.quote(str(live_run.get('response') or (gate.get('decisions') or [{}])[0].get('copy_ready_response', '')))} "
+            f"--output {Path(refresh_live_run_path).as_posix()} "
+            f"--evidence-output {live_run.get('inputs', {}).get('evidence_output_path', 'reports/evidence/live-evidence-catalog.json')} "
+            "--execute --confirm-live-network"
+        )
+    operator_must_confirm = [
+        "이 명령은 실제 live network를 호출합니다.",
+        "무료/no-key 공개 source만 대상이어야 합니다.",
+        "실행 결과는 research evidence artifact일 뿐 투자 추천이나 주문이 아닙니다.",
+    ]
+    if status != "ready_for_final_confirmation":
+        operator_must_confirm = [
+            "이 명령은 기존 로컬 artifact만 읽고 확인 화면을 다시 생성합니다.",
+            "approval/preflight가 통과하기 전까지 live network 실행 명령을 노출하지 않습니다.",
+            "실행 결과는 research evidence artifact일 뿐 투자 추천이나 주문이 아닙니다.",
+        ]
+    stop_conditions = [
+        "approval_status가 approved가 아니면 실행하지 않습니다.",
+        "preflight status가 passed가 아니면 실행하지 않습니다.",
+        "proposed command 안에 알림, host write, credential, account, order 관련 fragment가 보이면 실행하지 않습니다.",
+        "source plan, scout, evidence가 바뀌었으면 approval/preflight를 다시 생성합니다.",
+    ]
+    next_local_steps = [
+        "실행하지 않을 때: source-refresh-intake와 handoff-study-resolution을 읽고 어떤 근거가 약한지 공부용 응답으로 남깁니다.",
+        "승인만 기록할 때: appliance source-refresh-response 명령으로 live-run/preflight proof를 갱신합니다.",
+        "preflight가 passed일 때만: 별도 최종 확인 후 source-refresh-live-run --execute --confirm-live-network를 사용합니다.",
+        "실행 후: live evidence validator를 통과시키고 appliance run --dry-run으로 daily brief에 흡수합니다.",
+    ]
+    payload = {
+        "schema_version": SOURCE_REFRESH_EXECUTION_BRIEF_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": status,
+        "summary": {
+            "approval_status": approval_status,
+            "live_run_status": live_run_status,
+            "preflight_status": preflight_status,
+            "source_count": len(source_ids),
+            "proposed_command_count": len(proposed_commands),
+            "blocker_count": len(blockers),
+            "warning_count": len(warnings),
+            "external_effect_performed": live_run.get("external_effect_performed", False),
+        },
+        "execution_readiness": {
+            "approval_status": approval_status,
+            "live_run_status": live_run_status,
+            "preflight_status": preflight_status,
+            "requested_execution": preflight.get("requested_execution", {}),
+            "source_ids": source_ids,
+            "proposed_commands": proposed_commands,
+            "blockers": blockers,
+            "warnings": warnings,
+            "evidence_output_path": live_run.get("inputs", {}).get("evidence_output_path", ""),
+        },
+        "final_confirmation": {
+            "required": status == "ready_for_final_confirmation",
+            "run_command_preview": run_command,
+            "operator_must_confirm": operator_must_confirm,
+            "agent_will_not_do": [
+                "paid API",
+                "credentialed source",
+                "notification send",
+                "host scheduler write",
+                "account access",
+                "order execution",
+                "personalized/discretionary advice",
+            ],
+        },
+        "stop_conditions": stop_conditions,
+        "rollback_plan": [
+            "생성된 live evidence artifact를 삭제하거나 archive에서 제외하면 로컬 상태를 되돌릴 수 있습니다.",
+            "실행 후 daily brief가 약해지면 source freshness intake와 run trace를 비교해 해당 source를 보류합니다.",
+            "네트워크 실패는 실패 artifact로 남기고 같은 run에서 재시도하지 않습니다.",
+        ],
+        "next_local_steps": next_local_steps,
+        "input_artifacts": {
+            "source_refresh_brief": Path(source_refresh_brief_path).as_posix(),
+            "source_refresh_live_gate": Path(refresh_live_gate_path).as_posix(),
+            "source_refresh_live_run": Path(refresh_live_run_path).as_posix(),
+            "source_refresh_live_preflight": Path(refresh_live_preflight_path).as_posix(),
+        },
+        "phone_links": {
+            "source_refresh_execution": DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE.as_posix(),
+            "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
+            "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+            "daily_home": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
+            "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+            "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_paid_api",
+            "no_account_access",
+            "no_order_execution",
+            "execution_requires_separate_final_confirmation",
+        ],
+    }
+    return payload
+
+
+def write_source_refresh_execution_brief(
+    *,
+    artifact_output_path: str | Path = DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE,
+    **paths: Any,
+) -> Path:
+    payload = build_source_refresh_execution_brief(**paths)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_source_refresh_execution_brief(payload), encoding="utf-8")
+    return target
+
+
+def validate_source_refresh_execution_brief_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != SOURCE_REFRESH_EXECUTION_BRIEF_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"not_required", "approval_required", "preflight_required", "ready_for_final_confirmation", "executed", "blocked"}:
+        errors.append("status must be a recognized source refresh execution status")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    summary = payload.get("summary", {})
+    for field in ["approval_status", "live_run_status", "preflight_status", "source_count", "proposed_command_count", "blocker_count", "warning_count", "external_effect_performed"]:
+        if field not in summary:
+            errors.append(f"summary missing {field}")
+    readiness = payload.get("execution_readiness", {})
+    for field in ["approval_status", "live_run_status", "preflight_status", "source_ids", "proposed_commands", "blockers", "warnings", "evidence_output_path"]:
+        if field not in readiness:
+            errors.append(f"execution_readiness missing {field}")
+    final = payload.get("final_confirmation", {})
+    for field in ["required", "run_command_preview", "operator_must_confirm", "agent_will_not_do"]:
+        if field not in final:
+            errors.append(f"final_confirmation missing {field}")
+    if payload.get("status") == "ready_for_final_confirmation" and final.get("required") is not True:
+        errors.append("ready_for_final_confirmation requires final_confirmation.required true")
+    if not payload.get("stop_conditions"):
+        errors.append("stop_conditions must not be empty")
+    if not payload.get("rollback_plan"):
+        errors.append("rollback_plan must not be empty")
+    if not payload.get("next_local_steps"):
+        errors.append("next_local_steps must not be empty")
+    for field in ["source_refresh_execution", "source_freshness_intake", "source_refresh", "daily_home", "readiness", "trace"]:
+        if not payload.get("phone_links", {}).get(field):
+            errors.append(f"phone_links.{field} must not be empty")
+    forbidden = [" --send", "--confirm-host-write", "launchctl bootstrap", "tailscale serve --bg"]
+    commands = [final.get("run_command_preview", "")]
+    commands.extend(readiness.get("proposed_commands", []))
+    for index, command in enumerate(commands):
+        if any(fragment in command for fragment in forbidden):
+            errors.append(f"command[{index}] crosses non-source-refresh external-effect boundary")
+    for required in ["reads_local_artifacts_only", "does_not_fetch_live_network", "execution_requires_separate_final_confirmation"]:
+        if required not in payload.get("safety_boundary", []):
+            errors.append(f"safety_boundary must include {required}")
+    return errors
+
+
+def validate_source_refresh_execution_brief_file(path: str | Path) -> list[str]:
+    return validate_source_refresh_execution_brief_payload(load_json(path))
+
+
+def render_source_refresh_execution_brief(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    readiness = payload.get("execution_readiness", {})
+    final = payload.get("final_confirmation", {})
+    command_heading = "최종 실행 명령 preview" if final.get("required") else "다음 로컬 확인 명령"
+    command_help = (
+        "아래 명령은 별도 최종 확인이 있을 때만 사람이 명시적으로 실행합니다."
+        if final.get("required")
+        else "아직 live 실행 조건이 충족되지 않았습니다. 아래 명령은 이 확인 화면을 다시 생성하는 로컬 명령입니다."
+    )
+    status_label = {
+        "not_required": "오늘 실행 필요 없음",
+        "approval_required": "승인 먼저 필요",
+        "preflight_required": "사전점검 필요",
+        "ready_for_final_confirmation": "실행 전 최종 확인",
+        "executed": "실행 증거 있음",
+        "blocked": "차단됨",
+    }.get(payload.get("status", ""), payload.get("status", "review"))
+    blocker_items = "".join(f"<li>{esc(item)}</li>" for item in readiness.get("blockers", [])) or "<li>현재 기록된 blocker는 없습니다.</li>"
+    warning_items = "".join(f"<li>{esc(item)}</li>" for item in readiness.get("warnings", [])) or "<li>현재 기록된 warning은 없습니다.</li>"
+    stop_items = "".join(f"<li>{esc(item)}</li>" for item in payload.get("stop_conditions", []))
+    rollback_items = "".join(f"<li>{esc(item)}</li>" for item in payload.get("rollback_plan", []))
+    next_items = "".join(f"<li>{esc(item)}</li>" for item in payload.get("next_local_steps", []))
+    confirm_items = "".join(f"<li>{esc(item)}</li>" for item in final.get("operator_must_confirm", []))
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if label != "source_refresh_execution" and path
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Source Refresh Execution</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+html,body {{ max-width:100%; overflow-x:hidden; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:430px; margin:0; padding:14px; }}
+a {{ color:var(--blue); font-weight:900; text-decoration:none; }}
+.eyebrow,.metric span {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:31px; line-height:1.12; overflow-wrap:anywhere; }}
+h2 {{ margin:0 0 10px; font-size:19px; }}
+p,li,small {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.metric {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:15px; margin:12px 0; }}
+.status {{ display:block; margin:10px 0; font-size:24px; line-height:1.15; }}
+.metrics {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.metric {{ padding:12px; background:white; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; overflow-wrap:anywhere; }}
+code {{ display:block; white-space:pre-wrap; word-break:break-word; border:1px solid var(--line); border-radius:8px; background:#f1f5f7; padding:10px; color:var(--ink); font-size:12px; }}
+.links {{ display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:11px; }}
+.boundary {{ border-left:4px solid var(--green); }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Source Refresh Execution · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>실행 전 최종 확인</h1>
+<p>이 화면은 live source refresh를 실행하지 않습니다. 승인, preflight, stop 조건, 실행 후 흡수 경로를 한 번에 확인합니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">{esc(status_label)}</strong>
+<div class="metrics">
+<article class="metric"><span>Approval</span><strong>{esc(summary.get('approval_status', 'missing'))}</strong></article>
+<article class="metric"><span>Preflight</span><strong>{esc(summary.get('preflight_status', 'missing'))}</strong></article>
+<article class="metric"><span>Sources</span><strong>{esc(summary.get('source_count', 0))}</strong></article>
+<article class="metric"><span>Blockers</span><strong>{esc(summary.get('blocker_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>{esc(command_heading)}</h2>
+<p>{esc(command_help)}</p>
+<code>{esc(final.get('run_command_preview', ''))}</code>
+<ul>{confirm_items}</ul>
+</section>
+<section class="section">
+<h2>현재 blocker</h2>
+<ul>{blocker_items}</ul>
+<h2>Warning</h2>
+<ul>{warning_items}</ul>
+</section>
+<section class="section">
+<h2>멈춤 조건</h2>
+<ul>{stop_items}</ul>
+</section>
+<section class="section">
+<h2>Rollback / 재시도 원칙</h2>
+<ul>{rollback_items}</ul>
+</section>
+<section class="section">
+<h2>다음 로컬 단계</h2>
+<ul>{next_items}</ul>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section boundary">
+<h2>안전 경계</h2>
+<p>이 화면은 기존 로컬 artifact만 읽습니다. live network, paid API, credential, 알림, host scheduler, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def render_source_freshness_intake(payload: dict[str, Any]) -> str:
@@ -8660,6 +8992,7 @@ def _daily_home_action_inbox(
     handoff_study_resolution: dict[str, Any],
     task_ledger: dict[str, Any],
     source_freshness_intake: dict[str, Any],
+    source_refresh_execution_brief: dict[str, Any],
     pattern_radar: dict[str, Any],
     pattern_proof: dict[str, Any],
     links: dict[str, str],
@@ -8701,6 +9034,26 @@ def _daily_home_action_inbox(
                 "href": links.get("source_freshness_intake", ""),
                 "copy_ready_command": source_freshness_intake.get("approval_packet", {}).get("copy_ready_response", ""),
                 "requires_separate_approval": source_freshness_intake.get("status") == "approval_packet_ready",
+                "external_effect_performed": False,
+                "host_write_performed": False,
+            })
+
+    if source_refresh_execution_brief.get("schema_version") == SOURCE_REFRESH_EXECUTION_BRIEF_SCHEMA_VERSION:
+        execution_summary = source_refresh_execution_brief.get("summary", {})
+        if source_refresh_execution_brief.get("status") in {"approval_required", "preflight_required", "ready_for_final_confirmation", "blocked"}:
+            execution_status = source_refresh_execution_brief.get("status")
+            inspect_command = "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-execution"
+            final_command = source_refresh_execution_brief.get("final_confirmation", {}).get("run_command_preview", "")
+            priority_items.append({
+                "kind": "source_refresh_execution",
+                "id": "source-refresh-execution",
+                "title": "live refresh 실행 전 최종 확인",
+                "why": f"approval {execution_summary.get('approval_status', 'missing')}, preflight {execution_summary.get('preflight_status', 'missing')}, blockers {execution_summary.get('blocker_count', 0)}개를 확인합니다.",
+                "source": "source_refresh_execution_brief",
+                "status": execution_status,
+                "href": links.get("source_refresh_execution", ""),
+                "copy_ready_command": final_command if execution_status == "ready_for_final_confirmation" else inspect_command,
+                "requires_separate_approval": execution_status == "ready_for_final_confirmation",
                 "external_effect_performed": False,
                 "host_write_performed": False,
             })
@@ -8816,6 +9169,8 @@ def _daily_home_action_inbox(
             "pattern_scout_count": 1 if recommended else 0,
             "pattern_scout_proof_ready_count": 1 if scout_proof.get("proof_status") == "passed" else 0,
             "source_freshness_intake_count": 1 if source_freshness_intake.get("schema_version") == SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION else 0,
+            "source_refresh_execution_count": 1 if source_refresh_execution_brief.get("schema_version") == SOURCE_REFRESH_EXECUTION_BRIEF_SCHEMA_VERSION else 0,
+            "source_refresh_execution_blocker_count": source_refresh_execution_brief.get("summary", {}).get("blocker_count", 0),
             "handoff_resolution_count": 1 if handoff_study_resolution.get("schema_version") == HANDOFF_STUDY_RESOLUTION_SCHEMA_VERSION else 0,
             "handoff_resolution_ready_count": handoff_study_resolution.get("summary", {}).get("ready_to_study_count", 0),
             "handoff_resolution_blocked_count": handoff_study_resolution.get("summary", {}).get("blocked_by_source_freshness_count", 0),
@@ -8834,6 +9189,7 @@ def _daily_home_action_inbox(
             "pattern_radar": links.get("pattern_radar", ""),
             "pattern_dry_run": links.get("pattern_dry_run", ""),
             "source_freshness_intake": links.get("source_freshness_intake", ""),
+            "source_refresh_execution": links.get("source_refresh_execution", ""),
         },
         "external_effect_performed": False,
         "host_write_performed": False,
@@ -8858,6 +9214,7 @@ def build_daily_operator_home(
     phone_access_verify_path: str | Path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT,
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     source_freshness_intake_path: str | Path = DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT,
+    source_refresh_execution_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT,
     memory_query_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
     learning_ledger_path: str | Path = DEFAULT_LEARNING_LEDGER_OUTPUT,
@@ -8881,6 +9238,7 @@ def build_daily_operator_home(
     phone_access_verify = _load_optional_json(phone_access_verify_path)
     notification = _load_optional_json(notification_path)
     source_freshness_intake = _load_optional_json(source_freshness_intake_path)
+    source_refresh_execution_brief = _load_optional_json(source_refresh_execution_brief_path)
     memory_query = _load_optional_json(memory_query_path)
     memory_audit = _load_optional_json(memory_audit_path)
     learning_ledger = _load_optional_json(learning_ledger_path)
@@ -8955,6 +9313,7 @@ def build_daily_operator_home(
         "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
         "learning": DEFAULT_LEARNING_LEDGER_SURFACE.as_posix(),
         "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
+        "source_refresh_execution": DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE.as_posix(),
         "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
         "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
         "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
@@ -9008,6 +9367,14 @@ def build_daily_operator_home(
         },
         {
             "step": 6,
+            "label": "live refresh 실행 전 확인",
+            "title": "source refresh execution",
+            "why": "승인, preflight, stop 조건, rollback, 실행 후 흡수 경로를 live network 없이 확인합니다.",
+            "href": links["source_refresh_execution"],
+            "status": source_refresh_execution_brief.get("status", "missing"),
+        },
+        {
+            "step": 7,
             "label": "오늘 결과 영향 경로 확인",
             "title": "run trace",
             "why": "오늘 scout, 근거, memory, review, pattern gate 중 무엇이 결과를 만들었는지 compact trace로 확인합니다.",
@@ -9015,7 +9382,7 @@ def build_daily_operator_home(
             "status": run_trace.get("status", "missing"),
         },
         {
-            "step": 7,
+            "step": 8,
             "label": "운영 상태 확인",
             "title": "morning control",
             "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -9023,7 +9390,7 @@ def build_daily_operator_home(
             "status": morning.get("status", "missing"),
         },
         {
-            "step": 8,
+            "step": 9,
             "label": "신뢰도 확인",
             "title": "readiness",
             "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -9031,7 +9398,7 @@ def build_daily_operator_home(
             "status": readiness.get("status", "missing"),
         },
         {
-            "step": 9,
+            "step": 10,
             "label": "남은 질문 공부로 닫기",
             "title": "handoff study resolution",
             "why": "전날에서 넘어온 질문을 답변 후보, 근거, 종료 조건, 복사 응답으로 정리합니다.",
@@ -9039,7 +9406,7 @@ def build_daily_operator_home(
             "status": handoff_study_resolution.get("status", "missing"),
         },
         {
-            "step": 10,
+            "step": 11,
             "label": "전날 맥락 닫기",
             "title": "handoff",
             "why": f"남은 항목 {unresolved_count}개를 보고 필요한 응답을 복사합니다.",
@@ -9047,7 +9414,7 @@ def build_daily_operator_home(
             "status": handoff.get("status", "missing"),
         },
         {
-            "step": 11,
+            "step": 12,
             "label": "응답 반영 확인",
             "title": "handoff apply proof",
             "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -9055,7 +9422,7 @@ def build_daily_operator_home(
             "status": handoff_apply.get("status", "missing"),
         },
         {
-            "step": 12,
+            "step": 13,
             "label": "기억 품질 확인",
             "title": "memory audit",
             "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -9063,7 +9430,7 @@ def build_daily_operator_home(
             "status": memory_audit.get("status", "missing"),
         },
         {
-            "step": 13,
+            "step": 14,
             "label": "새 작업 방식 증거 확인",
             "title": "pattern dry-run proof",
             "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -9078,6 +9445,7 @@ def build_daily_operator_home(
         handoff_study_resolution=handoff_study_resolution,
         task_ledger=task_ledger,
         source_freshness_intake=source_freshness_intake,
+        source_refresh_execution_brief=source_refresh_execution_brief,
         pattern_radar=pattern_radar,
         pattern_proof=pattern_proof,
         links=links,
@@ -9106,6 +9474,9 @@ def build_daily_operator_home(
             "source_freshness_intake_status": source_freshness_intake.get("status", "missing"),
             "source_freshness_blocked_live_count": source_freshness_intake.get("summary", {}).get("blocked_live_candidate_count", 0),
             "source_freshness_weak_count": source_freshness_intake.get("summary", {}).get("stale_or_sample_source_count", 0),
+            "source_refresh_execution_status": source_refresh_execution_brief.get("status", "missing"),
+            "source_refresh_execution_preflight": source_refresh_execution_brief.get("summary", {}).get("preflight_status", "missing"),
+            "source_refresh_execution_blockers": source_refresh_execution_brief.get("summary", {}).get("blocker_count", 0),
             "handoff_resolution_status": handoff_study_resolution.get("status", "missing"),
             "handoff_resolution_ready_count": handoff_study_resolution.get("summary", {}).get("ready_to_study_count", 0),
             "handoff_resolution_blocked_count": handoff_study_resolution.get("summary", {}).get("blocked_by_source_freshness_count", 0),
@@ -9182,6 +9553,19 @@ def build_daily_operator_home(
             "external_effect_performed": False,
             "host_write_performed": False,
         },
+        "source_refresh_execution_adoption": {
+            "pattern_candidate_id": "pattern-source-refresh-final-confirmation",
+            "status": source_refresh_execution_brief.get("status", "missing"),
+            "approval_status": source_refresh_execution_brief.get("summary", {}).get("approval_status", "missing"),
+            "live_run_status": source_refresh_execution_brief.get("summary", {}).get("live_run_status", "missing"),
+            "preflight_status": source_refresh_execution_brief.get("summary", {}).get("preflight_status", "missing"),
+            "blocker_count": source_refresh_execution_brief.get("summary", {}).get("blocker_count", 0),
+            "final_confirmation_required": source_refresh_execution_brief.get("final_confirmation", {}).get("required", False),
+            "stop_conditions": source_refresh_execution_brief.get("stop_conditions", [])[:4],
+            "surface": links["source_refresh_execution"],
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        },
         "pattern_scout_adoption": {
             "pattern_candidate_id": pattern_recommended.get("candidate_id", "missing"),
             "proof_status": pattern_scout_proof.get("proof_status", "missing"),
@@ -9232,6 +9616,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="memory_audit", path=memory_audit_path, payload=memory_audit),
             _daily_home_artifact_status(name="learning_ledger", path=learning_ledger_path, payload=learning_ledger),
             _daily_home_artifact_status(name="source_freshness_intake", path=source_freshness_intake_path, payload=source_freshness_intake),
+            _daily_home_artifact_status(name="source_refresh_execution_brief", path=source_refresh_execution_brief_path, payload=source_refresh_execution_brief),
             _daily_home_artifact_status(name="pattern_radar", path=pattern_radar_path, payload=pattern_radar),
             _daily_home_artifact_status(name="pattern_dry_run_proof", path=pattern_dry_run_proof_path, payload=pattern_proof),
         ],
@@ -9314,6 +9699,14 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("source_freshness_intake_adoption.external_effect_performed must be false")
     if intake.get("host_write_performed") is not False:
         errors.append("source_freshness_intake_adoption.host_write_performed must be false")
+    execution = payload.get("source_refresh_execution_adoption", {})
+    for field in ["pattern_candidate_id", "status", "approval_status", "live_run_status", "preflight_status", "blocker_count", "final_confirmation_required", "stop_conditions", "surface", "external_effect_performed", "host_write_performed"]:
+        if field not in execution:
+            errors.append(f"source_refresh_execution_adoption missing {field}")
+    if execution.get("external_effect_performed") is not False:
+        errors.append("source_refresh_execution_adoption.external_effect_performed must be false")
+    if execution.get("host_write_performed") is not False:
+        errors.append("source_refresh_execution_adoption.host_write_performed must be false")
     pattern = payload.get("pattern_scout_adoption", {})
     for field in ["pattern_candidate_id", "proof_status", "status", "title", "why_now", "approval_scope", "done_when", "surface", "proof_surface", "external_effect_performed", "host_write_performed"]:
         if field not in pattern:
@@ -9342,7 +9735,7 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(f"operator_action_inbox.priority_items[{index}] external_effect_performed must be false")
         if item.get("host_write_performed") is not False:
             errors.append(f"operator_action_inbox.priority_items[{index}] host_write_performed must be false")
-    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_study_resolution", "handoff_apply", "learning", "source_freshness_intake", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
+    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_study_resolution", "handoff_apply", "learning", "source_freshness_intake", "source_refresh_execution", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
     if "daily_home_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
@@ -9364,6 +9757,8 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("daily_route must include learning ledger")
     if not any(step.get("title") == "source freshness intake" for step in payload.get("daily_route", [])):
         errors.append("daily_route must include source freshness intake")
+    if not any(step.get("title") == "source refresh execution" for step in payload.get("daily_route", [])):
+        errors.append("daily_route must include source refresh execution")
     if not any(step.get("title") == "handoff study resolution" for step in payload.get("daily_route", [])):
         errors.append("daily_route must include handoff study resolution")
     return errors
