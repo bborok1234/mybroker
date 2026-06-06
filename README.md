@@ -189,7 +189,10 @@ brief.
    research compounds instead of starting fresh.
 5. `daily-scout` writes `daily_scout.v1` under `reports/daily/scout.json`. It ranks configured
    interests using memory changes, source breadth, evidence gaps, and compiled vault notes, then
-   recommends what to inspect first.
+   recommends what to inspect first. It also writes a `rotation_guard`: if the same stale topic
+   keeps winning without new evidence, scout can rotate to another evidence-backed topic. A recent
+   `more` review response still overrides rotation, but old feedback expires instead of pinning the
+   same topic forever.
 6. `source-refresh-plan` writes `source_refresh_plan.v1` under
    `reports/daily/source-refresh-plan.json`. It chooses dry-run source refresh actions for the
    scout recommendation, such as GDELT live, Stooq live, SEC sample review, or vault compile.
@@ -307,6 +310,9 @@ the response grammar.
 `reports/product/review-effect.html`. It proves whether recorded review feedback was read by the
 current scout and appears as an `operator_review` score factor, so the loop can distinguish
 "no feedback yet" from "feedback recorded but not applied."
+Scout treats positive review feedback as a short-lived preference, not a permanent pin. Recent
+`more` feedback can keep a topic first for the next daily run; after the freshness window, the
+`rotation_guard` may choose another evidence-backed topic when the old winner has no new evidence.
 `handoff-response-apply` is the phone handoff closure command. It accepts either a review response
 such as `more "Semiconductors" "tomorrow too"` or a task response such as
 `AT-001 complete "checked locally"`, records it in local JSONL memory, refreshes the affected proof

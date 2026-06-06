@@ -257,6 +257,8 @@ The apply artifact records `external_effect_performed: false`; it updates status
 `daily-scout` against the updated review artifact, refreshes the prompt/effect proof, and writes a
 handoff surface. This is local memory only: it does not execute tasks, fetch live data, send
 notifications, write scheduler state, or use credentials.
+The positive review signal is intentionally scoped to fresh context. It can override the scout
+rotation guard for the next daily run, but it does not keep a stale topic first indefinitely.
 `review-prompt` turns the current scout, review memory, drift review, and task ledger into
 `operator_review_prompt.v1` plus `reports/product/review-prompt.html`. It is a phone-first helper
 for leaving better feedback; it does not change topic scores until the operator actually records a
@@ -335,6 +337,10 @@ can challenge its latest evidence against accumulated raw notes.
 `daily-scout` is the local topic-selection step. It writes `reports/daily/scout.json` by ranking
 configured interests with source breadth, memory changes, evidence gaps, linked vault notes, and
 local operator review signals.
+It also records a `rotation_guard` so the analyst loop does not blindly recommend the same stale
+topic every day. When the top topic has no new evidence and no recent positive operator review,
+the guard can boost a different evidence-backed topic for coverage. Recent `more` feedback remains
+authoritative for the next run, but old feedback expires instead of creating a permanent topic pin.
 `appliance run` creates this artifact automatically, and `appliance today` renders it as "오늘 Scout
 추천" so the first phone screen explains what to inspect first and why.
 It is also the autonomous start contract for beginner users: the operator does not need to enter

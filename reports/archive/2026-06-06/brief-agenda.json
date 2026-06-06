@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_brief_agenda.v1",
-  "generated_at": "2026-06-06T03:34:24.086697+00:00",
+  "generated_at": "2026-06-06T04:00:11.059829+00:00",
   "run_id": "daily-research",
   "mode": "phone_first_local_personal_analyst",
   "operator_time_budget_minutes": 20,
@@ -72,7 +72,7 @@
       {
         "source_name": "GDELT",
         "title": "AI infrastructure demand keeps data center and chip supply chains in focus",
-        "freshness_status": "live_error_fallback_sample",
+        "freshness_status": "sample_cache",
         "entities": [
           "AI infrastructure",
           "data centers",
@@ -83,7 +83,7 @@
       {
         "source_name": "GDELT",
         "title": "Higher yields pressure growth themes despite resilient demand",
-        "freshness_status": "live_error_fallback_sample",
+        "freshness_status": "sample_cache",
         "entities": [
           "Treasury yields",
           "Federal Reserve",
@@ -116,8 +116,8 @@
         "source_name": "GDELT",
         "adapter_id": "sample_cache_topic_research",
         "item_count": "2",
-        "freshness_status": "live_error_fallback_sample",
-        "relevance_score": "0.98",
+        "freshness_status": "sample_cache",
+        "relevance_score": "0.97",
         "relevance_label": "strong"
       },
       {
@@ -249,7 +249,7 @@
         {
           "source_name": "GDELT",
           "title": "AI infrastructure demand keeps data center and chip supply chains in focus",
-          "freshness_status": "live_error_fallback_sample",
+          "freshness_status": "sample_cache",
           "entities": [
             "AI infrastructure",
             "data centers",
@@ -260,7 +260,7 @@
         {
           "source_name": "GDELT",
           "title": "Higher yields pressure growth themes despite resilient demand",
-          "freshness_status": "live_error_fallback_sample",
+          "freshness_status": "sample_cache",
           "entities": [
             "Treasury yields",
             "Federal Reserve",
@@ -293,8 +293,8 @@
           "source_name": "GDELT",
           "adapter_id": "sample_cache_topic_research",
           "item_count": "2",
-          "freshness_status": "live_error_fallback_sample",
-          "relevance_score": "0.98",
+          "freshness_status": "sample_cache",
+          "relevance_score": "0.97",
           "relevance_label": "strong"
         },
         {
@@ -382,7 +382,7 @@
         {
           "source_name": "GDELT",
           "title": "AI infrastructure demand keeps data center and chip supply chains in focus",
-          "freshness_status": "live_error_fallback_sample",
+          "freshness_status": "sample_cache",
           "entities": [
             "AI infrastructure",
             "data centers",
@@ -393,7 +393,7 @@
         {
           "source_name": "GDELT",
           "title": "Higher yields pressure growth themes despite resilient demand",
-          "freshness_status": "live_error_fallback_sample",
+          "freshness_status": "sample_cache",
           "entities": [
             "Treasury yields",
             "Federal Reserve",
@@ -404,7 +404,7 @@
         {
           "source_name": "Stooq",
           "title": "SPY broad market trend sample",
-          "freshness_status": "live_error_fallback_sample",
+          "freshness_status": "sample_cache",
           "entities": [
             "SPY",
             "broad market"
@@ -435,8 +435,8 @@
           "source_name": "GDELT",
           "adapter_id": "sample_cache_topic_research",
           "item_count": "2",
-          "freshness_status": "live_error_fallback_sample",
-          "relevance_score": "0.98",
+          "freshness_status": "sample_cache",
+          "relevance_score": "0.97",
           "relevance_label": "strong"
         },
         {
@@ -453,8 +453,8 @@
           "source_name": "Stooq",
           "adapter_id": "sample_cache_topic_research",
           "item_count": "1",
-          "freshness_status": "live_error_fallback_sample",
-          "relevance_score": "0.81",
+          "freshness_status": "sample_cache",
+          "relevance_score": "0.78",
           "relevance_label": "strong"
         }
       ],
@@ -527,7 +527,7 @@
         {
           "source_name": "GDELT",
           "title": "AI infrastructure demand keeps data center and chip supply chains in focus",
-          "freshness_status": "live_error_fallback_sample",
+          "freshness_status": "sample_cache",
           "entities": [
             "AI infrastructure",
             "data centers",
@@ -538,7 +538,7 @@
         {
           "source_name": "GDELT",
           "title": "Higher yields pressure growth themes despite resilient demand",
-          "freshness_status": "live_error_fallback_sample",
+          "freshness_status": "sample_cache",
           "entities": [
             "Treasury yields",
             "Federal Reserve",
@@ -549,7 +549,7 @@
         {
           "source_name": "Stooq",
           "title": "SPY broad market trend sample",
-          "freshness_status": "live_error_fallback_sample",
+          "freshness_status": "sample_cache",
           "entities": [
             "SPY",
             "broad market"
@@ -580,8 +580,8 @@
           "source_name": "GDELT",
           "adapter_id": "sample_cache_topic_research",
           "item_count": "2",
-          "freshness_status": "live_error_fallback_sample",
-          "relevance_score": "0.98",
+          "freshness_status": "sample_cache",
+          "relevance_score": "0.97",
           "relevance_label": "strong"
         },
         {
@@ -598,8 +598,8 @@
           "source_name": "Stooq",
           "adapter_id": "sample_cache_topic_research",
           "item_count": "1",
-          "freshness_status": "live_error_fallback_sample",
-          "relevance_score": "0.81",
+          "freshness_status": "sample_cache",
+          "relevance_score": "0.78",
           "relevance_label": "strong"
         }
       ],
@@ -614,7 +614,7 @@
   "source_fanout": [
     {
       "source_name": "GDELT",
-      "freshness_status": "live_error_fallback_sample",
+      "freshness_status": "sample_cache",
       "relevance_label": "strong",
       "item_count": "2",
       "role": "뉴스/이벤트 서사가 과열인지, 실제 사건인지 확인합니다.",
@@ -630,7 +630,7 @@
     },
     {
       "source_name": "Stooq",
-      "freshness_status": "live_error_fallback_sample",
+      "freshness_status": "sample_cache",
       "relevance_label": "strong",
       "item_count": "1",
       "role": "가격 흐름이 서사와 같은 방향인지 넓은 시장 맥락을 확인합니다.",

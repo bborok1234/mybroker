@@ -101,6 +101,7 @@ from mybroker.topics import (
     build_source_refresh_plan,
     collect_topic_evidence,
     init_topic_config,
+    validate_daily_scout_file,
     validate_source_refresh_live_preflight_file,
     validate_source_refresh_live_run_file,
 )
@@ -2329,6 +2330,256 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn(topic_name, review_html)
         self.assertIn(topic_name, review_prompt_html)
         self.assertIn(topic_name, review_effect_html)
+
+    def test_daily_scout_rotation_guard_rotates_repeated_stale_topic_locally(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            topics_path = root / "topics.json"
+            plan_path = root / "research-plan.json"
+            evidence_path = root / "daily-evidence.json"
+            memory_path = root / "topic-memory.json"
+            scout_path = root / "scout.json"
+            home_path = root / "daily-home.json"
+            home_surface_path = root / "daily-home.html"
+
+            config = init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="rotation-loop")
+            evidence_path.write_text(json.dumps({
+                "schema_version": "public_evidence_catalog.v1",
+                "source_status": [],
+                "collection_gaps": ["live_refresh_not_enabled"],
+                "mode": "sample_cache",
+            }), encoding="utf-8")
+            topics = []
+            for interest in config["interests"]:
+                source_names = ["sample-cache", "local-vault"]
+                latest_titles = [f"{interest['name']} note"]
+                if interest["topic_id"] == "semiconductors":
+                    source_names.append("macro-sample")
+                    latest_titles.extend(["Semiconductors cycle", "AI chip supply"])
+                topics.append({
+                    "topic_id": interest["topic_id"],
+                    "name": interest["name"],
+                    "last_seen_item_ids": [f"{interest['topic_id']}-1"],
+                    "latest_titles": latest_titles,
+                    "source_names": source_names,
+                    "new_evidence_count": 0,
+                    "changed_since_previous": False,
+                    "latest_summary": f"{interest['name']} stale sample",
+                    "daily_questions": ["오늘 이 주제의 반대 근거는 무엇인가?"],
+                    "collection_gaps": ["live_refresh_not_enabled"],
+                })
+            memory_path.write_text(json.dumps({
+                "schema_version": "topic_memory.v1",
+                "generated_at": "2026-06-06T00:00:00+00:00",
+                "run_count": 67,
+                "topics": topics,
+                "runs": [],
+                "policy": {"output_boundary": "research_only"},
+            }), encoding="utf-8")
+
+            scout = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                review_path=root / "missing-review.json",
+                output_path=scout_path,
+                run_id="rotation-loop",
+            )
+            home_surface = write_daily_operator_home(
+                scout_path=scout_path,
+                artifact_output_path=home_path,
+                surface_output_path=home_surface_path,
+            )
+            home_payload = json.loads(home_path.read_text(encoding="utf-8"))
+            home_html = home_surface.read_text(encoding="utf-8")
+            scout_errors = validate_daily_scout_file(scout_path)
+            home_errors = validate_daily_operator_home_file(home_path)
+
+        self.assertEqual(scout_errors, [])
+        self.assertEqual(home_errors, [])
+        self.assertTrue(scout["rotation_guard"]["rotated"])
+        self.assertEqual(scout["rotation_guard"]["pre_rotation_topic"], "semiconductors")
+        self.assertNotEqual(scout["recommended_topic"]["topic_id"], "semiconductors")
+        self.assertTrue(any(factor["name"] == "coverage_rotation_guard" for factor in scout["recommended_topic"]["score_factors"]))
+        self.assertEqual(home_payload["autonomous_scout"]["rotation_guard"]["status"], "rotated")
+        self.assertIn("Rotation", home_html)
+        self.assertIn("커버리지", home_html)
+
+    def test_daily_scout_rotation_guard_respects_more_feedback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            topics_path = root / "topics.json"
+            plan_path = root / "research-plan.json"
+            evidence_path = root / "daily-evidence.json"
+            memory_path = root / "topic-memory.json"
+            scout_path = root / "scout.json"
+            responses_path = root / "responses.jsonl"
+            review_path = root / "review.json"
+
+            config = init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="rotation-review")
+            evidence_path.write_text(json.dumps({
+                "schema_version": "public_evidence_catalog.v1",
+                "source_status": [],
+                "collection_gaps": ["live_refresh_not_enabled"],
+                "mode": "sample_cache",
+            }), encoding="utf-8")
+            topics = []
+            for interest in config["interests"]:
+                source_names = ["sample-cache", "local-vault"]
+                latest_titles = [f"{interest['name']} note"]
+                if interest["topic_id"] == "semiconductors":
+                    source_names.append("macro-sample")
+                    latest_titles.extend(["Semiconductors cycle", "AI chip supply"])
+                topics.append({
+                    "topic_id": interest["topic_id"],
+                    "name": interest["name"],
+                    "last_seen_item_ids": [f"{interest['topic_id']}-1"],
+                    "latest_titles": latest_titles,
+                    "source_names": source_names,
+                    "new_evidence_count": 0,
+                    "changed_since_previous": False,
+                    "latest_summary": f"{interest['name']} stale sample",
+                    "daily_questions": ["오늘 이 주제의 반대 근거는 무엇인가?"],
+                    "collection_gaps": ["live_refresh_not_enabled"],
+                })
+            memory_path.write_text(json.dumps({
+                "schema_version": "topic_memory.v1",
+                "generated_at": "2026-06-06T00:00:00+00:00",
+                "run_count": 67,
+                "topics": topics,
+                "runs": [],
+                "policy": {"output_boundary": "research_only"},
+            }), encoding="utf-8")
+            responses_path.write_text('more "Semiconductors" "아직 이 주제를 더 보고 싶다"\n', encoding="utf-8")
+            review_path.write_text(json.dumps({
+                "schema_version": "daily_review.v1",
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "summary": {"response_count": 1, "signal_count": 1},
+                "topic_signals": [{
+                    "topic_id": "semiconductors",
+                    "topic_name": "Semiconductors",
+                    "latest_status": "want_more",
+                    "score_delta": 1.2,
+                    "reason": "operator daily review signal",
+                    "responses": [{
+                        "recorded_at": datetime.now(timezone.utc).isoformat(),
+                        "action": "more",
+                        "status": "want_more",
+                        "topic": "Semiconductors",
+                        "note": "아직 이 주제를 더 보고 싶다",
+                        "external_effect_performed": False,
+                    }],
+                }],
+                "external_effect_performed": False,
+            }), encoding="utf-8")
+
+            scout = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                review_path=review_path,
+                output_path=scout_path,
+                run_id="rotation-review",
+            )
+            scout_errors = validate_daily_scout_file(scout_path)
+
+        self.assertEqual(scout_errors, [])
+        self.assertEqual(scout["rotation_guard"]["status"], "operator_override")
+        self.assertFalse(scout["rotation_guard"]["rotated"])
+        self.assertEqual(scout["recommended_topic"]["topic_id"], "semiconductors")
+        self.assertTrue(any(factor["name"] == "operator_review" for factor in scout["recommended_topic"]["score_factors"]))
+
+    def test_daily_scout_rotation_guard_expires_old_more_feedback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            topics_path = root / "topics.json"
+            plan_path = root / "research-plan.json"
+            evidence_path = root / "daily-evidence.json"
+            memory_path = root / "topic-memory.json"
+            scout_path = root / "scout.json"
+            review_path = root / "review.json"
+
+            config = init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="rotation-expiry")
+            evidence_path.write_text(json.dumps({
+                "schema_version": "public_evidence_catalog.v1",
+                "source_status": [],
+                "collection_gaps": ["live_refresh_not_enabled"],
+                "mode": "sample_cache",
+            }), encoding="utf-8")
+            topics = []
+            for interest in config["interests"]:
+                source_names = ["sample-cache", "local-vault"]
+                latest_titles = [f"{interest['name']} note"]
+                if interest["topic_id"] == "semiconductors":
+                    source_names.append("macro-sample")
+                    latest_titles.extend(["Semiconductors cycle", "AI chip supply"])
+                topics.append({
+                    "topic_id": interest["topic_id"],
+                    "name": interest["name"],
+                    "last_seen_item_ids": [f"{interest['topic_id']}-1"],
+                    "latest_titles": latest_titles,
+                    "source_names": source_names,
+                    "new_evidence_count": 0,
+                    "changed_since_previous": False,
+                    "latest_summary": f"{interest['name']} stale sample",
+                    "daily_questions": ["오늘 이 주제의 반대 근거는 무엇인가?"],
+                    "collection_gaps": ["live_refresh_not_enabled"],
+                })
+            memory_path.write_text(json.dumps({
+                "schema_version": "topic_memory.v1",
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "run_count": 67,
+                "topics": topics,
+                "runs": [],
+                "policy": {"output_boundary": "research_only"},
+            }), encoding="utf-8")
+            review_path.write_text(json.dumps({
+                "schema_version": "daily_review.v1",
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "summary": {"response_count": 1, "signal_count": 1},
+                "topic_signals": [{
+                    "topic_id": "semiconductors",
+                    "topic_name": "Semiconductors",
+                    "latest_status": "want_more",
+                    "score_delta": 1.2,
+                    "reason": "operator daily review signal",
+                    "responses": [{
+                        "recorded_at": "2026-01-01T00:00:00+00:00",
+                        "action": "more",
+                        "status": "want_more",
+                        "topic": "Semiconductors",
+                        "note": "오래된 피드백",
+                        "external_effect_performed": False,
+                    }],
+                }],
+                "external_effect_performed": False,
+            }), encoding="utf-8")
+
+            scout = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                review_path=review_path,
+                output_path=scout_path,
+                run_id="rotation-expiry",
+            )
+            scout_errors = validate_daily_scout_file(scout_path)
+
+        self.assertEqual(scout_errors, [])
+        self.assertEqual(scout["rotation_guard"]["status"], "rotated")
+        self.assertNotEqual(scout["recommended_topic"]["topic_id"], "semiconductors")
+        stale_topic = next(row for row in scout["recommendations"] if row["topic_id"] == "semiconductors")
+        self.assertFalse(any(factor["name"] == "operator_review" for factor in stale_topic["score_factors"]))
+        self.assertTrue(any(factor["name"] == "operator_review_expired" for factor in stale_topic["score_factors"]))
 
     def test_review_response_apply_refreshes_review_scout_and_effect_locally(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

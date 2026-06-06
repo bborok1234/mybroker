@@ -34,6 +34,7 @@ Must not show adapter IDs, schema names, raw validation logs, Flyhigh gates, or 
 It must link the learning ledger on the first daily route so the daily brief compounds into beginner memory instead of staying a one-off read.
 It must show the adopted local memory-recall proof for the scout-selected topic: recall quality, proof status, matched topics/archives/vault notes, weak spots, and the memory-query link.
 It must also show the adopted run-trace observability proof: trace status, proof status, run id, fresh/missing/stale counts, what shaped today's output, weak spots, debug order, and the run-trace link.
+It must show the scout `rotation_guard`: whether the topic was kept, rotated, or held by fresh operator feedback, plus the prior winner, selected topic, and reason. This lets the operator understand topic drift without opening raw JSON.
 It must show the operator action inbox: pending approval gates, unresolved handoff items, carried local tasks, copy-ready local responses, and links to the relevant phone surfaces without implying execution authority.
 It must also surface the current pattern scout when local proof is ready, so the operator sees the next workflow experiment on the first daily screen instead of hunting through the radar page.
 It must link `handoff-study-resolution.html` before raw handoff closure when unresolved questions exist, so the operator sees answer candidates and done-when criteria before copying a response.

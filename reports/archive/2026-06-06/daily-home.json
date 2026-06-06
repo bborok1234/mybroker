@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T03:34:24.153625+00:00",
+  "generated_at": "2026-06-06T04:00:11.418959+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -14,6 +14,8 @@
     "autonomous_topic": "Semiconductors",
     "autonomous_reason": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
     "scout_operator_input_required": false,
+    "topic_rotation_status": "operator_override",
+    "topic_rotation_rotated": false,
     "memory_recall_quality": "strong",
     "memory_recall_matches": 5,
     "learning_status": "review",
@@ -31,7 +33,7 @@
     "trace_status": "ready",
     "trace_fresh_count": 26,
     "trace_weak_spot_count": 0,
-    "pattern_scout_candidate": "pattern-method-evidence-intake",
+    "pattern_scout_candidate": "pattern-freshness-intake",
     "pattern_scout_proof_status": "passed",
     "pattern_evidence_intake_status": "review",
     "pattern_evidence_local_candidate_count": 0,
@@ -183,6 +185,8 @@
         "Apple Inc. 10-Q",
         "Apple Inc. 8-K"
       ],
+      "new_evidence_count": 0,
+      "changed_since_previous": false,
       "linked_vault_notes": [
         {
           "title": "Semiconductor cycle learning note",
@@ -303,6 +307,15 @@
     "why_today": "최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.",
     "confidence_note": "신뢰도는 low-medium입니다. 초보자용 학습/리서치 판단으로만 사용합니다.",
     "missing_evidence_note": "중복 근거 점검 필요 · live refresh 미실행",
+    "rotation_guard": {
+      "status": "operator_override",
+      "run_count": 69,
+      "pre_rotation_topic": "semiconductors",
+      "selected_topic": "semiconductors",
+      "rotated": false,
+      "reason": "사용자가 이 주제를 더 보겠다는 피드백을 남겨 순환보다 operator review를 우선합니다.",
+      "external_effect_performed": false
+    },
     "copy_ready_responses": [
       {
         "intent": "more",
@@ -365,12 +378,12 @@
       },
       {
         "label": "누적 실행",
-        "value": "67회",
+        "value": "69회",
         "source": "topic_memory"
       },
       {
         "label": "다음 안전 후보",
-        "value": "pattern evidence intake before workflow adoption",
+        "value": "source freshness intake before live authority",
         "source": "pattern_radar"
       },
       {
@@ -426,12 +439,12 @@
     "host_write_performed": false
   },
   "pattern_scout_adoption": {
-    "pattern_candidate_id": "pattern-method-evidence-intake",
+    "pattern_candidate_id": "pattern-freshness-intake",
     "proof_status": "passed",
     "status": "ready",
-    "title": "pattern evidence intake before workflow adoption",
-    "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
-    "why_now": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
+    "title": "source freshness intake before live authority",
+    "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
+    "why_now": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
     "approval_scope": "local_dry_run_only",
     "operator_decision_needed": false,
     "done_when": [
@@ -479,7 +492,7 @@
     "already_verified_count": 5,
     "approval_gated_count": 1,
     "blocked_count": 1,
-    "recommended_candidate": "pattern-method-evidence-intake",
+    "recommended_candidate": "pattern-freshness-intake",
     "surface": "reports/product/pattern-evidence-intake.html",
     "external_effect_performed": false,
     "host_write_performed": false
@@ -561,13 +574,13 @@
       },
       {
         "kind": "pattern_scout",
-        "id": "pattern-method-evidence-intake",
-        "title": "pattern evidence intake before workflow adoption",
-        "why": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
+        "id": "pattern-freshness-intake",
+        "title": "source freshness intake before live authority",
+        "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
         "source": "pattern_scout",
         "status": "local_proof_ready",
         "href": "reports/product/pattern-radar.html",
-        "copy_ready_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
+        "copy_ready_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
         "requires_separate_approval": false,
         "external_effect_performed": false,
         "host_write_performed": false
@@ -685,7 +698,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T03:34:24.081656+00:00"
+      "generated_at": "2026-06-06T04:00:11.051036+00:00"
     },
     {
       "name": "agenda",
@@ -693,7 +706,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T03:34:24.086697+00:00"
+      "generated_at": "2026-06-06T04:00:11.059829+00:00"
     },
     {
       "name": "morning",
@@ -701,7 +714,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-06T03:34:24.130424+00:00"
+      "generated_at": "2026-06-06T04:00:11.284074+00:00"
     },
     {
       "name": "readiness",
@@ -709,7 +722,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:34:24.150420+00:00"
+      "generated_at": "2026-06-06T04:00:11.393014+00:00"
     },
     {
       "name": "handoff",
@@ -717,7 +730,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-06T03:34:24.137748+00:00"
+      "generated_at": "2026-06-06T04:00:11.350246+00:00"
     },
     {
       "name": "handoff_study_resolution",
@@ -725,7 +738,7 @@
       "exists": true,
       "schema_version": "handoff_study_resolution.v1",
       "status": "review",
-      "generated_at": "2026-06-06T03:34:24.138720+00:00"
+      "generated_at": "2026-06-06T04:00:11.353349+00:00"
     },
     {
       "name": "handoff_apply",
@@ -741,7 +754,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:34:24.136608+00:00"
+      "generated_at": "2026-06-06T04:00:11.345861+00:00"
     },
     {
       "name": "run_trace",
@@ -749,7 +762,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:34:24.139564+00:00"
+      "generated_at": "2026-06-06T04:00:11.369283+00:00"
     },
     {
       "name": "task_ledger",
@@ -757,7 +770,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T03:34:24.110841+00:00"
+      "generated_at": "2026-06-06T04:00:11.149595+00:00"
     },
     {
       "name": "scheduler",
@@ -765,7 +778,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-06T03:34:24.121123+00:00"
+      "generated_at": "2026-06-06T04:00:11.259013+00:00"
     },
     {
       "name": "phone_access",
@@ -773,7 +786,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T03:34:14.146456+00:00"
+      "generated_at": "2026-06-06T04:00:11.037588+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -781,7 +794,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:34:24.149565+00:00"
+      "generated_at": "2026-06-06T04:00:11.391915+00:00"
     },
     {
       "name": "notification",
@@ -789,7 +802,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-06T03:34:24.113515+00:00"
+      "generated_at": "2026-06-06T04:00:11.165159+00:00"
     },
     {
       "name": "memory_query",
@@ -797,7 +810,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-06T03:34:24.107724+00:00"
+      "generated_at": "2026-06-06T04:00:11.134170+00:00"
     },
     {
       "name": "memory_audit",
@@ -805,7 +818,7 @@
       "exists": true,
       "schema_version": "personal_memory_audit.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:34:24.107149+00:00"
+      "generated_at": "2026-06-06T04:00:11.133460+00:00"
     },
     {
       "name": "learning_ledger",
@@ -813,7 +826,7 @@
       "exists": true,
       "schema_version": "personal_learning_ledger.v1",
       "status": "review",
-      "generated_at": "2026-06-06T03:34:24.109113+00:00"
+      "generated_at": "2026-06-06T04:00:11.138362+00:00"
     },
     {
       "name": "source_freshness_intake",
@@ -821,7 +834,7 @@
       "exists": true,
       "schema_version": "source_freshness_intake.v1",
       "status": "approval_packet_ready",
-      "generated_at": "2026-06-06T03:34:24.085559+00:00"
+      "generated_at": "2026-06-06T04:00:11.058635+00:00"
     },
     {
       "name": "source_refresh_execution_brief",
@@ -829,7 +842,7 @@
       "exists": true,
       "schema_version": "source_refresh_execution_brief.v1",
       "status": "approval_required",
-      "generated_at": "2026-06-06T03:34:24.085976+00:00"
+      "generated_at": "2026-06-06T04:00:11.059063+00:00"
     },
     {
       "name": "pattern_radar",
@@ -837,7 +850,7 @@
       "exists": true,
       "schema_version": "agent_pattern_radar.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:34:14.146746+00:00"
+      "generated_at": "2026-06-06T04:00:11.038390+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -845,7 +858,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-06T03:34:24.127268+00:00"
+      "generated_at": "2026-06-06T04:00:11.279557+00:00"
     },
     {
       "name": "pattern_evidence_intake",
@@ -853,7 +866,7 @@
       "exists": true,
       "schema_version": "pattern_evidence_intake.v1",
       "status": "review",
-      "generated_at": "2026-06-06T03:34:24.128368+00:00"
+      "generated_at": "2026-06-06T04:00:11.280780+00:00"
     }
   ],
   "external_effect_performed": false,

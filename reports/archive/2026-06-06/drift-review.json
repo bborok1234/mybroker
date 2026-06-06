@@ -1,6 +1,6 @@
 {
   "schema_version": "local_drift_review.v1",
-  "generated_at": "2026-06-06T03:34:24.135038+00:00",
+  "generated_at": "2026-06-06T04:00:11.334855+00:00",
   "status": "approval_required",
   "run_id": "daily-research",
   "decision": {
@@ -17,7 +17,7 @@
     },
     {
       "name": "pattern_next",
-      "value": "pattern evidence intake before workflow adoption",
+      "value": "source freshness intake before live authority",
       "interpretation": "다음 slice 후보가 pattern radar에 남아 있는지 확인합니다."
     },
     {
