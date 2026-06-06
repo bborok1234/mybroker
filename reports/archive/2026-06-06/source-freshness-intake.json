@@ -1,0 +1,128 @@
+{
+  "schema_version": "source_freshness_intake.v1",
+  "generated_at": "2026-06-06T02:05:18.630963+00:00",
+  "status": "approval_packet_ready",
+  "summary": {
+    "source_count": 3,
+    "fresh_source_count": 0,
+    "stale_or_sample_source_count": 3,
+    "blocked_live_candidate_count": 2,
+    "approval_status": "missing",
+    "preflight_status": "blocked"
+  },
+  "operator_question": "오늘 brief가 sample/cache 근거에 기대고 있으므로, live 공개 소스 refresh를 승인할지 판단하세요.",
+  "source_freshness": [
+    {
+      "source_name": "GDELT",
+      "source_id": "gdelt",
+      "freshness_status": "sample_cache",
+      "relevance_label": "strong",
+      "relevance_score": "0.97",
+      "item_count": "2",
+      "trust_state": "sample_or_fallback",
+      "operator_rule": "학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다."
+    },
+    {
+      "source_name": "SEC EDGAR",
+      "source_id": "sec-edgar",
+      "freshness_status": "sample_cache",
+      "relevance_label": "strong",
+      "relevance_score": "0.98",
+      "item_count": "2",
+      "trust_state": "sample_or_fallback",
+      "operator_rule": "학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다."
+    },
+    {
+      "source_name": "Stooq",
+      "source_id": "stooq",
+      "freshness_status": "sample_cache",
+      "relevance_label": "strong",
+      "relevance_score": "0.78",
+      "item_count": "1",
+      "trust_state": "sample_or_fallback",
+      "operator_rule": "학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다."
+    }
+  ],
+  "blocked_live_candidates": [
+    {
+      "source_name": "GDELT",
+      "adapter_id": "gdelt-live",
+      "why_blocked": "GDELT 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.",
+      "approval_required": "live_network_refresh",
+      "expected_artifact": "reports/evidence/live-evidence-catalog.json",
+      "candidate_command": "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json"
+    },
+    {
+      "source_name": "Stooq",
+      "adapter_id": "stooq-live",
+      "why_blocked": "Stooq 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.",
+      "approval_required": "live_network_refresh",
+      "expected_artifact": "reports/evidence/live-evidence-catalog.json",
+      "candidate_command": "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json"
+    }
+  ],
+  "approval_packet": {
+    "decision_id": "live_network_refresh",
+    "approval_scope": "live_network_refresh",
+    "risk_level": "medium",
+    "reversibility": "cache_artifact_can_be_deleted",
+    "copy_ready_response": "approve live_network_refresh live_network_refresh",
+    "apply_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-response \"approve live_network_refresh live_network_refresh\" --intend-execute --confirm-live-network",
+    "agent_will_run": [
+      "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json"
+    ],
+    "agent_will_not_run": [
+      "paid API calls",
+      "credentialed sources",
+      "host-level scheduler or private serving commands",
+      "notification send",
+      "account access",
+      "execution or personalized advice"
+    ]
+  },
+  "stale_context_guard": {
+    "guard": "Regenerate source_refresh_apply.v1 before approval if scout, evidence, or source plan changed.",
+    "input_artifacts": {
+      "source_refresh_brief": "reports/runtime/source-refresh-brief.json",
+      "source_refresh_live_gate": "reports/daily/source-refresh-live-gate.json",
+      "source_refresh_live_run": "reports/daily/source-refresh-live-run.json",
+      "source_refresh_live_preflight": "reports/daily/source-refresh-live-preflight.json"
+    }
+  },
+  "expected_after_approval": [
+    {
+      "artifact": "reports/daily/source-refresh-live-run.json",
+      "meaning": "승인 응답이 정확한 scope와 decision id를 통과했는지 기록합니다."
+    },
+    {
+      "artifact": "reports/daily/source-refresh-live-preflight.json",
+      "meaning": "실행 의도와 live-network 확인이 모두 있는지 네트워크 없이 점검합니다."
+    },
+    {
+      "artifact": "reports/runtime/source-refresh-brief.json",
+      "meaning": "승인/사전점검 상태를 다시 읽어 source refresh 판단을 갱신합니다."
+    }
+  ],
+  "next_action": "필요하면 이 응답을 복사해 local approval proof를 만드세요: approve live_network_refresh live_network_refresh",
+  "phone_links": {
+    "source_freshness_intake": "reports/product/source-freshness-intake.html",
+    "source_refresh": "reports/product/source-refresh.html",
+    "daily_home": "reports/product/daily-home.html",
+    "readiness": "reports/product/readiness.html",
+    "trace": "reports/product/run-trace.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "reads_local_artifacts_only",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_paid_api",
+    "no_account_access",
+    "no_order_execution",
+    "approval_response_is_not_execution"
+  ]
+}

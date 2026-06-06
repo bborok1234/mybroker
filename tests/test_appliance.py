@@ -48,6 +48,7 @@ from mybroker.appliance import (
     write_scheduler_operations,
     write_scheduler_run_once,
     write_source_refresh_brief,
+    write_source_freshness_intake,
     write_today_surface,
     validate_morning_control_packet_file,
     validate_learning_ledger_file,
@@ -78,6 +79,7 @@ from mybroker.appliance import (
     validate_scheduler_operations_payload,
     validate_source_refresh_brief_file,
     validate_source_refresh_brief_payload,
+    validate_source_freshness_intake_file,
     validate_phone_access_verify_file,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
@@ -326,6 +328,17 @@ class LocalApplianceTests(unittest.TestCase):
             scheduler_operations_html = scheduler_operations.read_text(encoding="utf-8")
             source_refresh_brief_payload = json.loads((root / "source-refresh-brief.json").read_text(encoding="utf-8"))
             source_refresh_brief_html = source_refresh_brief.read_text(encoding="utf-8")
+            source_freshness_intake = write_source_freshness_intake(
+                source_refresh_brief_path=root / "source-refresh-brief.json",
+                refresh_live_gate_path=refresh_live_gate_path,
+                refresh_live_run_path=refresh_live_run_path,
+                refresh_live_preflight_path=refresh_live_preflight_path,
+                artifact_output_path=root / "source-freshness-intake.json",
+                surface_output_path=root / "source-freshness-intake.html",
+            )
+            source_freshness_intake_payload = json.loads((root / "source-freshness-intake.json").read_text(encoding="utf-8"))
+            source_freshness_intake_html = source_freshness_intake.read_text(encoding="utf-8")
+            source_freshness_intake_errors = validate_source_freshness_intake_file(root / "source-freshness-intake.json")
             script_exists = Path(assets["script"]).exists()
             plist_exists = Path(assets["plist"]).exists()
             morning = write_morning_control_packet(
@@ -354,6 +367,7 @@ class LocalApplianceTests(unittest.TestCase):
                 scheduler_operations_path=root / "scheduler-operations.json",
                 phone_access_path=access_plan,
                 notification_path=notification,
+                source_freshness_intake_path=root / "source-freshness-intake.json",
                 memory_audit_path=root / "missing-memory-audit.json",
                 artifact_output_path=root / "reports" / "runtime" / "daily-home.json",
                 surface_output_path=root / "reports" / "product" / "daily-home.html",
@@ -477,6 +491,14 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("오늘 근거 새로고침 판단", source_refresh_brief_html)
         self.assertIn("Source freshness", source_refresh_brief_html)
         self.assertNotIn("schema_version", source_refresh_brief_html)
+        self.assertEqual(source_freshness_intake_payload["schema_version"], "source_freshness_intake.v1")
+        self.assertIn(source_freshness_intake_payload["status"], {"approval_packet_ready", "ready_for_operator_review", "no_intake_needed"})
+        self.assertFalse(source_freshness_intake_payload["external_effect_performed"])
+        self.assertFalse(source_freshness_intake_payload["host_write_performed"])
+        self.assertEqual(source_freshness_intake_errors, [])
+        self.assertIn("승인 전 근거 신선도 확인", source_freshness_intake_html)
+        self.assertIn("복사 가능한 승인 응답", source_freshness_intake_html)
+        self.assertNotIn("schema_version", source_freshness_intake_html)
         self.assertTrue(script_exists)
         self.assertTrue(plist_exists)
         self.assertEqual(morning_payload["schema_version"], "morning_control_packet.v1")
@@ -503,11 +525,15 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("handoff", daily_home_payload["phone_links"])
         self.assertIn("handoff_apply", daily_home_payload["phone_links"])
         self.assertIn("trace", daily_home_payload["phone_links"])
+        self.assertIn("source_freshness_intake", daily_home_payload["phone_links"])
         self.assertIn("pattern_radar", daily_home_payload["phone_links"])
         self.assertIn("pattern_dry_run", daily_home_payload["phone_links"])
         self.assertEqual(daily_home_payload["trace_observability_adoption"]["pattern_candidate_id"], "pattern-run-trace-observability")
         self.assertFalse(daily_home_payload["trace_observability_adoption"]["external_effect_performed"])
         self.assertFalse(daily_home_payload["trace_observability_adoption"]["host_write_performed"])
+        self.assertEqual(daily_home_payload["source_freshness_intake_adoption"]["pattern_candidate_id"], "pattern-freshness-intake")
+        self.assertFalse(daily_home_payload["source_freshness_intake_adoption"]["external_effect_performed"])
+        self.assertFalse(daily_home_payload["source_freshness_intake_adoption"]["host_write_performed"])
         self.assertEqual(daily_home_payload["pattern_scout_adoption"]["pattern_candidate_id"], "pattern-freshness-intake")
         self.assertFalse(daily_home_payload["pattern_scout_adoption"]["operator_decision_needed"])
         self.assertFalse(daily_home_payload["pattern_scout_adoption"]["external_effect_performed"])
@@ -520,6 +546,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("오늘의 개인 애널리스트 홈", daily_home_html)
         self.assertIn("오늘 닫을 것", daily_home_html)
         self.assertIn("오늘의 방식 Scout", daily_home_html)
+        self.assertIn("근거 신선도 intake", daily_home_html)
         self.assertIn("오늘 볼 순서", daily_home_html)
         self.assertIn("복사할 수 있는 로컬 응답", daily_home_html)
         self.assertNotIn("schema_version", daily_home_html)
@@ -1135,6 +1162,8 @@ class LocalApplianceTests(unittest.TestCase):
             access_verify_errors = validate_phone_access_verify_file(root / "reports" / "runtime" / "phone-access-verify.json")
             source_refresh_brief_payload = json.loads((root / "reports" / "runtime" / "source-refresh-brief.json").read_text(encoding="utf-8"))
             source_refresh_brief_errors = validate_source_refresh_brief_file(root / "reports" / "runtime" / "source-refresh-brief.json")
+            source_freshness_intake_payload = json.loads((root / "reports" / "runtime" / "source-freshness-intake.json").read_text(encoding="utf-8"))
+            source_freshness_intake_errors = validate_source_freshness_intake_file(root / "reports" / "runtime" / "source-freshness-intake.json")
             pattern_radar_payload = json.loads((root / "reports" / "runtime" / "agent-pattern-radar.json").read_text(encoding="utf-8"))
             pattern_radar_errors = validate_agent_pattern_radar_file(root / "reports" / "runtime" / "agent-pattern-radar.json")
             pattern_proof_payload = json.loads((root / "reports" / "runtime" / "pattern-dry-run-proof.json").read_text(encoding="utf-8"))
@@ -1165,6 +1194,7 @@ class LocalApplianceTests(unittest.TestCase):
             daily_home_html = (root / "reports" / "product" / "daily-home.html").read_text(encoding="utf-8")
             access_verify_html = (root / "reports" / "product" / "phone-access.html").read_text(encoding="utf-8")
             source_refresh_html = (root / "reports" / "product" / "source-refresh.html").read_text(encoding="utf-8")
+            source_freshness_intake_html = (root / "reports" / "product" / "source-freshness-intake.html").read_text(encoding="utf-8")
             pattern_radar_html = (root / "reports" / "product" / "pattern-radar.html").read_text(encoding="utf-8")
             pattern_proof_html = (root / "reports" / "product" / "pattern-dry-run.html").read_text(encoding="utf-8")
             run_trace_html = (root / "reports" / "product" / "run-trace.html").read_text(encoding="utf-8")
@@ -1251,8 +1281,10 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(item["name"] == "phone_access_verify" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "phone_access_verify_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "source_refresh_brief" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "source_freshness_intake" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "scheduler_operations" for item in readiness_payload["artifacts"]))
         self.assertIn("source_refresh", readiness_payload["phone_links"])
+        self.assertIn("source_freshness_intake", readiness_payload["phone_links"])
         self.assertIn("scheduler", readiness_payload["phone_links"])
         self.assertIn("trace", readiness_payload["phone_links"])
         self.assertIn("run_ledger", readiness_payload["phone_links"])
@@ -1289,6 +1321,13 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn(source_refresh_brief_payload["status"], {"local_ready", "approval_required", "preflight_required", "ready_to_execute", "executed", "blocked", "no_refresh_needed"})
         self.assertGreaterEqual(len(source_refresh_brief_payload["source_freshness"]), 1)
         self.assertTrue(any(row["trust_state"] == "sample_or_fallback" for row in source_refresh_brief_payload["source_freshness"]))
+        self.assertEqual(source_freshness_intake_payload["schema_version"], "source_freshness_intake.v1")
+        self.assertEqual(source_freshness_intake_errors, [])
+        self.assertFalse(source_freshness_intake_payload["external_effect_performed"])
+        self.assertFalse(source_freshness_intake_payload["host_write_performed"])
+        self.assertGreaterEqual(source_freshness_intake_payload["summary"]["source_count"], 1)
+        self.assertIn("승인 전 근거 신선도 확인", source_freshness_intake_html)
+        self.assertNotIn("schema_version", source_freshness_intake_html)
         self.assertEqual(pattern_radar_payload["schema_version"], "agent_pattern_radar.v1")
         self.assertEqual(pattern_radar_errors, [])
         self.assertFalse(pattern_radar_payload["external_effect_performed"])
@@ -1365,6 +1404,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(daily_home_payload["phone_links"]["phone_access"], "reports/product/phone-access.html")
         self.assertEqual(daily_home_payload["phone_links"]["memory_query"], "reports/product/memory-query.html")
         self.assertEqual(daily_home_payload["phone_links"]["learning"], "reports/product/learning.html")
+        self.assertEqual(daily_home_payload["phone_links"]["source_freshness_intake"], "reports/product/source-freshness-intake.html")
         self.assertEqual(daily_home_payload["phone_links"]["pattern_dry_run"], "reports/product/pattern-dry-run.html")
         self.assertEqual(daily_home_payload["phone_links"]["trace"], "reports/product/run-trace.html")
         self.assertEqual(daily_home_payload["memory_recall_adoption"]["pattern_candidate_id"], "pattern-memory-recall-quality")
@@ -1379,6 +1419,9 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertGreaterEqual(len(daily_home_payload["trace_observability_adoption"]["what_shaped_today"]), 1)
         self.assertFalse(daily_home_payload["trace_observability_adoption"]["external_effect_performed"])
         self.assertFalse(daily_home_payload["trace_observability_adoption"]["host_write_performed"])
+        self.assertEqual(daily_home_payload["source_freshness_intake_adoption"]["pattern_candidate_id"], "pattern-freshness-intake")
+        self.assertFalse(daily_home_payload["source_freshness_intake_adoption"]["external_effect_performed"])
+        self.assertFalse(daily_home_payload["source_freshness_intake_adoption"]["host_write_performed"])
         inbox = daily_home_payload["operator_action_inbox"]
         self.assertEqual(inbox["pattern_source"], "Hermes/OpenClaw operator handoff")
         self.assertIn(inbox["status"], {"needs_attention", "approval_review"})

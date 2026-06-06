@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Source Freshness Intake</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }
+* { box-sizing:border-box; }
+html,body { max-width:100%; overflow-x:hidden; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:430px; margin:0; padding:14px; }
+a { color:var(--blue); font-weight:900; text-decoration:none; }
+.eyebrow,.card span,.metric span { color:var(--green); font-size:12px; font-weight:900; }
+h1 { margin:8px 0 10px; font-size:31px; line-height:1.12; overflow-wrap:anywhere; }
+h2 { margin:0 0 10px; font-size:19px; }
+p,small,li { color:var(--muted); overflow-wrap:anywhere; }
+.hero,.section,.card,.metric,.decision { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:15px; margin:12px 0; }
+.status { display:block; margin:10px 0; font-size:24px; line-height:1.15; }
+.metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.metric,.card,.decision { padding:12px; background:white; min-width:0; }
+.metric strong { display:block; font-size:24px; }
+.stack { display:grid; grid-template-columns:minmax(0,1fr); gap:9px; }
+code { display:block; white-space:pre-wrap; word-break:break-word; border:1px solid var(--line); border-radius:8px; background:#f1f5f7; padding:10px; color:var(--ink); font-size:13px; }
+.links { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:11px; }
+.boundary { border-left:4px solid var(--green); }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Source Freshness Intake · 2026-06-06 local</span>
+<h1>승인 전 근거 신선도 확인</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">지금 판단</span>
+<strong class="status">approval_packet_ready</strong>
+<p>오늘 brief가 sample/cache 근거에 기대고 있으므로, live 공개 소스 refresh를 승인할지 판단하세요.</p>
+<div class="metrics">
+<article class="metric"><span>Sources</span><strong>3</strong></article>
+<article class="metric"><span>Weak</span><strong>3</strong></article>
+<article class="metric"><span>Blocked live</span><strong>2</strong></article>
+<article class="metric"><span>Preflight</span><strong>blocked</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>Source freshness</h2>
+<div class="stack"><article class='card'><span>sample_or_fallback · sample_cache</span><strong>GDELT</strong><p>학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다.</p><small>gdelt · relevance strong</small></article><article class='card'><span>sample_or_fallback · sample_cache</span><strong>SEC EDGAR</strong><p>학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다.</p><small>sec-edgar · relevance strong</small></article><article class='card'><span>sample_or_fallback · sample_cache</span><strong>Stooq</strong><p>학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다.</p><small>stooq · relevance strong</small></article></div>
+</section>
+<section class="section">
+<h2>승인 전 막힌 후보</h2>
+<div class="stack"><article class='card'><span>live_network_refresh</span><strong>GDELT</strong><p>GDELT 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.</p><small>reports/evidence/live-evidence-catalog.json</small></article><article class='card'><span>live_network_refresh</span><strong>Stooq</strong><p>Stooq 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.</p><small>reports/evidence/live-evidence-catalog.json</small></article></div>
+</section>
+<section class="section decision">
+<h2>복사 가능한 승인 응답</h2>
+<p>이 응답은 승인 기록과 preflight proof를 만들 뿐, 이 intake 화면 자체는 live network를 실행하지 않습니다.</p>
+<code>approve live_network_refresh live_network_refresh</code>
+<h2>적용 명령 preview</h2>
+<code>PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-response &quot;approve live_network_refresh live_network_refresh&quot; --intend-execute --confirm-live-network</code>
+<p>Regenerate source_refresh_apply.v1 before approval if scout, evidence, or source plan changed.</p>
+</section>
+<section class="section">
+<h2>승인 후 생길 증거</h2>
+<ul><li><strong>reports/daily/source-refresh-live-run.json</strong>: 승인 응답이 정확한 scope와 decision id를 통과했는지 기록합니다.</li><li><strong>reports/daily/source-refresh-live-preflight.json</strong>: 실행 의도와 live-network 확인이 모두 있는지 네트워크 없이 점검합니다.</li><li><strong>reports/runtime/source-refresh-brief.json</strong>: 승인/사전점검 상태를 다시 읽어 source refresh 판단을 갱신합니다.</li></ul>
+</section>
+<section class="section">
+<h2>다음 행동</h2>
+<p>필요하면 이 응답을 복사해 local approval proof를 만드세요: approve live_network_refresh live_network_refresh</p>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links"><a href='reports/product/source-refresh.html'>source_refresh</a><a href='reports/product/daily-home.html'>daily_home</a><a href='reports/product/readiness.html'>readiness</a><a href='reports/product/run-trace.html'>trace</a></div>
+</section>
+<section class="section boundary">
+<h2>안전 경계</h2>
+<p>이 화면은 기존 로컬 artifact만 읽습니다. live network, paid API, credential, 알림, host scheduler, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

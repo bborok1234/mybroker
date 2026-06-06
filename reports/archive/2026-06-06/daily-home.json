@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T01:45:39.373905+00:00",
+  "generated_at": "2026-06-06T02:05:18.801795+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -19,12 +19,15 @@
     "learning_status": "review",
     "learning_concept_count": 4,
     "learning_question_count": 8,
+    "source_freshness_intake_status": "approval_packet_ready",
+    "source_freshness_blocked_live_count": 2,
+    "source_freshness_weak_count": 3,
     "trace_status": "ready",
-    "trace_fresh_count": 22,
+    "trace_fresh_count": 23,
     "trace_weak_spot_count": 0,
     "pattern_scout_candidate": "pattern-freshness-intake",
     "pattern_scout_proof_status": "passed",
-    "action_item_count": 7
+    "action_item_count": 8
   },
   "daily_route": [
     {
@@ -61,6 +64,14 @@
     },
     {
       "step": 5,
+      "label": "근거 신선도 승인 전 점검",
+      "title": "source freshness intake",
+      "why": "sample/cache 근거와 blocked live refresh 후보를 한 화면에서 보고, 승인 범위를 복사 전에 확인합니다.",
+      "href": "reports/product/source-freshness-intake.html",
+      "status": "approval_packet_ready"
+    },
+    {
+      "step": 6,
       "label": "오늘 결과 영향 경로 확인",
       "title": "run trace",
       "why": "오늘 scout, 근거, memory, review, pattern gate 중 무엇이 결과를 만들었는지 compact trace로 확인합니다.",
@@ -68,7 +79,7 @@
       "status": "ready"
     },
     {
-      "step": 6,
+      "step": 7,
       "label": "운영 상태 확인",
       "title": "morning control",
       "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -76,7 +87,7 @@
       "status": "operator_review"
     },
     {
-      "step": 7,
+      "step": 8,
       "label": "신뢰도 확인",
       "title": "readiness",
       "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -84,7 +95,7 @@
       "status": "ready"
     },
     {
-      "step": 8,
+      "step": 9,
       "label": "전날 맥락 닫기",
       "title": "handoff",
       "why": "남은 항목 4개를 보고 필요한 응답을 복사합니다.",
@@ -92,7 +103,7 @@
       "status": "review"
     },
     {
-      "step": 9,
+      "step": 10,
       "label": "응답 반영 확인",
       "title": "handoff apply proof",
       "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -100,7 +111,7 @@
       "status": "applied"
     },
     {
-      "step": 10,
+      "step": 11,
       "label": "기억 품질 확인",
       "title": "memory audit",
       "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -108,7 +119,7 @@
       "status": "ready"
     },
     {
-      "step": 11,
+      "step": 12,
       "label": "새 작업 방식 증거 확인",
       "title": "pattern dry-run proof",
       "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -303,8 +314,8 @@
     "proof_status": "passed",
     "status": "ready",
     "run_id": "daily-research",
-    "step_count": 22,
-    "fresh_count": 22,
+    "step_count": 23,
+    "fresh_count": 23,
     "missing_required_count": 0,
     "stale_count": 0,
     "external_effect_flag_count": 0,
@@ -321,7 +332,7 @@
       },
       {
         "label": "누적 실행",
-        "value": "61회",
+        "value": "62회",
         "source": "topic_memory"
       },
       {
@@ -347,6 +358,19 @@
       "daily_review"
     ],
     "surface": "reports/product/run-trace.html",
+    "external_effect_performed": false,
+    "host_write_performed": false
+  },
+  "source_freshness_intake_adoption": {
+    "pattern_candidate_id": "pattern-freshness-intake",
+    "status": "approval_packet_ready",
+    "source_count": 3,
+    "stale_or_sample_source_count": 3,
+    "blocked_live_candidate_count": 2,
+    "approval_scope": "live_network_refresh",
+    "copy_ready_response": "approve live_network_refresh live_network_refresh",
+    "next_action": "필요하면 이 응답을 복사해 local approval proof를 만드세요: approve live_network_refresh live_network_refresh",
+    "surface": "reports/product/source-freshness-intake.html",
     "external_effect_performed": false,
     "host_write_performed": false
   },
@@ -405,9 +429,10 @@
       "study_closure_count": 4,
       "pattern_scout_count": 1,
       "pattern_scout_proof_ready_count": 1,
+      "source_freshness_intake_count": 1,
       "carried_task_count": 0,
       "ready_task_count": 0,
-      "priority_item_count": 7
+      "priority_item_count": 8
     },
     "priority_items": [
       {
@@ -432,6 +457,19 @@
         "status": "requires_separate_approval",
         "href": "reports/product/morning.html",
         "copy_ready_command": "rerun preflight after exact approval and confirmation",
+        "requires_separate_approval": true,
+        "external_effect_performed": false,
+        "host_write_performed": false
+      },
+      {
+        "kind": "source_freshness_intake",
+        "id": "source-freshness-intake",
+        "title": "승인 전 근거 신선도 확인",
+        "why": "필요하면 이 응답을 복사해 local approval proof를 만드세요: approve live_network_refresh live_network_refresh",
+        "source": "source_freshness_intake",
+        "status": "approval_packet_ready",
+        "href": "reports/product/source-freshness-intake.html",
+        "copy_ready_command": "approve live_network_refresh live_network_refresh",
         "requires_separate_approval": true,
         "external_effect_performed": false,
         "host_write_performed": false
@@ -509,7 +547,8 @@
       "handoff_apply": "reports/product/handoff-response-apply.html",
       "task_ledger": "reports/product/task-ledger.html",
       "pattern_radar": "reports/product/pattern-radar.html",
-      "pattern_dry_run": "reports/product/pattern-dry-run.html"
+      "pattern_dry_run": "reports/product/pattern-dry-run.html",
+      "source_freshness_intake": "reports/product/source-freshness-intake.html"
     },
     "external_effect_performed": false,
     "host_write_performed": false
@@ -565,6 +604,7 @@
     "memory_query": "reports/product/memory-query.html",
     "memory_audit": "reports/product/memory-audit.html",
     "learning": "reports/product/learning.html",
+    "source_freshness_intake": "reports/product/source-freshness-intake.html",
     "pattern_radar": "reports/product/pattern-radar.html",
     "pattern_dry_run": "reports/product/pattern-dry-run.html",
     "trace": "reports/product/run-trace.html",
@@ -593,7 +633,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T01:45:39.055630+00:00"
+      "generated_at": "2026-06-06T02:05:18.622075+00:00"
     },
     {
       "name": "agenda",
@@ -601,7 +641,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T01:45:39.061847+00:00"
+      "generated_at": "2026-06-06T02:05:18.633816+00:00"
     },
     {
       "name": "morning",
@@ -609,7 +649,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-06T01:45:39.252992+00:00"
+      "generated_at": "2026-06-06T02:05:18.743438+00:00"
     },
     {
       "name": "readiness",
@@ -617,7 +657,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:45:39.368484+00:00"
+      "generated_at": "2026-06-06T02:05:18.795089+00:00"
     },
     {
       "name": "handoff",
@@ -625,7 +665,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-06T01:45:39.295790+00:00"
+      "generated_at": "2026-06-06T02:05:18.767579+00:00"
     },
     {
       "name": "handoff_apply",
@@ -641,7 +681,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:45:39.291033+00:00"
+      "generated_at": "2026-06-06T02:05:18.766184+00:00"
     },
     {
       "name": "run_trace",
@@ -649,7 +689,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:45:39.232853+00:00"
+      "generated_at": "2026-06-06T02:05:18.724275+00:00"
     },
     {
       "name": "task_ledger",
@@ -657,7 +697,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T01:45:39.189772+00:00"
+      "generated_at": "2026-06-06T02:05:18.701289+00:00"
     },
     {
       "name": "scheduler",
@@ -665,7 +705,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-06T01:45:39.230656+00:00"
+      "generated_at": "2026-06-06T02:05:18.716581+00:00"
     },
     {
       "name": "phone_access",
@@ -673,7 +713,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T01:45:39.049843+00:00"
+      "generated_at": "2026-06-06T02:05:18.615338+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -681,7 +721,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:45:39.365633+00:00"
+      "generated_at": "2026-06-06T02:05:18.790376+00:00"
     },
     {
       "name": "notification",
@@ -689,7 +729,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-06T01:45:39.200095+00:00"
+      "generated_at": "2026-06-06T02:05:18.705677+00:00"
     },
     {
       "name": "memory_query",
@@ -697,7 +737,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-06T01:45:39.178682+00:00"
+      "generated_at": "2026-06-06T02:05:18.693318+00:00"
     },
     {
       "name": "memory_audit",
@@ -705,7 +745,7 @@
       "exists": true,
       "schema_version": "personal_memory_audit.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:45:39.167849+00:00"
+      "generated_at": "2026-06-06T02:05:18.691736+00:00"
     },
     {
       "name": "learning_ledger",
@@ -713,7 +753,15 @@
       "exists": true,
       "schema_version": "personal_learning_ledger.v1",
       "status": "review",
-      "generated_at": "2026-06-06T01:45:39.182531+00:00"
+      "generated_at": "2026-06-06T02:05:18.698101+00:00"
+    },
+    {
+      "name": "source_freshness_intake",
+      "path": "reports/runtime/source-freshness-intake.json",
+      "exists": true,
+      "schema_version": "source_freshness_intake.v1",
+      "status": "approval_packet_ready",
+      "generated_at": "2026-06-06T02:05:18.630963+00:00"
     },
     {
       "name": "pattern_radar",
@@ -721,7 +769,7 @@
       "exists": true,
       "schema_version": "agent_pattern_radar.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:45:39.050117+00:00"
+      "generated_at": "2026-06-06T02:05:18.615986+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -729,7 +777,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-06T01:45:39.240644+00:00"
+      "generated_at": "2026-06-06T02:05:18.734127+00:00"
     }
   ],
   "external_effect_performed": false,
