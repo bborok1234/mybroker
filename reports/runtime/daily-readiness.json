@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-06T00:54:38.626379+00:00",
+  "generated_at": "2026-06-06T01:24:07.715493+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -19,7 +19,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.623797+00:00",
+      "generated_at": "2026-06-06T01:24:07.712642+00:00",
       "schema_version": "daily_operator_home.v1"
     },
     {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.625533+00:00",
+      "generated_at": "2026-06-06T01:24:07.714446+00:00",
       "schema_version": "phone_access_verify.v1"
     },
     {
@@ -85,7 +85,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.551392+00:00",
+      "generated_at": "2026-06-06T01:24:07.664089+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -96,7 +96,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.550601+00:00",
+      "generated_at": "2026-06-06T01:24:07.663008+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -118,7 +118,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.610852+00:00",
+      "generated_at": "2026-06-06T01:24:07.700644+00:00",
       "schema_version": "pattern_dry_run_proof.v1"
     },
     {
@@ -140,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.612950+00:00",
+      "generated_at": "2026-06-06T01:24:07.702849+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -162,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.606764+00:00",
+      "generated_at": "2026-06-06T01:24:07.697418+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
@@ -184,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.618632+00:00",
+      "generated_at": "2026-06-06T01:24:07.708021+00:00",
       "schema_version": "daily_run_ledger.v1"
     },
     {
@@ -206,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.619828+00:00",
+      "generated_at": "2026-06-06T01:24:07.708877+00:00",
       "schema_version": "daily_handoff.v1"
     },
     {
@@ -227,7 +227,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 4.27,
+      "age_hours": 4.77,
       "generated_at": "2026-06-05T20:38:09.499318+00:00",
       "schema_version": "operator_handoff_response_apply.v1"
     },
@@ -238,7 +238,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 4.18,
+      "age_hours": 4.68,
       "generated_at": "",
       "schema_version": ""
     },
@@ -250,7 +250,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.616899+00:00",
+      "generated_at": "2026-06-06T01:24:07.706077+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
@@ -272,7 +272,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.617838+00:00",
+      "generated_at": "2026-06-06T01:24:07.706990+00:00",
       "schema_version": "operator_review_prompt.v1"
     },
     {
@@ -294,7 +294,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.618379+00:00",
+      "generated_at": "2026-06-06T01:24:07.707406+00:00",
       "schema_version": "operator_review_effect.v1"
     },
     {
@@ -316,7 +316,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.593370+00:00",
+      "generated_at": "2026-06-06T01:24:07.684998+00:00",
       "schema_version": "analyst_council.v1"
     },
     {
@@ -338,7 +338,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.548563+00:00",
+      "generated_at": "2026-06-06T01:24:07.660012+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -349,7 +349,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.546948+00:00",
+      "generated_at": "2026-06-06T01:24:07.658737+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -360,7 +360,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.547358+00:00",
+      "generated_at": "2026-06-06T01:24:07.659109+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -371,7 +371,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.553307+00:00",
+      "generated_at": "2026-06-06T01:24:07.665332+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -382,7 +382,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.553307+00:00",
+      "generated_at": "2026-06-06T01:24:07.665332+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -393,7 +393,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.572591+00:00",
+      "generated_at": "2026-06-06T01:24:07.675266+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -403,7 +403,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 17.41,
+      "age_hours": 17.91,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -415,7 +415,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.604288+00:00",
+      "generated_at": "2026-06-06T01:24:07.694293+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -426,7 +426,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.604971+00:00",
+      "generated_at": "2026-06-06T01:24:07.694754+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -447,7 +447,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 6.89,
+      "age_hours": 7.39,
       "generated_at": "",
       "schema_version": ""
     },
@@ -470,7 +470,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.591622+00:00",
+      "generated_at": "2026-06-06T01:24:07.683413+00:00",
       "schema_version": "personal_memory_query.v1"
     },
     {
@@ -492,7 +492,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T00:54:38.591023+00:00",
+      "generated_at": "2026-06-06T01:24:07.682676+00:00",
       "schema_version": "personal_memory_audit.v1"
     },
     {

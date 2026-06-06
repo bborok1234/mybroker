@@ -239,7 +239,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/runtime/scheduler-activation-verify.json`: post-activation proof for loaded state, installed plist, strict doctor, and fresh artifacts;
 - `reports/runtime/scheduler-operations.json` and `reports/product/scheduler.html`: phone-readable scheduler operations summary that separates assets ready, local run-once proof, activation preflight, activation verification, and host-write approval;
 - `reports/runtime/daily-readiness.json` and `reports/product/readiness.html`: freshness/readiness proof for phone surfaces, required machine artifacts, scheduler status, and next local run action;
-- `reports/runtime/daily-home.json` and `reports/product/daily-home.html`: the phone-first daily operating home that links today's reading order, readiness, handoff, scheduler/access state, memory audit, and safe local responses;
+- `reports/runtime/daily-home.json` and `reports/product/daily-home.html`: the phone-first daily operating home that links today's reading order, readiness, handoff, scheduler/access state, memory audit, current pattern scout, and safe local responses;
 - `reports/vault/compile.json` and `reports/product/vault.html`: deterministic local compile proof and phone-readable vault note list when `research-vault/raw` exists;
 - `reports/product/today.html`: a mobile-first `/today` surface for the phone;
 - `reports/daily/scout.json`: local scout recommendations for what to inspect first;

@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T00:54:38.629205+00:00",
+  "generated_at": "2026-06-06T01:24:07.718495+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -19,7 +19,9 @@
     "trace_status": "ready",
     "trace_fresh_count": 21,
     "trace_weak_spot_count": 0,
-    "action_item_count": 6
+    "pattern_scout_candidate": "pattern-freshness-intake",
+    "pattern_scout_proof_status": "passed",
+    "action_item_count": 7
   },
   "daily_route": [
     {
@@ -308,7 +310,7 @@
       },
       {
         "label": "누적 실행",
-        "value": "59회",
+        "value": "60회",
         "source": "topic_memory"
       },
       {
@@ -337,6 +339,52 @@
     "external_effect_performed": false,
     "host_write_performed": false
   },
+  "pattern_scout_adoption": {
+    "pattern_candidate_id": "pattern-freshness-intake",
+    "proof_status": "passed",
+    "status": "ready",
+    "title": "pattern freshness intake before new runtime authority",
+    "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
+    "why_now": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+    "approval_scope": "local_dry_run_only",
+    "operator_decision_needed": false,
+    "done_when": [
+      "agent_pattern_radar.v1 validates",
+      "pattern-radar phone surface shows the recommended next local experiment",
+      "deferred and rejected patterns remain explicit",
+      "external_effect_performed and host_write_performed remain false"
+    ],
+    "deferred_watchlist": [
+      {
+        "source": "Browser-use / Playwright / Firecrawl",
+        "why_watch": "They can improve source freshness, but they also widen the authority and source-quality surface.",
+        "blocked_by": "only move through source-refresh approval, preflight, cached output, and validation before it influences the daily brief",
+        "decision": "defer"
+      },
+      {
+        "source": "TaskWeaver",
+        "why_watch": "Code-first analytics could improve scenario simulation, but it should not precede memory quality, source quality, and clear user surfaces.",
+        "blocked_by": "only run generated analysis in a sandbox with deterministic inputs, saved outputs, and validation",
+        "decision": "defer"
+      }
+    ],
+    "rejected_boundary": [
+      {
+        "source": "Hosted trading bots and broker-connected agents",
+        "why_rejected": "This violates the current local research-only objective.",
+        "boundary": "no brokerage credentials, no live trading, no discretionary management"
+      },
+      {
+        "source": "Farol-style exchange-connected bots",
+        "why_rejected": "This is outside the current personal learning and research appliance boundary.",
+        "boundary": "no exchange credentials, no account connection, no live orders, no autonomous execution"
+      }
+    ],
+    "surface": "reports/product/pattern-radar.html",
+    "proof_surface": "reports/product/pattern-dry-run.html",
+    "external_effect_performed": false,
+    "host_write_performed": false
+  },
   "operator_action_inbox": {
     "pattern_source": "Hermes/OpenClaw operator handoff",
     "status": "approval_review",
@@ -344,9 +392,11 @@
       "pending_decision_count": 2,
       "unresolved_handoff_count": 4,
       "study_closure_count": 4,
+      "pattern_scout_count": 1,
+      "pattern_scout_proof_ready_count": 1,
       "carried_task_count": 0,
       "ready_task_count": 0,
-      "priority_item_count": 6
+      "priority_item_count": 7
     },
     "priority_items": [
       {
@@ -372,6 +422,19 @@
         "href": "reports/product/morning.html",
         "copy_ready_command": "rerun preflight after exact approval and confirmation",
         "requires_separate_approval": true,
+        "external_effect_performed": false,
+        "host_write_performed": false
+      },
+      {
+        "kind": "pattern_scout",
+        "id": "pattern-freshness-intake",
+        "title": "pattern freshness intake before new runtime authority",
+        "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+        "source": "pattern_scout",
+        "status": "local_proof_ready",
+        "href": "reports/product/pattern-radar.html",
+        "copy_ready_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
+        "requires_separate_approval": false,
         "external_effect_performed": false,
         "host_write_performed": false
       },
@@ -428,12 +491,14 @@
         "host_write_performed": false
       }
     ],
-    "operator_rule": "action inbox: 먼저 approval gate를 읽되, 실행은 별도 승인 전까지 하지 않습니다. 그 다음 study closure 질문을 읽고 local 응답 한 줄로 내일 루프에 넘깁니다.",
+    "operator_rule": "action inbox: 먼저 approval gate를 읽되, 실행은 별도 승인 전까지 하지 않습니다. 그 다음 pattern scout와 study closure 질문을 읽고 local 응답 한 줄로 내일 루프에 넘깁니다.",
     "phone_links": {
       "morning": "reports/product/morning.html",
       "handoff": "reports/product/handoff.html",
       "handoff_apply": "reports/product/handoff-response-apply.html",
-      "task_ledger": "reports/product/task-ledger.html"
+      "task_ledger": "reports/product/task-ledger.html",
+      "pattern_radar": "reports/product/pattern-radar.html",
+      "pattern_dry_run": "reports/product/pattern-dry-run.html"
     },
     "external_effect_performed": false,
     "host_write_performed": false
@@ -488,6 +553,7 @@
     "memory": "reports/product/memory.html",
     "memory_query": "reports/product/memory-query.html",
     "memory_audit": "reports/product/memory-audit.html",
+    "pattern_radar": "reports/product/pattern-radar.html",
     "pattern_dry_run": "reports/product/pattern-dry-run.html",
     "trace": "reports/product/run-trace.html",
     "tasks": "reports/product/tasks.html",
@@ -515,7 +581,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T00:54:38.548563+00:00"
+      "generated_at": "2026-06-06T01:24:07.660012+00:00"
     },
     {
       "name": "agenda",
@@ -523,7 +589,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T00:54:38.551392+00:00"
+      "generated_at": "2026-06-06T01:24:07.664089+00:00"
     },
     {
       "name": "morning",
@@ -531,7 +597,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-06T00:54:38.612950+00:00"
+      "generated_at": "2026-06-06T01:24:07.702849+00:00"
     },
     {
       "name": "readiness",
@@ -539,7 +605,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T00:54:38.626379+00:00"
+      "generated_at": "2026-06-06T01:24:07.715493+00:00"
     },
     {
       "name": "handoff",
@@ -547,7 +613,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-06T00:54:38.619828+00:00"
+      "generated_at": "2026-06-06T01:24:07.708877+00:00"
     },
     {
       "name": "handoff_apply",
@@ -563,7 +629,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T00:54:38.618632+00:00"
+      "generated_at": "2026-06-06T01:24:07.708021+00:00"
     },
     {
       "name": "run_trace",
@@ -571,7 +637,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T00:54:38.606764+00:00"
+      "generated_at": "2026-06-06T01:24:07.697418+00:00"
     },
     {
       "name": "task_ledger",
@@ -579,7 +645,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T00:54:38.594282+00:00"
+      "generated_at": "2026-06-06T01:24:07.685906+00:00"
     },
     {
       "name": "scheduler",
@@ -587,7 +653,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-06T00:54:38.604971+00:00"
+      "generated_at": "2026-06-06T01:24:07.694754+00:00"
     },
     {
       "name": "phone_access",
@@ -595,7 +661,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T00:54:38.543995+00:00"
+      "generated_at": "2026-06-06T01:24:07.657151+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -603,7 +669,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T00:54:38.625533+00:00"
+      "generated_at": "2026-06-06T01:24:07.714446+00:00"
     },
     {
       "name": "notification",
@@ -611,7 +677,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-06T00:54:38.596908+00:00"
+      "generated_at": "2026-06-06T01:24:07.688882+00:00"
     },
     {
       "name": "memory_query",
@@ -619,7 +685,23 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-06T00:54:38.591622+00:00"
+      "generated_at": "2026-06-06T01:24:07.683413+00:00"
+    },
+    {
+      "name": "memory_audit",
+      "path": "reports/memory/audit.json",
+      "exists": true,
+      "schema_version": "personal_memory_audit.v1",
+      "status": "ready",
+      "generated_at": "2026-06-06T01:24:07.682676+00:00"
+    },
+    {
+      "name": "pattern_radar",
+      "path": "reports/runtime/agent-pattern-radar.json",
+      "exists": true,
+      "schema_version": "agent_pattern_radar.v1",
+      "status": "ready",
+      "generated_at": "2026-06-06T01:24:07.657356+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -627,7 +709,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-06T00:54:38.610852+00:00"
+      "generated_at": "2026-06-06T01:24:07.700644+00:00"
     }
   ],
   "external_effect_performed": false,

@@ -7669,6 +7669,8 @@ def _daily_home_action_inbox(
     morning: dict[str, Any],
     handoff: dict[str, Any],
     task_ledger: dict[str, Any],
+    pattern_radar: dict[str, Any],
+    pattern_proof: dict[str, Any],
     links: dict[str, str],
 ) -> dict[str, Any]:
     pending_decisions = morning.get("pending_decisions", [])
@@ -7690,6 +7692,30 @@ def _daily_home_action_inbox(
             "href": links.get("morning", ""),
             "copy_ready_command": decision.get("copy_ready_response", ""),
             "requires_separate_approval": True,
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+
+    scout = pattern_radar.get("pattern_scout", {}) if pattern_radar.get("schema_version") == AGENT_PATTERN_RADAR_SCHEMA_VERSION else {}
+    recommended = scout.get("recommended_next", {})
+    scout_proof = next(
+        (
+            row for row in pattern_proof.get("candidate_results", [])
+            if row.get("candidate_id") == recommended.get("candidate_id")
+        ),
+        {},
+    )
+    if recommended and scout_proof.get("proof_status") == "passed":
+        priority_items.append({
+            "kind": "pattern_scout",
+            "id": recommended.get("candidate_id", "pattern-scout"),
+            "title": recommended.get("title", "다음 local-only 방식 실험"),
+            "why": recommended.get("why_now", ""),
+            "source": "pattern_scout",
+            "status": "local_proof_ready",
+            "href": links.get("pattern_radar", ""),
+            "copy_ready_command": recommended.get("proof_command", ""),
+            "requires_separate_approval": bool(recommended.get("operator_decision_needed", True)),
             "external_effect_performed": False,
             "host_write_performed": False,
         })
@@ -7752,7 +7778,7 @@ def _daily_home_action_inbox(
     status = "clear"
     if pending_decisions:
         status = "approval_review"
-    elif unresolved or study_items or carried_tasks or ready_tasks:
+    elif unresolved or study_items or carried_tasks or ready_tasks or recommended:
         status = "needs_attention"
 
     return {
@@ -7762,17 +7788,21 @@ def _daily_home_action_inbox(
             "pending_decision_count": len(pending_decisions),
             "unresolved_handoff_count": len(unresolved),
             "study_closure_count": len(study_items),
+            "pattern_scout_count": 1 if recommended else 0,
+            "pattern_scout_proof_ready_count": 1 if scout_proof.get("proof_status") == "passed" else 0,
             "carried_task_count": len(carried_tasks),
             "ready_task_count": len(ready_tasks),
             "priority_item_count": len(priority_items),
         },
         "priority_items": priority_items[:8],
-        "operator_rule": "action inbox: 먼저 approval gate를 읽되, 실행은 별도 승인 전까지 하지 않습니다. 그 다음 study closure 질문을 읽고 local 응답 한 줄로 내일 루프에 넘깁니다.",
+        "operator_rule": "action inbox: 먼저 approval gate를 읽되, 실행은 별도 승인 전까지 하지 않습니다. 그 다음 pattern scout와 study closure 질문을 읽고 local 응답 한 줄로 내일 루프에 넘깁니다.",
         "phone_links": {
             "morning": links.get("morning", ""),
             "handoff": links.get("handoff", ""),
             "handoff_apply": links.get("handoff_apply", ""),
             "task_ledger": links.get("task_ledger", ""),
+            "pattern_radar": links.get("pattern_radar", ""),
+            "pattern_dry_run": links.get("pattern_dry_run", ""),
         },
         "external_effect_performed": False,
         "host_write_performed": False,
@@ -7797,6 +7827,7 @@ def build_daily_operator_home(
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     memory_query_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
     pattern_dry_run_proof_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
@@ -7816,6 +7847,7 @@ def build_daily_operator_home(
     notification = _load_optional_json(notification_path)
     memory_query = _load_optional_json(memory_query_path)
     memory_audit = _load_optional_json(memory_audit_path)
+    pattern_radar = _load_optional_json(pattern_radar_path)
     pattern_proof = _load_optional_json(pattern_dry_run_proof_path)
     read_first = morning.get("read_first", {})
     scout_topic = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
@@ -7854,6 +7886,15 @@ def build_daily_operator_home(
         ),
         {},
     )
+    pattern_scout = pattern_radar.get("pattern_scout", {}) if pattern_radar.get("schema_version") == AGENT_PATTERN_RADAR_SCHEMA_VERSION else {}
+    pattern_recommended = pattern_scout.get("recommended_next", {})
+    pattern_scout_proof = next(
+        (
+            row for row in pattern_proof.get("candidate_results", [])
+            if row.get("candidate_id") == pattern_recommended.get("candidate_id")
+        ),
+        {},
+    )
     trace_summary = run_trace.get("summary", {}) if run_trace.get("schema_version") == RUN_TRACE_SCHEMA_VERSION else {}
     if required_missing or morning.get("status") == "blocked" or readiness.get("status") == "blocked":
         status = "blocked"
@@ -7874,6 +7915,7 @@ def build_daily_operator_home(
         "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
         "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
         "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
+        "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
         "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
         "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
         "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
@@ -7966,7 +8008,14 @@ def build_daily_operator_home(
         },
     ]
     payloads = {"morning": morning, "handoff": handoff}
-    action_inbox = _daily_home_action_inbox(morning=morning, handoff=handoff, task_ledger=task_ledger, links=links)
+    action_inbox = _daily_home_action_inbox(
+        morning=morning,
+        handoff=handoff,
+        task_ledger=task_ledger,
+        pattern_radar=pattern_radar,
+        pattern_proof=pattern_proof,
+        links=links,
+    )
     payload = {
         "schema_version": DAILY_OPERATOR_HOME_SCHEMA_VERSION,
         "generated_at": generated.isoformat(),
@@ -7988,6 +8037,8 @@ def build_daily_operator_home(
             "trace_status": run_trace.get("status", "missing"),
             "trace_fresh_count": trace_summary.get("fresh_count", 0),
             "trace_weak_spot_count": len(run_trace.get("weak_spots", [])),
+            "pattern_scout_candidate": pattern_recommended.get("candidate_id", "missing"),
+            "pattern_scout_proof_status": pattern_scout_proof.get("proof_status", "missing"),
             "action_item_count": action_inbox.get("summary", {}).get("priority_item_count", 0),
         },
         "daily_route": daily_route,
@@ -8043,6 +8094,23 @@ def build_daily_operator_home(
             "external_effect_performed": False,
             "host_write_performed": False,
         },
+        "pattern_scout_adoption": {
+            "pattern_candidate_id": pattern_recommended.get("candidate_id", "missing"),
+            "proof_status": pattern_scout_proof.get("proof_status", "missing"),
+            "status": pattern_scout.get("status", "missing"),
+            "title": pattern_recommended.get("title", "다음 local-only 방식 실험 없음"),
+            "source": pattern_recommended.get("source", ""),
+            "why_now": pattern_recommended.get("why_now", ""),
+            "approval_scope": pattern_recommended.get("approval_scope", ""),
+            "operator_decision_needed": bool(pattern_recommended.get("operator_decision_needed", True)),
+            "done_when": pattern_recommended.get("done_when", [])[:5],
+            "deferred_watchlist": pattern_scout.get("deferred_watchlist", [])[:4],
+            "rejected_boundary": pattern_scout.get("rejected_boundary", [])[:4],
+            "surface": links["pattern_radar"],
+            "proof_surface": links["pattern_dry_run"],
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        },
         "operator_action_inbox": action_inbox,
         "copy_ready_commands": _daily_home_commands(payloads=payloads),
         "phone_links": links,
@@ -8072,6 +8140,8 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="phone_access_verify", path=phone_access_verify_path, payload=phone_access_verify),
             _daily_home_artifact_status(name="notification", path=notification_path, payload=notification),
             _daily_home_artifact_status(name="memory_query", path=memory_query_path, payload=memory_query),
+            _daily_home_artifact_status(name="memory_audit", path=memory_audit_path, payload=memory_audit),
+            _daily_home_artifact_status(name="pattern_radar", path=pattern_radar_path, payload=pattern_radar),
             _daily_home_artifact_status(name="pattern_dry_run_proof", path=pattern_dry_run_proof_path, payload=pattern_proof),
         ],
         "external_effect_performed": False,
@@ -8145,6 +8215,16 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("trace_observability_adoption.status must be ready, review, blocked, or missing")
     if trace.get("step_count", 0) and not trace.get("what_shaped_today"):
         errors.append("trace_observability_adoption.what_shaped_today must not be empty when trace exists")
+    pattern = payload.get("pattern_scout_adoption", {})
+    for field in ["pattern_candidate_id", "proof_status", "status", "title", "why_now", "approval_scope", "done_when", "surface", "proof_surface", "external_effect_performed", "host_write_performed"]:
+        if field not in pattern:
+            errors.append(f"pattern_scout_adoption missing {field}")
+    if pattern.get("external_effect_performed") is not False:
+        errors.append("pattern_scout_adoption.external_effect_performed must be false")
+    if pattern.get("host_write_performed") is not False:
+        errors.append("pattern_scout_adoption.host_write_performed must be false")
+    if pattern.get("operator_decision_needed") is not False and pattern.get("approval_scope") == "local_dry_run_only":
+        errors.append("local pattern scout must not require operator approval")
     inbox = payload.get("operator_action_inbox", {})
     for field in ["pattern_source", "status", "summary", "priority_items", "operator_rule", "external_effect_performed", "host_write_performed"]:
         if field not in inbox:
@@ -8163,7 +8243,7 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(f"operator_action_inbox.priority_items[{index}] external_effect_performed must be false")
         if item.get("host_write_performed") is not False:
             errors.append(f"operator_action_inbox.priority_items[{index}] host_write_performed must be false")
-    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "memory_query", "trace"]:
+    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
     if "daily_home_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
@@ -8193,6 +8273,7 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
     autonomous = payload.get("autonomous_scout", {})
     recall = payload.get("memory_recall_adoption", {})
     trace = payload.get("trace_observability_adoption", {})
+    pattern = payload.get("pattern_scout_adoption", {})
     inbox = payload.get("operator_action_inbox", {})
     status_label = {
         "ready": "오늘 읽기 준비됨",
@@ -8261,6 +8342,21 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
     ) or "<li>아직 오늘 결과를 만든 trace influence가 없습니다.</li>"
     trace_weak_items = "".join(f"<li>{esc(item)}</li>" for item in trace.get("weak_spots", [])) or "<li>trace에서 즉시 막힌 약점은 없습니다.</li>"
     trace_debug_items = "".join(f"<li>{esc(item)}</li>" for item in trace.get("debug_order", [])) or "<li>debug 순서가 아직 없습니다.</li>"
+    pattern_done_items = "".join(f"<li>{esc(item)}</li>" for item in pattern.get("done_when", [])) or "<li>아직 done-when 기준이 없습니다.</li>"
+    pattern_watch_items = "".join(
+        "<li>"
+        f"<strong>{esc(item.get('source', 'watch'))}</strong>: {esc(item.get('why_watch', ''))}"
+        f"<span> · {esc(item.get('blocked_by', ''))}</span>"
+        "</li>"
+        for item in pattern.get("deferred_watchlist", [])
+    ) or "<li>오늘 보류 중인 새 방식은 없습니다.</li>"
+    pattern_boundary_items = "".join(
+        "<li>"
+        f"<strong>{esc(item.get('source', 'boundary'))}</strong>: {esc(item.get('why_rejected', ''))}"
+        f"<span> · {esc(item.get('boundary', ''))}</span>"
+        "</li>"
+        for item in pattern.get("rejected_boundary", [])
+    ) or "<li>오늘 새로 확인할 거부 경계는 없습니다.</li>"
     artifact_rows = "".join(
         "<tr>"
         f"<td><strong>{esc(item.get('name', ''))}</strong><span>{esc(item.get('path', ''))}</span></td>"
@@ -8329,10 +8425,11 @@ td strong,td span {{ display:block; }}
 <p><strong>{esc(inbox.get('status', 'missing'))}</strong></p>
 <p>{esc(inbox.get('operator_rule', '오늘 action inbox를 아직 만들 수 없습니다.'))}</p>
 <div class="metrics">
-<article class="metric"><span>Approvals</span><strong>{esc(inbox_summary.get('pending_decision_count', 0))}</strong></article>
-<article class="metric"><span>Study</span><strong>{esc(inbox_summary.get('study_closure_count', 0))}</strong></article>
-<article class="metric"><span>Handoff</span><strong>{esc(inbox_summary.get('unresolved_handoff_count', 0))}</strong></article>
-<article class="metric"><span>Carried</span><strong>{esc(inbox_summary.get('carried_task_count', 0))}</strong></article>
+	<article class="metric"><span>Approvals</span><strong>{esc(inbox_summary.get('pending_decision_count', 0))}</strong></article>
+	<article class="metric"><span>Pattern</span><strong>{esc(inbox_summary.get('pattern_scout_count', 0))}</strong></article>
+	<article class="metric"><span>Study</span><strong>{esc(inbox_summary.get('study_closure_count', 0))}</strong></article>
+	<article class="metric"><span>Handoff</span><strong>{esc(inbox_summary.get('unresolved_handoff_count', 0))}</strong></article>
+	<article class="metric"><span>Carried</span><strong>{esc(inbox_summary.get('carried_task_count', 0))}</strong></article>
 <article class="metric"><span>Ready</span><strong>{esc(inbox_summary.get('ready_task_count', 0))}</strong></article>
 </div>
 <div class="commands">{inbox_cards}</div>
@@ -8377,10 +8474,28 @@ td strong,td span {{ display:block; }}
 <h2>약한 부분</h2>
 <ul>{trace_weak_items}</ul>
 <h2>문제 확인 순서</h2>
-<ul>{trace_debug_items}</ul>
-</section>
-<section class="section">
-<h2>오늘 볼 순서</h2>
+	<ul>{trace_debug_items}</ul>
+	</section>
+	<section class="section">
+	<h2>오늘의 방식 Scout</h2>
+	<p><strong>{esc(pattern.get('title', '다음 local-only 방식 실험 없음'))}</strong></p>
+	<p>{esc(pattern.get('why_now', ''))}</p>
+	<div class="metrics">
+	<article class="metric"><span>Proof</span><strong>{esc(pattern.get('proof_status', 'missing'))}</strong></article>
+	<article class="metric"><span>Scope</span><strong>{esc(pattern.get('approval_scope', ''))}</strong></article>
+	<article class="metric"><span>Decision</span><strong>{esc('필요' if pattern.get('operator_decision_needed') else '불필요')}</strong></article>
+	<article class="metric"><span>Watch</span><strong>{esc(len(pattern.get('deferred_watchlist', [])))}</strong></article>
+	</div>
+	<p><a href="{esc(_relative_href(Path(pattern.get('surface', 'reports/product/pattern-radar.html'))))}">pattern radar 열기</a> · <a href="{esc(_relative_href(Path(pattern.get('proof_surface', 'reports/product/pattern-dry-run.html'))))}">dry-run proof 열기</a></p>
+	<h2>Done when</h2>
+	<ul>{pattern_done_items}</ul>
+	<h2>보류 중인 방식</h2>
+	<ul>{pattern_watch_items}</ul>
+	<h2>넘지 않을 경계</h2>
+	<ul>{pattern_boundary_items}</ul>
+	</section>
+	<section class="section">
+	<h2>오늘 볼 순서</h2>
 <div class="route-grid">{route_cards}</div>
 </section>
 <section class="section">
