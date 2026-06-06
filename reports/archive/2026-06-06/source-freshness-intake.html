@@ -12,6 +12,7 @@ body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-s
 main { width:100%; max-width:430px; margin:0; padding:14px; }
 a { color:var(--blue); font-weight:900; text-decoration:none; }
 .eyebrow,.card span,.metric span { color:var(--green); font-size:12px; font-weight:900; }
+.card span { display:block; overflow-wrap:anywhere; }
 h1 { margin:8px 0 10px; font-size:31px; line-height:1.12; overflow-wrap:anywhere; }
 h2 { margin:0 0 10px; font-size:19px; }
 p,small,li { color:var(--muted); overflow-wrap:anywhere; }
@@ -36,7 +37,7 @@ code { display:block; white-space:pre-wrap; word-break:break-word; border:1px so
 </header>
 <section class="hero">
 <span class="eyebrow">지금 판단</span>
-<strong class="status">approval_packet_ready</strong>
+<strong class="status">승인 검토 가능</strong>
 <p>오늘 brief가 sample/cache 근거에 기대고 있으므로, live 공개 소스 refresh를 승인할지 판단하세요.</p>
 <div class="metrics">
 <article class="metric"><span>Sources</span><strong>3</strong></article>

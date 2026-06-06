@@ -32,6 +32,7 @@ DAILY_BRIEF_AGENDA_SCHEMA_VERSION = "daily_brief_agenda.v1"
 DAILY_READINESS_SCHEMA_VERSION = "daily_readiness.v1"
 SOURCE_REFRESH_BRIEF_SCHEMA_VERSION = "source_refresh_brief.v1"
 SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION = "source_freshness_intake.v1"
+HANDOFF_STUDY_RESOLUTION_SCHEMA_VERSION = "handoff_study_resolution.v1"
 NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
@@ -81,6 +82,8 @@ DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT = Path("reports/runtime/source-refresh-brief
 DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE = Path("reports/product/source-refresh.html")
 DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT = Path("reports/runtime/source-freshness-intake.json")
 DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE = Path("reports/product/source-freshness-intake.html")
+DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT = Path("reports/runtime/handoff-study-resolution.json")
+DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE = Path("reports/product/handoff-study-resolution.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
@@ -2602,6 +2605,8 @@ def build_daily_readiness(
         ("daily_run_ledger_surface", DEFAULT_DAILY_RUN_LEDGER_SURFACE, "phone_surface", False),
         ("daily_handoff", DEFAULT_DAILY_HANDOFF_OUTPUT, "control_artifact", False),
         ("daily_handoff_surface", DEFAULT_DAILY_HANDOFF_SURFACE, "phone_surface", False),
+        ("handoff_study_resolution", DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT, "control_artifact", False),
+        ("handoff_study_resolution_surface", DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE, "phone_surface", False),
         ("handoff_response_apply", DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT, "control_artifact", False),
         ("handoff_response_apply_surface", DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE, "phone_surface", False),
         ("drift_review", DEFAULT_DRIFT_REVIEW_OUTPUT, "control_artifact", False),
@@ -2681,6 +2686,7 @@ def build_daily_readiness(
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
             "handoff": DEFAULT_DAILY_HANDOFF_SURFACE.as_posix(),
+            "handoff_study_resolution": DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE.as_posix(),
             "handoff_apply": DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix(),
             "drift_review": DEFAULT_DRIFT_REVIEW_SURFACE.as_posix(),
             "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
@@ -2782,6 +2788,7 @@ def build_run_trace(
     analyst_council_path: str | Path = DEFAULT_ANALYST_COUNCIL_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
     learning_ledger_path: str | Path = DEFAULT_LEARNING_LEDGER_OUTPUT,
+    handoff_study_resolution_path: str | Path = DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT,
     scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
     generated_at: datetime | None = None,
@@ -2809,6 +2816,7 @@ def build_run_trace(
         ("analyst_council", analyst_council_path, "review", "Checks today's brief through role-specific agreement, disagreement, and beginner-readiness.", False),
         ("memory_audit", memory_audit_path, "memory", "Audits accumulated memory, vault notes, archives, source posture, and review feedback.", False),
         ("learning_ledger", learning_ledger_path, "learn", "Turns today's brief into beginner concepts and carried questions.", True),
+        ("handoff_study_resolution", handoff_study_resolution_path, "learn", "Turns unresolved handoff items into answer candidates, evidence refs, and stop conditions.", False),
         ("scheduler_operations", scheduler_operations_path, "ops", "Shows automation readiness without host writes.", False),
         ("today_surface", today_path, "publish", "Renders the phone-readable daily entry point.", True),
     ]
@@ -2848,6 +2856,7 @@ def build_run_trace(
             "review_effect",
             "analyst_council",
             "memory_audit",
+            "handoff_study_resolution",
         ],
         "phone_links": {
             "today": DEFAULT_TODAY_OUTPUT.as_posix(),
@@ -2864,6 +2873,7 @@ def build_run_trace(
             "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
             "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
             "learning": DEFAULT_LEARNING_LEDGER_SURFACE.as_posix(),
+            "handoff_study_resolution": DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE.as_posix(),
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
@@ -3325,6 +3335,301 @@ def validate_daily_handoff_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_daily_handoff_file(path: str | Path) -> list[str]:
     return validate_daily_handoff_payload(load_json(path))
+
+
+def build_handoff_study_resolution(
+    *,
+    handoff_path: str | Path = DEFAULT_DAILY_HANDOFF_OUTPUT,
+    learning_ledger_path: str | Path = DEFAULT_LEARNING_LEDGER_OUTPUT,
+    memory_query_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
+    memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    source_freshness_intake_path: str | Path = DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT,
+    analyst_council_path: str | Path = DEFAULT_ANALYST_COUNCIL_OUTPUT,
+    review_prompt_path: str | Path = DEFAULT_REVIEW_PROMPT_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    handoff = _load_optional_json(handoff_path)
+    learning = _load_optional_json(learning_ledger_path)
+    memory_query = _load_optional_json(memory_query_path)
+    memory_audit = _load_optional_json(memory_audit_path)
+    freshness = _load_optional_json(source_freshness_intake_path)
+    council = _load_optional_json(analyst_council_path)
+    review_prompt = _load_optional_json(review_prompt_path)
+    items: list[dict[str, Any]] = []
+    study_items = handoff.get("study_closure", {}).get("items", [])
+    freshness_summary = freshness.get("summary", {}) if freshness.get("schema_version") == SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION else {}
+    freshness_blocked = int(freshness_summary.get("blocked_live_candidate_count", 0) or 0)
+    weak_sources = int(freshness_summary.get("stale_or_sample_source_count", 0) or 0)
+    memory_quality = memory_query.get("recall_quality", {}) if memory_query.get("schema_version") == MEMORY_QUERY_SCHEMA_VERSION else {}
+    memory_level = memory_quality.get("level", "missing")
+    memory_summary = memory_quality.get("summary", "로컬 기억 회상 품질을 아직 판단할 수 없습니다.")
+    learning_questions = learning.get("questions", []) if learning.get("schema_version") == LEARNING_LEDGER_SCHEMA_VERSION else []
+    review_cards = review_prompt.get("prompt_cards", []) if review_prompt.get("schema_version") == OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION else []
+    council_decision = council.get("decision", {}) if council.get("schema_version") == ANALYST_COUNCIL_SCHEMA_VERSION else {}
+
+    for index, item in enumerate(study_items, start=1):
+        kind = item.get("kind", "study_closure")
+        blocked_by_freshness = kind in {"follow_up_question", "council_warning"} and freshness_blocked > 0
+        if blocked_by_freshness:
+            status = "blocked_by_source_freshness"
+            confidence = "low"
+            answer = "현재 답변 후보는 sample/cache 근거에 의존합니다. live source refresh 승인이 없으면 방향성 학습용으로만 읽어야 합니다."
+        elif memory_level in {"strong", "usable"}:
+            status = "ready_to_study"
+            confidence = "medium"
+            answer = f"로컬 기억은 {memory_level} 상태입니다. 오늘은 '{item.get('beginner_question', item.get('title', '질문'))}'에 대해 기억/브리프/경고를 연결해 한 문장으로 정리할 수 있습니다."
+        else:
+            status = "needs_operator_response"
+            confidence = "low"
+            answer = f"근거가 아직 얇습니다. 먼저 '{item.get('beginner_question', item.get('title', '질문'))}'에 답이 되는 문장 하나와 모르는 점 하나를 분리해 적으세요."
+        if kind == "council_warning":
+            answer = f"council은 오늘 결론을 바로 믿기보다 '{council_decision.get('operator_action', item.get('title', '주의 항목'))}'를 먼저 확인하라고 요구합니다."
+        elif kind == "memory_warning":
+            answer = f"기억 경고는 결론 문제가 아니라 누적 맥락 문제입니다. {memory_summary}"
+        evidence_refs = [
+            {
+                "label": "handoff",
+                "path": Path(handoff_path).as_posix(),
+                "note": item.get("why_it_matters", ""),
+            },
+            {
+                "label": "memory",
+                "path": Path(memory_query_path).as_posix(),
+                "note": memory_summary,
+            },
+            {
+                "label": "source freshness",
+                "path": Path(source_freshness_intake_path).as_posix(),
+                "note": f"weak={weak_sources}, blocked_live={freshness_blocked}",
+            },
+        ]
+        linked_questions = [
+            question.get("question", question.get("title", ""))
+            for question in learning_questions
+            if question.get("question") or question.get("title")
+        ][:3]
+        if not linked_questions:
+            linked_questions = [
+                card.get("question", card.get("title", ""))
+                for card in review_cards
+                if card.get("question") or card.get("title")
+            ][:3]
+        items.append({
+            "id": f"HSR-{index:03d}",
+            "source_item_id": item.get("source_item_id", item.get("id", "")),
+            "kind": kind,
+            "title": item.get("title", "남은 질문"),
+            "status": status,
+            "confidence": confidence,
+            "beginner_question": item.get("beginner_question", item.get("title", "")),
+            "why_it_matters": item.get("why_it_matters", ""),
+            "answer_candidate": answer,
+            "evidence_refs": evidence_refs,
+            "linked_learning_questions": linked_questions,
+            "done_when": item.get("done_when", "답이 되는 문장 하나와 아직 부족한 근거 하나를 말할 수 있습니다."),
+            "stop_condition": "오늘은 이 질문을 매수/매도 판단으로 바꾸지 않고, 공부용 응답 한 줄만 남기면 충분합니다.",
+            "copy_ready_command": item.get("copy_ready_command", ""),
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+    ready_count = sum(1 for item in items if item["status"] == "ready_to_study")
+    blocked_count = sum(1 for item in items if item["status"] == "blocked_by_source_freshness")
+    response_count = sum(1 for item in items if item.get("copy_ready_command"))
+    status = "clear" if not items else ("blocked_by_source_freshness" if blocked_count == len(items) else "review")
+    return {
+        "schema_version": HANDOFF_STUDY_RESOLUTION_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": status,
+        "run_id": handoff.get("run_id", ""),
+        "summary": {
+            "handoff_unresolved_count": handoff.get("summary", {}).get("unresolved_count", 0),
+            "resolution_item_count": len(items),
+            "ready_to_study_count": ready_count,
+            "blocked_by_source_freshness_count": blocked_count,
+            "copy_ready_response_count": response_count,
+            "memory_recall_quality": memory_level,
+            "weak_source_count": weak_sources,
+        },
+        "operator_rule": "이 화면은 질문을 자동으로 닫지 않습니다. 답변 후보를 읽고, 사람이 복사 가능한 local 응답 한 줄을 실행했을 때만 다음 run에 반영됩니다.",
+        "items": items,
+        "phone_links": {
+            "handoff_study_resolution": DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE.as_posix(),
+            "handoff": DEFAULT_DAILY_HANDOFF_SURFACE.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+            "learning": DEFAULT_LEARNING_LEDGER_SURFACE.as_posix(),
+            "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
+            "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
+            "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
+            "daily_home": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_order_execution",
+            "operator_response_required_to_close",
+        ],
+    }
+
+
+def write_handoff_study_resolution(
+    *,
+    artifact_output_path: str | Path = DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE,
+    **paths: Any,
+) -> Path:
+    payload = build_handoff_study_resolution(**paths)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_handoff_study_resolution(payload), encoding="utf-8")
+    return target
+
+
+def validate_handoff_study_resolution_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != HANDOFF_STUDY_RESOLUTION_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"clear", "review", "blocked_by_source_freshness"}:
+        errors.append("status must be clear, review, or blocked_by_source_freshness")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    summary = payload.get("summary", {})
+    for field in ["handoff_unresolved_count", "resolution_item_count", "ready_to_study_count", "blocked_by_source_freshness_count", "copy_ready_response_count", "memory_recall_quality", "weak_source_count"]:
+        if field not in summary:
+            errors.append(f"summary missing {field}")
+    if summary.get("resolution_item_count", 0) != len(payload.get("items", [])):
+        errors.append("summary.resolution_item_count must match items length")
+    for index, item in enumerate(payload.get("items", [])):
+        for field in ["id", "source_item_id", "kind", "title", "status", "confidence", "beginner_question", "answer_candidate", "evidence_refs", "done_when", "stop_condition", "copy_ready_command", "external_effect_performed", "host_write_performed"]:
+            if field not in item:
+                errors.append(f"items[{index}] missing {field}")
+        if item.get("status") not in {"ready_to_study", "needs_operator_response", "blocked_by_source_freshness"}:
+            errors.append(f"items[{index}].status invalid")
+        if item.get("confidence") not in {"low", "medium", "high"}:
+            errors.append(f"items[{index}].confidence invalid")
+        if item.get("external_effect_performed") is not False:
+            errors.append(f"items[{index}].external_effect_performed must be false")
+        if item.get("host_write_performed") is not False:
+            errors.append(f"items[{index}].host_write_performed must be false")
+        if not item.get("evidence_refs"):
+            errors.append(f"items[{index}].evidence_refs must not be empty")
+    for field in ["handoff_study_resolution", "handoff", "review_prompt", "learning", "memory_query", "source_freshness_intake", "daily_home"]:
+        if not payload.get("phone_links", {}).get(field):
+            errors.append(f"phone_links.{field} must not be empty")
+    for required in ["reads_local_artifacts_only", "operator_response_required_to_close", "does_not_fetch_live_network"]:
+        if required not in payload.get("safety_boundary", []):
+            errors.append(f"safety_boundary must include {required}")
+    forbidden = [" --send", "--confirm-host-write", "--execute", "--confirm-live-network", "launchctl bootstrap"]
+    for index, item in enumerate(payload.get("items", [])):
+        command = item.get("copy_ready_command", "")
+        if any(fragment in command for fragment in forbidden):
+            errors.append(f"items[{index}].copy_ready_command includes gated execution fragment")
+    return errors
+
+
+def validate_handoff_study_resolution_file(path: str | Path) -> list[str]:
+    return validate_handoff_study_resolution_payload(load_json(path))
+
+
+def render_handoff_study_resolution(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    status_label = {
+        "clear": "닫을 handoff 없음",
+        "review": "공부 후 응답 필요",
+        "blocked_by_source_freshness": "근거 신선도 승인 전",
+    }.get(payload.get("status", ""), payload.get("status", "review"))
+    cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(item.get('status', ''))} · confidence {esc(item.get('confidence', ''))}</span>"
+        f"<h2>{esc(item.get('title', ''))}</h2>"
+        f"<p><strong>질문</strong> {esc(item.get('beginner_question', ''))}</p>"
+        f"<p><strong>답변 후보</strong> {esc(item.get('answer_candidate', ''))}</p>"
+        f"<p><strong>끝나는 조건</strong> {esc(item.get('done_when', ''))}</p>"
+        f"<p><strong>멈춤 기준</strong> {esc(item.get('stop_condition', ''))}</p>"
+        f"<code>{esc(item.get('copy_ready_command', ''))}</code>"
+        "</article>"
+        for item in payload.get("items", [])
+    ) or "<p>오늘 handoff에서 따로 닫을 공부 항목은 없습니다.</p>"
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if label != "handoff_study_resolution" and path
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Handoff Study Resolution</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#64707d; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }}
+* {{ box-sizing:border-box; }}
+html,body {{ max-width:100%; overflow-x:hidden; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:430px; margin:0; padding:14px; }}
+a {{ color:var(--blue); font-weight:900; text-decoration:none; }}
+.eyebrow,.metric span,.card span {{ color:var(--green); font-size:12px; font-weight:900; }}
+h1 {{ margin:8px 0 10px; font-size:31px; line-height:1.12; overflow-wrap:anywhere; }}
+h2 {{ margin:6px 0 8px; font-size:19px; line-height:1.2; }}
+p {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.card,.metric {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:15px; margin:12px 0; }}
+.status {{ display:block; margin:10px 0; font-size:25px; line-height:1.15; }}
+.metrics {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.metric,.card {{ padding:12px; background:white; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; }}
+.stack {{ display:grid; grid-template-columns:minmax(0,1fr); gap:9px; }}
+code {{ display:block; white-space:pre-wrap; word-break:break-word; border:1px solid var(--line); border-radius:8px; background:#f1f5f7; padding:10px; color:var(--ink); font-size:12px; }}
+.links {{ display:grid; grid-template-columns:1fr; gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Handoff Study · {_local_date_label(payload.get('generated_at', ''))}</span>
+<h1>남은 질문을 공부로 닫기</h1>
+<p>전날에서 넘어온 질문을 숨기지 않고, 오늘 어떤 근거로 어디까지 답하면 충분한지 보여줍니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('operator_rule', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Items</span><strong>{esc(summary.get('resolution_item_count', 0))}</strong></article>
+<article class="metric"><span>Ready</span><strong>{esc(summary.get('ready_to_study_count', 0))}</strong></article>
+<article class="metric"><span>Blocked</span><strong>{esc(summary.get('blocked_by_source_freshness_count', 0))}</strong></article>
+<article class="metric"><span>Memory</span><strong>{esc(summary.get('memory_recall_quality', 'missing'))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>질문별 해소 카드</h2>
+<div class="stack">{cards}</div>
+</section>
+<section class="section">
+<h2>관련 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 화면은 기존 로컬 artifact만 읽습니다. live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def parse_handoff_response(response: str) -> dict[str, Any]:
@@ -8352,6 +8657,7 @@ def _daily_home_action_inbox(
     *,
     morning: dict[str, Any],
     handoff: dict[str, Any],
+    handoff_study_resolution: dict[str, Any],
     task_ledger: dict[str, Any],
     source_freshness_intake: dict[str, Any],
     pattern_radar: dict[str, Any],
@@ -8361,6 +8667,7 @@ def _daily_home_action_inbox(
     pending_decisions = morning.get("pending_decisions", [])
     unresolved = handoff.get("unresolved", [])
     study_items = handoff.get("study_closure", {}).get("items", [])
+    resolution_items = handoff_study_resolution.get("items", []) if handoff_study_resolution.get("schema_version") == HANDOFF_STUDY_RESOLUTION_SCHEMA_VERSION else []
     task_entries = task_ledger.get("entries", []) if task_ledger.get("schema_version") == ANALYST_TASK_LEDGER_SCHEMA_VERSION else []
     carried_tasks = [entry for entry in task_entries if entry.get("status") == "carried"]
     ready_tasks = [entry for entry in task_entries if entry.get("status") == "ready_for_local_work"]
@@ -8422,7 +8729,23 @@ def _daily_home_action_inbox(
             "host_write_performed": False,
         })
 
-    for item in study_items[:4]:
+    if resolution_items:
+        resolution_summary = handoff_study_resolution.get("summary", {})
+        priority_items.append({
+            "kind": "handoff_study_resolution",
+            "id": "handoff-study-resolution",
+            "title": "남은 질문을 공부로 닫기",
+            "why": f"답변 후보 {resolution_summary.get('resolution_item_count', 0)}개, source freshness block {resolution_summary.get('blocked_by_source_freshness_count', 0)}개를 먼저 확인합니다.",
+            "source": "handoff_study_resolution",
+            "status": handoff_study_resolution.get("status", "review"),
+            "href": links.get("handoff_study_resolution", ""),
+            "copy_ready_command": resolution_items[0].get("copy_ready_command", ""),
+            "requires_separate_approval": False,
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+
+    for item in ([] if resolution_items else study_items[:4]):
         priority_items.append({
             "kind": item.get("kind", "study_closure"),
             "id": item.get("id", "study"),
@@ -8493,6 +8816,9 @@ def _daily_home_action_inbox(
             "pattern_scout_count": 1 if recommended else 0,
             "pattern_scout_proof_ready_count": 1 if scout_proof.get("proof_status") == "passed" else 0,
             "source_freshness_intake_count": 1 if source_freshness_intake.get("schema_version") == SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION else 0,
+            "handoff_resolution_count": 1 if handoff_study_resolution.get("schema_version") == HANDOFF_STUDY_RESOLUTION_SCHEMA_VERSION else 0,
+            "handoff_resolution_ready_count": handoff_study_resolution.get("summary", {}).get("ready_to_study_count", 0),
+            "handoff_resolution_blocked_count": handoff_study_resolution.get("summary", {}).get("blocked_by_source_freshness_count", 0),
             "carried_task_count": len(carried_tasks),
             "ready_task_count": len(ready_tasks),
             "priority_item_count": len(priority_items),
@@ -8502,6 +8828,7 @@ def _daily_home_action_inbox(
         "phone_links": {
             "morning": links.get("morning", ""),
             "handoff": links.get("handoff", ""),
+            "handoff_study_resolution": links.get("handoff_study_resolution", ""),
             "handoff_apply": links.get("handoff_apply", ""),
             "task_ledger": links.get("task_ledger", ""),
             "pattern_radar": links.get("pattern_radar", ""),
@@ -8521,6 +8848,7 @@ def build_daily_operator_home(
     morning_path: str | Path = DEFAULT_MORNING_CONTROL_OUTPUT,
     readiness_path: str | Path = DEFAULT_DAILY_READINESS_OUTPUT,
     handoff_path: str | Path = DEFAULT_DAILY_HANDOFF_OUTPUT,
+    handoff_study_resolution_path: str | Path = DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT,
     handoff_apply_path: str | Path = DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT,
     run_ledger_path: str | Path = DEFAULT_DAILY_RUN_LEDGER_OUTPUT,
     run_trace_path: str | Path = DEFAULT_RUN_TRACE_OUTPUT,
@@ -8543,6 +8871,7 @@ def build_daily_operator_home(
     morning = _load_optional_json(morning_path)
     readiness = _load_optional_json(readiness_path)
     handoff = _load_optional_json(handoff_path)
+    handoff_study_resolution = _load_optional_json(handoff_study_resolution_path)
     handoff_apply = _load_optional_json(handoff_apply_path)
     run_ledger = _load_optional_json(run_ledger_path)
     run_trace = _load_optional_json(run_trace_path)
@@ -8617,6 +8946,7 @@ def build_daily_operator_home(
         "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
         "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
         "handoff": DEFAULT_DAILY_HANDOFF_SURFACE.as_posix(),
+        "handoff_study_resolution": DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE.as_posix(),
         "handoff_apply": DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix(),
         "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
         "review_effect": DEFAULT_REVIEW_EFFECT_SURFACE.as_posix(),
@@ -8702,6 +9032,14 @@ def build_daily_operator_home(
         },
         {
             "step": 9,
+            "label": "남은 질문 공부로 닫기",
+            "title": "handoff study resolution",
+            "why": "전날에서 넘어온 질문을 답변 후보, 근거, 종료 조건, 복사 응답으로 정리합니다.",
+            "href": links["handoff_study_resolution"],
+            "status": handoff_study_resolution.get("status", "missing"),
+        },
+        {
+            "step": 10,
             "label": "전날 맥락 닫기",
             "title": "handoff",
             "why": f"남은 항목 {unresolved_count}개를 보고 필요한 응답을 복사합니다.",
@@ -8709,7 +9047,7 @@ def build_daily_operator_home(
             "status": handoff.get("status", "missing"),
         },
         {
-            "step": 10,
+            "step": 11,
             "label": "응답 반영 확인",
             "title": "handoff apply proof",
             "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -8717,7 +9055,7 @@ def build_daily_operator_home(
             "status": handoff_apply.get("status", "missing"),
         },
         {
-            "step": 11,
+            "step": 12,
             "label": "기억 품질 확인",
             "title": "memory audit",
             "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -8725,7 +9063,7 @@ def build_daily_operator_home(
             "status": memory_audit.get("status", "missing"),
         },
         {
-            "step": 12,
+            "step": 13,
             "label": "새 작업 방식 증거 확인",
             "title": "pattern dry-run proof",
             "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -8737,6 +9075,7 @@ def build_daily_operator_home(
     action_inbox = _daily_home_action_inbox(
         morning=morning,
         handoff=handoff,
+        handoff_study_resolution=handoff_study_resolution,
         task_ledger=task_ledger,
         source_freshness_intake=source_freshness_intake,
         pattern_radar=pattern_radar,
@@ -8767,6 +9106,9 @@ def build_daily_operator_home(
             "source_freshness_intake_status": source_freshness_intake.get("status", "missing"),
             "source_freshness_blocked_live_count": source_freshness_intake.get("summary", {}).get("blocked_live_candidate_count", 0),
             "source_freshness_weak_count": source_freshness_intake.get("summary", {}).get("stale_or_sample_source_count", 0),
+            "handoff_resolution_status": handoff_study_resolution.get("status", "missing"),
+            "handoff_resolution_ready_count": handoff_study_resolution.get("summary", {}).get("ready_to_study_count", 0),
+            "handoff_resolution_blocked_count": handoff_study_resolution.get("summary", {}).get("blocked_by_source_freshness_count", 0),
             "trace_status": run_trace.get("status", "missing"),
             "trace_fresh_count": trace_summary.get("fresh_count", 0),
             "trace_weak_spot_count": len(run_trace.get("weak_spots", [])),
@@ -8877,6 +9219,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="morning", path=morning_path, payload=morning),
             _daily_home_artifact_status(name="readiness", path=readiness_path, payload=readiness),
             _daily_home_artifact_status(name="handoff", path=handoff_path, payload=handoff),
+            _daily_home_artifact_status(name="handoff_study_resolution", path=handoff_study_resolution_path, payload=handoff_study_resolution),
             _daily_home_artifact_status(name="handoff_apply", path=handoff_apply_path, payload=handoff_apply),
             _daily_home_artifact_status(name="run_ledger", path=run_ledger_path, payload=run_ledger),
             _daily_home_artifact_status(name="run_trace", path=run_trace_path, payload=run_trace),
@@ -8999,7 +9342,7 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(f"operator_action_inbox.priority_items[{index}] external_effect_performed must be false")
         if item.get("host_write_performed") is not False:
             errors.append(f"operator_action_inbox.priority_items[{index}] host_write_performed must be false")
-    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "learning", "source_freshness_intake", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
+    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_study_resolution", "handoff_apply", "learning", "source_freshness_intake", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
     if "daily_home_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
@@ -9021,6 +9364,8 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("daily_route must include learning ledger")
     if not any(step.get("title") == "source freshness intake" for step in payload.get("daily_route", [])):
         errors.append("daily_route must include source freshness intake")
+    if not any(step.get("title") == "handoff study resolution" for step in payload.get("daily_route", [])):
+        errors.append("daily_route must include handoff study resolution")
     return errors
 
 

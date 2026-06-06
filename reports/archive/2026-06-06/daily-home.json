@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T02:05:18.801795+00:00",
+  "generated_at": "2026-06-06T02:34:38.297482+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -22,12 +22,15 @@
     "source_freshness_intake_status": "approval_packet_ready",
     "source_freshness_blocked_live_count": 2,
     "source_freshness_weak_count": 3,
+    "handoff_resolution_status": "review",
+    "handoff_resolution_ready_count": 1,
+    "handoff_resolution_blocked_count": 3,
     "trace_status": "ready",
-    "trace_fresh_count": 23,
+    "trace_fresh_count": 24,
     "trace_weak_spot_count": 0,
     "pattern_scout_candidate": "pattern-freshness-intake",
     "pattern_scout_proof_status": "passed",
-    "action_item_count": 8
+    "action_item_count": 5
   },
   "daily_route": [
     {
@@ -96,6 +99,14 @@
     },
     {
       "step": 9,
+      "label": "남은 질문 공부로 닫기",
+      "title": "handoff study resolution",
+      "why": "전날에서 넘어온 질문을 답변 후보, 근거, 종료 조건, 복사 응답으로 정리합니다.",
+      "href": "reports/product/handoff-study-resolution.html",
+      "status": "review"
+    },
+    {
+      "step": 10,
       "label": "전날 맥락 닫기",
       "title": "handoff",
       "why": "남은 항목 4개를 보고 필요한 응답을 복사합니다.",
@@ -103,7 +114,7 @@
       "status": "review"
     },
     {
-      "step": 10,
+      "step": 11,
       "label": "응답 반영 확인",
       "title": "handoff apply proof",
       "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -111,7 +122,7 @@
       "status": "applied"
     },
     {
-      "step": 11,
+      "step": 12,
       "label": "기억 품질 확인",
       "title": "memory audit",
       "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -119,7 +130,7 @@
       "status": "ready"
     },
     {
-      "step": 12,
+      "step": 13,
       "label": "새 작업 방식 증거 확인",
       "title": "pattern dry-run proof",
       "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -314,8 +325,8 @@
     "proof_status": "passed",
     "status": "ready",
     "run_id": "daily-research",
-    "step_count": 23,
-    "fresh_count": 23,
+    "step_count": 24,
+    "fresh_count": 24,
     "missing_required_count": 0,
     "stale_count": 0,
     "external_effect_flag_count": 0,
@@ -332,7 +343,7 @@
       },
       {
         "label": "누적 실행",
-        "value": "62회",
+        "value": "63회",
         "source": "topic_memory"
       },
       {
@@ -430,9 +441,12 @@
       "pattern_scout_count": 1,
       "pattern_scout_proof_ready_count": 1,
       "source_freshness_intake_count": 1,
+      "handoff_resolution_count": 1,
+      "handoff_resolution_ready_count": 1,
+      "handoff_resolution_blocked_count": 3,
       "carried_task_count": 0,
       "ready_task_count": 0,
-      "priority_item_count": 8
+      "priority_item_count": 5
     },
     "priority_items": [
       {
@@ -488,53 +502,14 @@
         "host_write_performed": false
       },
       {
-        "kind": "follow_up_question",
-        "id": "SC-DH-Q03",
-        "title": "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
-        "why": "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
-        "source": "analyst_journal",
-        "status": "study_closure",
-        "href": "reports/product/review-prompt.html",
+        "kind": "handoff_study_resolution",
+        "id": "handoff-study-resolution",
+        "title": "남은 질문을 공부로 닫기",
+        "why": "답변 후보 4개, source freshness block 3개를 먼저 확인합니다.",
+        "source": "handoff_study_resolution",
+        "status": "review",
+        "href": "reports/product/handoff-study-resolution.html",
         "copy_ready_command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more \"Semiconductors\" \"handoff question: AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?\"'",
-        "requires_separate_approval": false,
-        "external_effect_performed": false,
-        "host_write_performed": false
-      },
-      {
-        "kind": "follow_up_question",
-        "id": "SC-DH-Q06",
-        "title": "먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?",
-        "why": "먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?",
-        "source": "analyst_journal",
-        "status": "study_closure",
-        "href": "reports/product/review-prompt.html",
-        "copy_ready_command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more \"Semiconductors\" \"handoff question: 먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?\"'",
-        "requires_separate_approval": false,
-        "external_effect_performed": false,
-        "host_write_performed": false
-      },
-      {
-        "kind": "council_warning",
-        "id": "SC-DH-COUNCIL",
-        "title": "analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.",
-        "why": "역할별 council 중 어떤 역할이 오늘 결론을 가장 약하게 만들었나요?",
-        "source": "analyst_council",
-        "status": "study_closure",
-        "href": "reports/product/council.html",
-        "copy_ready_command": "PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'more \"Semiconductors\" \"council: 역할별 caution 카드와 다음 질문을 먼저 읽고 review-response-apply로 피드백을 남깁니다.\"'",
-        "requires_separate_approval": false,
-        "external_effect_performed": false,
-        "host_write_performed": false
-      },
-      {
-        "kind": "memory_warning",
-        "id": "SC-DH-MEMORY",
-        "title": "누적 기억 품질 경고가 남아 있습니다.",
-        "why": "AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?",
-        "source": "memory_audit",
-        "status": "study_closure",
-        "href": "reports/product/memory-audit.html",
-        "copy_ready_command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'confusing \"Semiconductors\" \"memory: AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?\"'",
         "requires_separate_approval": false,
         "external_effect_performed": false,
         "host_write_performed": false
@@ -544,6 +519,7 @@
     "phone_links": {
       "morning": "reports/product/morning.html",
       "handoff": "reports/product/handoff.html",
+      "handoff_study_resolution": "reports/product/handoff-study-resolution.html",
       "handoff_apply": "reports/product/handoff-response-apply.html",
       "task_ledger": "reports/product/task-ledger.html",
       "pattern_radar": "reports/product/pattern-radar.html",
@@ -597,6 +573,7 @@
     "agenda": "reports/product/daily-agenda.html",
     "readiness": "reports/product/readiness.html",
     "handoff": "reports/product/handoff.html",
+    "handoff_study_resolution": "reports/product/handoff-study-resolution.html",
     "handoff_apply": "reports/product/handoff-response-apply.html",
     "review_prompt": "reports/product/review-prompt.html",
     "review_effect": "reports/product/review-effect.html",
@@ -633,7 +610,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T02:05:18.622075+00:00"
+      "generated_at": "2026-06-06T02:34:38.229611+00:00"
     },
     {
       "name": "agenda",
@@ -641,7 +618,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T02:05:18.633816+00:00"
+      "generated_at": "2026-06-06T02:34:38.232864+00:00"
     },
     {
       "name": "morning",
@@ -649,7 +626,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-06T02:05:18.743438+00:00"
+      "generated_at": "2026-06-06T02:34:38.275469+00:00"
     },
     {
       "name": "readiness",
@@ -657,7 +634,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:05:18.795089+00:00"
+      "generated_at": "2026-06-06T02:34:38.294549+00:00"
     },
     {
       "name": "handoff",
@@ -665,7 +642,15 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-06T02:05:18.767579+00:00"
+      "generated_at": "2026-06-06T02:34:38.282612+00:00"
+    },
+    {
+      "name": "handoff_study_resolution",
+      "path": "reports/runtime/handoff-study-resolution.json",
+      "exists": true,
+      "schema_version": "handoff_study_resolution.v1",
+      "status": "review",
+      "generated_at": "2026-06-06T02:34:38.283551+00:00"
     },
     {
       "name": "handoff_apply",
@@ -681,7 +666,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:05:18.766184+00:00"
+      "generated_at": "2026-06-06T02:34:38.281807+00:00"
     },
     {
       "name": "run_trace",
@@ -689,7 +674,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:05:18.724275+00:00"
+      "generated_at": "2026-06-06T02:34:38.284245+00:00"
     },
     {
       "name": "task_ledger",
@@ -697,7 +682,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T02:05:18.701289+00:00"
+      "generated_at": "2026-06-06T02:34:38.258403+00:00"
     },
     {
       "name": "scheduler",
@@ -705,7 +690,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-06T02:05:18.716581+00:00"
+      "generated_at": "2026-06-06T02:34:38.267713+00:00"
     },
     {
       "name": "phone_access",
@@ -713,7 +698,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T02:05:18.615338+00:00"
+      "generated_at": "2026-06-06T02:34:38.226036+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -721,7 +706,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:05:18.790376+00:00"
+      "generated_at": "2026-06-06T02:34:38.293558+00:00"
     },
     {
       "name": "notification",
@@ -729,7 +714,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-06T02:05:18.705677+00:00"
+      "generated_at": "2026-06-06T02:34:38.261745+00:00"
     },
     {
       "name": "memory_query",
@@ -737,7 +722,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-06T02:05:18.693318+00:00"
+      "generated_at": "2026-06-06T02:34:38.255136+00:00"
     },
     {
       "name": "memory_audit",
@@ -745,7 +730,7 @@
       "exists": true,
       "schema_version": "personal_memory_audit.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:05:18.691736+00:00"
+      "generated_at": "2026-06-06T02:34:38.254546+00:00"
     },
     {
       "name": "learning_ledger",
@@ -753,7 +738,7 @@
       "exists": true,
       "schema_version": "personal_learning_ledger.v1",
       "status": "review",
-      "generated_at": "2026-06-06T02:05:18.698101+00:00"
+      "generated_at": "2026-06-06T02:34:38.256596+00:00"
     },
     {
       "name": "source_freshness_intake",
@@ -761,7 +746,7 @@
       "exists": true,
       "schema_version": "source_freshness_intake.v1",
       "status": "approval_packet_ready",
-      "generated_at": "2026-06-06T02:05:18.630963+00:00"
+      "generated_at": "2026-06-06T02:34:38.231968+00:00"
     },
     {
       "name": "pattern_radar",
@@ -769,7 +754,7 @@
       "exists": true,
       "schema_version": "agent_pattern_radar.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:05:18.615986+00:00"
+      "generated_at": "2026-06-06T02:34:38.226811+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -777,7 +762,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-06T02:05:18.734127+00:00"
+      "generated_at": "2026-06-06T02:34:38.272955+00:00"
     }
   ],
   "external_effect_performed": false,

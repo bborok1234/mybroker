@@ -193,6 +193,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/run-ledger.html`: phone-readable run ledger that answers which run to trust when scheduled, manual, and validation runs all happened today.
 - `reports/runtime/daily-handoff.json`: machine-readable cross-day continuity proof for carried questions, feedback, task states, council warnings, memory risks, and today's reflection status.
 - `reports/product/handoff.html`: phone-readable handoff surface that answers whether yesterday's context affected today's run or still needs a short local response.
+- `reports/runtime/handoff-study-resolution.json`: machine-readable study closure packet for unresolved handoff questions, answer candidates, evidence refs, source freshness caveats, and done-when criteria.
+- `reports/product/handoff-study-resolution.html`: phone-readable handoff study surface to inspect before copying a local handoff response; it does not auto-close questions or execute anything.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
 - `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
 - `reports/runtime/source-freshness-intake.json`: machine-readable approval intake that turns source freshness, sample/cache status, blocked live candidates, stale-context guard, and scoped approval response into one local proof packet.
@@ -391,10 +393,11 @@ write host scheduler state, use credentials, or touch account flows.
 already present. The ledger records `local_completion` evidence for each task and marks the task
 `completed` only from local artifact presence or an explicit local response; it never runs the
 suggested task command as part of status inference.
-`appliance handoff` also emits a `study_closure` queue. This keeps unresolved questions, council
-cautions, and memory warnings from becoming vague backlog: each item gets a beginner question,
-done-when criterion, linked local surface, and copy-ready local response that can influence the
-next run without fetching live data or executing tasks.
+`appliance handoff` also emits a raw `study_closure` queue. `appliance handoff-study-resolution`
+turns that queue into the phone-readable study packet: each unresolved question, council caution,
+or memory warning gets an answer candidate, evidence refs, source freshness caveat, done-when
+criterion, linked local surface, and copy-ready local response that can influence the next run
+without fetching live data or executing tasks.
 When unresolved items remain, `handoff.html` now suggests copy-ready `handoff-response-apply`
 commands so the phone operator can close the loop without remembering separate review/task command
 grammars.

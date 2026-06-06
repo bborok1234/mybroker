@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-06T02:05:18.795089+00:00",
+  "generated_at": "2026-06-06T02:34:38.294549+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -19,7 +19,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.783685+00:00",
+      "generated_at": "2026-06-06T02:34:38.291506+00:00",
       "schema_version": "daily_operator_home.v1"
     },
     {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.790376+00:00",
+      "generated_at": "2026-06-06T02:34:38.293558+00:00",
       "schema_version": "phone_access_verify.v1"
     },
     {
@@ -85,7 +85,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.633816+00:00",
+      "generated_at": "2026-06-06T02:34:38.232864+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -96,7 +96,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.629615+00:00",
+      "generated_at": "2026-06-06T02:34:38.231147+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -118,7 +118,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.630963+00:00",
+      "generated_at": "2026-06-06T02:34:38.231968+00:00",
       "schema_version": "source_freshness_intake.v1"
     },
     {
@@ -140,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.734127+00:00",
+      "generated_at": "2026-06-06T02:34:38.272955+00:00",
       "schema_version": "pattern_dry_run_proof.v1"
     },
     {
@@ -162,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.743438+00:00",
+      "generated_at": "2026-06-06T02:34:38.275469+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -184,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.724275+00:00",
+      "generated_at": "2026-06-06T02:34:38.284245+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
@@ -206,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.766184+00:00",
+      "generated_at": "2026-06-06T02:34:38.281807+00:00",
       "schema_version": "daily_run_ledger.v1"
     },
     {
@@ -228,12 +228,34 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.767579+00:00",
+      "generated_at": "2026-06-06T02:34:38.282612+00:00",
       "schema_version": "daily_handoff.v1"
     },
     {
       "name": "daily_handoff_surface",
       "path": "reports/product/handoff.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "handoff_study_resolution",
+      "path": "reports/runtime/handoff-study-resolution.json",
+      "kind": "control_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-06T02:34:38.283551+00:00",
+      "schema_version": "handoff_study_resolution.v1"
+    },
+    {
+      "name": "handoff_study_resolution_surface",
+      "path": "reports/product/handoff-study-resolution.html",
       "kind": "phone_surface",
       "required": false,
       "exists": true,
@@ -249,7 +271,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 5.45,
+      "age_hours": 5.94,
       "generated_at": "2026-06-05T20:38:09.499318+00:00",
       "schema_version": "operator_handoff_response_apply.v1"
     },
@@ -260,7 +282,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 5.36,
+      "age_hours": 5.85,
       "generated_at": "",
       "schema_version": ""
     },
@@ -272,7 +294,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.756141+00:00",
+      "generated_at": "2026-06-06T02:34:38.279981+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
@@ -294,7 +316,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.764720+00:00",
+      "generated_at": "2026-06-06T02:34:38.280956+00:00",
       "schema_version": "operator_review_prompt.v1"
     },
     {
@@ -316,7 +338,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.765776+00:00",
+      "generated_at": "2026-06-06T02:34:38.281552+00:00",
       "schema_version": "operator_review_effect.v1"
     },
     {
@@ -338,7 +360,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.699614+00:00",
+      "generated_at": "2026-06-06T02:34:38.257400+00:00",
       "schema_version": "analyst_council.v1"
     },
     {
@@ -360,7 +382,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.698101+00:00",
+      "generated_at": "2026-06-06T02:34:38.256596+00:00",
       "schema_version": "personal_learning_ledger.v1"
     },
     {
@@ -382,7 +404,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.622075+00:00",
+      "generated_at": "2026-06-06T02:34:38.229611+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -393,7 +415,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.618427+00:00",
+      "generated_at": "2026-06-06T02:34:38.228534+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -404,7 +426,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.619016+00:00",
+      "generated_at": "2026-06-06T02:34:38.228888+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -415,7 +437,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.637081+00:00",
+      "generated_at": "2026-06-06T02:34:38.234537+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -426,7 +448,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.637081+00:00",
+      "generated_at": "2026-06-06T02:34:38.234537+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -437,7 +459,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.672193+00:00",
+      "generated_at": "2026-06-06T02:34:38.246040+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -447,7 +469,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 18.59,
+      "age_hours": 19.08,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -459,7 +481,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.715692+00:00",
+      "generated_at": "2026-06-06T02:34:38.267352+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -470,7 +492,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.716581+00:00",
+      "generated_at": "2026-06-06T02:34:38.267713+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -491,7 +513,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 8.07,
+      "age_hours": 8.56,
       "generated_at": "",
       "schema_version": ""
     },
@@ -514,7 +536,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.693318+00:00",
+      "generated_at": "2026-06-06T02:34:38.255136+00:00",
       "schema_version": "personal_memory_query.v1"
     },
     {
@@ -536,7 +558,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T02:05:18.691736+00:00",
+      "generated_at": "2026-06-06T02:34:38.254546+00:00",
       "schema_version": "personal_memory_audit.v1"
     },
     {
@@ -570,6 +592,7 @@
     "trace": "reports/product/run-trace.html",
     "run_ledger": "reports/product/run-ledger.html",
     "handoff": "reports/product/handoff.html",
+    "handoff_study_resolution": "reports/product/handoff-study-resolution.html",
     "handoff_apply": "reports/product/handoff-response-apply.html",
     "drift_review": "reports/product/drift-review.html",
     "review_prompt": "reports/product/review-prompt.html",
