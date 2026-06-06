@@ -1,6 +1,6 @@
 {
   "schema_version": "analyst_council.v1",
-  "generated_at": "2026-06-06T04:58:01.269265+00:00",
+  "generated_at": "2026-06-06T06:44:40.474725+00:00",
   "run_id": "daily-research",
   "status": "read_with_caution",
   "council_mode": "local_role_review_before_daily_reading",
@@ -16,7 +16,7 @@
     "caution_count": 3,
     "blocker_count": 0,
     "disagreement_count": 1,
-    "average_confidence": 0.84
+    "average_confidence": 0.85
   },
   "roles": [
     {
@@ -56,8 +56,8 @@
     {
       "role": "scenario_analyst",
       "stance": "agree",
-      "finding": "3개 경로와 primary next step confidence 0.90를 확인했습니다.",
-      "confidence": 0.9,
+      "finding": "3개 경로와 primary next step confidence 0.94를 확인했습니다.",
+      "confidence": 0.94,
       "evidence": [
         "기준 경로",
         "상방 경로",
@@ -81,7 +81,7 @@
       "role": "beginner_tutor",
       "stance": "agree",
       "finding": "먼저 시장 흐름을 학습",
-      "confidence": 0.86,
+      "confidence": 0.9,
       "evidence": [
         "이번 seed에서 먼저 볼 흐름은 리스크, AI 인프라, 소비입니다. 초보자는 가격보다 '왜 이 흐름이 생겼는지'와 '무엇이 바뀌면 틀리는지'를 먼저 확인해야 합니다."
       ],
@@ -91,7 +91,7 @@
     {
       "role": "memory_librarian",
       "stance": "caution",
-      "finding": "누적 실행 73회, vault note 1개, changed topic 0개입니다.",
+      "finding": "누적 실행 82회, vault note 1개, changed topic 0개입니다.",
       "confidence": 0.95,
       "evidence": [
         "AI infrastructure",

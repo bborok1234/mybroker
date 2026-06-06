@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T04:58:01.323156+00:00",
+  "generated_at": "2026-06-06T06:44:40.527526+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -38,7 +38,7 @@
     "pattern_scout_proof_status": "passed",
     "pattern_evidence_intake_status": "review",
     "pattern_evidence_local_candidate_count": 0,
-    "pattern_evidence_already_verified_count": 5,
+    "pattern_evidence_already_verified_count": 6,
     "action_item_count": 6
   },
   "daily_route": [
@@ -169,7 +169,7 @@
     "recommended_topic": {
       "topic_id": "semiconductors",
       "name": "Semiconductors",
-      "score": 3.9,
+      "score": 8.1,
       "priority_rank": 1,
       "action": "inspect_first",
       "confidence": "low-medium",
@@ -207,13 +207,58 @@
             "topic": "Semiconductors",
             "note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다",
             "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T05:22:50.610408+00:00",
+            "action": "more",
+            "status": "want_more",
+            "topic": "Semiconductors",
+            "note": "오늘 브리핑 답장으로 반도체 흐름을 더 보고 싶다",
+            "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T05:24:31.065478+00:00",
+            "action": "read",
+            "status": "reviewed",
+            "topic": "Semiconductors",
+            "note": "오늘 브리핑 답장 반영 화면을 확인했다",
+            "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T05:33:00.786722+00:00",
+            "action": "read",
+            "status": "reviewed",
+            "topic": "Semiconductors",
+            "note": "오늘 브리핑 답장 반영 화면을 확인했다",
+            "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T05:33:48.528345+00:00",
+            "action": "read",
+            "status": "reviewed",
+            "topic": "Semiconductors",
+            "note": "오늘 브리핑 답장 반영 화면을 최종 확인했다",
+            "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T06:01:14.962607+00:00",
+            "action": "more",
+            "status": "want_more",
+            "topic": "Semiconductors",
+            "note": "반도체 흐름을 내일도 더 보고 싶다",
+            "external_effect_performed": false
           }
         ],
-        "score_delta": 1.2,
+        "score_delta": 5.4,
         "reason": "운영자가 이 주제를 더 보고 싶다고 기록했습니다.",
-        "response_count": 1,
+        "response_count": 6,
         "latest_status": "want_more",
-        "latest_note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다"
+        "latest_note": "반도체 흐름을 내일도 더 보고 싶다"
       },
       "missing_evidence": [
         "deduplication",
@@ -227,7 +272,7 @@
         },
         {
           "name": "operator_review",
-          "delta": 1.2,
+          "delta": 5.4,
           "reason": "운영자가 이 주제를 더 보고 싶다고 기록했습니다."
         },
         {
@@ -310,7 +355,7 @@
     "missing_evidence_note": "중복 근거 점검 필요 · live refresh 미실행",
     "rotation_guard": {
       "status": "operator_override",
-      "run_count": 73,
+      "run_count": 82,
       "pre_rotation_topic": "semiconductors",
       "selected_topic": "semiconductors",
       "rotated": false,
@@ -379,17 +424,17 @@
       },
       {
         "label": "누적 실행",
-        "value": "73회",
+        "value": "82회",
         "source": "topic_memory"
       },
       {
         "label": "다음 안전 후보",
-        "value": "source freshness intake before live authority",
+        "value": "라이브 권한 전 근거 신선도 intake",
         "source": "pattern_radar"
       },
       {
         "label": "review 응답",
-        "value": "1개",
+        "value": "6개",
         "source": "daily_review"
       }
     ],
@@ -443,9 +488,9 @@
     "pattern_candidate_id": "pattern-freshness-intake",
     "proof_status": "passed",
     "status": "ready",
-    "title": "source freshness intake before live authority",
+    "title": "라이브 권한 전 근거 신선도 intake",
     "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
-    "why_now": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+    "why_now": "개인 에이전트 방식은 빠르게 바뀐다. 권한을 넓히기 전에 radar가 최신 패턴을 로컬 증거로 흡수했는지 먼저 확인한다.",
     "approval_scope": "local_dry_run_only",
     "operator_decision_needed": false,
     "done_when": [
@@ -465,6 +510,12 @@
         "source": "TaskWeaver",
         "why_watch": "Code-first analytics could improve scenario simulation, but it should not precede memory quality, source quality, and clear user surfaces.",
         "blocked_by": "only run generated analysis in a sandbox with deterministic inputs, saved outputs, and validation",
+        "decision": "defer"
+      },
+      {
+        "source": "DBOS durable workflows",
+        "why_watch": "Durable workflows are valuable for always-on agents, but MyBroker first needs the local daily analyst loop to prove its artifact contracts and phone handoff.",
+        "blocked_by": "defer until missed-run/backfill evidence appears in run-ledger and scheduler proofs; do not add hosted runtime as a default",
         "decision": "defer"
       }
     ],
@@ -488,9 +539,9 @@
   "pattern_evidence_intake_adoption": {
     "pattern_candidate_id": "pattern-method-evidence-intake",
     "status": "review",
-    "candidate_count": 7,
+    "candidate_count": 8,
     "local_candidate_count": 0,
-    "already_verified_count": 5,
+    "already_verified_count": 6,
     "approval_gated_count": 1,
     "blocked_count": 1,
     "recommended_candidate": "pattern-freshness-intake",
@@ -509,7 +560,7 @@
       "pattern_scout_proof_ready_count": 1,
       "pattern_evidence_intake_count": 1,
       "pattern_evidence_local_candidate_count": 0,
-      "pattern_evidence_already_verified_count": 5,
+      "pattern_evidence_already_verified_count": 6,
       "source_freshness_intake_count": 1,
       "source_refresh_execution_count": 1,
       "source_refresh_execution_blocker_count": 5,
@@ -577,8 +628,8 @@
       {
         "kind": "pattern_scout",
         "id": "pattern-freshness-intake",
-        "title": "source freshness intake before live authority",
-        "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+        "title": "라이브 권한 전 근거 신선도 intake",
+        "why": "개인 에이전트 방식은 빠르게 바뀐다. 권한을 넓히기 전에 radar가 최신 패턴을 로컬 증거로 흡수했는지 먼저 확인한다.",
         "source": "pattern_scout",
         "status": "local_proof_ready",
         "href": "reports/product/pattern-radar.html",
@@ -656,6 +707,7 @@
   ],
   "phone_links": {
     "daily_home": "reports/product/daily-home.html",
+    "daily_briefing": "reports/product/daily-briefing.html",
     "today": "reports/product/today.html",
     "morning": "reports/product/morning.html",
     "agenda": "reports/product/daily-agenda.html",
@@ -700,7 +752,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T04:58:01.241467+00:00"
+      "generated_at": "2026-06-06T06:44:40.447122+00:00"
     },
     {
       "name": "agenda",
@@ -708,7 +760,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T04:58:01.245494+00:00"
+      "generated_at": "2026-06-06T06:44:40.450687+00:00"
     },
     {
       "name": "morning",
@@ -716,7 +768,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-06T04:58:01.297484+00:00"
+      "generated_at": "2026-06-06T06:44:40.497897+00:00"
     },
     {
       "name": "readiness",
@@ -724,7 +776,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T04:58:01.319277+00:00"
+      "generated_at": "2026-06-06T06:44:40.524135+00:00"
     },
     {
       "name": "handoff",
@@ -732,7 +784,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-06T04:58:01.305042+00:00"
+      "generated_at": "2026-06-06T06:44:40.505486+00:00"
     },
     {
       "name": "handoff_study_resolution",
@@ -740,7 +792,7 @@
       "exists": true,
       "schema_version": "handoff_study_resolution.v1",
       "status": "review",
-      "generated_at": "2026-06-06T04:58:01.306045+00:00"
+      "generated_at": "2026-06-06T06:44:40.506485+00:00"
     },
     {
       "name": "handoff_apply",
@@ -756,7 +808,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T04:58:01.304132+00:00"
+      "generated_at": "2026-06-06T06:44:40.504571+00:00"
     },
     {
       "name": "run_trace",
@@ -764,7 +816,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T04:58:01.306975+00:00"
+      "generated_at": "2026-06-06T06:44:40.507528+00:00"
     },
     {
       "name": "task_ledger",
@@ -772,7 +824,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T04:58:01.270441+00:00"
+      "generated_at": "2026-06-06T06:44:40.475621+00:00"
     },
     {
       "name": "scheduler",
@@ -780,7 +832,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-06T04:58:01.288106+00:00"
+      "generated_at": "2026-06-06T06:44:40.487889+00:00"
     },
     {
       "name": "phone_access",
@@ -788,7 +840,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T04:58:01.238040+00:00"
+      "generated_at": "2026-06-06T06:44:40.441988+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -796,7 +848,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T04:58:01.318153+00:00"
+      "generated_at": "2026-06-06T06:44:40.521629+00:00"
     },
     {
       "name": "notification",
@@ -804,7 +856,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-06T04:58:01.274466+00:00"
+      "generated_at": "2026-06-06T06:44:40.478469+00:00"
     },
     {
       "name": "memory_query",
@@ -812,7 +864,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-06T04:58:01.266507+00:00"
+      "generated_at": "2026-06-06T06:44:40.472434+00:00"
     },
     {
       "name": "memory_audit",
@@ -820,7 +872,7 @@
       "exists": true,
       "schema_version": "personal_memory_audit.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T04:58:01.265759+00:00"
+      "generated_at": "2026-06-06T06:44:40.471204+00:00"
     },
     {
       "name": "learning_ledger",
@@ -828,7 +880,7 @@
       "exists": true,
       "schema_version": "personal_learning_ledger.v1",
       "status": "review",
-      "generated_at": "2026-06-06T04:58:01.268390+00:00"
+      "generated_at": "2026-06-06T06:44:40.473953+00:00"
     },
     {
       "name": "source_freshness_intake",
@@ -836,7 +888,7 @@
       "exists": true,
       "schema_version": "source_freshness_intake.v1",
       "status": "approval_packet_ready",
-      "generated_at": "2026-06-06T04:58:01.244122+00:00"
+      "generated_at": "2026-06-06T06:44:40.449516+00:00"
     },
     {
       "name": "source_refresh_execution_brief",
@@ -844,7 +896,7 @@
       "exists": true,
       "schema_version": "source_refresh_execution_brief.v1",
       "status": "approval_required",
-      "generated_at": "2026-06-06T04:58:01.244635+00:00"
+      "generated_at": "2026-06-06T06:44:40.449905+00:00"
     },
     {
       "name": "pattern_radar",
@@ -852,7 +904,7 @@
       "exists": true,
       "schema_version": "agent_pattern_radar.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T04:58:01.238436+00:00"
+      "generated_at": "2026-06-06T06:44:40.442426+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -860,7 +912,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-06T04:58:01.293989+00:00"
+      "generated_at": "2026-06-06T06:44:40.522609+00:00"
     },
     {
       "name": "pattern_evidence_intake",
@@ -868,7 +920,7 @@
       "exists": true,
       "schema_version": "pattern_evidence_intake.v1",
       "status": "review",
-      "generated_at": "2026-06-06T04:58:01.295158+00:00"
+      "generated_at": "2026-06-06T06:44:40.523814+00:00"
     }
   ],
   "external_effect_performed": false,

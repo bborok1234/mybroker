@@ -30,6 +30,7 @@ MyBroker의 1차 방향은 웹앱/서버/계좌 연결이 아니다. 현재 개�
 | OpenClaw | launchd/systemd daemon, multi-channel inbox, pairing/allowlist, isolated workspaces, host tool 권한과 sandbox 경계를 명시한다. | 폰 접근은 private-first가 맞다. unknown sender, public DM, public tunnel은 기본 차단한다. `phone-access-verify` 같은 no-effect proof를 유지한다. |
 | MiroFish | knowledge graph, swarm/multi-agent simulation, social/future prediction UX, frontend+backend 제품면을 가진다. | 제품 UX는 참고하되, 지금은 전용 서버보다 `today/home/brief` HTML artifact가 맞다. 핵심은 market/narrative map과 beginner explanation이다. |
 | TradingAgents | multi-agent debate, role별 분석, persistence/recovery, checkpoint, decision memory를 둔다. | "매수/매도 결정"은 거절하고, role council, skeptic, tutor, memory librarian, scenario path만 흡수한다. run history와 reflection은 적극 채택한다. |
+| Tailscale Serve/private phone access | 로컬 산출물을 public web app으로 배포하지 않고 private tailnet에서 폰으로 읽게 할 수 있다. | `phone-access-verify`를 local proof 후보로 채택한다. 실제 `tailscale serve` 실행은 private_network_exposure 승인 뒤에만 가능하다. |
 | DBOS durable workflows | workflow/step을 durable하게 기록하고, cron schedule, queue concurrency, backfill, resume을 제공한다. | launchd만으로 부족해지는 순간 DBOS류 durable workflow를 검토한다. v1은 로컬 JSON proof와 run ledger로 충분하지만, missed run/backfill이 중요해지면 도입 후보 1순위다. |
 | Browser-use/Playwright MCP/Firecrawl | browser control, search/scrape, markdown extraction을 agent tool로 붙인다. | live evidence refresh에는 유용하지만 기본 실행은 금지한다. 먼저 source-refresh preflight와 approval scope를 통과한 no-key/read-only source부터 붙인다. |
 | Obsidian + Claude Code finance workflow | raw/wiki/output, compile/query/audit verbs, long-term knowledge compounding을 개인 리서치에 적용한다. | 사용자가 source를 잘 고르지 못한다는 문제는 scout가 해결한다. vault는 보조 입력이고, 기본은 MyBroker가 오늘의 주제와 자료를 제안하는 방식이어야 한다. |
@@ -98,6 +99,8 @@ MyBroker의 좋은 형태는 채팅봇이나 웹앱이 아니라 매일 출근�
 | TradingAgents | specialized financial analyst roles, bullish/bearish debate, risk team; explicitly research-only disclaimer | source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor, memory librarian | adopt roles, reject trading execution |
 | FinRobot | financial agent platform, data fetching, multi-agent report generation, HTML/PDF style output; API-key driven professional workflow | report structure and grounded multi-agent analysis are useful; paid API/account assumptions deferred | adopt partial |
 | Claude Code + Obsidian finance workflow | raw/wiki/output vault, compile/query/audit verbs, browser/scraper tools, plain-language operator workflow | local vault compile, memory query/audit, copy-ready phone feedback, handoff-response-apply | adopt |
+| Tailscale Serve/private phone access | private tailnet serving before public deployment | phone-access plan and verify proof only; actual serving remains separately approved | adopt partial |
+| DBOS durable workflows | durable steps, queues, cron, resume, backfill | defer until launchd/run-ledger evidence shows missed-run or backfill pain | defer |
 | TaskWeaver | code-first analytics agent for executable data analysis | future sandboxed simulation notebooks after artifact schemas stabilize | defer |
 
 ## 현재 MyBroker 설계 원칙
@@ -126,3 +129,5 @@ Handoff 화면은 unresolved question/task를 보여주는 읽기 surface다. �
 - https://github.com/TauricResearch/TradingAgents
 - https://github.com/AI4Finance-Foundation/FinRobot
 - https://github.com/microsoft/TaskWeaver
+- https://tailscale.com/kb/1312/serve
+- https://www.dbos.dev/

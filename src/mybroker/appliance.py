@@ -278,6 +278,17 @@ def build_agent_pattern_radar(
             "priority": "high",
         },
         {
+            "source": "Tailscale Serve private phone access",
+            "source_url": "https://tailscale.com/kb/1312/serve",
+            "observed_pattern": "private tailnet serving can expose local static artifacts to the operator's phone without making the service public",
+            "decision": "adopt_partial",
+            "mybroker_translation": "keep phone-access guidance and access-verify proof as local no-effect artifacts before any private serving command is run",
+            "why": "The operator wants to read the daily analyst output on a phone while the laptop remains the local appliance; private serving is useful, but enablement should stay separate from proof.",
+            "risk": "public exposure or accidental persistent serving if private access and public tunnel commands are collapsed",
+            "guardrail": "access-verify reads links only; tailscale serve, LAN serving, and any public exposure remain separate operator-approved actions",
+            "priority": "high",
+        },
+        {
             "source": "MiroFish",
             "source_url": "https://github.com/666ghj/MiroFish",
             "observed_pattern": "graph-style entity/event map, persona simulation, scenario paths",
@@ -443,6 +454,17 @@ def build_agent_pattern_radar(
             "priority": "high",
         },
         {
+            "source": "DBOS durable workflows",
+            "source_url": "https://www.dbos.dev/",
+            "observed_pattern": "durable workflow steps, queues, cron scheduling, resume, and backfill make long-running agents recoverable",
+            "decision": "defer",
+            "mybroker_translation": "keep launchd, archive manifests, run ledger, and drift review for v1; revisit durable workflow only when missed-run recovery and backfill become recurring operator needs",
+            "why": "Durable workflows are valuable for always-on agents, but MyBroker first needs the local daily analyst loop to prove its artifact contracts and phone handoff.",
+            "risk": "adding a server/workflow runtime too early can create deployment, state, and queue complexity before the personal analyst loop is trustworthy",
+            "guardrail": "defer until missed-run/backfill evidence appears in run-ledger and scheduler proofs; do not add hosted runtime as a default",
+            "priority": "watch",
+        },
+        {
             "source": "Hosted trading bots and broker-connected agents",
             "source_url": "",
             "observed_pattern": "always-on execution, account credentials, live orders, discretionary automation",
@@ -474,7 +496,7 @@ def build_agent_pattern_radar(
         "schema_version": AGENT_PATTERN_RADAR_SCHEMA_VERSION,
         "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
         "status": "ready",
-        "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
+        "objective": "검증된 에이전트 운영 패턴만 로컬 daily loop에 흡수한다.",
         "playbook_source": Path(playbook_path).as_posix(),
         "previous_pattern_proof": Path(pattern_proof_path).as_posix() if Path(pattern_proof_path).exists() else "",
         "playbook_pattern_count": len(playbook.get("absorbed_patterns", [])),
@@ -794,7 +816,7 @@ def render_pattern_evidence_intake(payload: dict[str, Any]) -> str:
         f"<h2>{esc(row.get('candidate_id', ''))}</h2>"
         f"<p>{esc(row.get('why', ''))}</p>"
         f"<small>scope: {esc(row.get('approval_scope', ''))}</small>"
-        f"<code>{esc(row.get('proof_command', ''))}</code>"
+        f"<code>{esc(_pattern_command_label(row.get('proof_command', '')))}</code>"
         "</article>"
         for row in payload.get("candidate_assessments", [])
     )
@@ -832,7 +854,7 @@ p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
 .metric,.card,.mini {{ background:white; padding:14px; min-width:0; }}
 .metric strong {{ display:block; font-size:27px; }}
 .stack {{ display:grid; grid-template-columns:1fr; gap:10px; }}
-code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:normal; overflow-wrap:anywhere; word-break:break-all; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
 .links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:11px; color:var(--blue); font-weight:900; text-decoration:none; }}
 @media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:28px; }} .metrics,.links {{ grid-template-columns:1fr; }} }}
 </style>
@@ -948,13 +970,25 @@ def _build_pattern_scout(*, cases: list[dict[str, Any]], dry_run_candidates: lis
     }
 
 
+def _pattern_command_label(command: str) -> str:
+    if not command:
+        return ""
+    marker = "-m mybroker "
+    if marker in command:
+        compact = "mybroker " + command.split(marker, 1)[1]
+    else:
+        compact = command
+    return compact.replace("reports/runtime/", "reports/.../").replace("reports/daily/", "reports/.../")
+
+
 def _pattern_candidate_title(candidate_id: str) -> str:
     titles = {
-        "pattern-freshness-intake": "source freshness intake before live authority",
-        "pattern-method-evidence-intake": "pattern evidence intake before workflow adoption",
-        "pattern-source-refresh-execution-confirmation": "source refresh execution confirmation before live fetch",
-        "pattern-memory-recall-quality": "memory recall quality before daily briefing",
-        "pattern-run-trace-observability": "run trace observability before autonomous loop widening",
+        "pattern-freshness-intake": "라이브 권한 전 근거 신선도 intake",
+        "pattern-method-evidence-intake": "방식 도입 전 pattern evidence intake",
+        "pattern-source-refresh-execution-confirmation": "라이브 fetch 전 최종 확인",
+        "pattern-memory-recall-quality": "브리핑 전 메모리 recall 품질",
+        "pattern-run-trace-observability": "자율 루프 확장 전 run trace",
+        "pattern-private-phone-access-proof": "서빙 전 private phone proof",
     }
     return titles.get(candidate_id, "local-only pattern proof before wider authority")
 
@@ -1085,6 +1119,17 @@ def _pattern_proof_artifact_check(*, candidate: dict[str, Any], payload: dict[st
         if not surface_path.exists():
             status = "failed"
             reasons.append("phone-readable source refresh execution surface가 없습니다.")
+    elif candidate_id == "pattern-private-phone-access-proof":
+        errors = validate_phone_access_verify_payload(payload)
+        if errors:
+            status = "failed"
+            reasons.extend(errors)
+        if payload.get("status") not in {"ready", "review", "blocked"}:
+            status = "failed"
+            reasons.append("phone access verify status가 허용 범위 밖입니다.")
+        if not surface_path.exists():
+            status = "failed"
+            reasons.append("phone-readable phone access proof surface가 없습니다.")
     else:
         status = "blocked"
         reasons.append("이 후보에 대한 local proof 규칙이 아직 없습니다.")
@@ -1110,6 +1155,8 @@ def _pattern_proof_surface_for_candidate(candidate_id: str) -> Path:
         return DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE
     if candidate_id == "pattern-source-refresh-execution-confirmation":
         return DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE
+    if candidate_id == "pattern-private-phone-access-proof":
+        return DEFAULT_PHONE_ACCESS_VERIFY_SURFACE
     if candidate_id == "pattern-live-source-browser-gateway":
         return DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE
     return Path("reports/product/missing.html")
@@ -1286,17 +1333,20 @@ def render_pattern_dry_run_proof(payload: dict[str, Any]) -> str:
 <title>MyBroker Pattern Dry-run Proof</title>
 <style>
 :root {{ --bg:#f8f7f2; --ink:#17212b; --muted:#66717e; --line:#dfe2d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }}
-* {{ box-sizing:border-box; }}
+* {{ box-sizing:border-box; min-width:0; }}
+html,body {{ max-width:100%; overflow-x:hidden; }}
 body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
-main {{ width:100%; max-width:900px; margin:0 auto; padding:16px; }}
+main {{ width:100%; max-width:900px; margin:0 auto; padding:16px; overflow:hidden; }}
 .eyebrow {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
 h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }}
+h2,strong,span {{ overflow-wrap:anywhere; word-break:break-word; }}
 h2 {{ margin:0 0 8px; font-size:20px; }}
-p,small {{ color:var(--muted); overflow-wrap:anywhere; }}
+p,small {{ color:var(--muted); overflow-wrap:anywhere; word-break:break-word; }}
+code {{ max-width:100%; white-space:normal; overflow-wrap:anywhere; word-break:break-all; }}
 .hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }}
 .status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; }}
 .metrics,.grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }}
-.metric,.card,.mini {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; min-width:0; }}
+.metric,.card,.mini {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; min-width:0; max-width:100%; overflow:hidden; }}
 .metric strong {{ display:block; font-size:24px; }}
 .card span {{ color:var(--green); font-size:12px; font-weight:900; }}
 .links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
@@ -1364,7 +1414,7 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
             "candidate_id": "pattern-freshness-intake",
             "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
             "status": "ready",
-            "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+            "why": "개인 에이전트 방식은 빠르게 바뀐다. 권한을 넓히기 전에 radar가 최신 패턴을 로컬 증거로 흡수했는지 먼저 확인한다.",
             "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
             "expected_artifact": "reports/runtime/agent-pattern-radar.json",
             "approval_scope": "local_dry_run_only",
@@ -1376,7 +1426,7 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
             "candidate_id": "pattern-method-evidence-intake",
             "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
             "status": "ready",
-            "why": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
+            "why": "조사한 사례가 바로 제품 행동이 되면 안 된다. 신규, 검증됨, 승인필요, 차단 후보를 먼저 분류한다.",
             "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
             "expected_artifact": "reports/runtime/pattern-evidence-intake.json",
             "approval_scope": "local_dry_run_only",
@@ -1388,7 +1438,7 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
             "candidate_id": "pattern-source-refresh-execution-confirmation",
             "source": "OpenClaw safety research / source freshness gate",
             "status": "ready",
-            "why": "Approval response and preflight need a final phone-readable confirmation layer before any live source execution.",
+            "why": "live source 실행 전에는 승인, preflight, 최종 확인이 분리되어야 한다.",
             "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-source-refresh-execution-brief reports/runtime/source-refresh-execution-brief.json",
             "expected_artifact": "reports/runtime/source-refresh-execution-brief.json",
             "approval_scope": "local_dry_run_only",
@@ -1400,7 +1450,7 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
             "candidate_id": "pattern-memory-recall-quality",
             "source": "Obsidian vault research workflow",
             "status": "ready",
-            "why": "Local vault, memory, archive, and audit artifacts can be evaluated without external effects.",
+            "why": "vault, memory, archive, audit 품질은 외부 효과 없이 로컬에서 검증할 수 있다.",
             "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance audit",
             "expected_artifact": "reports/memory/audit.json",
             "approval_scope": "local_dry_run_only",
@@ -1412,7 +1462,7 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
             "candidate_id": "pattern-run-trace-observability",
             "source": "TraceAgent",
             "status": "ready",
-            "why": "Run trace already exists and can prove which local steps influenced the daily loop.",
+            "why": "run trace는 오늘 산출물에 어떤 로컬 단계가 영향을 줬는지 설명한다.",
             "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-run-trace reports/runtime/run-trace.json",
             "expected_artifact": "reports/runtime/run-trace.json",
             "approval_scope": "local_dry_run_only",
@@ -1421,10 +1471,22 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
             "external_effect_performed": False,
         },
         {
+            "candidate_id": "pattern-private-phone-access-proof",
+            "source": "Tailscale Serve private phone access",
+            "status": "ready",
+            "why": "폰에서 읽을 수 있어야 daily analyst가 쓸모 있다. 다만 서빙 실행과 public 노출은 proof와 분리한다.",
+            "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-phone-access-verify reports/runtime/phone-access-verify.json",
+            "expected_artifact": "reports/runtime/phone-access-verify.json",
+            "approval_scope": "local_dry_run_only",
+            "promotion_rule": "Adopt only if phone access verify validates, daily-home remains the first entrypoint, required product links resolve, and no serving command is executed.",
+            "source_decision": by_source.get("Tailscale Serve private phone access", {}).get("decision", "observed"),
+            "external_effect_performed": False,
+        },
+        {
             "candidate_id": "pattern-live-source-browser-gateway",
             "source": "Browser-use / Playwright / Firecrawl",
             "status": "requires_approval",
-            "why": "Browser/scraper tools can improve freshness but cross the live-network boundary.",
+            "why": "브라우저/스크래퍼는 최신성에 유용하지만 live-network 경계를 넘는다.",
             "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-live-preflight --intend-execute --confirm-live-network",
             "expected_artifact": "reports/daily/source-refresh-live-preflight.json",
             "approval_scope": "live_network_refresh",
@@ -1436,7 +1498,7 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
             "candidate_id": "pattern-code-analytics-sandbox",
             "source": "TaskWeaver",
             "status": "blocked",
-            "why": "Generated analysis code needs a deterministic sandbox and report schema before it can shape the daily brief.",
+            "why": "생성 코드 분석은 deterministic sandbox와 report schema가 생기기 전까지 daily brief에 영향을 주면 안 된다.",
             "proof_command": "not_available_until_sandbox_schema_exists",
             "expected_artifact": "reports/runtime/analytics-sandbox-proof.json",
             "approval_scope": "future_local_sandbox",
@@ -1507,7 +1569,7 @@ def render_agent_pattern_radar(payload: dict[str, Any]) -> str:
         f"<strong>{esc(item.get('source', ''))}</strong>"
         f"<p>{esc(item.get('why', ''))}</p>"
         f"<small>{esc(item.get('status', ''))} · {esc(item.get('approval_scope', ''))}</small>"
-        f"<code>{esc(item.get('proof_command', ''))}</code>"
+        f"<code>{esc(_pattern_command_label(item.get('proof_command', '')))}</code>"
         "</article>"
         for item in payload.get("dry_run_candidates", [])
     )
@@ -1523,22 +1585,24 @@ def render_agent_pattern_radar(payload: dict[str, Any]) -> str:
 <title>MyBroker Pattern Radar</title>
 <style>
 :root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
-* {{ box-sizing:border-box; }}
+* {{ box-sizing:border-box; min-width:0; }}
+html,body {{ max-width:100%; overflow-x:hidden; }}
 body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
-main {{ width:100%; max-width:860px; margin:0 auto; padding:18px; }}
+main {{ width:100%; max-width:860px; margin:0 auto; padding:18px; overflow:hidden; }}
 h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }}
+h2,strong,span {{ overflow-wrap:anywhere; word-break:break-word; }}
 h2 {{ margin:0 0 8px; font-size:18px; }}
-p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
+p,small,li {{ color:var(--muted); overflow-wrap:anywhere; word-break:break-word; }}
 .eyebrow,.card span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
-code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+code {{ display:block; max-width:100%; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:normal; overflow-wrap:anywhere; word-break:break-all; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
 .hero,.section,.card,.mini {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
-.hero,.section {{ padding:16px; margin:14px 0; }}
+.hero,.section {{ padding:16px; margin:14px 0; width:100%; }}
 .metrics,.grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }}
-.metric,.card,.mini {{ background:white; padding:14px; min-width:0; }}
+.metric,.card,.mini {{ background:white; padding:14px; min-width:0; width:100%; max-width:100%; overflow:hidden; }}
 .metric strong {{ display:block; font-size:28px; }}
 .stack {{ display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }}
 .reject {{ border-color:#d7b36a; }}
-@media (max-width:680px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid {{ grid-template-columns:1fr; }} }}
+@media (max-width:680px) {{ main {{ width:100vw; max-width:100vw; margin:0; padding:12px; }} h1 {{ font-size:29px; }} .metrics,.grid {{ grid-template-columns:minmax(0,1fr); }} }}
 </style>
 </head>
 <body>
@@ -1565,7 +1629,7 @@ code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; backgrou
 	<strong>{esc(recommended.get('title', '다음 local 실험 없음'))}</strong>
 	<p>{esc(recommended.get('why_now', ''))}</p>
 	<small>{esc(recommended.get('source', ''))} · {esc(recommended.get('approval_scope', ''))}</small>
-	<code>{esc(recommended.get('proof_command', ''))}</code>
+	<code>{esc(_pattern_command_label(recommended.get('proof_command', '')))}</code>
 	</article>
 	<article class="mini">
 	<strong>Done when</strong>

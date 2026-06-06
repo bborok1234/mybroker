@@ -29,6 +29,8 @@ The product surface is the daily brief, not the server.
 | TradingAgents / FinRobot | Role-specialized analyst debate and risk review | source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor |
 | Obsidian research vault workflows | File-based knowledge that compounds | archive manifests, topic memory, source-linked daily artifacts |
 | Yutori/Hermes scout-worker loops | Always-on scout recommends what matters, workers produce auditable next work | daily scout, 20-minute agenda, role-based analyst tasks, explicit weak-evidence warnings |
+| Tailscale Serve/private phone access | Phone access without public deployment | phone-access plan and no-effect access-verify proof before any private serving command |
+| DBOS durable workflows | Durable cron/queue/backfill for long-running agents | deferred until run-ledger and scheduler evidence show missed-run recovery is a real need |
 
 ## Local Runtime Shape
 
@@ -153,6 +155,7 @@ PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance council
 PYTHONPATH=src python3 -m mybroker appliance pattern-dry-run
+PYTHONPATH=src python3 -m mybroker validate-phone-access-verify reports/runtime/phone-access-verify.json
 PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'more "Semiconductors" "council: source freshness를 더 확인하고 싶다"'
 PYTHONPATH=src python3 -m mybroker appliance vault init
 PYTHONPATH=src python3 -m mybroker appliance vault compile --raw-dir examples/vault/raw --wiki-dir reports/vault/wiki
@@ -325,6 +328,9 @@ existing local proof artifacts such as `personal_memory_audit.v1` and `local_run
 their validators, confirms their phone surfaces exist, and marks only local-only candidates as
 `adopted_proof_ready`. Live network, browser/scraper, host-write, credential, account, or order
 patterns remain `approval_required` or `blocked`.
+The private phone access pattern is treated the same way: `phone_access_verify.v1` can pass as a
+local proof, but `tailscale serve`, LAN serving, public exposure, or any persistent host/network
+change remains a separate scoped decision.
 
 The first adopted local proof is `memory_recall_quality`. After the scout chooses the day's topic,
 `appliance run` automatically writes `personal_memory_query.v1` for that topic and links

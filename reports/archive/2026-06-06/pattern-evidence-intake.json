@@ -1,15 +1,15 @@
 {
   "schema_version": "pattern_evidence_intake.v1",
-  "generated_at": "2026-06-06T04:58:01.295158+00:00",
+  "generated_at": "2026-06-06T06:44:40.523814+00:00",
   "status": "review",
   "source_artifacts": {
     "pattern_radar": "reports/runtime/agent-pattern-radar.json",
     "pattern_dry_run_proof": "reports/runtime/pattern-dry-run-proof.json"
   },
   "summary": {
-    "case_count": 19,
-    "candidate_count": 7,
-    "already_verified_count": 5,
+    "case_count": 21,
+    "candidate_count": 8,
+    "already_verified_count": 6,
     "local_candidate_count": 0,
     "approval_gated_count": 1,
     "blocked_count": 1,
@@ -45,6 +45,22 @@
       "proof_states": [
         "passed",
         "passed",
+        "passed"
+      ],
+      "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    },
+    {
+      "source": "Tailscale Serve private phone access",
+      "source_url": "https://tailscale.com/kb/1312/serve",
+      "decision": "adopt_partial",
+      "priority": "high",
+      "observed_pattern": "private tailnet serving can expose local static artifacts to the operator's phone without making the service public",
+      "mybroker_translation": "keep phone-access guidance and access-verify proof as local no-effect artifacts before any private serving command is run",
+      "guardrail": "access-verify reads links only; tailscale serve, LAN serving, and any public exposure remain separate operator-approved actions",
+      "linked_candidates": [
+        "pattern-private-phone-access-proof"
+      ],
+      "proof_states": [
         "passed"
       ],
       "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
@@ -268,6 +284,18 @@
       "intake_note": "채택 또는 부분채택 사례입니다. local proof 후보와 연결될 때만 daily loop에 더 깊게 들어갑니다."
     },
     {
+      "source": "DBOS durable workflows",
+      "source_url": "https://www.dbos.dev/",
+      "decision": "defer",
+      "priority": "watch",
+      "observed_pattern": "durable workflow steps, queues, cron scheduling, resume, and backfill make long-running agents recoverable",
+      "mybroker_translation": "keep launchd, archive manifests, run ledger, and drift review for v1; revisit durable workflow only when missed-run recovery and backfill become recurring operator needs",
+      "guardrail": "defer until missed-run/backfill evidence appears in run-ledger and scheduler proofs; do not add hosted runtime as a default",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "보류 사례입니다. live/browser/scraper/host 권한을 넓히기 전에 별도 승인과 preflight가 필요합니다."
+    },
+    {
       "source": "Hosted trading bots and broker-connected agents",
       "source_url": "",
       "decision": "reject",
@@ -302,7 +330,7 @@
       "approval_scope": "local_dry_run_only",
       "expected_artifact": "reports/runtime/agent-pattern-radar.json",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
-      "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+      "why": "개인 에이전트 방식은 빠르게 바뀐다. 권한을 넓히기 전에 radar가 최신 패턴을 로컬 증거로 흡수했는지 먼저 확인한다.",
       "promotion_rule": "Adopt only if pattern_scout recommends a local next experiment, deferred/rejected boundaries remain explicit, and the phone surface validates.",
       "external_effect_performed": false
     },
@@ -315,7 +343,7 @@
       "approval_scope": "local_dry_run_only",
       "expected_artifact": "reports/runtime/pattern-evidence-intake.json",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
-      "why": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
+      "why": "조사한 사례가 바로 제품 행동이 되면 안 된다. 신규, 검증됨, 승인필요, 차단 후보를 먼저 분류한다.",
       "promotion_rule": "Adopt only if the intake validates, shows stale/repeated recommendations, links the phone surface, and keeps external_effect_performed false.",
       "external_effect_performed": false
     },
@@ -328,7 +356,7 @@
       "approval_scope": "local_dry_run_only",
       "expected_artifact": "reports/runtime/source-refresh-execution-brief.json",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-source-refresh-execution-brief reports/runtime/source-refresh-execution-brief.json",
-      "why": "Approval response and preflight need a final phone-readable confirmation layer before any live source execution.",
+      "why": "live source 실행 전에는 승인, preflight, 최종 확인이 분리되어야 한다.",
       "promotion_rule": "Adopt only if approval, preflight, final confirmation, and actual execution remain separate states.",
       "external_effect_performed": false
     },
@@ -341,7 +369,7 @@
       "approval_scope": "local_dry_run_only",
       "expected_artifact": "reports/memory/audit.json",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance audit",
-      "why": "Local vault, memory, archive, and audit artifacts can be evaluated without external effects.",
+      "why": "vault, memory, archive, audit 품질은 외부 효과 없이 로컬에서 검증할 수 있다.",
       "promotion_rule": "Adopt only if memory audit artifact validates and phone surface shows stale or weak coverage clearly.",
       "external_effect_performed": false
     },
@@ -354,8 +382,21 @@
       "approval_scope": "local_dry_run_only",
       "expected_artifact": "reports/runtime/run-trace.json",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-run-trace reports/runtime/run-trace.json",
-      "why": "Run trace already exists and can prove which local steps influenced the daily loop.",
+      "why": "run trace는 오늘 산출물에 어떤 로컬 단계가 영향을 줬는지 설명한다.",
       "promotion_rule": "Adopt only if trace stays compact, fresh, and linked from daily home/readiness surfaces.",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-private-phone-access-proof",
+      "source": "Tailscale Serve private phone access",
+      "candidate_status": "ready",
+      "proof_status": "passed",
+      "intake_status": "already_verified",
+      "approval_scope": "local_dry_run_only",
+      "expected_artifact": "reports/runtime/phone-access-verify.json",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-phone-access-verify reports/runtime/phone-access-verify.json",
+      "why": "폰에서 읽을 수 있어야 daily analyst가 쓸모 있다. 다만 서빙 실행과 public 노출은 proof와 분리한다.",
+      "promotion_rule": "Adopt only if phone access verify validates, daily-home remains the first entrypoint, required product links resolve, and no serving command is executed.",
       "external_effect_performed": false
     },
     {
@@ -367,7 +408,7 @@
       "approval_scope": "live_network_refresh",
       "expected_artifact": "reports/daily/source-refresh-live-preflight.json",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-live-preflight --intend-execute --confirm-live-network",
-      "why": "Browser/scraper tools can improve freshness but cross the live-network boundary.",
+      "why": "브라우저/스크래퍼는 최신성에 유용하지만 live-network 경계를 넘는다.",
       "promotion_rule": "Adopt only after scoped approval, preflight, cached output validation, and source freshness labeling.",
       "external_effect_performed": false
     },
@@ -380,7 +421,7 @@
       "approval_scope": "future_local_sandbox",
       "expected_artifact": "reports/runtime/analytics-sandbox-proof.json",
       "proof_command": "not_available_until_sandbox_schema_exists",
-      "why": "Generated analysis code needs a deterministic sandbox and report schema before it can shape the daily brief.",
+      "why": "생성 코드 분석은 deterministic sandbox와 report schema가 생기기 전까지 daily brief에 영향을 주면 안 된다.",
       "promotion_rule": "Adopt only after deterministic inputs, saved outputs, validator, and no external effect proof exist.",
       "external_effect_performed": false
     }
@@ -394,7 +435,7 @@
     "approval_scope": "live_network_refresh",
     "expected_artifact": "reports/daily/source-refresh-live-preflight.json",
     "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-live-preflight --intend-execute --confirm-live-network",
-    "why": "Browser/scraper tools can improve freshness but cross the live-network boundary.",
+    "why": "브라우저/스크래퍼는 최신성에 유용하지만 live-network 경계를 넘는다.",
     "promotion_rule": "Adopt only after scoped approval, preflight, cached output validation, and source freshness labeling.",
     "external_effect_performed": false
   },
