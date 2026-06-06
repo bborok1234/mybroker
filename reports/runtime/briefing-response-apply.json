@@ -1,0 +1,80 @@
+{
+  "schema_version": "operator_briefing_response_apply.v1",
+  "generated_at": "2026-06-06T05:33:48.542031+00:00",
+  "status": "applied",
+  "operator_response": "read \"Semiconductors\" \"오늘 브리핑 답장 반영 화면을 최종 확인했다\"",
+  "parsed_response": {
+    "schema_version": "daily_review_response.v1",
+    "recorded_at": "2026-06-06T05:33:48.527681+00:00",
+    "action": "read",
+    "status": "reviewed",
+    "topic": "Semiconductors",
+    "note": "오늘 브리핑 답장 반영 화면을 최종 확인했다",
+    "external_effect_performed": false
+  },
+  "responses_path": "reports/memory/daily-review-responses.jsonl",
+  "source_briefing_packet": {
+    "path": "reports/runtime/daily-briefing-packet.json",
+    "status": "review",
+    "topic": "Semiconductors",
+    "generated_at": "2026-06-06T05:33:00.912002+00:00"
+  },
+  "daily_review": {
+    "path": "reports/memory/daily-review.json",
+    "surface": "reports/product/review.html",
+    "response_count": 5,
+    "signal_count": 1
+  },
+  "daily_scout": {
+    "path": "reports/daily/scout.json",
+    "recommended_topic": "Semiconductors",
+    "review_response_count": 5,
+    "review_signal_count": 1
+  },
+  "review_prompt": {
+    "path": "reports/runtime/review-prompt.json",
+    "surface": "reports/product/review-prompt.html"
+  },
+  "review_effect": {
+    "path": "reports/runtime/review-effect.json",
+    "surface": "reports/product/review-effect.html",
+    "status": "applied",
+    "applied_topic_count": 1
+  },
+  "daily_home": {
+    "path": "reports/runtime/daily-home.json",
+    "surface": "reports/product/daily-home.html",
+    "status": "operator_review",
+    "autonomous_topic": "Semiconductors",
+    "action_item_count": 6
+  },
+  "daily_briefing_packet": {
+    "path": "reports/runtime/daily-briefing-packet.json",
+    "surface": "reports/product/daily-briefing.html",
+    "status": "review",
+    "topic": "Semiconductors",
+    "copy_ready_message_length": 318
+  },
+  "phone_links": {
+    "briefing": "reports/product/daily-briefing.html",
+    "daily_home": "reports/product/daily-home.html",
+    "review_effect": "reports/product/review-effect.html",
+    "review_prompt": "reports/product/review-prompt.html",
+    "daily_review": "reports/product/review.html"
+  },
+  "next_action": "브리핑 답장이 로컬 리뷰 기억, 주제 선택, 반영 증거, 첫 화면, 오늘 브리핑에 반영됐습니다. daily-briefing과 review-effect를 다시 확인하세요.",
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "local_briefing_response_apply_only",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_live_trading",
+    "no_order_execution",
+    "research_only_not_personalized_advice"
+  ]
+}

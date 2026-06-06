@@ -58,6 +58,7 @@ DAILY_REVIEW_SCHEMA_VERSION = "daily_review.v1"
 OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION = "operator_review_prompt.v1"
 OPERATOR_REVIEW_EFFECT_SCHEMA_VERSION = "operator_review_effect.v1"
 OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION = "operator_review_response_apply.v1"
+OPERATOR_BRIEFING_RESPONSE_APPLY_SCHEMA_VERSION = "operator_briefing_response_apply.v1"
 OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION = "operator_council_response_apply.v1"
 OPERATOR_HANDOFF_RESPONSE_APPLY_SCHEMA_VERSION = "operator_handoff_response_apply.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
@@ -131,6 +132,8 @@ DEFAULT_REVIEW_EFFECT_OUTPUT = Path("reports/runtime/review-effect.json")
 DEFAULT_REVIEW_EFFECT_SURFACE = Path("reports/product/review-effect.html")
 DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/review-response-apply.json")
 DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE = Path("reports/product/review-response-apply.html")
+DEFAULT_BRIEFING_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/briefing-response-apply.json")
+DEFAULT_BRIEFING_RESPONSE_APPLY_SURFACE = Path("reports/product/briefing-response-apply.html")
 DEFAULT_COUNCIL_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/council-response-apply.json")
 DEFAULT_COUNCIL_RESPONSE_APPLY_SURFACE = Path("reports/product/council-response-apply.html")
 DEFAULT_HANDOFF_RESPONSES = Path("reports/memory/daily-handoff-responses.jsonl")
@@ -8758,6 +8761,147 @@ def validate_operator_review_response_apply_file(path: str | Path) -> list[str]:
     return validate_operator_review_response_apply_payload(load_json(path))
 
 
+def write_operator_briefing_response_apply(
+    *,
+    payload: dict[str, Any],
+    artifact_output_path: str | Path = DEFAULT_BRIEFING_RESPONSE_APPLY_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_BRIEFING_RESPONSE_APPLY_SURFACE,
+) -> Path:
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_operator_briefing_response_apply(payload), encoding="utf-8")
+    return target
+
+
+def validate_operator_briefing_response_apply_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != OPERATOR_BRIEFING_RESPONSE_APPLY_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"applied", "blocked"}:
+        errors.append("status must be applied or blocked")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if "local_briefing_response_apply_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include local_briefing_response_apply_only")
+    required = [
+        "operator_response",
+        "responses_path",
+        "source_briefing_packet",
+        "daily_review",
+        "daily_scout",
+        "review_prompt",
+        "review_effect",
+        "daily_home",
+        "daily_briefing_packet",
+        "phone_links",
+    ]
+    for field in required:
+        if field not in payload:
+            errors.append(f"missing {field}")
+    effect = payload.get("review_effect", {})
+    if effect.get("status") not in {"applied", "no_feedback", "not_applied", "missing_inputs"}:
+        errors.append("review_effect.status is invalid")
+    home = payload.get("daily_home", {})
+    if home.get("status") not in {"ready", "operator_review", "blocked", ""}:
+        errors.append("daily_home.status is invalid")
+    briefing = payload.get("daily_briefing_packet", {})
+    if briefing.get("status") not in {"ready", "review", "blocked", ""}:
+        errors.append("daily_briefing_packet.status is invalid")
+    if not payload.get("next_action"):
+        errors.append("next_action must not be empty")
+    forbidden = [" --send", "--execute", "--confirm-host-write", "launchctl bootstrap"]
+    if any(fragment in payload.get("operator_response", "") for fragment in forbidden):
+        errors.append("operator_response includes gated execution fragment")
+    return errors
+
+
+def validate_operator_briefing_response_apply_file(path: str | Path) -> list[str]:
+    return validate_operator_briefing_response_apply_payload(load_json(path))
+
+
+def render_operator_briefing_response_apply(payload: dict[str, Any]) -> str:
+    effect = payload.get("review_effect", {})
+    review = payload.get("daily_review", {})
+    scout = payload.get("daily_scout", {})
+    home = payload.get("daily_home", {})
+    briefing = payload.get("daily_briefing_packet", {})
+    status_label = {
+        "applied": "브리핑 응답 적용됨",
+        "blocked": "브리핑 응답 적용 차단됨",
+    }.get(payload.get("status", ""), payload.get("status", "unknown"))
+    links = payload.get("phone_links", {})
+    link_cards = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in links.items()
+        if path
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Briefing Response Apply</title>
+<style>
+:root {{ --bg:#f8f7f2; --ink:#17202a; --muted:#68727c; --line:#dfe3dc; --paper:#fffef9; --accent:#1f5f8b; --green:#1e6b53; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-x:hidden; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; overflow:hidden; }}
+.eyebrow,.metric span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,small {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section {{ border:1px solid var(--line); border-radius:8px; background:var(--paper); padding:16px; margin:14px 0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; overflow-wrap:anywhere; }}
+.metrics,.links {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; overflow-wrap:anywhere; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#edf3f7; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--accent); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Briefing Reply · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>브리핑 답장 반영</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('next_action', ''))}</p>
+<code>{esc(payload.get('operator_response', ''))}</code>
+</section>
+<section class="section">
+<h2>같은 로컬 실행에서 갱신된 것</h2>
+<div class="metrics">
+<article class="metric"><span>Review</span><strong>{esc(review.get('response_count', 0))}</strong><small>responses</small></article>
+<article class="metric"><span>Scout</span><strong>{esc(scout.get('recommended_topic', ''))}</strong><small>{esc(scout.get('review_response_count', 0))} replies read</small></article>
+<article class="metric"><span>Effect</span><strong>{esc(effect.get('status', ''))}</strong><small>review proof</small></article>
+<article class="metric"><span>Daily home</span><strong>{esc(home.get('status', ''))}</strong><small>entrypoint refreshed</small></article>
+<article class="metric"><span>Briefing</span><strong>{esc(briefing.get('status', ''))}</strong><small>{esc(briefing.get('topic', ''))}</small></article>
+<article class="metric"><span>External effect</span><strong>no</strong><small>local only</small></article>
+</div>
+</section>
+<section class="section">
+<h2>다음에 열 화면</h2>
+<div class="links">{link_cards}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 답장 반영은 로컬 review memory와 산출물만 갱신합니다. 알림 전송, live source 실행, host scheduler write, credential, 계좌 접근, 주문 실행, 일임/개인화 추천은 별도 승인 전까지 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
 def render_operator_review_response_apply(payload: dict[str, Any]) -> str:
     effect = payload.get("review_effect", {})
     review = payload.get("daily_review", {})
@@ -9735,6 +9879,7 @@ def build_daily_operator_home(
         status = "ready"
     links = {
         "daily_home": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
+        "daily_briefing": DEFAULT_DAILY_BRIEFING_PACKET_SURFACE.as_posix(),
         "today": Path(today_path).as_posix(),
         "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
         "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
@@ -10327,6 +10472,7 @@ def build_daily_briefing_packet(
         "why_today": why_today,
         "briefing_goal": "폰에서 바로 읽거나 메시지로 붙여넣을 수 있는 하루의 압축 handoff",
         "copy_ready_message": "\n".join(message_lines),
+        "copy_ready_reply_commands": _briefing_reply_commands(selected_topic),
         "recommended_first_link": home_link,
         "reading_route": reading_route,
         "action_items": top_items,
@@ -10369,6 +10515,7 @@ def build_daily_briefing_packet(
             "memory_query": home.get("phone_links", {}).get("memory_query", DEFAULT_MEMORY_QUERY_SURFACE.as_posix()),
             "handoff_study_resolution": home.get("phone_links", {}).get("handoff_study_resolution", DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE.as_posix()),
             "readiness": home.get("phone_links", {}).get("readiness", DEFAULT_DAILY_READINESS_SURFACE.as_posix()),
+            "briefing_response_apply": home.get("phone_links", {}).get("briefing_response_apply", DEFAULT_BRIEFING_RESPONSE_APPLY_SURFACE.as_posix()),
         },
         "safety_boundary": [
             "briefing_packet_reads_existing_artifacts_only",
@@ -10413,6 +10560,15 @@ def validate_daily_briefing_packet_payload(payload: dict[str, Any]) -> list[str]
             errors.append(f"{field} must not be empty")
     if len(payload.get("copy_ready_message", "")) < 120:
         errors.append("copy_ready_message is too thin")
+    reply_commands = payload.get("copy_ready_reply_commands", [])
+    if not reply_commands:
+        errors.append("copy_ready_reply_commands must not be empty")
+    for index, command in enumerate(reply_commands):
+        command_text = command.get("command", "")
+        if "briefing-response-apply" not in command_text:
+            errors.append(f"copy_ready_reply_commands[{index}] must call briefing-response-apply")
+        if command.get("external_effect_performed") is not False:
+            errors.append(f"copy_ready_reply_commands[{index}] external_effect_performed must be false")
     if not payload.get("reading_route"):
         errors.append("reading_route must not be empty")
     if not payload.get("phone_links", {}).get("daily_home"):
@@ -10446,6 +10602,15 @@ def render_daily_briefing_packet(payload: dict[str, Any]) -> str:
         f"<article><span>{esc(item.get('kind', ''))} · {esc(item.get('status', ''))}</span><strong>{esc(item.get('title', ''))}</strong><p>{esc(item.get('why', ''))}</p><a href='{esc(_relative_href(Path(item.get('href', ''))))}'>관련 화면</a></article>"
         for item in payload.get("action_items", [])
     ) or "<p>오늘 바로 처리할 action item은 없습니다.</p>"
+    reply_cards = "".join(
+        "<article>"
+        f"<span>{esc(command.get('action', 'reply'))}</span>"
+        f"<strong>{esc(command.get('label', '답장'))}</strong>"
+        f"<p>{esc(command.get('why', ''))}</p>"
+        f"<code>{esc(command.get('command', ''))}</code>"
+        "</article>"
+        for command in payload.get("copy_ready_reply_commands", [])
+    )
     trust = payload.get("trust", {})
     learning = payload.get("learning", {})
     questions = "".join(f"<li>{esc(question)}</li>" for question in learning.get("next_questions", [])) or "<li>오늘 읽은 뒤 한 줄 피드백을 남기세요.</li>"
@@ -10470,7 +10635,7 @@ p, li, small {{ color:var(--muted); overflow-wrap:anywhere; word-break:break-all
 .metrics, .grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
 .metric, article {{ padding:13px; background:white; min-width:0; }}
 .metric strong, article strong {{ display:block; font-size:21px; overflow-wrap:anywhere; }}
-code {{ display:block; box-sizing:border-box; max-width:100%; padding:12px; border-radius:8px; background:#edf3f7; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; line-break:anywhere; font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+code {{ display:block; box-sizing:border-box; max-width:100%; padding:12px; border-radius:8px; background:#edf3f7; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-all; line-break:anywhere; font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
 a {{ color:var(--accent); font-weight:900; text-decoration:none; }}
 @media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:30px; }} .metrics, .grid {{ grid-template-columns:1fr; }} }}
 </style>
@@ -10497,6 +10662,10 @@ a {{ color:var(--accent); font-weight:900; text-decoration:none; }}
 <section>
 <h2>복사할 메시지</h2>
 <code>{esc(payload.get('copy_ready_message', ''))}</code>
+</section>
+<section>
+<h2>답장으로 남길 것</h2>
+<div class="grid">{reply_cards}</div>
 </section>
 <section>
 <h2>먼저 열 순서</h2>
@@ -14596,6 +14765,27 @@ def _briefing_reading_route(route: list[dict[str, Any]], phone_links: dict[str, 
             "status": "ready",
         })
     return compact
+
+
+def _briefing_reply_commands(topic: str) -> list[dict[str, Any]]:
+    templates = [
+        ("read", "읽었음", "오늘 브리핑을 읽었다는 최소 피드백을 남깁니다.", f"{topic} 브리핑을 읽었다"),
+        ("more", "더 보기", "내일도 같은 흐름을 더 높은 우선순위로 보게 합니다.", f"{topic} 흐름을 더 보고 싶다"),
+        ("confusing", "헷갈림", "다음 브리프에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.", f"{topic} 설명이 아직 어렵다"),
+        ("skip", "건너뜀", "이 주제를 당장은 낮은 우선순위로 내리게 합니다.", f"{topic}은 오늘은 건너뛴다"),
+    ]
+    commands: list[dict[str, Any]] = []
+    for action, label, why, note in templates:
+        response = f'{action} "{topic}" "{note}"'
+        commands.append({
+            "action": action,
+            "label": label,
+            "why": why,
+            "command": f"PYTHONPATH=src python3 -m mybroker appliance briefing-response-apply {shlex.quote(response)}",
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+    return commands
 
 
 def _briefing_strings(values: list[Any], *, limit: int) -> list[str]:

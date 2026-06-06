@@ -45,6 +45,9 @@ from mybroker.appliance import (
     DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT,
     DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE,
     OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION,
+    DEFAULT_BRIEFING_RESPONSE_APPLY_OUTPUT,
+    DEFAULT_BRIEFING_RESPONSE_APPLY_SURFACE,
+    OPERATOR_BRIEFING_RESPONSE_APPLY_SCHEMA_VERSION,
     DEFAULT_COUNCIL_RESPONSE_APPLY_OUTPUT,
     DEFAULT_COUNCIL_RESPONSE_APPLY_SURFACE,
     OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION,
@@ -114,6 +117,7 @@ from mybroker.appliance import (
     write_operator_review_prompt,
     write_operator_review_effect,
     write_operator_review_response_apply,
+    write_operator_briefing_response_apply,
     write_operator_council_response_apply,
     write_operator_handoff_response_apply,
     build_task_status_apply,
@@ -162,6 +166,7 @@ from mybroker.appliance import (
     validate_operator_review_prompt_file,
     validate_operator_review_effect_file,
     validate_operator_review_response_apply_file,
+    validate_operator_briefing_response_apply_file,
     validate_operator_council_response_apply_file,
     validate_operator_handoff_response_apply_file,
     validate_task_status_apply_file,
@@ -401,6 +406,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_review_effect_parser.add_argument("review_effect_path")
     validate_review_response_apply_parser = subcommands.add_parser("validate-review-response-apply", help="Validate an operator_review_response_apply.v1 artifact.")
     validate_review_response_apply_parser.add_argument("review_response_apply_path")
+    validate_briefing_response_apply_parser = subcommands.add_parser("validate-briefing-response-apply", help="Validate an operator_briefing_response_apply.v1 artifact.")
+    validate_briefing_response_apply_parser.add_argument("briefing_response_apply_path")
     validate_council_response_apply_parser = subcommands.add_parser("validate-council-response-apply", help="Validate an operator_council_response_apply.v1 artifact.")
     validate_council_response_apply_parser.add_argument("council_response_apply_path")
     validate_handoff_response_apply_parser = subcommands.add_parser("validate-handoff-response-apply", help="Validate an operator_handoff_response_apply.v1 artifact.")
@@ -722,6 +729,52 @@ def main(argv: list[str] | None = None) -> int:
     appliance_review_response_apply_parser.add_argument("--review-effect-surface", default=DEFAULT_REVIEW_EFFECT_SURFACE.as_posix())
     appliance_review_response_apply_parser.add_argument("--artifact-output", default=DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT.as_posix())
     appliance_review_response_apply_parser.add_argument("--output", default=DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE.as_posix())
+    appliance_briefing_response_apply_parser = appliance_subcommands.add_parser("briefing-response-apply", help="Record one daily briefing reply and refresh review/scout/effect/home/briefing proof.")
+    appliance_briefing_response_apply_parser.add_argument("response", help='Example: more "Semiconductors" "오늘 브리핑을 더 보고 싶다"')
+    appliance_briefing_response_apply_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--plan", default=DEFAULT_RESEARCH_PLAN_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--vault", default=DEFAULT_VAULT_COMPILE_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--task-status-apply", default=DEFAULT_ANALYST_TASK_STATUS_APPLY.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--responses", default=DEFAULT_DAILY_REVIEW_RESPONSES.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--run-id", default="daily-research")
+    appliance_briefing_response_apply_parser.add_argument("--daily-review-output", default=DEFAULT_DAILY_REVIEW_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--daily-review-surface", default=DEFAULT_DAILY_REVIEW_SURFACE.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--scout-output", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--review-prompt-output", default=DEFAULT_REVIEW_PROMPT_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--review-prompt-surface", default=DEFAULT_REVIEW_PROMPT_SURFACE.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--review-effect-output", default=DEFAULT_REVIEW_EFFECT_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--review-effect-surface", default=DEFAULT_REVIEW_EFFECT_SURFACE.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--source-briefing-packet", default=DEFAULT_DAILY_BRIEFING_PACKET_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--agenda", default=DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--today", default=DEFAULT_TODAY_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--morning", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--readiness", default=DEFAULT_DAILY_READINESS_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--handoff", default=DEFAULT_DAILY_HANDOFF_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--handoff-study-resolution", default=DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--handoff-apply", default=DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--run-ledger", default=DEFAULT_DAILY_RUN_LEDGER_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--run-trace", default=DEFAULT_RUN_TRACE_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--task-ledger", default=DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--scheduler-operations", default=DEFAULT_SCHEDULER_OPERATIONS_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--phone-access", default=DEFAULT_PHONE_ACCESS_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--phone-access-verify", default=DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--source-freshness-intake", default=DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--source-refresh-execution", default=DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--memory-query", default=DEFAULT_MEMORY_QUERY_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--learning-ledger", default=DEFAULT_LEARNING_LEDGER_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--pattern-radar", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--pattern-dry-run-proof", default=DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--pattern-evidence-intake", default=DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--daily-home-output", default=DEFAULT_DAILY_HOME_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--daily-home-surface", default=DEFAULT_DAILY_HOME_SURFACE.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--briefing-packet-output", default=DEFAULT_DAILY_BRIEFING_PACKET_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--briefing-packet-surface", default=DEFAULT_DAILY_BRIEFING_PACKET_SURFACE.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--artifact-output", default=DEFAULT_BRIEFING_RESPONSE_APPLY_OUTPUT.as_posix())
+    appliance_briefing_response_apply_parser.add_argument("--output", default=DEFAULT_BRIEFING_RESPONSE_APPLY_SURFACE.as_posix())
     appliance_handoff_response_apply_parser = appliance_subcommands.add_parser("handoff-response-apply", help="Record one copied handoff response and refresh the affected local proofs.")
     appliance_handoff_response_apply_parser.add_argument("response", help='Example: more "Semiconductors" "continue this tomorrow" or AT-001 carry "still open"')
     appliance_handoff_response_apply_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
@@ -1311,6 +1364,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-review-response-apply":
         errors = validate_operator_review_response_apply_file(args.review_response_apply_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-briefing-response-apply":
+        errors = validate_operator_briefing_response_apply_file(args.briefing_response_apply_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -2182,6 +2242,172 @@ def main(argv: list[str] | None = None) -> int:
                 "review_effect": args.review_effect_output,
                 "effect_status": effect_payload.get("status", ""),
                 "external_effect_performed": False,
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "briefing-response-apply":
+            parsed_response = parse_daily_review_response(args.response)
+            source_packet = json.loads(Path(args.source_briefing_packet).read_text(encoding="utf-8")) if Path(args.source_briefing_packet).exists() else {}
+            responses_path = record_daily_review_response(response=args.response, responses_path=args.responses)
+            written_review = write_daily_review(
+                scout_path=args.scout_output,
+                task_status_apply_path=args.task_status_apply,
+                responses_path=responses_path,
+                artifact_output_path=args.daily_review_output,
+                surface_output_path=args.daily_review_surface,
+            )
+            scout_payload = build_daily_scout(
+                topics_path=args.topics,
+                plan_path=args.plan,
+                evidence_path=args.evidence,
+                memory_path=args.memory,
+                vault_path=args.vault,
+                review_path=args.daily_review_output,
+                output_path=args.scout_output,
+                run_id=args.run_id,
+            )
+            written_prompt = write_operator_review_prompt(
+                scout_path=args.scout_output,
+                daily_review_path=args.daily_review_output,
+                artifact_output_path=args.review_prompt_output,
+                surface_output_path=args.review_prompt_surface,
+            )
+            written_effect = write_operator_review_effect(
+                scout_path=args.scout_output,
+                daily_review_path=args.daily_review_output,
+                review_prompt_path=args.review_prompt_output,
+                artifact_output_path=args.review_effect_output,
+                surface_output_path=args.review_effect_surface,
+            )
+            written_home = write_daily_operator_home(
+                scout_path=args.scout_output,
+                agenda_path=args.agenda,
+                today_path=args.today,
+                morning_path=args.morning,
+                readiness_path=args.readiness,
+                handoff_path=args.handoff,
+                handoff_study_resolution_path=args.handoff_study_resolution,
+                handoff_apply_path=args.handoff_apply,
+                run_ledger_path=args.run_ledger,
+                run_trace_path=args.run_trace,
+                task_ledger_path=args.task_ledger,
+                scheduler_operations_path=args.scheduler_operations,
+                phone_access_path=args.phone_access,
+                phone_access_verify_path=args.phone_access_verify,
+                notification_path=args.notification,
+                source_freshness_intake_path=args.source_freshness_intake,
+                source_refresh_execution_brief_path=args.source_refresh_execution,
+                memory_query_path=args.memory_query,
+                memory_audit_path=args.memory_audit,
+                learning_ledger_path=args.learning_ledger,
+                pattern_radar_path=args.pattern_radar,
+                pattern_dry_run_proof_path=args.pattern_dry_run_proof,
+                pattern_evidence_intake_path=args.pattern_evidence_intake,
+                artifact_output_path=args.daily_home_output,
+                surface_output_path=args.daily_home_surface,
+            )
+            written_briefing = write_daily_briefing_packet(
+                daily_home_path=args.daily_home_output,
+                today_path=args.today,
+                readiness_path=args.readiness,
+                run_ledger_path=args.run_ledger,
+                handoff_study_resolution_path=args.handoff_study_resolution,
+                learning_ledger_path=args.learning_ledger,
+                memory_query_path=args.memory_query,
+                notification_path=args.notification,
+                artifact_output_path=args.briefing_packet_output,
+                surface_output_path=args.briefing_packet_surface,
+            )
+            review_payload = json.loads(Path(args.daily_review_output).read_text(encoding="utf-8"))
+            effect_payload = json.loads(Path(args.review_effect_output).read_text(encoding="utf-8"))
+            home_payload = json.loads(Path(args.daily_home_output).read_text(encoding="utf-8"))
+            briefing_payload = json.loads(Path(args.briefing_packet_output).read_text(encoding="utf-8"))
+            status = "applied" if effect_payload.get("status") == "applied" and briefing_payload.get("schema_version") == "daily_briefing_packet.v1" else "blocked"
+            apply_payload = {
+                "schema_version": OPERATOR_BRIEFING_RESPONSE_APPLY_SCHEMA_VERSION,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "status": status,
+                "operator_response": args.response,
+                "parsed_response": parsed_response,
+                "responses_path": Path(responses_path).as_posix(),
+                "source_briefing_packet": {
+                    "path": args.source_briefing_packet,
+                    "status": source_packet.get("status", "missing"),
+                    "topic": source_packet.get("topic", ""),
+                    "generated_at": source_packet.get("generated_at", ""),
+                },
+                "daily_review": {
+                    "path": args.daily_review_output,
+                    "surface": written_review.as_posix(),
+                    "response_count": review_payload.get("summary", {}).get("response_count", 0),
+                    "signal_count": review_payload.get("summary", {}).get("signal_count", 0),
+                },
+                "daily_scout": {
+                    "path": args.scout_output,
+                    "recommended_topic": scout_payload.get("recommended_topic", {}).get("name", ""),
+                    "review_response_count": scout_payload.get("review_context", {}).get("response_count", 0),
+                    "review_signal_count": scout_payload.get("review_context", {}).get("signal_count", 0),
+                },
+                "review_prompt": {
+                    "path": args.review_prompt_output,
+                    "surface": written_prompt.as_posix(),
+                },
+                "review_effect": {
+                    "path": args.review_effect_output,
+                    "surface": written_effect.as_posix(),
+                    "status": effect_payload.get("status", ""),
+                    "applied_topic_count": effect_payload.get("summary", {}).get("applied_topic_count", 0),
+                },
+                "daily_home": {
+                    "path": args.daily_home_output,
+                    "surface": written_home.as_posix(),
+                    "status": home_payload.get("status", ""),
+                    "autonomous_topic": home_payload.get("summary", {}).get("autonomous_topic", ""),
+                    "action_item_count": home_payload.get("summary", {}).get("action_item_count", 0),
+                },
+                "daily_briefing_packet": {
+                    "path": args.briefing_packet_output,
+                    "surface": written_briefing.as_posix(),
+                    "status": briefing_payload.get("status", ""),
+                    "topic": briefing_payload.get("topic", ""),
+                    "copy_ready_message_length": len(briefing_payload.get("copy_ready_message", "")),
+                },
+                "phone_links": {
+                    "briefing": args.briefing_packet_surface,
+                    "daily_home": args.daily_home_surface,
+                    "review_effect": args.review_effect_surface,
+                    "review_prompt": args.review_prompt_surface,
+                    "daily_review": args.daily_review_surface,
+                },
+                "next_action": "브리핑 답장이 로컬 리뷰 기억, 주제 선택, 반영 증거, 첫 화면, 오늘 브리핑에 반영됐습니다. daily-briefing과 review-effect를 다시 확인하세요." if status == "applied" else "응답은 기록됐지만 반영 증거 또는 브리핑 검증이 막혔습니다. review-effect와 daily-briefing validator를 확인하세요.",
+                "external_effect_performed": False,
+                "host_write_performed": False,
+                "policy": "research_only",
+                "safety_boundary": [
+                    "local_briefing_response_apply_only",
+                    "does_not_fetch_live_network",
+                    "does_not_send_notifications",
+                    "does_not_write_host_scheduler",
+                    "does_not_use_credentials",
+                    "no_account_access",
+                    "no_live_trading",
+                    "no_order_execution",
+                    "research_only_not_personalized_advice",
+                ],
+            }
+            written_apply = write_operator_briefing_response_apply(
+                payload=apply_payload,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            print(json.dumps({
+                "briefing_response_apply": args.artifact_output,
+                "briefing_response_apply_surface": written_apply.as_posix(),
+                "daily_home": args.daily_home_output,
+                "daily_briefing_packet": args.briefing_packet_output,
+                "review_effect": args.review_effect_output,
+                "status": status,
+                "external_effect_performed": False,
+                "host_write_performed": False,
             }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "handoff-response-apply":
@@ -3379,6 +3605,18 @@ def main(argv: list[str] | None = None) -> int:
                 pattern_evidence_intake_path=pattern_evidence_artifact_path,
                 pattern_dry_run_proof_path=pattern_proof_artifact_path,
             )
+            written_briefing_packet = write_daily_briefing_packet(
+                artifact_output_path=briefing_packet_artifact_path,
+                surface_output_path=briefing_packet_surface_path,
+                daily_home_path=daily_home_artifact_path,
+                today_path=written_today,
+                readiness_path=readiness_artifact_path,
+                run_ledger_path=run_ledger_artifact_path,
+                handoff_study_resolution_path=handoff_resolution_artifact_path,
+                learning_ledger_path=learning_ledger_artifact_path,
+                memory_query_path=memory_query_artifact_path,
+                notification_path=notification_path,
+            )
             written_phone_access_verify = write_phone_access_verify(
                 project_root=".",
                 phone_access_path=phone_access_path,
@@ -3414,6 +3652,18 @@ def main(argv: list[str] | None = None) -> int:
                 learning_ledger_path=learning_ledger_artifact_path,
                 pattern_evidence_intake_path=pattern_evidence_artifact_path,
                 pattern_dry_run_proof_path=pattern_proof_artifact_path,
+            )
+            written_briefing_packet = write_daily_briefing_packet(
+                artifact_output_path=briefing_packet_artifact_path,
+                surface_output_path=briefing_packet_surface_path,
+                daily_home_path=daily_home_artifact_path,
+                today_path=written_today,
+                readiness_path=readiness_artifact_path,
+                run_ledger_path=run_ledger_artifact_path,
+                handoff_study_resolution_path=handoff_resolution_artifact_path,
+                learning_ledger_path=learning_ledger_artifact_path,
+                memory_query_path=memory_query_artifact_path,
+                notification_path=notification_path,
             )
             written_phone_access_verify = write_phone_access_verify(
                 project_root=".",

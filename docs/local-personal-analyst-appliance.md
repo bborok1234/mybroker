@@ -60,6 +60,7 @@ launchd
   -> daily_run_ledger.v1 + /run-ledger heartbeat surface
   -> daily_handoff.v1 + /handoff continuity surface
   -> daily_briefing_packet.v1 + /daily-briefing copy-ready phone/message packet
+  -> operator_briefing_response_apply.v1 + /briefing-response-apply reply proof
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -145,6 +146,7 @@ PYTHONPATH=src python3 -m mybroker appliance morning
 PYTHONPATH=src python3 -m mybroker appliance run-ledger
 PYTHONPATH=src python3 -m mybroker appliance handoff
 PYTHONPATH=src python3 -m mybroker appliance briefing
+PYTHONPATH=src python3 -m mybroker appliance briefing-response-apply 'more "Semiconductors" "오늘 브리핑을 더 보고 싶다"'
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance council
@@ -201,6 +203,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/handoff-study-resolution.html`: phone-readable handoff study surface to inspect before copying a local handoff response; it does not auto-close questions or execute anything.
 - `reports/runtime/daily-briefing-packet.json`: machine-readable compact daily handoff for phone and message workflows.
 - `reports/product/daily-briefing.html`: phone-readable copy-ready daily briefing packet with today's topic, trust status, first links, caveats, and one message suitable for Telegram, iMessage, Slack, or manual paste.
+- `reports/runtime/briefing-response-apply.json`: machine-readable proof that one copied briefing response refreshed review memory, scout, review-effect, daily-home, and daily-briefing.
+- `reports/product/briefing-response-apply.html`: phone-readable proof surface showing whether the briefing reply affected the next local analyst loop.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
 - `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
 - `reports/runtime/source-freshness-intake.json`: machine-readable approval intake that turns source freshness, sample/cache status, blocked live candidates, stale-context guard, and scoped approval response into one local proof packet.
@@ -253,6 +257,11 @@ readiness, run-ledger, handoff study, learning, memory-query, and notification a
 `daily_briefing_packet.v1` plus `daily-briefing.html`. It does not send messages, fetch sources,
 write scheduler state, use credentials, or widen authority. `appliance notify` may reuse the packet
 as its dry-run message, but actual delivery still requires the separate notification send gate.
+`briefing-response-apply` is the local reply step for that packet. It records a copied one-line
+briefing response as review memory, regenerates review/scout/effect proof, then refreshes
+daily-home and daily-briefing so the operator can see whether the reply is now part of the loop.
+It does not send a message, poll a messaging inbox, fetch live sources, write host state, use
+credentials, access accounts, execute orders, or make discretionary decisions.
 `tasks.html` translates that journal into queued work for source_scout, market_mapper, skeptic,
 beginner_tutor, memory_librarian, and publisher roles. It does not execute commands; live network,
 host writes, notification send, credentials, and trading remain behind separate approval gates.
