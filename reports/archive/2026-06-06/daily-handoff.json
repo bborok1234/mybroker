@@ -1,26 +1,26 @@
 {
   "schema_version": "daily_handoff.v1",
-  "generated_at": "2026-06-06T04:00:11.350246+00:00",
+  "generated_at": "2026-06-06T04:19:32.479450+00:00",
   "status": "review",
   "run_id": "daily-research",
   "summary": {
     "carried_item_count": 9,
     "reflected_today_count": 5,
     "unresolved_count": 4,
-    "duplicate_today_count": 11,
+    "duplicate_today_count": 12,
     "review_effect_status": "applied",
     "council_status": "read_with_caution",
     "memory_risk_count": 1,
     "study_closure_count": 4
   },
   "canonical_run": {
-    "entry_id": "2026-06-06:daily-research:2026-06-06T04:00:11.345861+00:00",
+    "entry_id": "2026-06-06:daily-research:2026-06-06T04:19:32.478496+00:00",
     "run_id": "daily-research",
     "local_day": "2026-06-06",
     "run_status": "ready",
     "today_path": "reports/archive/2026-06-06/today.html",
     "archive_manifest": "reports/archive/2026-06-06/manifest.json",
-    "recorded_at": "2026-06-06T04:00:11.345861+00:00"
+    "recorded_at": "2026-06-06T04:19:32.478496+00:00"
   },
   "carried_forward": [
     {

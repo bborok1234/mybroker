@@ -1949,11 +1949,15 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(resolution_payload["schema_version"], "handoff_study_resolution.v1")
         self.assertEqual(resolution_payload["status"], "review")
         self.assertGreaterEqual(resolution_payload["summary"]["resolution_item_count"], 1)
-        self.assertGreaterEqual(resolution_payload["summary"]["blocked_by_source_freshness_count"], 1)
-        self.assertTrue(any(item["status"] == "blocked_by_source_freshness" for item in resolution_payload["items"]))
+        self.assertGreaterEqual(resolution_payload["summary"]["study_with_freshness_caveat_count"], 1)
+        self.assertEqual(resolution_payload["summary"]["blocked_by_source_freshness_count"], 0)
+        self.assertTrue(any(item["status"] == "study_with_freshness_caveat" for item in resolution_payload["items"]))
+        self.assertTrue(any(item["requires_live_refresh_to_finalize"] for item in resolution_payload["items"]))
+        self.assertTrue(all(item["source_freshness_caveat"] for item in resolution_payload["items"]))
         self.assertTrue(all(item["evidence_refs"] for item in resolution_payload["items"]))
         self.assertIn("남은 질문을 공부로 닫기", resolution_html)
         self.assertIn("답변 후보", resolution_html)
+        self.assertIn("근거 신선도 주의", resolution_html)
         self.assertNotIn("schema_version", resolution_html)
 
     def test_task_status_response_apply_updates_ledger_locally(self) -> None:
