@@ -213,6 +213,7 @@ def build_daily_scout(
     vault_by_topic = _vault_notes_by_topic(vault)
     review_by_topic = _review_signals_by_topic(review)
     recommendations = []
+    recommendation_contexts: dict[str, dict[str, Any]] = {}
     for interest in config.get("interests", []):
         topic_id = interest.get("topic_id", "")
         memory_topic = memory_by_id.get(topic_id, {})
@@ -238,6 +239,8 @@ def build_daily_scout(
             "next_question": _scout_next_question(plan_item, memory_topic, linked_notes),
             "source_names": source_names,
             "latest_titles": memory_topic.get("latest_titles", [])[:5],
+            "new_evidence_count": int(memory_topic.get("new_evidence_count", 0) or 0),
+            "changed_since_previous": bool(memory_topic.get("changed_since_previous")),
             "linked_vault_notes": [
                 {
                     "title": note.get("title", ""),
@@ -264,6 +267,17 @@ def build_daily_scout(
         )
         recommendation["copy_ready_responses"] = _scout_copy_ready_responses(recommendation)
         recommendations.append(recommendation)
+        recommendation_contexts[topic_id] = {
+            "interest": interest,
+            "memory_topic": memory_topic,
+            "plan_item": plan_item,
+            "linked_notes": linked_notes,
+        }
+    rotation_guard = _apply_scout_rotation_guard(
+        recommendations=recommendations,
+        recommendation_contexts=recommendation_contexts,
+        memory_run_count=int(memory.get("run_count", 0) or 0),
+    )
     recommendations.sort(key=lambda row: (-float(row["score"]), row["name"]))
     for index, recommendation in enumerate(recommendations, start=1):
         recommendation["priority_rank"] = index
@@ -283,6 +297,7 @@ def build_daily_scout(
         "recommendation_count": len(recommendations),
         "recommended_topic": top,
         "recommendations": recommendations,
+        "rotation_guard": rotation_guard,
         "source_context": {
             "source_count": len(evidence.get("source_status", [])),
             "collection_gaps": evidence.get("collection_gaps", []),
@@ -340,6 +355,14 @@ def validate_daily_scout_payload(payload: dict[str, Any]) -> list[str]:
         for field in ["headline", "why_today", "confidence_note", "missing_evidence_note", "research_only_note"]:
             if field not in brief:
                 errors.append(f"recommendations[{index}].operator_brief missing {field}")
+    rotation = payload.get("rotation_guard", {})
+    for field in ["status", "run_count", "pre_rotation_topic", "selected_topic", "rotated", "reason", "external_effect_performed"]:
+        if field not in rotation:
+            errors.append(f"rotation_guard missing {field}")
+    if rotation.get("status") not in {"not_needed", "rotated", "insufficient_alternative", "operator_override", "missing"}:
+        errors.append("rotation_guard.status must be not_needed, rotated, insufficient_alternative, operator_override, or missing")
+    if rotation.get("external_effect_performed") is not False:
+        errors.append("rotation_guard.external_effect_performed must be false")
     autonomous = payload.get("autonomous_start", {})
     if autonomous.get("mode") != "system_recommends_first_topic":
         errors.append("autonomous_start.mode must be system_recommends_first_topic")
@@ -1155,6 +1178,151 @@ def _review_signals_by_topic(review: dict[str, Any]) -> dict[str, dict[str, Any]
     return rows
 
 
+def _apply_scout_rotation_guard(
+    *,
+    recommendations: list[dict[str, Any]],
+    recommendation_contexts: dict[str, dict[str, Any]],
+    memory_run_count: int,
+) -> dict[str, Any]:
+    if not recommendations:
+        return {
+            "status": "missing",
+            "run_count": memory_run_count,
+            "pre_rotation_topic": "",
+            "selected_topic": "",
+            "rotated": False,
+            "reason": "추천 후보가 없습니다.",
+            "external_effect_performed": False,
+        }
+    base_sorted = sorted(recommendations, key=lambda row: (-float(row["score"]), row["name"]))
+    top = base_sorted[0]
+    top_id = top.get("topic_id", "")
+    top_review = top.get("review_signal", {})
+    if memory_run_count < 3:
+        return {
+            "status": "not_needed",
+            "run_count": memory_run_count,
+            "pre_rotation_topic": top_id,
+            "selected_topic": top_id,
+            "rotated": False,
+            "reason": "아직 반복 실행이 충분히 쌓이지 않아 점수순 추천을 유지합니다.",
+            "external_effect_performed": False,
+        }
+    if _positive_scout_review(top_review):
+        return {
+            "status": "operator_override",
+            "run_count": memory_run_count,
+            "pre_rotation_topic": top_id,
+            "selected_topic": top_id,
+            "rotated": False,
+            "reason": "사용자가 이 주제를 더 보겠다는 피드백을 남겨 순환보다 operator review를 우선합니다.",
+            "external_effect_performed": False,
+        }
+    if top.get("changed_since_previous") or int(top.get("new_evidence_count", 0) or 0) > 0:
+        return {
+            "status": "not_needed",
+            "run_count": memory_run_count,
+            "pre_rotation_topic": top_id,
+            "selected_topic": top_id,
+            "rotated": False,
+            "reason": "최고점 주제에 새 근거 또는 변화가 있어 반복이어도 먼저 봅니다.",
+            "external_effect_performed": False,
+        }
+    eligible = [
+        row for row in recommendations
+        if row.get("topic_id") != top_id
+        and row.get("latest_titles")
+        and row.get("source_names")
+        and not _positive_scout_review(row.get("review_signal", {}))
+    ]
+    if not eligible:
+        return {
+            "status": "insufficient_alternative",
+            "run_count": memory_run_count,
+            "pre_rotation_topic": top_id,
+            "selected_topic": top_id,
+            "rotated": False,
+            "reason": "반복은 감지됐지만 오늘 순환할 만한 대체 주제의 근거가 부족합니다.",
+            "external_effect_performed": False,
+        }
+    topic_order = [row.get("topic_id", "") for row in recommendations]
+    start = memory_run_count % len(recommendations)
+    selected = next(
+        (
+            recommendations[(start + offset) % len(recommendations)]
+            for offset in range(len(recommendations))
+            if recommendations[(start + offset) % len(recommendations)] in eligible
+        ),
+        eligible[0],
+    )
+    selected_id = selected.get("topic_id", "")
+    bonus = max(0.1, round(float(top.get("score", 0) or 0) - float(selected.get("score", 0) or 0) + 0.1, 2))
+    selected["score"] = round(float(selected.get("score", 0) or 0) + bonus, 2)
+    selected.setdefault("score_factors", []).append({
+        "name": "coverage_rotation_guard",
+        "delta": bonus,
+        "reason": "새 근거 없는 반복 추천을 줄이고 오늘 학습 커버리지를 넓힘",
+    })
+    context = recommendation_contexts.get(selected_id, {})
+    memory_topic = context.get("memory_topic", selected)
+    selected["action"] = _scout_action(float(selected.get("score", 0) or 0), memory_topic)
+    selected["rotation_guard_note"] = "이 주제는 반복 고착을 줄이기 위한 오늘의 커버리지 순환 후보입니다."
+    if context:
+        selected["operator_brief"] = _scout_operator_brief(
+            recommendation=selected,
+            interest=context.get("interest", {}),
+            memory_topic=memory_topic,
+            plan_item=context.get("plan_item", {}),
+        )
+        selected["operator_brief"]["headline"] = f"오늘은 {selected.get('name', '이 주제')}로 커버리지를 넓힙니다."
+        selected["operator_brief"]["why_today"] = (
+            selected["operator_brief"].get("why_today", "")
+            + " 기존 최고점 주제가 새 근거 없이 반복되어, 오늘은 다른 흐름을 먼저 보도록 순환 가드가 개입했습니다."
+        ).strip()
+        selected["beginner_reading_order"] = _scout_reading_order(
+            recommendation=selected,
+            plan_item=context.get("plan_item", {}),
+            memory_topic=memory_topic,
+            linked_notes=context.get("linked_notes", []),
+        )
+    return {
+        "status": "rotated",
+        "run_count": memory_run_count,
+        "pre_rotation_topic": top_id,
+        "selected_topic": selected_id,
+        "rotated": True,
+        "reason": (
+            f"{top.get('name', top_id)}가 새 근거 없이 반복되어 "
+            f"{selected.get('name', selected_id)}로 오늘 커버리지를 넓혔습니다."
+        ),
+        "coverage_slot": topic_order[start] if topic_order else "",
+        "external_effect_performed": False,
+    }
+
+
+def _positive_scout_review(review_signal: dict[str, Any] | None) -> bool:
+    signal = review_signal or {}
+    if str(signal.get("latest_status", "")) != "want_more" and float(signal.get("score_delta", 0) or 0) <= 0:
+        return False
+    return _scout_review_is_fresh(signal)
+
+
+def _scout_review_is_fresh(review_signal: dict[str, Any] | None) -> bool:
+    signal = review_signal or {}
+    responses = signal.get("responses", [])
+    recorded_at = responses[-1].get("recorded_at", "") if responses else ""
+    if not recorded_at:
+        return True
+    try:
+        parsed = datetime.fromisoformat(str(recorded_at).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    age_hours = (datetime.now(timezone.utc) - parsed.astimezone(timezone.utc)).total_seconds() / 3600
+    return age_hours <= 36
+
+
 def _scout_score(
     *,
     memory_topic: dict[str, Any],
@@ -1166,12 +1334,18 @@ def _scout_score(
     factors = [{"name": "base_interest", "delta": 1.0, "reason": "configured local interest"}]
     review_signal = review_signal or {}
     review_delta = float(review_signal.get("score_delta", 0) or 0)
-    if review_delta:
+    if review_delta and _scout_review_is_fresh(review_signal):
         score += review_delta
         factors.append({
             "name": "operator_review",
             "delta": round(review_delta, 2),
             "reason": review_signal.get("reason", "operator daily review signal"),
+        })
+    elif review_delta:
+        factors.append({
+            "name": "operator_review_expired",
+            "delta": 0,
+            "reason": "오래된 operator review라 오늘 scout 점수에는 반영하지 않음",
         })
     new_count = int(memory_topic.get("new_evidence_count", 0) or 0)
     if new_count:

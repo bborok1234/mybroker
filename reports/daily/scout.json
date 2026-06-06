@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_scout.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-06T03:34:24.081656+00:00",
+  "generated_at": "2026-06-06T04:00:11.051036+00:00",
   "inputs": {
     "topics_path": "config/topics.json",
     "plan_path": "reports/daily/research-plan.json",
@@ -31,6 +31,8 @@
       "Apple Inc. 10-Q",
       "Apple Inc. 8-K"
     ],
+    "new_evidence_count": 0,
+    "changed_since_previous": false,
     "linked_vault_notes": [
       {
         "title": "Semiconductor cycle learning note",
@@ -168,6 +170,8 @@
         "Apple Inc. 10-Q",
         "Apple Inc. 8-K"
       ],
+      "new_evidence_count": 0,
+      "changed_since_previous": false,
       "linked_vault_notes": [
         {
           "title": "Semiconductor cycle learning note",
@@ -306,6 +310,8 @@
         "Apple Inc. 10-Q",
         "Apple Inc. 8-K"
       ],
+      "new_evidence_count": 0,
+      "changed_since_previous": false,
       "linked_vault_notes": [],
       "review_signal": {},
       "missing_evidence": [
@@ -403,6 +409,8 @@
         "Apple Inc. 10-Q",
         "Apple Inc. 8-K"
       ],
+      "new_evidence_count": 0,
+      "changed_since_previous": false,
       "linked_vault_notes": [],
       "review_signal": {},
       "missing_evidence": [
@@ -498,6 +506,8 @@
         "Apple Inc. 10-Q",
         "Apple Inc. 8-K"
       ],
+      "new_evidence_count": 0,
+      "changed_since_previous": false,
       "linked_vault_notes": [],
       "review_signal": {},
       "missing_evidence": [
@@ -591,6 +601,8 @@
         "Higher yields pressure growth themes despite resilient demand",
         "SPY broad market trend sample"
       ],
+      "new_evidence_count": 0,
+      "changed_since_previous": false,
       "linked_vault_notes": [],
       "review_signal": {},
       "missing_evidence": [
@@ -667,6 +679,15 @@
       ]
     }
   ],
+  "rotation_guard": {
+    "status": "operator_override",
+    "run_count": 69,
+    "pre_rotation_topic": "semiconductors",
+    "selected_topic": "semiconductors",
+    "rotated": false,
+    "reason": "사용자가 이 주제를 더 보겠다는 피드백을 남겨 순환보다 operator review를 우선합니다.",
+    "external_effect_performed": false
+  },
   "source_context": {
     "source_count": 3,
     "collection_gaps": [

@@ -9650,6 +9650,7 @@ def build_daily_operator_home(
     pattern_evidence_intake = _load_optional_json(pattern_evidence_intake_path)
     read_first = morning.get("read_first", {})
     scout_topic = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    rotation_guard = scout.get("rotation_guard", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
     primary_agenda = agenda.get("primary_topic", {}) if agenda.get("schema_version") == DAILY_BRIEF_AGENDA_SCHEMA_VERSION else {}
     autonomous_topic = scout_topic or primary_agenda
     operator_brief = autonomous_topic.get("operator_brief", {})
@@ -9880,6 +9881,8 @@ def build_daily_operator_home(
             "autonomous_topic": autonomous_name,
             "autonomous_reason": autonomous_why,
             "scout_operator_input_required": scout.get("autonomous_start", {}).get("operator_input_required", False),
+            "topic_rotation_status": rotation_guard.get("status", "missing"),
+            "topic_rotation_rotated": bool(rotation_guard.get("rotated", False)),
             "memory_recall_quality": recall_quality.get("level", "missing"),
             "memory_recall_matches": int(memory_query.get("matched_topic_count", 0) or 0) + int(memory_query.get("matched_archive_count", 0) or 0) + int(memory_query.get("matched_vault_note_count", 0) or 0),
             "learning_status": learning_ledger.get("status", "missing"),
@@ -9913,6 +9916,15 @@ def build_daily_operator_home(
             "why_today": autonomous_why,
             "confidence_note": autonomous_confidence,
             "missing_evidence_note": autonomous_missing,
+            "rotation_guard": {
+                "status": rotation_guard.get("status", "missing"),
+                "run_count": rotation_guard.get("run_count", 0),
+                "pre_rotation_topic": rotation_guard.get("pre_rotation_topic", ""),
+                "selected_topic": rotation_guard.get("selected_topic", autonomous_topic.get("topic_id", "")),
+                "rotated": bool(rotation_guard.get("rotated", False)),
+                "reason": rotation_guard.get("reason", "아직 주제 순환 판단을 만들 수 없습니다."),
+                "external_effect_performed": False,
+            },
             "copy_ready_responses": (
                 autonomous_topic.get("copy_ready_responses")
                 or agenda.get("copy_ready_responses")
@@ -10104,6 +10116,12 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("autonomous_scout.operator_input_required must be false")
     if not autonomous.get("why_today"):
         errors.append("autonomous_scout.why_today must not be empty")
+    rotation = autonomous.get("rotation_guard", {})
+    for field in ["status", "run_count", "pre_rotation_topic", "selected_topic", "rotated", "reason", "external_effect_performed"]:
+        if field not in rotation:
+            errors.append(f"autonomous_scout.rotation_guard missing {field}")
+    if rotation.get("external_effect_performed") is not False:
+        errors.append("autonomous_scout.rotation_guard.external_effect_performed must be false")
     recall = payload.get("memory_recall_adoption", {})
     for field in ["pattern_candidate_id", "proof_status", "query", "status", "quality_level", "quality_summary", "surface", "external_effect_performed"]:
         if field not in recall:
@@ -10212,6 +10230,7 @@ def validate_daily_operator_home_file(path: str | Path) -> list[str]:
 def render_daily_operator_home(payload: dict[str, Any]) -> str:
     summary = payload.get("summary", {})
     autonomous = payload.get("autonomous_scout", {})
+    rotation = autonomous.get("rotation_guard", {})
     recall = payload.get("memory_recall_adoption", {})
     trace = payload.get("trace_observability_adoption", {})
     intake = payload.get("source_freshness_intake_adoption", {})
@@ -10385,6 +10404,13 @@ td strong,td span {{ display:block; }}
 <p>{esc(autonomous.get('why_today', summary.get('autonomous_reason', '')))}</p>
 <p>{esc(autonomous.get('confidence_note', ''))}</p>
 <p>{esc(autonomous.get('missing_evidence_note', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Rotation</span><strong>{esc(rotation.get('status', 'missing'))}</strong></article>
+<article class="metric"><span>Rotated</span><strong>{esc('yes' if rotation.get('rotated') else 'no')}</strong></article>
+<article class="metric"><span>Before</span><strong>{esc(rotation.get('pre_rotation_topic', ''))}</strong></article>
+<article class="metric"><span>Selected</span><strong>{esc(rotation.get('selected_topic', ''))}</strong></article>
+</div>
+<p>{esc(rotation.get('reason', '주제 순환 판단이 아직 없습니다.'))}</p>
 <div class="commands">{scout_response_cards}</div>
 </section>
 <section class="section">

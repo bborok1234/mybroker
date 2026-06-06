@@ -1,6 +1,6 @@
 {
   "schema_version": "agent_pattern_radar.v1",
-  "generated_at": "2026-06-06T03:34:14.146746+00:00",
+  "generated_at": "2026-06-06T04:00:11.038390+00:00",
   "status": "ready",
   "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
   "playbook_source": "reports/runtime/local-analyst-playbook.json",
@@ -14,7 +14,7 @@
     "dry_run_candidate_count": 7,
     "ready_dry_run_count": 5,
     "gated_dry_run_count": 1,
-    "top_next_pattern": "pattern evidence intake before workflow adoption"
+    "top_next_pattern": "source freshness intake before live authority"
   },
   "cases": [
     {
@@ -231,13 +231,13 @@
     "status": "ready",
     "cadence": "run inside the daily appliance loop before adopting or widening any agent workflow pattern",
     "recommended_next": {
-      "candidate_id": "pattern-method-evidence-intake",
-      "title": "pattern evidence intake before workflow adoption",
-      "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
-      "why_now": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
-      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
+      "candidate_id": "pattern-freshness-intake",
+      "title": "source freshness intake before live authority",
+      "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
+      "why_now": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
       "approval_scope": "local_dry_run_only",
-      "previously_passed_candidate_count": 3,
+      "previously_passed_candidate_count": 5,
       "operator_decision_needed": false,
       "done_when": [
         "agent_pattern_radar.v1 validates",
