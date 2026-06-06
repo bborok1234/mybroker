@@ -1,0 +1,170 @@
+{
+  "schema_version": "personal_learning_ledger.v1",
+  "generated_at": "2026-06-06T01:45:39.182531+00:00",
+  "run_id": "daily-research",
+  "status": "review",
+  "summary": {
+    "today_focus": "먼저 시장 흐름을 학습",
+    "run_count": 61,
+    "changed_topic_count": 0,
+    "repeated_topic_count": 5,
+    "concept_count": 4,
+    "question_count": 8,
+    "source_count": 3,
+    "source_gap_count": 2,
+    "archive_count": 2
+  },
+  "today_lesson": {
+    "headline": "먼저 시장 흐름을 학습",
+    "why_it_matters": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
+    "beginner_rule": "결론보다 원인-결과, 반복 관찰, 반대 근거를 먼저 남깁니다.",
+    "confidence": "low-medium"
+  },
+  "concept_cards": [
+    {
+      "kind": "핵심 흐름",
+      "title": "먼저 시장 흐름을 학습",
+      "explanation": "리스크, AI 인프라, 소비가 왜 연결되는지 이해하는 것이 첫 단계입니다.",
+      "why_beginner_cares": "초보자는 먼저 무엇이 가격보다 앞서 움직이는지 배워야 합니다."
+    },
+    {
+      "kind": "초보자 설명",
+      "title": "관찰 후보",
+      "explanation": "지금 바로 사라는 뜻이 아니라 뉴스, 가격, 실적, 리스크를 계속 볼 가치가 있다는 뜻입니다.",
+      "why_beginner_cares": "이 단어를 이해하면 브리프의 원인-결과를 더 천천히 따라갈 수 있습니다."
+    },
+    {
+      "kind": "초보자 설명",
+      "title": "반대 시나리오",
+      "explanation": "내 생각이 틀리는 경우를 미리 적어두는 것입니다. 초보자일수록 이 단계가 중요합니다.",
+      "why_beginner_cares": "이 단어를 이해하면 브리프의 원인-결과를 더 천천히 따라갈 수 있습니다."
+    },
+    {
+      "kind": "초보자 설명",
+      "title": "컨텍스트 반영",
+      "explanation": "학습 목표, 위험 선호, 투자 기간 같은 입력은 설명의 우선순위를 조정할 뿐 매수/매도 지시가 되지 않습니다.",
+      "why_beginner_cares": "이 단어를 이해하면 브리프의 원인-결과를 더 천천히 따라갈 수 있습니다."
+    }
+  ],
+  "memory_compounding": {
+    "changed_topics": [],
+    "repeated_topics": [
+      {
+        "name": "AI infrastructure",
+        "summary": "AI infrastructure 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.",
+        "source_names": [
+          "GDELT",
+          "SEC EDGAR"
+        ]
+      },
+      {
+        "name": "Semiconductors",
+        "summary": "Semiconductors 주제는 GDELT, SEC EDGAR에서 4개 근거를 확인했습니다. 새 근거 없음.",
+        "source_names": [
+          "GDELT",
+          "SEC EDGAR"
+        ]
+      },
+      {
+        "name": "US rates",
+        "summary": "US rates 주제는 GDELT, Stooq에서 2개 근거를 확인했습니다. 새 근거 없음.",
+        "source_names": [
+          "GDELT",
+          "Stooq"
+        ]
+      },
+      {
+        "name": "Consumer weakness",
+        "summary": "Consumer weakness 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.",
+        "source_names": [
+          "GDELT",
+          "SEC EDGAR",
+          "Stooq"
+        ]
+      },
+      {
+        "name": "Korea semiconductors",
+        "summary": "Korea semiconductors 주제는 GDELT, SEC EDGAR, Stooq에서 5개 근거를 확인했습니다. 새 근거 없음.",
+        "source_names": [
+          "GDELT",
+          "SEC EDGAR",
+          "Stooq"
+        ]
+      }
+    ]
+  },
+  "study_path": [
+    {
+      "step": 1,
+      "title": "오늘 배울 핵심 문장 읽기",
+      "why": "먼저 무엇을 배우는 날인지 고정합니다.",
+      "stop_condition": "한 문장으로 오늘의 원인-결과를 설명할 수 있습니다."
+    },
+    {
+      "step": 2,
+      "title": "반복 관찰과 새 변화를 분리",
+      "why": "매일 바뀌는 소음과 여러 번 반복되는 흐름을 구분합니다.",
+      "stop_condition": "반복 주제 하나와 확인할 변화 하나를 구분했습니다."
+    },
+    {
+      "step": 3,
+      "title": "모르는 질문을 내일로 넘기기",
+      "why": "개인 애널리스트는 답보다 다음 질문이 누적될 때 좋아집니다.",
+      "stop_condition": "내일 다시 물어볼 질문을 하나 골랐습니다."
+    }
+  ],
+  "questions_to_carry": [
+    "Vault 노트 'Semiconductor cycle learning note'가 오늘 근거와 같은 방향을 가리키나요?",
+    "오늘 AI infrastructure에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+    "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
+    "다음 브리프에서 확인해야 할 missing evidence는 무엇인가요?",
+    "오늘 Semiconductors에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+    "먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?",
+    "오늘 US rates에서 초보자가 먼저 이해해야 할 변화는 무엇인가요?",
+    "금리와 국채 수익률 변화가 이 테마의 가격 부담을 키우고 있나요?"
+  ],
+  "source_posture": {
+    "source_names": [
+      "GDELT",
+      "SEC EDGAR",
+      "Stooq"
+    ],
+    "weak_or_stale_count": 0,
+    "collection_gaps": [
+      "live_refresh_not_enabled",
+      "source_license_review_pending"
+    ]
+  },
+  "linked_artifacts": {
+    "scenario": "reports/scenarios/daily-research-sim.json",
+    "verdict": "reports/scenarios/daily-research-verdict.json",
+    "journal": "reports/memory/analyst-journal.json",
+    "memory": "reports/memory/topic-memory.json",
+    "evidence": "reports/evidence/daily-evidence-catalog.json",
+    "archive_root": "reports/archive",
+    "recent_archives": [
+      "reports/archive/2026-06-06/manifest.json",
+      "reports/archive/2026-06-05/manifest.json"
+    ]
+  },
+  "phone_links": {
+    "today": "reports/product/today.html",
+    "journal": "reports/product/journal.html",
+    "memory": "reports/product/memory.html",
+    "memory_query": "reports/product/memory-query.html",
+    "review_prompt": "reports/product/review-prompt.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "reads_existing_local_artifacts_only",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "no_account_access",
+    "no_live_trading",
+    "no_discretionary_management",
+    "no_unsupported_personalized_recommendation"
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "schema_version": "local_drift_review.v1",
-  "generated_at": "2026-06-06T01:24:07.706077+00:00",
+  "generated_at": "2026-06-06T01:45:39.277228+00:00",
   "status": "approval_required",
   "run_id": "daily-research",
   "decision": {
@@ -23,7 +23,7 @@
     {
       "name": "readiness",
       "value": "ready",
-      "interpretation": "fresh required 11, stale required 0"
+      "interpretation": "fresh required 13, stale required 0"
     },
     {
       "name": "source_authority",

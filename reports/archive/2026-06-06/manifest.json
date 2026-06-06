@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_archive.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-06T01:24:07.675266+00:00",
+  "generated_at": "2026-06-06T01:45:39.098488+00:00",
   "archive_dir": "reports/archive/2026-06-06",
   "artifacts": {
     "scenario": "reports/archive/2026-06-06/daily-research-sim.json",
@@ -18,6 +18,8 @@
     "task_ledger": "reports/archive/2026-06-06/task-ledger.html",
     "daily_review": "reports/archive/2026-06-06/daily-review.json",
     "daily_review_surface": "reports/archive/2026-06-06/review.html",
+    "learning_ledger": "reports/archive/2026-06-06/learning-ledger.json",
+    "learning_ledger_surface": "reports/archive/2026-06-06/learning.html",
     "review_prompt": "reports/archive/2026-06-06/review-prompt.json",
     "review_prompt_surface": "reports/archive/2026-06-06/review-prompt.html",
     "review_effect": "reports/archive/2026-06-06/review-effect.json",
@@ -59,5 +61,5 @@
     "daily_handoff_surface": "reports/archive/2026-06-06/handoff.html"
   },
   "policy": "research_only",
-  "updated_at": "2026-06-06T01:24:07.726550+00:00"
+  "updated_at": "2026-06-06T01:45:39.401375+00:00"
 }

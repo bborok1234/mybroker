@@ -1,6 +1,6 @@
 {
   "schema_version": "source_refresh_live_gate.v1",
-  "generated_at": "2026-06-06T01:24:07.661117+00:00",
+  "generated_at": "2026-06-06T01:45:39.058216+00:00",
   "inputs": {
     "refresh_apply_path": "reports/daily/source-refresh-apply.json"
   },

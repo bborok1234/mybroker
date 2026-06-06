@@ -1,6 +1,6 @@
 {
   "schema_version": "personal_analyst_task_queue.v1",
-  "generated_at": "2026-06-06T01:24:07.685594+00:00",
+  "generated_at": "2026-06-06T01:45:39.189374+00:00",
   "run_id": "daily-research",
   "status": "queued",
   "source_journal": "reports/memory/analyst-journal.json",
@@ -82,7 +82,7 @@
       "task_id": "AT-005",
       "role": "memory_librarian",
       "title": "내일 다시 찾을 수 있게 질문과 원천을 정리",
-      "why": "누적 실행 60회를 다음 질문과 연결합니다.",
+      "why": "누적 실행 61회를 다음 질문과 연결합니다.",
       "priority": "medium",
       "status": "queued",
       "autonomy_level": "autonomous_local",

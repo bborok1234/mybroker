@@ -45,6 +45,7 @@ MEMORY_QUERY_SCHEMA_VERSION = "personal_memory_query.v1"
 MEMORY_AUDIT_SCHEMA_VERSION = "personal_memory_audit.v1"
 ANALYST_COUNCIL_SCHEMA_VERSION = "analyst_council.v1"
 ANALYST_JOURNAL_SCHEMA_VERSION = "personal_analyst_journal.v1"
+LEARNING_LEDGER_SCHEMA_VERSION = "personal_learning_ledger.v1"
 ANALYST_TASK_QUEUE_SCHEMA_VERSION = "personal_analyst_task_queue.v1"
 ANALYST_TASK_LEDGER_SCHEMA_VERSION = "personal_analyst_task_ledger.v1"
 ANALYST_TASK_STATUS_APPLY_SCHEMA_VERSION = "personal_analyst_task_status_apply.v1"
@@ -99,6 +100,8 @@ DEFAULT_ANALYST_COUNCIL_OUTPUT = Path("reports/runtime/analyst-council.json")
 DEFAULT_ANALYST_COUNCIL_SURFACE = Path("reports/product/council.html")
 DEFAULT_ANALYST_JOURNAL_OUTPUT = Path("reports/product/journal.html")
 DEFAULT_ANALYST_JOURNAL_ARTIFACT = Path("reports/memory/analyst-journal.json")
+DEFAULT_LEARNING_LEDGER_OUTPUT = Path("reports/memory/learning-ledger.json")
+DEFAULT_LEARNING_LEDGER_SURFACE = Path("reports/product/learning.html")
 DEFAULT_ANALYST_TASK_QUEUE_OUTPUT = Path("reports/product/tasks.html")
 DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT = Path("reports/memory/analyst-task-queue.json")
 DEFAULT_ANALYST_TASK_LEDGER_OUTPUT = Path("reports/product/task-ledger.html")
@@ -2604,6 +2607,8 @@ def build_daily_readiness(
         ("review_effect_surface", DEFAULT_REVIEW_EFFECT_SURFACE, "phone_surface", False),
         ("analyst_council", DEFAULT_ANALYST_COUNCIL_OUTPUT, "control_artifact", False),
         ("analyst_council_surface", DEFAULT_ANALYST_COUNCIL_SURFACE, "phone_surface", False),
+        ("learning_ledger", DEFAULT_LEARNING_LEDGER_OUTPUT, "memory_artifact", True),
+        ("learning_ledger_surface", DEFAULT_LEARNING_LEDGER_SURFACE, "phone_surface", True),
         ("daily_scout", DEFAULT_DAILY_SCOUT_OUTPUT, "machine_artifact", True),
         ("daily_evidence", DEFAULT_DAILY_EVIDENCE_OUTPUT, "machine_artifact", True),
         ("topic_memory", DEFAULT_TOPIC_MEMORY_OUTPUT, "memory_artifact", True),
@@ -2679,6 +2684,7 @@ def build_daily_readiness(
             "agenda": DEFAULT_DAILY_BRIEF_AGENDA_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
             "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
+            "learning": DEFAULT_LEARNING_LEDGER_SURFACE.as_posix(),
             "vault": DEFAULT_VAULT_SURFACE_OUTPUT.as_posix(),
         },
         "next_actions": next_actions,
@@ -2731,7 +2737,7 @@ def validate_daily_readiness_payload(payload: dict[str, Any]) -> list[str]:
     if not payload.get("next_actions"):
         errors.append("next_actions must not be empty")
     required_names = {item.get("name") for item in payload.get("artifacts", []) if item.get("required")}
-    for name in ["today_surface", "daily_agenda", "daily_scout", "daily_evidence", "archive_manifest"]:
+    for name in ["today_surface", "daily_agenda", "daily_scout", "daily_evidence", "learning_ledger", "archive_manifest"]:
         if name not in required_names:
             errors.append(f"required artifact missing from readiness checks: {name}")
     for index, item in enumerate(payload.get("artifacts", [])):
@@ -2768,6 +2774,7 @@ def build_run_trace(
     review_effect_path: str | Path = DEFAULT_REVIEW_EFFECT_OUTPUT,
     analyst_council_path: str | Path = DEFAULT_ANALYST_COUNCIL_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    learning_ledger_path: str | Path = DEFAULT_LEARNING_LEDGER_OUTPUT,
     scheduler_operations_path: str | Path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT,
     today_path: str | Path = DEFAULT_TODAY_OUTPUT,
     generated_at: datetime | None = None,
@@ -2793,6 +2800,7 @@ def build_run_trace(
         ("review_effect", review_effect_path, "feedback", "Proves whether recorded review feedback actually shaped scout scoring.", False),
         ("analyst_council", analyst_council_path, "review", "Checks today's brief through role-specific agreement, disagreement, and beginner-readiness.", False),
         ("memory_audit", memory_audit_path, "memory", "Audits accumulated memory, vault notes, archives, source posture, and review feedback.", False),
+        ("learning_ledger", learning_ledger_path, "learn", "Turns today's brief into beginner concepts and carried questions.", True),
         ("scheduler_operations", scheduler_operations_path, "ops", "Shows automation readiness without host writes.", False),
         ("today_surface", today_path, "publish", "Renders the phone-readable daily entry point.", True),
     ]
@@ -2847,6 +2855,7 @@ def build_run_trace(
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
             "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
             "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
+            "learning": DEFAULT_LEARNING_LEDGER_SURFACE.as_posix(),
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
         },
@@ -2897,7 +2906,7 @@ def validate_run_trace_payload(payload: dict[str, Any]) -> list[str]:
     if not steps:
         errors.append("trace_steps must not be empty")
     names = {step.get("name") for step in steps}
-    for name in ["daily_scout", "evidence_catalog", "scenario_report", "verdict", "today_surface"]:
+    for name in ["daily_scout", "evidence_catalog", "scenario_report", "verdict", "learning_ledger", "today_surface"]:
         if name not in names:
             errors.append(f"trace missing required step {name}")
     for index, step in enumerate(steps):
@@ -4893,6 +4902,8 @@ def archive_daily_run(
     task_ledger_path: str | Path | None = None,
     daily_review_path: str | Path | None = None,
     daily_review_surface_path: str | Path | None = None,
+    learning_ledger_path: str | Path | None = None,
+    learning_ledger_surface_path: str | Path | None = None,
     review_prompt_path: str | Path | None = None,
     review_prompt_surface_path: str | Path | None = None,
     review_effect_path: str | Path | None = None,
@@ -4928,6 +4939,8 @@ def archive_daily_run(
         "task_ledger": task_ledger_path,
         "daily_review": daily_review_path,
         "daily_review_surface": daily_review_surface_path,
+        "learning_ledger": learning_ledger_path,
+        "learning_ledger_surface": learning_ledger_surface_path,
         "review_prompt": review_prompt_path,
         "review_prompt_surface": review_prompt_surface_path,
         "review_effect": review_effect_path,
@@ -5159,6 +5172,202 @@ def validate_analyst_journal_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_analyst_journal_file(path: str | Path) -> list[str]:
     return validate_analyst_journal_payload(load_json(path))
+
+
+def build_learning_ledger(
+    *,
+    scenario_path: str | Path = Path("reports/scenarios/daily-research-sim.json"),
+    verdict_path: str | Path = Path("reports/scenarios/daily-research-verdict.json"),
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    scenario = _load_optional_json(scenario_path)
+    verdict = _load_optional_json(verdict_path)
+    journal = _load_optional_json(journal_path)
+    memory = _load_optional_json(memory_path)
+    evidence = _load_optional_json(evidence_path)
+    topics = memory.get("topics", [])
+    changed_topics = [topic for topic in topics if topic.get("changed_since_previous")]
+    repeated_topics = [topic for topic in topics if not topic.get("changed_since_previous")]
+    primary = verdict.get("primary_next_step", {}) if verdict else {}
+    focus = journal.get("today_focus", {}) if journal else {}
+    market_map = scenario.get("market_map", {}) if scenario else {}
+    beginner_explanations = scenario.get("beginner_explanations", []) if scenario else []
+    source_rows = evidence.get("source_status", [])
+    source_gaps = evidence.get("collection_gaps", [])
+    archive_manifests = sorted(Path(archive_root).glob("*/manifest.json"), reverse=True)
+    recent_archives = [path.as_posix() for path in archive_manifests[:5]]
+    questions = _dedupe_texts(
+        list(journal.get("follow_up_questions", []))
+        + [question for topic in topics for question in topic.get("daily_questions", [])]
+    )[:8]
+    concepts = _learning_concepts(
+        primary=primary,
+        focus=focus,
+        market_map=market_map,
+        beginner_explanations=beginner_explanations,
+    )
+    payload = {
+        "schema_version": LEARNING_LEDGER_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "run_id": scenario.get("run_id", journal.get("run_id", "daily-research")),
+        "status": _learning_ledger_status(concepts=concepts, questions=questions, source_gaps=source_gaps),
+        "summary": {
+            "today_focus": focus.get("title", primary.get("title", "오늘 먼저 배울 것")),
+            "run_count": memory.get("run_count", 0),
+            "changed_topic_count": len(changed_topics),
+            "repeated_topic_count": len(repeated_topics),
+            "concept_count": len(concepts),
+            "question_count": len(questions),
+            "source_count": len(source_rows),
+            "source_gap_count": len(source_gaps),
+            "archive_count": len(recent_archives),
+        },
+        "today_lesson": {
+            "headline": focus.get("title", primary.get("title", "오늘 먼저 배울 것")),
+            "why_it_matters": focus.get("rationale", primary.get("rationale", market_map.get("beginner_summary", ""))),
+            "beginner_rule": "결론보다 원인-결과, 반복 관찰, 반대 근거를 먼저 남깁니다.",
+            "confidence": focus.get("confidence", "low"),
+        },
+        "concept_cards": concepts,
+        "memory_compounding": {
+            "changed_topics": [
+                {
+                    "name": topic.get("name", ""),
+                    "summary": topic.get("latest_summary", ""),
+                    "latest_titles": topic.get("latest_titles", [])[:3],
+                }
+                for topic in changed_topics[:5]
+            ],
+            "repeated_topics": [
+                {
+                    "name": topic.get("name", ""),
+                    "summary": topic.get("latest_summary", ""),
+                    "source_names": topic.get("source_names", [])[:4],
+                }
+                for topic in repeated_topics[:6]
+            ],
+        },
+        "study_path": [
+            {
+                "step": 1,
+                "title": "오늘 배울 핵심 문장 읽기",
+                "why": "먼저 무엇을 배우는 날인지 고정합니다.",
+                "stop_condition": "한 문장으로 오늘의 원인-결과를 설명할 수 있습니다.",
+            },
+            {
+                "step": 2,
+                "title": "반복 관찰과 새 변화를 분리",
+                "why": "매일 바뀌는 소음과 여러 번 반복되는 흐름을 구분합니다.",
+                "stop_condition": "반복 주제 하나와 확인할 변화 하나를 구분했습니다.",
+            },
+            {
+                "step": 3,
+                "title": "모르는 질문을 내일로 넘기기",
+                "why": "개인 애널리스트는 답보다 다음 질문이 누적될 때 좋아집니다.",
+                "stop_condition": "내일 다시 물어볼 질문을 하나 골랐습니다.",
+            },
+        ],
+        "questions_to_carry": questions,
+        "source_posture": {
+            "source_names": sorted({row.get("source_name", "") for row in source_rows if row.get("source_name")}),
+            "weak_or_stale_count": sum(
+                1
+                for row in source_rows
+                if row.get("freshness_status") in {"stale", "unknown"} or row.get("relevance_label") in {"weak", "unscored"}
+            ),
+            "collection_gaps": source_gaps,
+        },
+        "linked_artifacts": {
+            "scenario": Path(scenario_path).as_posix(),
+            "verdict": Path(verdict_path).as_posix(),
+            "journal": Path(journal_path).as_posix(),
+            "memory": Path(memory_path).as_posix(),
+            "evidence": Path(evidence_path).as_posix(),
+            "archive_root": Path(archive_root).as_posix(),
+            "recent_archives": recent_archives,
+        },
+        "phone_links": {
+            "today": DEFAULT_TODAY_OUTPUT.as_posix(),
+            "journal": DEFAULT_ANALYST_JOURNAL_OUTPUT.as_posix(),
+            "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
+            "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
+            "review_prompt": DEFAULT_REVIEW_PROMPT_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_existing_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "no_account_access",
+            "no_live_trading",
+            "no_discretionary_management",
+            "no_unsupported_personalized_recommendation",
+        ],
+    }
+    return payload
+
+
+def write_learning_ledger(
+    *,
+    scenario_path: str | Path = Path("reports/scenarios/daily-research-sim.json"),
+    verdict_path: str | Path = Path("reports/scenarios/daily-research-verdict.json"),
+    journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
+    memory_path: str | Path = DEFAULT_TOPIC_MEMORY_OUTPUT,
+    evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
+    archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
+    artifact_output_path: str | Path = DEFAULT_LEARNING_LEDGER_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_LEARNING_LEDGER_SURFACE,
+) -> Path:
+    payload = build_learning_ledger(
+        scenario_path=scenario_path,
+        verdict_path=verdict_path,
+        journal_path=journal_path,
+        memory_path=memory_path,
+        evidence_path=evidence_path,
+        archive_root=archive_root,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_learning_ledger(payload), encoding="utf-8")
+    return target
+
+
+def validate_learning_ledger_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != LEARNING_LEDGER_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("status") not in {"ready", "review", "thin"}:
+        errors.append("status must be ready, review, or thin")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if not payload.get("today_lesson", {}).get("headline"):
+        errors.append("today_lesson.headline must not be empty")
+    if not payload.get("concept_cards"):
+        errors.append("concept_cards must not be empty")
+    if not payload.get("questions_to_carry"):
+        errors.append("questions_to_carry must not be empty")
+    for field in ["scenario", "verdict", "journal", "memory", "evidence"]:
+        if not payload.get("linked_artifacts", {}).get(field):
+            errors.append(f"linked_artifacts.{field} must not be empty")
+    if "reads_existing_local_artifacts_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include reads_existing_local_artifacts_only")
+    return errors
+
+
+def validate_learning_ledger_file(path: str | Path) -> list[str]:
+    return validate_learning_ledger_payload(load_json(path))
 
 
 def build_analyst_council(
@@ -5934,6 +6143,151 @@ p,small,li {{ color:var(--muted); }}
 <section class="section">
 <h2>안전 경계</h2>
 <p>교육과 리서치, 시뮬레이션용 기록입니다. 계좌 접근, 주문 실행, 일임 운용, 근거 없는 개인화 추천을 하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def render_learning_ledger(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    lesson = payload.get("today_lesson", {})
+    source = payload.get("source_posture", {})
+    concepts = "".join(
+        "<article class='card'>"
+        f"<span>{esc(card.get('kind', 'concept'))}</span>"
+        f"<h3>{esc(card.get('title', ''))}</h3>"
+        f"<p>{esc(card.get('explanation', ''))}</p>"
+        f"<small>{esc(card.get('why_beginner_cares', ''))}</small>"
+        "</article>"
+        for card in payload.get("concept_cards", [])
+    )
+    changed_cards = "".join(
+        "<article class='card'>"
+        f"<span>새 변화</span>"
+        f"<h3>{esc(topic.get('name', ''))}</h3>"
+        f"<p>{esc(topic.get('summary', ''))}</p>"
+        f"<small>{esc(' · '.join(topic.get('latest_titles', [])[:3]))}</small>"
+        "</article>"
+        for topic in payload.get("memory_compounding", {}).get("changed_topics", [])
+    ) or "<p>오늘 새 변화로 판정된 주제는 없습니다. 반복 관찰을 먼저 읽습니다.</p>"
+    repeated_cards = "".join(
+        "<article class='card'>"
+        f"<span>반복 관찰</span>"
+        f"<h3>{esc(topic.get('name', ''))}</h3>"
+        f"<p>{esc(topic.get('summary', ''))}</p>"
+        f"<small>{esc(' · '.join(topic.get('source_names', [])[:4]))}</small>"
+        "</article>"
+        for topic in payload.get("memory_compounding", {}).get("repeated_topics", [])
+    ) or "<p>아직 반복 관찰이 충분하지 않습니다.</p>"
+    study_steps = "".join(
+        "<article class='card'>"
+        f"<span>Step {esc(step.get('step', ''))}</span>"
+        f"<h3>{esc(step.get('title', ''))}</h3>"
+        f"<p>{esc(step.get('why', ''))}</p>"
+        f"<small>{esc(step.get('stop_condition', ''))}</small>"
+        "</article>"
+        for step in payload.get("study_path", [])
+    )
+    questions = "".join(f"<li>{esc(question)}</li>" for question in payload.get("questions_to_carry", []))
+    gaps = "".join(f"<li>{esc(_gap_label(gap))}</li>" for gap in source.get("collection_gaps", [])) or "<li>기록된 자료 수집 gap 없음</li>"
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if path
+    )
+    artifacts = payload.get("linked_artifacts", {})
+    artifact_links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in artifacts.items()
+        if isinstance(path, str) and path and label != "archive_root"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Learning Ledger</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --amber:#94630c; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:18px; }}
+a {{ color:var(--blue); font-weight:800; text-decoration:none; }}
+header {{ padding:28px 0 16px; }}
+.eyebrow,.card span,.metric span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; }}
+h2 {{ margin:0 0 12px; font-size:20px; }}
+h3 {{ margin:0 0 8px; font-size:17px; }}
+p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.card {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero {{ padding:18px; }}
+.section {{ margin:14px 0; padding:16px; }}
+.grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }}
+.card {{ background:white; padding:14px; min-width:0; }}
+.metrics {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:12px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }}
+.metric strong {{ display:block; font-size:24px; overflow-wrap:anywhere; }}
+.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .grid,.metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Learning Ledger · {esc(_short_date(payload.get('generated_at', '')))}</span>
+<h1>오늘 배운 것의 누적 원장</h1>
+<p>매일 브리프에서 배운 개념, 반복되는 관찰, 아직 모르는 질문을 한 화면에 남깁니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">오늘의 학습 문장</span>
+<h2>{esc(lesson.get('headline', '오늘 먼저 배울 것'))}</h2>
+<p>{esc(lesson.get('why_it_matters', ''))}</p>
+<p><strong>{esc(lesson.get('beginner_rule', '결론보다 학습을 먼저 남깁니다.'))}</strong></p>
+<div class="metrics">
+<article class="metric"><span>Runs</span><strong>{esc(summary.get('run_count', 0))}</strong></article>
+<article class="metric"><span>Concepts</span><strong>{esc(summary.get('concept_count', 0))}</strong></article>
+<article class="metric"><span>Questions</span><strong>{esc(summary.get('question_count', 0))}</strong></article>
+<article class="metric"><span>Gaps</span><strong>{esc(summary.get('source_gap_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>초보자가 오늘 익힐 개념</h2>
+<div class="grid">{concepts}</div>
+</section>
+<section class="section">
+<h2>오늘 새로 바뀐 것</h2>
+<div class="grid">{changed_cards}</div>
+</section>
+<section class="section">
+<h2>계속 반복 관찰되는 것</h2>
+<div class="grid">{repeated_cards}</div>
+</section>
+<section class="section">
+<h2>오늘 읽는 순서</h2>
+<div class="grid">{study_steps}</div>
+</section>
+<section class="section">
+<h2>내일 이어갈 질문</h2>
+<ul>{questions}</ul>
+</section>
+<section class="section">
+<h2>자료 gap</h2>
+<ul>{gaps}</ul>
+</section>
+<section class="section">
+<h2>바로 이어서 열기</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section">
+<h2>연결된 산출물</h2>
+<div class="links">{artifact_links}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>교육과 리서치, 시뮬레이션용 누적 기록입니다. 계좌 접근, 주문 실행, 일임 운용, 근거 없는 개인화 추천을 하지 않습니다.</p>
 </section>
 </main>
 </body>
@@ -7827,6 +8181,7 @@ def build_daily_operator_home(
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
     memory_query_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
+    learning_ledger_path: str | Path = DEFAULT_LEARNING_LEDGER_OUTPUT,
     pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
     pattern_dry_run_proof_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
     generated_at: datetime | None = None,
@@ -7847,6 +8202,7 @@ def build_daily_operator_home(
     notification = _load_optional_json(notification_path)
     memory_query = _load_optional_json(memory_query_path)
     memory_audit = _load_optional_json(memory_audit_path)
+    learning_ledger = _load_optional_json(learning_ledger_path)
     pattern_radar = _load_optional_json(pattern_radar_path)
     pattern_proof = _load_optional_json(pattern_dry_run_proof_path)
     read_first = morning.get("read_first", {})
@@ -7915,6 +8271,7 @@ def build_daily_operator_home(
         "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
         "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
         "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
+        "learning": DEFAULT_LEARNING_LEDGER_SURFACE.as_posix(),
         "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
         "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
         "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
@@ -7944,6 +8301,14 @@ def build_daily_operator_home(
         },
         {
             "step": 3,
+            "label": "오늘 배운 것 남기기",
+            "title": "learning ledger",
+            "why": "오늘 배운 개념, 반복 관찰, 내일 질문을 한 화면에 누적합니다.",
+            "href": links["learning"],
+            "status": learning_ledger.get("status", "missing"),
+        },
+        {
+            "step": 4,
             "label": "과거 기억 먼저 불러오기",
             "title": "memory recall",
             "why": f"{autonomous_name}에 대해 로컬 vault, archive, memory가 무엇을 기억하는지 먼저 확인합니다.",
@@ -7951,7 +8316,7 @@ def build_daily_operator_home(
             "status": memory_query.get("status", "missing"),
         },
         {
-            "step": 4,
+            "step": 5,
             "label": "오늘 결과 영향 경로 확인",
             "title": "run trace",
             "why": "오늘 scout, 근거, memory, review, pattern gate 중 무엇이 결과를 만들었는지 compact trace로 확인합니다.",
@@ -7959,7 +8324,7 @@ def build_daily_operator_home(
             "status": run_trace.get("status", "missing"),
         },
         {
-            "step": 5,
+            "step": 6,
             "label": "운영 상태 확인",
             "title": "morning control",
             "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -7967,7 +8332,7 @@ def build_daily_operator_home(
             "status": morning.get("status", "missing"),
         },
         {
-            "step": 6,
+            "step": 7,
             "label": "신뢰도 확인",
             "title": "readiness",
             "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -7975,7 +8340,7 @@ def build_daily_operator_home(
             "status": readiness.get("status", "missing"),
         },
         {
-            "step": 7,
+            "step": 8,
             "label": "전날 맥락 닫기",
             "title": "handoff",
             "why": f"남은 항목 {unresolved_count}개를 보고 필요한 응답을 복사합니다.",
@@ -7983,7 +8348,7 @@ def build_daily_operator_home(
             "status": handoff.get("status", "missing"),
         },
         {
-            "step": 8,
+            "step": 9,
             "label": "응답 반영 확인",
             "title": "handoff apply proof",
             "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -7991,7 +8356,7 @@ def build_daily_operator_home(
             "status": handoff_apply.get("status", "missing"),
         },
         {
-            "step": 9,
+            "step": 10,
             "label": "기억 품질 확인",
             "title": "memory audit",
             "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -7999,7 +8364,7 @@ def build_daily_operator_home(
             "status": memory_audit.get("status", "missing"),
         },
         {
-            "step": 10,
+            "step": 11,
             "label": "새 작업 방식 증거 확인",
             "title": "pattern dry-run proof",
             "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -8034,6 +8399,9 @@ def build_daily_operator_home(
             "scout_operator_input_required": scout.get("autonomous_start", {}).get("operator_input_required", False),
             "memory_recall_quality": recall_quality.get("level", "missing"),
             "memory_recall_matches": int(memory_query.get("matched_topic_count", 0) or 0) + int(memory_query.get("matched_archive_count", 0) or 0) + int(memory_query.get("matched_vault_note_count", 0) or 0),
+            "learning_status": learning_ledger.get("status", "missing"),
+            "learning_concept_count": learning_ledger.get("summary", {}).get("concept_count", 0),
+            "learning_question_count": learning_ledger.get("summary", {}).get("question_count", 0),
             "trace_status": run_trace.get("status", "missing"),
             "trace_fresh_count": trace_summary.get("fresh_count", 0),
             "trace_weak_spot_count": len(run_trace.get("weak_spots", [])),
@@ -8141,6 +8509,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="notification", path=notification_path, payload=notification),
             _daily_home_artifact_status(name="memory_query", path=memory_query_path, payload=memory_query),
             _daily_home_artifact_status(name="memory_audit", path=memory_audit_path, payload=memory_audit),
+            _daily_home_artifact_status(name="learning_ledger", path=learning_ledger_path, payload=learning_ledger),
             _daily_home_artifact_status(name="pattern_radar", path=pattern_radar_path, payload=pattern_radar),
             _daily_home_artifact_status(name="pattern_dry_run_proof", path=pattern_dry_run_proof_path, payload=pattern_proof),
         ],
@@ -8243,7 +8612,7 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(f"operator_action_inbox.priority_items[{index}] external_effect_performed must be false")
         if item.get("host_write_performed") is not False:
             errors.append(f"operator_action_inbox.priority_items[{index}] host_write_performed must be false")
-    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
+    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "learning", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
     if "daily_home_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
@@ -8261,6 +8630,8 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         for field in ["step", "label", "title", "why", "href", "status"]:
             if field not in step:
                 errors.append(f"daily_route[{index}] missing {field}")
+    if not any(step.get("title") == "learning ledger" for step in payload.get("daily_route", [])):
+        errors.append("daily_route must include learning ledger")
     return errors
 
 
@@ -8441,6 +8812,18 @@ td strong,td span {{ display:block; }}
 <p>{esc(autonomous.get('confidence_note', ''))}</p>
 <p>{esc(autonomous.get('missing_evidence_note', ''))}</p>
 <div class="commands">{scout_response_cards}</div>
+</section>
+<section class="section">
+<h2>오늘 배운 것 누적</h2>
+<p><strong>{esc(summary.get('learning_status', 'missing'))}</strong></p>
+<p>오늘 브리프가 단발성 읽기로 끝나지 않도록, 배운 개념과 내일 이어갈 질문을 learning ledger에 남깁니다.</p>
+<div class="metrics">
+<article class="metric"><span>Concepts</span><strong>{esc(summary.get('learning_concept_count', 0))}</strong></article>
+<article class="metric"><span>Questions</span><strong>{esc(summary.get('learning_question_count', 0))}</strong></article>
+<article class="metric"><span>Status</span><strong>{esc(summary.get('learning_status', 'missing'))}</strong></article>
+<article class="metric"><span>Mode</span><strong>local</strong></article>
+</div>
+<p><a href="{esc(_relative_href(Path(payload.get('phone_links', {}).get('learning', 'reports/product/learning.html'))))}">learning ledger 열기</a></p>
 </section>
 <section class="section">
 <h2>오늘 기억 회상 품질</h2>
@@ -9817,6 +10200,68 @@ def _daily_questions(
         if question not in deduped:
             deduped.append(question)
     return deduped[:5]
+
+
+def _dedupe_texts(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        normalized = " ".join(str(value).split())
+        key = normalized.casefold()
+        if not normalized or key in seen:
+            continue
+        seen.add(key)
+        result.append(normalized)
+    return result
+
+
+def _learning_concepts(
+    *,
+    primary: dict[str, Any],
+    focus: dict[str, Any],
+    market_map: dict[str, Any],
+    beginner_explanations: list[Any],
+) -> list[dict[str, str]]:
+    concepts: list[dict[str, str]] = []
+    headline = focus.get("title") or primary.get("title")
+    rationale = focus.get("rationale") or primary.get("rationale") or market_map.get("beginner_summary")
+    if headline or rationale:
+        concepts.append({
+            "kind": "핵심 흐름",
+            "title": str(headline or "오늘의 시장 흐름"),
+            "explanation": str(rationale or "오늘은 결론보다 흐름을 먼저 이해합니다."),
+            "why_beginner_cares": "초보자는 먼저 무엇이 가격보다 앞서 움직이는지 배워야 합니다.",
+        })
+    for item in beginner_explanations[:3]:
+        if isinstance(item, dict):
+            title = item.get("term") or item.get("title") or item.get("name") or "배울 개념"
+            explanation = item.get("explanation") or item.get("summary") or item.get("why") or ""
+        else:
+            title = "배울 개념"
+            explanation = str(item)
+        if explanation:
+            concepts.append({
+                "kind": "초보자 설명",
+                "title": str(title),
+                "explanation": str(explanation),
+                "why_beginner_cares": "이 단어를 이해하면 브리프의 원인-결과를 더 천천히 따라갈 수 있습니다.",
+            })
+    if not concepts:
+        concepts.append({
+            "kind": "시작점",
+            "title": "오늘 브리프를 먼저 읽기",
+            "explanation": "아직 추출된 개념이 약합니다. 오늘 브리프와 journal에서 먼저 배울 문장을 고릅니다.",
+            "why_beginner_cares": "자료가 얇을 때는 결론을 만들지 않고 질문을 남기는 것이 더 중요합니다.",
+        })
+    return concepts[:4]
+
+
+def _learning_ledger_status(*, concepts: list[dict[str, str]], questions: list[str], source_gaps: list[str]) -> str:
+    if not concepts or not questions:
+        return "thin"
+    if source_gaps:
+        return "review"
+    return "ready"
 
 
 def _journal_status(*, source_rows: list[dict[str, Any]], memory_topics: list[dict[str, Any]]) -> str:
