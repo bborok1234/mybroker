@@ -3761,9 +3761,9 @@ def build_handoff_study_resolution(
         kind = item.get("kind", "study_closure")
         blocked_by_freshness = kind in {"follow_up_question", "council_warning"} and freshness_blocked > 0
         if blocked_by_freshness:
-            status = "blocked_by_source_freshness"
+            status = "study_with_freshness_caveat"
             confidence = "low"
-            answer = "현재 답변 후보는 sample/cache 근거에 의존합니다. live source refresh 승인이 없으면 방향성 학습용으로만 읽어야 합니다."
+            answer = "현재 답변 후보는 sample/cache 근거에 의존합니다. 오늘은 방향성 학습용으로 읽고, 최신성 확정은 live source refresh 승인 후 다시 확인해야 합니다."
         elif memory_level in {"strong", "usable"}:
             status = "ready_to_study"
             confidence = "medium"
@@ -3814,6 +3814,12 @@ def build_handoff_study_resolution(
             "beginner_question": item.get("beginner_question", item.get("title", "")),
             "why_it_matters": item.get("why_it_matters", ""),
             "answer_candidate": answer,
+            "source_freshness_caveat": _handoff_source_freshness_caveat(
+                weak_sources=weak_sources,
+                freshness_blocked=freshness_blocked,
+                status=status,
+            ),
+            "requires_live_refresh_to_finalize": status == "study_with_freshness_caveat",
             "evidence_refs": evidence_refs,
             "linked_learning_questions": linked_questions,
             "done_when": item.get("done_when", "답이 되는 문장 하나와 아직 부족한 근거 하나를 말할 수 있습니다."),
@@ -3823,6 +3829,7 @@ def build_handoff_study_resolution(
             "host_write_performed": False,
         })
     ready_count = sum(1 for item in items if item["status"] == "ready_to_study")
+    caveat_count = sum(1 for item in items if item["status"] == "study_with_freshness_caveat")
     blocked_count = sum(1 for item in items if item["status"] == "blocked_by_source_freshness")
     response_count = sum(1 for item in items if item.get("copy_ready_command"))
     status = "clear" if not items else ("blocked_by_source_freshness" if blocked_count == len(items) else "review")
@@ -3835,6 +3842,7 @@ def build_handoff_study_resolution(
             "handoff_unresolved_count": handoff.get("summary", {}).get("unresolved_count", 0),
             "resolution_item_count": len(items),
             "ready_to_study_count": ready_count,
+            "study_with_freshness_caveat_count": caveat_count,
             "blocked_by_source_freshness_count": blocked_count,
             "copy_ready_response_count": response_count,
             "memory_recall_quality": memory_level,
@@ -3868,6 +3876,18 @@ def build_handoff_study_resolution(
     }
 
 
+def _handoff_source_freshness_caveat(*, weak_sources: int, freshness_blocked: int, status: str) -> str:
+    if status == "study_with_freshness_caveat":
+        return (
+            f"현재 source freshness는 약합니다: weak/sample source {weak_sources}개, "
+            f"blocked live candidate {freshness_blocked}개. 오늘은 학습용으로만 닫고, "
+            "최신성 확정은 별도 승인된 source refresh 이후 다시 확인합니다."
+        )
+    if weak_sources:
+        return f"weak/sample source {weak_sources}개가 남아 있어 결론 강도를 낮춰 읽습니다."
+    return "오늘 source freshness 기준의 주요 caveat는 없습니다."
+
+
 def write_handoff_study_resolution(
     *,
     artifact_output_path: str | Path = DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT,
@@ -3895,16 +3915,16 @@ def validate_handoff_study_resolution_payload(payload: dict[str, Any]) -> list[s
     if payload.get("host_write_performed") is not False:
         errors.append("host_write_performed must be false")
     summary = payload.get("summary", {})
-    for field in ["handoff_unresolved_count", "resolution_item_count", "ready_to_study_count", "blocked_by_source_freshness_count", "copy_ready_response_count", "memory_recall_quality", "weak_source_count"]:
+    for field in ["handoff_unresolved_count", "resolution_item_count", "ready_to_study_count", "study_with_freshness_caveat_count", "blocked_by_source_freshness_count", "copy_ready_response_count", "memory_recall_quality", "weak_source_count"]:
         if field not in summary:
             errors.append(f"summary missing {field}")
     if summary.get("resolution_item_count", 0) != len(payload.get("items", [])):
         errors.append("summary.resolution_item_count must match items length")
     for index, item in enumerate(payload.get("items", [])):
-        for field in ["id", "source_item_id", "kind", "title", "status", "confidence", "beginner_question", "answer_candidate", "evidence_refs", "done_when", "stop_condition", "copy_ready_command", "external_effect_performed", "host_write_performed"]:
+        for field in ["id", "source_item_id", "kind", "title", "status", "confidence", "beginner_question", "answer_candidate", "source_freshness_caveat", "requires_live_refresh_to_finalize", "evidence_refs", "done_when", "stop_condition", "copy_ready_command", "external_effect_performed", "host_write_performed"]:
             if field not in item:
                 errors.append(f"items[{index}] missing {field}")
-        if item.get("status") not in {"ready_to_study", "needs_operator_response", "blocked_by_source_freshness"}:
+        if item.get("status") not in {"ready_to_study", "needs_operator_response", "study_with_freshness_caveat", "blocked_by_source_freshness"}:
             errors.append(f"items[{index}].status invalid")
         if item.get("confidence") not in {"low", "medium", "high"}:
             errors.append(f"items[{index}].confidence invalid")
@@ -3938,6 +3958,7 @@ def render_handoff_study_resolution(payload: dict[str, Any]) -> str:
         "clear": "닫을 handoff 없음",
         "review": "공부 후 응답 필요",
         "blocked_by_source_freshness": "근거 신선도 승인 전",
+        "study_with_freshness_caveat": "신선도 주의로 공부 가능",
     }.get(payload.get("status", ""), payload.get("status", "review"))
     cards = "".join(
         "<article class='card'>"
@@ -3945,6 +3966,7 @@ def render_handoff_study_resolution(payload: dict[str, Any]) -> str:
         f"<h2>{esc(item.get('title', ''))}</h2>"
         f"<p><strong>질문</strong> {esc(item.get('beginner_question', ''))}</p>"
         f"<p><strong>답변 후보</strong> {esc(item.get('answer_candidate', ''))}</p>"
+        f"<p><strong>근거 신선도 주의</strong> {esc(item.get('source_freshness_caveat', ''))}</p>"
         f"<p><strong>끝나는 조건</strong> {esc(item.get('done_when', ''))}</p>"
         f"<p><strong>멈춤 기준</strong> {esc(item.get('stop_condition', ''))}</p>"
         f"<code>{esc(item.get('copy_ready_command', ''))}</code>"
@@ -3999,6 +4021,7 @@ code {{ display:block; white-space:pre-wrap; word-break:break-word; border:1px s
 <div class="metrics">
 <article class="metric"><span>Items</span><strong>{esc(summary.get('resolution_item_count', 0))}</strong></article>
 <article class="metric"><span>Ready</span><strong>{esc(summary.get('ready_to_study_count', 0))}</strong></article>
+<article class="metric"><span>Caveat</span><strong>{esc(summary.get('study_with_freshness_caveat_count', 0))}</strong></article>
 <article class="metric"><span>Blocked</span><strong>{esc(summary.get('blocked_by_source_freshness_count', 0))}</strong></article>
 <article class="metric"><span>Memory</span><strong>{esc(summary.get('memory_recall_quality', 'missing'))}</strong></article>
 </div>
@@ -9486,7 +9509,11 @@ def _daily_home_action_inbox(
             "kind": "handoff_study_resolution",
             "id": "handoff-study-resolution",
             "title": "남은 질문을 공부로 닫기",
-            "why": f"답변 후보 {resolution_summary.get('resolution_item_count', 0)}개, source freshness block {resolution_summary.get('blocked_by_source_freshness_count', 0)}개를 먼저 확인합니다.",
+            "why": (
+                f"답변 후보 {resolution_summary.get('resolution_item_count', 0)}개, "
+                f"freshness caveat {resolution_summary.get('study_with_freshness_caveat_count', 0)}개, "
+                f"block {resolution_summary.get('blocked_by_source_freshness_count', 0)}개를 먼저 확인합니다."
+            ),
             "source": "handoff_study_resolution",
             "status": handoff_study_resolution.get("status", "review"),
             "href": links.get("handoff_study_resolution", ""),
@@ -9574,6 +9601,7 @@ def _daily_home_action_inbox(
             "source_refresh_execution_blocker_count": source_refresh_execution_brief.get("summary", {}).get("blocker_count", 0),
             "handoff_resolution_count": 1 if handoff_study_resolution.get("schema_version") == HANDOFF_STUDY_RESOLUTION_SCHEMA_VERSION else 0,
             "handoff_resolution_ready_count": handoff_study_resolution.get("summary", {}).get("ready_to_study_count", 0),
+            "handoff_resolution_caveat_count": handoff_study_resolution.get("summary", {}).get("study_with_freshness_caveat_count", 0),
             "handoff_resolution_blocked_count": handoff_study_resolution.get("summary", {}).get("blocked_by_source_freshness_count", 0),
             "carried_task_count": len(carried_tasks),
             "ready_task_count": len(ready_tasks),
@@ -9896,6 +9924,7 @@ def build_daily_operator_home(
             "source_refresh_execution_blockers": source_refresh_execution_brief.get("summary", {}).get("blocker_count", 0),
             "handoff_resolution_status": handoff_study_resolution.get("status", "missing"),
             "handoff_resolution_ready_count": handoff_study_resolution.get("summary", {}).get("ready_to_study_count", 0),
+            "handoff_resolution_caveat_count": handoff_study_resolution.get("summary", {}).get("study_with_freshness_caveat_count", 0),
             "handoff_resolution_blocked_count": handoff_study_resolution.get("summary", {}).get("blocked_by_source_freshness_count", 0),
             "trace_status": run_trace.get("status", "missing"),
             "trace_fresh_count": trace_summary.get("fresh_count", 0),
@@ -10393,6 +10422,7 @@ td strong,td span {{ display:block; }}
 	<article class="metric"><span>Method</span><strong>{esc(inbox_summary.get('pattern_evidence_local_candidate_count', 0))}</strong></article>
 	<article class="metric"><span>Study</span><strong>{esc(inbox_summary.get('study_closure_count', 0))}</strong></article>
 	<article class="metric"><span>Handoff</span><strong>{esc(inbox_summary.get('unresolved_handoff_count', 0))}</strong></article>
+	<article class="metric"><span>Caveat</span><strong>{esc(inbox_summary.get('handoff_resolution_caveat_count', 0))}</strong></article>
 	<article class="metric"><span>Carried</span><strong>{esc(inbox_summary.get('carried_task_count', 0))}</strong></article>
 <article class="metric"><span>Ready</span><strong>{esc(inbox_summary.get('ready_task_count', 0))}</strong></article>
 </div>

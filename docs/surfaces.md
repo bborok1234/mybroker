@@ -50,6 +50,7 @@ It must link `handoff-study-resolution.html` before raw handoff closure when unr
 `reports/product/handoff.html` is not a market brief and not a project tracker. It is the cross-day continuity proof: whether prior questions, local feedback, carried tasks, council warnings, and memory risks were reflected in today's run or still need a short local response.
 
 `reports/product/handoff-study-resolution.html` is not a market answer and not an auto-closer. It is the beginner-readable study closure packet for unresolved handoff items: question, why it matters, answer candidate, source freshness caveat, evidence refs, done-when criteria, and copy-ready local response command. It reads existing artifacts only and requires an operator response before anything is treated as closed.
+Source freshness weakness must not turn every unresolved question into a dead end. The surface may mark an item as `study_with_freshness_caveat` when cached/sample evidence is enough for beginner study but not enough for current factual finalization. Those cards must show the caveat, whether live refresh is required to finalize, and a local-only response command.
 
 `reports/product/handoff-response-apply.html` is not a chat surface and not an executor. It is the local proof after a copied handoff command records either review feedback or task status, refreshes the affected local artifacts, and regenerates handoff in the same run.
 

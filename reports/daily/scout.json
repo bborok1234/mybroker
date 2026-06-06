@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_scout.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-06T04:00:11.051036+00:00",
+  "generated_at": "2026-06-06T04:19:32.404102+00:00",
   "inputs": {
     "topics_path": "config/topics.json",
     "plan_path": "reports/daily/research-plan.json",
@@ -681,7 +681,7 @@
   ],
   "rotation_guard": {
     "status": "operator_override",
-    "run_count": 69,
+    "run_count": 70,
     "pre_rotation_topic": "semiconductors",
     "selected_topic": "semiconductors",
     "rotated": false,

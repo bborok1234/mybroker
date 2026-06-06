@@ -410,6 +410,9 @@ turns that queue into the phone-readable study packet: each unresolved question,
 or memory warning gets an answer candidate, evidence refs, source freshness caveat, done-when
 criterion, linked local surface, and copy-ready local response that can influence the next run
 without fetching live data or executing tasks.
+If source freshness is weak but existing cached/sample evidence is still useful for beginner study,
+the packet marks the card as `study_with_freshness_caveat` instead of a hard block. That status means
+"study locally now, finalize current factual confidence only after a separately approved refresh."
 When unresolved items remain, `handoff.html` now suggests copy-ready `handoff-response-apply`
 commands so the phone operator can close the loop without remembering separate review/task command
 grammars.
