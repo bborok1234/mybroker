@@ -260,6 +260,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/runtime/source-refresh-brief.json` and `reports/product/source-refresh.html`: phone-readable source refresh judgment that explains weak evidence, proposed free/no-key sources, approval status, preflight status, and the next safe action without calling the network;
 - `appliance source-refresh-response`: a one-command local handoff from the phone's copied approval response into refreshed live-run proof, preflight proof, and source refresh briefing. It does not execute live network calls;
 - `reports/product/journal.html` and `reports/memory/analyst-journal.json`: the daily analyst work log with today's focus, role notes, weak evidence, and follow-up questions;
+- `reports/product/learning.html` and `reports/memory/learning-ledger.json`: the beginner learning ledger that turns each daily brief into concepts learned, repeated observations, carried questions, source gaps, and linked artifacts;
 - `reports/runtime/analyst-council.json` and `reports/product/council.html`: local role review before reading today's brief, with source scout, evidence curator, market mapper, scenario analyst, skeptic, beginner tutor, and memory librarian agreement/disagreement;
 - `reports/runtime/council-response-apply.json` and `reports/product/council-response-apply.html`: one-command local proof that a copied council response was recorded, review/scout/effect artifacts were refreshed, and council was regenerated;
 - `reports/product/tasks.html` and `reports/memory/analyst-task-queue.json`: role-based analyst task queue for source scout, market mapper, skeptic, tutor, librarian, and publisher work;
@@ -279,6 +280,8 @@ Funnel/tunnel exposure is a later decision after access control and secret bound
 
 This follows the Obsidian-vault pattern: each daily run remains a local artifact, while
 `journal.html` records what the personal analyst concluded, doubted, and queued for tomorrow.
+`learning.html` records what the operator actually learned from the brief: the core beginner
+concept, repeated observations, changed topics, and questions to carry forward.
 `tasks.html` turns that journal into role-based next work without executing it.
 `task-ledger.html` records whether queued work is new, carried forward, blocked by approval, or retired from the current queue.
 `task-response` and `task-status-apply` let the operator mark local task status with short

@@ -17,6 +17,7 @@ from mybroker.appliance import (
     write_agent_pattern_radar,
     write_pattern_dry_run_proof,
     write_analyst_journal,
+    write_learning_ledger,
     write_analyst_council,
     write_analyst_task_queue,
     write_analyst_task_ledger,
@@ -49,6 +50,7 @@ from mybroker.appliance import (
     write_source_refresh_brief,
     write_today_surface,
     validate_morning_control_packet_file,
+    validate_learning_ledger_file,
     validate_analyst_council_file,
     validate_analyst_task_ledger_file,
     validate_memory_query_file,
@@ -110,6 +112,8 @@ class LocalApplianceTests(unittest.TestCase):
             brief_path = root / "market-brief.html"
             journal_path = root / "journal.html"
             journal_artifact_path = root / "journal.json"
+            learning_path = root / "learning.html"
+            learning_artifact_path = root / "learning.json"
             tasks_path = root / "tasks.html"
             tasks_artifact_path = root / "tasks.json"
             ledger_path = root / "task-ledger.html"
@@ -140,6 +144,16 @@ class LocalApplianceTests(unittest.TestCase):
                 scout_path=root / "missing-scout.json",
                 artifact_output_path=journal_artifact_path,
                 surface_output_path=journal_path,
+            )
+            learning = write_learning_ledger(
+                scenario_path=scenario_path,
+                verdict_path=verdict_path,
+                journal_path=journal_artifact_path,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                archive_root=root / "archive",
+                artifact_output_path=learning_artifact_path,
+                surface_output_path=learning_path,
             )
             tasks = write_analyst_task_queue(
                 journal_path=journal_artifact_path,
@@ -291,6 +305,9 @@ class LocalApplianceTests(unittest.TestCase):
             html = today.read_text(encoding="utf-8")
             journal_html = journal.read_text(encoding="utf-8")
             journal_payload = json.loads(journal_artifact_path.read_text(encoding="utf-8"))
+            learning_html = learning.read_text(encoding="utf-8")
+            learning_payload = json.loads(learning_artifact_path.read_text(encoding="utf-8"))
+            learning_errors = validate_learning_ledger_file(learning_artifact_path)
             tasks_html = tasks.read_text(encoding="utf-8")
             tasks_payload = json.loads(tasks_artifact_path.read_text(encoding="utf-8"))
             ledger_html = ledger.read_text(encoding="utf-8")
@@ -377,6 +394,11 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("내일 이어갈 analyst tasks", journal_html)
         self.assertEqual(journal_payload["schema_version"], "personal_analyst_journal.v1")
         self.assertEqual(journal_payload["policy"], "research_only")
+        self.assertIn("MyBroker Learning Ledger", learning_html)
+        self.assertIn("오늘 배운 것의 누적 원장", learning_html)
+        self.assertEqual(learning_payload["schema_version"], "personal_learning_ledger.v1")
+        self.assertEqual(learning_errors, [])
+        self.assertFalse(learning_payload["external_effect_performed"])
         self.assertIn("MyBroker Analyst Tasks", tasks_html)
         self.assertIn("역할별 큐", tasks_html)
         self.assertEqual(tasks_payload["schema_version"], "personal_analyst_task_queue.v1")
@@ -1100,6 +1122,8 @@ class LocalApplianceTests(unittest.TestCase):
             council_payload = json.loads((root / "reports" / "runtime" / "analyst-council.json").read_text(encoding="utf-8"))
             council_errors = validate_analyst_council_file(root / "reports" / "runtime" / "analyst-council.json")
             journal_payload = json.loads((root / "reports" / "memory" / "analyst-journal.json").read_text(encoding="utf-8"))
+            learning_payload = json.loads((root / "reports" / "memory" / "learning-ledger.json").read_text(encoding="utf-8"))
+            learning_errors = validate_learning_ledger_file(root / "reports" / "memory" / "learning-ledger.json")
             morning_payload = json.loads((root / "reports" / "runtime" / "morning-control.json").read_text(encoding="utf-8"))
             agenda_payload = json.loads((root / "reports" / "daily" / "brief-agenda.json").read_text(encoding="utf-8"))
             agenda_errors = validate_daily_brief_agenda_file(root / "reports" / "daily" / "brief-agenda.json")
@@ -1153,6 +1177,7 @@ class LocalApplianceTests(unittest.TestCase):
             scheduler_html = (root / "reports" / "product" / "scheduler.html").read_text(encoding="utf-8")
             memory_query_html = (root / "reports" / "product" / "memory-query.html").read_text(encoding="utf-8")
             memory_audit_html = (root / "reports" / "product" / "memory-audit.html").read_text(encoding="utf-8")
+            learning_html = (root / "reports" / "product" / "learning.html").read_text(encoding="utf-8")
             council_html = (root / "reports" / "product" / "council.html").read_text(encoding="utf-8")
             vault_html = (root / "reports" / "product" / "vault.html").read_text(encoding="utf-8")
 
@@ -1168,6 +1193,13 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn(memory_query_payload["recall_quality"]["level"], {"usable", "strong", "thin"})
         self.assertGreaterEqual(len(memory_query_payload["reading_order"]), 1)
         self.assertIn("vault note 1개", journal_payload["role_notes"][4]["finding"])
+        self.assertEqual(learning_payload["schema_version"], "personal_learning_ledger.v1")
+        self.assertEqual(learning_errors, [])
+        self.assertIn("오늘 배운 것의 누적 원장", learning_html)
+        self.assertGreaterEqual(learning_payload["summary"]["concept_count"], 1)
+        self.assertGreaterEqual(learning_payload["summary"]["question_count"], 1)
+        self.assertFalse(learning_payload["external_effect_performed"])
+        self.assertIn("learning_ledger", manifest_payload["artifacts"])
         self.assertIn("vault", morning_payload["phone_links"])
         self.assertIn("memory_query", morning_payload["phone_links"])
         self.assertIn("agenda", morning_payload["phone_links"])
@@ -1237,6 +1269,9 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(item["name"] == "memory_query_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "memory_audit" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "memory_audit_surface" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "learning_ledger" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "learning_ledger_surface" for item in readiness_payload["artifacts"]))
+        self.assertIn("learning", readiness_payload["phone_links"])
         self.assertTrue(any(item["name"] == "analyst_council" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "analyst_council_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "run_trace" for item in readiness_payload["artifacts"]))
@@ -1298,6 +1333,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(step["name"] == "daily_scout" for step in run_trace_payload["trace_steps"]))
         self.assertTrue(any(step["name"] == "analyst_council" for step in run_trace_payload["trace_steps"]))
         self.assertTrue(any(step["name"] == "memory_audit" for step in run_trace_payload["trace_steps"]))
+        self.assertTrue(any(step["name"] == "learning_ledger" for step in run_trace_payload["trace_steps"]))
         self.assertTrue(any(step["name"] == "today_surface" for step in run_trace_payload["trace_steps"]))
         self.assertEqual(run_ledger_payload["schema_version"], "daily_run_ledger.v1")
         self.assertEqual(run_ledger_errors, [])
@@ -1328,6 +1364,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(daily_home_payload["phone_links"]["daily_home"], "reports/product/daily-home.html")
         self.assertEqual(daily_home_payload["phone_links"]["phone_access"], "reports/product/phone-access.html")
         self.assertEqual(daily_home_payload["phone_links"]["memory_query"], "reports/product/memory-query.html")
+        self.assertEqual(daily_home_payload["phone_links"]["learning"], "reports/product/learning.html")
         self.assertEqual(daily_home_payload["phone_links"]["pattern_dry_run"], "reports/product/pattern-dry-run.html")
         self.assertEqual(daily_home_payload["phone_links"]["trace"], "reports/product/run-trace.html")
         self.assertEqual(daily_home_payload["memory_recall_adoption"]["pattern_candidate_id"], "pattern-memory-recall-quality")
@@ -1362,6 +1399,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(all(item["external_effect_performed"] is False for item in inbox["priority_items"]))
         self.assertGreaterEqual(len(daily_home_payload["daily_route"]), 6)
         self.assertTrue(any(step["title"] == "memory recall" for step in daily_home_payload["daily_route"]))
+        self.assertTrue(any(step["title"] == "learning ledger" for step in daily_home_payload["daily_route"]))
         self.assertTrue(any(step["title"] == "run trace" for step in daily_home_payload["daily_route"]))
         self.assertTrue(any(step["title"] == "pattern dry-run proof" for step in daily_home_payload["daily_route"]))
         self.assertEqual(access_verify_payload["schema_version"], "phone_access_verify.v1")

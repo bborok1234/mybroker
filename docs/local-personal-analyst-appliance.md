@@ -160,6 +160,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/memory.html`: phone-readable accumulated research notebook.
 - `reports/memory/analyst-journal.json`: machine-readable daily analyst work log.
 - `reports/product/journal.html`: phone-readable daily analyst journal with today's focus, role notes, evidence gaps, and tomorrow's questions.
+- `reports/memory/learning-ledger.json`: machine-readable beginner learning ledger for concepts learned, repeated observations, carried questions, and source gaps.
+- `reports/product/learning.html`: phone-readable learning ledger for turning each brief into compounding beginner memory.
 - `reports/daily/brief-agenda.json`: machine-readable 20-minute study agenda from scout, evidence, memory, vault, and refresh plan.
 - `reports/product/daily-agenda.html`: phone-readable agenda with reading order, source fan-out, weak evidence, role work, and follow-up questions.
 - `reports/memory/daily-review.json`: machine-readable local operator review signals for what was read, skipped, confusing, or worth seeing more often.
@@ -195,7 +197,7 @@ The local loop now writes three memory-facing surfaces:
 - `reports/runtime/daily-readiness.json`: machine-readable freshness/readiness proof for required daily artifacts.
 - `reports/product/readiness.html`: phone-readable control page that says whether today's brief is fresh enough, what is stale or missing, and what local run command to use next.
 - `reports/runtime/daily-home.json`: machine-readable phone entrypoint over existing daily artifacts.
-- `reports/product/daily-home.html`: phone-first daily home that says what to open first, what is trustworthy or blocked, which continuity proof matters, and which safe local response commands are available.
+- `reports/product/daily-home.html`: phone-first daily home that says what to open first, where the learning ledger is, what is trustworthy or blocked, which continuity proof matters, and which safe local response commands are available.
 - `reports/runtime/phone-access-verify.json`: machine-readable read-only proof for local/private phone access readiness.
 - `reports/product/phone-access.html`: phone-readable proof that daily-home can be the first private/local entrypoint without starting services or public exposure.
 - `reports/runtime/scheduler-operations.json`: machine-readable summary of scheduler assets, local run-once proof, activation preflight, activation verification, and runtime doctor state.
@@ -361,7 +363,7 @@ does not open a public tunnel, and does not write host state.
 `appliance trace` is the local observability proof. It writes `local_run_trace.v1` and
 `reports/product/run-trace.html` by reading the existing playbook, pattern radar, scout, evidence,
 memory, agenda, source refresh brief, scenario, verdict, journal, task queue, task ledger, daily
-review, scheduler operations, and today surface. It summarizes what shaped today's output, marks
+review, learning ledger, scheduler operations, and today surface. It summarizes what shaped today's output, marks
 missing or stale steps, and links the relevant phone surfaces. It does not execute live network,
 send notifications, write host scheduler state, use credentials, or touch account flows.
 

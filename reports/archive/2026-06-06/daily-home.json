@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T01:24:07.718495+00:00",
+  "generated_at": "2026-06-06T01:45:39.373905+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -16,8 +16,11 @@
     "scout_operator_input_required": false,
     "memory_recall_quality": "strong",
     "memory_recall_matches": 5,
+    "learning_status": "review",
+    "learning_concept_count": 4,
+    "learning_question_count": 8,
     "trace_status": "ready",
-    "trace_fresh_count": 21,
+    "trace_fresh_count": 22,
     "trace_weak_spot_count": 0,
     "pattern_scout_candidate": "pattern-freshness-intake",
     "pattern_scout_proof_status": "passed",
@@ -42,6 +45,14 @@
     },
     {
       "step": 3,
+      "label": "오늘 배운 것 남기기",
+      "title": "learning ledger",
+      "why": "오늘 배운 개념, 반복 관찰, 내일 질문을 한 화면에 누적합니다.",
+      "href": "reports/product/learning.html",
+      "status": "review"
+    },
+    {
+      "step": 4,
       "label": "과거 기억 먼저 불러오기",
       "title": "memory recall",
       "why": "Semiconductors에 대해 로컬 vault, archive, memory가 무엇을 기억하는지 먼저 확인합니다.",
@@ -49,7 +60,7 @@
       "status": "matched"
     },
     {
-      "step": 4,
+      "step": 5,
       "label": "오늘 결과 영향 경로 확인",
       "title": "run trace",
       "why": "오늘 scout, 근거, memory, review, pattern gate 중 무엇이 결과를 만들었는지 compact trace로 확인합니다.",
@@ -57,7 +68,7 @@
       "status": "ready"
     },
     {
-      "step": 5,
+      "step": 6,
       "label": "운영 상태 확인",
       "title": "morning control",
       "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -65,7 +76,7 @@
       "status": "operator_review"
     },
     {
-      "step": 6,
+      "step": 7,
       "label": "신뢰도 확인",
       "title": "readiness",
       "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -73,7 +84,7 @@
       "status": "ready"
     },
     {
-      "step": 7,
+      "step": 8,
       "label": "전날 맥락 닫기",
       "title": "handoff",
       "why": "남은 항목 4개를 보고 필요한 응답을 복사합니다.",
@@ -81,7 +92,7 @@
       "status": "review"
     },
     {
-      "step": 8,
+      "step": 9,
       "label": "응답 반영 확인",
       "title": "handoff apply proof",
       "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -89,7 +100,7 @@
       "status": "applied"
     },
     {
-      "step": 9,
+      "step": 10,
       "label": "기억 품질 확인",
       "title": "memory audit",
       "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -97,7 +108,7 @@
       "status": "ready"
     },
     {
-      "step": 10,
+      "step": 11,
       "label": "새 작업 방식 증거 확인",
       "title": "pattern dry-run proof",
       "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -292,8 +303,8 @@
     "proof_status": "passed",
     "status": "ready",
     "run_id": "daily-research",
-    "step_count": 21,
-    "fresh_count": 21,
+    "step_count": 22,
+    "fresh_count": 22,
     "missing_required_count": 0,
     "stale_count": 0,
     "external_effect_flag_count": 0,
@@ -310,7 +321,7 @@
       },
       {
         "label": "누적 실행",
-        "value": "60회",
+        "value": "61회",
         "source": "topic_memory"
       },
       {
@@ -553,6 +564,7 @@
     "memory": "reports/product/memory.html",
     "memory_query": "reports/product/memory-query.html",
     "memory_audit": "reports/product/memory-audit.html",
+    "learning": "reports/product/learning.html",
     "pattern_radar": "reports/product/pattern-radar.html",
     "pattern_dry_run": "reports/product/pattern-dry-run.html",
     "trace": "reports/product/run-trace.html",
@@ -581,7 +593,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T01:24:07.660012+00:00"
+      "generated_at": "2026-06-06T01:45:39.055630+00:00"
     },
     {
       "name": "agenda",
@@ -589,7 +601,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T01:24:07.664089+00:00"
+      "generated_at": "2026-06-06T01:45:39.061847+00:00"
     },
     {
       "name": "morning",
@@ -597,7 +609,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-06T01:24:07.702849+00:00"
+      "generated_at": "2026-06-06T01:45:39.252992+00:00"
     },
     {
       "name": "readiness",
@@ -605,7 +617,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:24:07.715493+00:00"
+      "generated_at": "2026-06-06T01:45:39.368484+00:00"
     },
     {
       "name": "handoff",
@@ -613,7 +625,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-06T01:24:07.708877+00:00"
+      "generated_at": "2026-06-06T01:45:39.295790+00:00"
     },
     {
       "name": "handoff_apply",
@@ -629,7 +641,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:24:07.708021+00:00"
+      "generated_at": "2026-06-06T01:45:39.291033+00:00"
     },
     {
       "name": "run_trace",
@@ -637,7 +649,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:24:07.697418+00:00"
+      "generated_at": "2026-06-06T01:45:39.232853+00:00"
     },
     {
       "name": "task_ledger",
@@ -645,7 +657,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T01:24:07.685906+00:00"
+      "generated_at": "2026-06-06T01:45:39.189772+00:00"
     },
     {
       "name": "scheduler",
@@ -653,7 +665,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-06T01:24:07.694754+00:00"
+      "generated_at": "2026-06-06T01:45:39.230656+00:00"
     },
     {
       "name": "phone_access",
@@ -661,7 +673,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T01:24:07.657151+00:00"
+      "generated_at": "2026-06-06T01:45:39.049843+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -669,7 +681,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:24:07.714446+00:00"
+      "generated_at": "2026-06-06T01:45:39.365633+00:00"
     },
     {
       "name": "notification",
@@ -677,7 +689,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-06T01:24:07.688882+00:00"
+      "generated_at": "2026-06-06T01:45:39.200095+00:00"
     },
     {
       "name": "memory_query",
@@ -685,7 +697,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-06T01:24:07.683413+00:00"
+      "generated_at": "2026-06-06T01:45:39.178682+00:00"
     },
     {
       "name": "memory_audit",
@@ -693,7 +705,15 @@
       "exists": true,
       "schema_version": "personal_memory_audit.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:24:07.682676+00:00"
+      "generated_at": "2026-06-06T01:45:39.167849+00:00"
+    },
+    {
+      "name": "learning_ledger",
+      "path": "reports/memory/learning-ledger.json",
+      "exists": true,
+      "schema_version": "personal_learning_ledger.v1",
+      "status": "review",
+      "generated_at": "2026-06-06T01:45:39.182531+00:00"
     },
     {
       "name": "pattern_radar",
@@ -701,7 +721,7 @@
       "exists": true,
       "schema_version": "agent_pattern_radar.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T01:24:07.657356+00:00"
+      "generated_at": "2026-06-06T01:45:39.050117+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -709,7 +729,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-06T01:24:07.700644+00:00"
+      "generated_at": "2026-06-06T01:45:39.240644+00:00"
     }
   ],
   "external_effect_performed": false,

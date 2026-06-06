@@ -10,6 +10,8 @@ from mybroker.appliance import (
     DEFAULT_ARCHIVE_ROOT,
     DEFAULT_ANALYST_JOURNAL_ARTIFACT,
     DEFAULT_ANALYST_JOURNAL_OUTPUT,
+    DEFAULT_LEARNING_LEDGER_OUTPUT,
+    DEFAULT_LEARNING_LEDGER_SURFACE,
     DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT,
     DEFAULT_ANALYST_TASK_QUEUE_OUTPUT,
     DEFAULT_ANALYST_TASK_LEDGER_ARTIFACT,
@@ -88,6 +90,7 @@ from mybroker.appliance import (
     write_launchd_assets,
     write_analyst_council,
     write_analyst_journal,
+    write_learning_ledger,
     write_analyst_task_queue,
     write_analyst_task_ledger,
     write_daily_brief_agenda,
@@ -127,6 +130,7 @@ from mybroker.appliance import (
     write_source_refresh_brief,
     write_today_surface,
     validate_analyst_journal_file,
+    validate_learning_ledger_file,
     validate_analyst_council_file,
     validate_analyst_task_queue_file,
     validate_analyst_task_ledger_file,
@@ -391,6 +395,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_pattern_proof_parser.add_argument("pattern_proof_path")
     validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
     validate_journal_parser.add_argument("journal_path")
+    validate_learning_parser = subcommands.add_parser("validate-learning-ledger", help="Validate a personal_learning_ledger.v1 artifact.")
+    validate_learning_parser.add_argument("learning_ledger_path")
     validate_tasks_parser = subcommands.add_parser("validate-analyst-task-queue", help="Validate a personal_analyst_task_queue.v1 artifact.")
     validate_tasks_parser.add_argument("task_queue_path")
     validate_task_ledger_parser = subcommands.add_parser("validate-analyst-task-ledger", help="Validate a personal_analyst_task_ledger.v1 artifact.")
@@ -545,6 +551,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_home_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--memory-query", default=DEFAULT_MEMORY_QUERY_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--learning-ledger", default=DEFAULT_LEARNING_LEDGER_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--pattern-radar", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--pattern-dry-run-proof", default=DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_HOME_OUTPUT.as_posix())
@@ -603,6 +610,15 @@ def main(argv: list[str] | None = None) -> int:
     appliance_journal_parser.add_argument("--archive-manifest")
     appliance_journal_parser.add_argument("--artifact-output", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
     appliance_journal_parser.add_argument("--output", default=DEFAULT_ANALYST_JOURNAL_OUTPUT.as_posix())
+    appliance_learning_parser = appliance_subcommands.add_parser("learning", help="Render the beginner learning ledger from today's local analyst artifacts.")
+    appliance_learning_parser.add_argument("--scenario", default="reports/scenarios/daily-research-sim.json")
+    appliance_learning_parser.add_argument("--verdict", default="reports/scenarios/daily-research-verdict.json")
+    appliance_learning_parser.add_argument("--journal", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
+    appliance_learning_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
+    appliance_learning_parser.add_argument("--evidence", default=DEFAULT_DAILY_EVIDENCE_OUTPUT.as_posix())
+    appliance_learning_parser.add_argument("--archive-root", default=DEFAULT_ARCHIVE_ROOT.as_posix())
+    appliance_learning_parser.add_argument("--artifact-output", default=DEFAULT_LEARNING_LEDGER_OUTPUT.as_posix())
+    appliance_learning_parser.add_argument("--output", default=DEFAULT_LEARNING_LEDGER_SURFACE.as_posix())
     appliance_tasks_parser = appliance_subcommands.add_parser("tasks", help="Render the role-based analyst task queue from today's journal.")
     appliance_tasks_parser.add_argument("--journal", default=DEFAULT_ANALYST_JOURNAL_ARTIFACT.as_posix())
     appliance_tasks_parser.add_argument("--memory", default=DEFAULT_TOPIC_MEMORY_OUTPUT.as_posix())
@@ -1117,6 +1133,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "validate-daily-home":
         errors = validate_daily_operator_home_file(args.daily_home_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
+    if args.command == "validate-learning-ledger":
+        errors = validate_learning_ledger_file(args.learning_ledger_path)
         if errors:
             print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
             return 1
@@ -1649,6 +1672,7 @@ def main(argv: list[str] | None = None) -> int:
                 notification_path=args.notification,
                 memory_query_path=args.memory_query,
                 memory_audit_path=args.memory_audit,
+                learning_ledger_path=args.learning_ledger,
                 pattern_radar_path=args.pattern_radar,
                 pattern_dry_run_proof_path=args.pattern_dry_run_proof,
                 artifact_output_path=args.artifact_output,
@@ -1783,6 +1807,25 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({
                 "journal": path.as_posix(),
                 "artifact": args.artifact_output,
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "learning":
+            path = write_learning_ledger(
+                scenario_path=args.scenario,
+                verdict_path=args.verdict,
+                journal_path=args.journal,
+                memory_path=args.memory,
+                evidence_path=args.evidence,
+                archive_root=args.archive_root,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "learning": path.as_posix(),
+                "artifact": args.artifact_output,
+                "status": payload["status"],
+                "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
         if args.appliance_command == "tasks":
@@ -2508,6 +2551,8 @@ def main(argv: list[str] | None = None) -> int:
             memory_surface_path = DEFAULT_MEMORY_OUTPUT
             journal_path = DEFAULT_ANALYST_JOURNAL_OUTPUT
             journal_artifact_path = DEFAULT_ANALYST_JOURNAL_ARTIFACT
+            learning_ledger_path = DEFAULT_LEARNING_LEDGER_SURFACE
+            learning_ledger_artifact_path = DEFAULT_LEARNING_LEDGER_OUTPUT
             task_queue_path = DEFAULT_ANALYST_TASK_QUEUE_OUTPUT
             task_queue_artifact_path = DEFAULT_ANALYST_TASK_QUEUE_ARTIFACT
             task_ledger_path = DEFAULT_ANALYST_TASK_LEDGER_OUTPUT
@@ -2653,6 +2698,16 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=journal_artifact_path,
                 surface_output_path=journal_path,
             )
+            provisional_learning = write_learning_ledger(
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                journal_path=journal_artifact_path,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                archive_root=args.archive_root,
+                artifact_output_path=learning_ledger_artifact_path,
+                surface_output_path=learning_ledger_path,
+            )
             provisional_task_queue = write_analyst_task_queue(
                 journal_path=journal_artifact_path,
                 memory_path=memory_path,
@@ -2734,6 +2789,8 @@ def main(argv: list[str] | None = None) -> int:
                 task_ledger_path=provisional_task_ledger,
                 daily_review_path=review_artifact_path,
                 daily_review_surface_path=provisional_review,
+                learning_ledger_path=learning_ledger_artifact_path,
+                learning_ledger_surface_path=provisional_learning,
                 review_prompt_path=review_prompt_artifact_path,
                 review_prompt_surface_path=provisional_review_prompt,
                 review_effect_path=review_effect_artifact_path,
@@ -2787,6 +2844,16 @@ def main(argv: list[str] | None = None) -> int:
                 vault_path=active_vault_path,
                 artifact_output_path=journal_artifact_path,
                 surface_output_path=journal_path,
+            )
+            written_learning = write_learning_ledger(
+                scenario_path=written_scenario,
+                verdict_path=written_verdict,
+                journal_path=journal_artifact_path,
+                memory_path=memory_path,
+                evidence_path=evidence_path,
+                archive_root=args.archive_root,
+                artifact_output_path=learning_ledger_artifact_path,
+                surface_output_path=learning_ledger_path,
             )
             written_analyst_council = write_analyst_council(
                 scenario_path=written_scenario,
@@ -2890,6 +2957,7 @@ def main(argv: list[str] | None = None) -> int:
                 analyst_council_path=analyst_council_artifact_path,
                 memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
+                learning_ledger_path=learning_ledger_artifact_path,
                 scheduler_operations_path=scheduler_operations_artifact_path,
             )
             written_pattern_proof = write_pattern_dry_run_proof(
@@ -3008,6 +3076,7 @@ def main(argv: list[str] | None = None) -> int:
                 notification_path=notification_path,
                 memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
+                learning_ledger_path=learning_ledger_artifact_path,
                 pattern_dry_run_proof_path=pattern_proof_artifact_path,
             )
             written_phone_access_verify = write_phone_access_verify(
@@ -3039,6 +3108,7 @@ def main(argv: list[str] | None = None) -> int:
                 notification_path=notification_path,
                 memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
+                learning_ledger_path=learning_ledger_artifact_path,
                 pattern_dry_run_proof_path=pattern_proof_artifact_path,
             )
             written_phone_access_verify = write_phone_access_verify(
@@ -3075,6 +3145,8 @@ def main(argv: list[str] | None = None) -> int:
                     "memory_query_surface": written_memory_query,
                     "memory_audit": memory_audit_artifact_path,
                     "memory_audit_surface": written_memory_audit,
+                    "learning_ledger": learning_ledger_artifact_path,
+                    "learning_ledger_surface": written_learning,
                     "pattern_dry_run_proof": pattern_proof_artifact_path,
                     "pattern_dry_run_proof_surface": written_pattern_proof,
                     "run_trace": run_trace_artifact_path,
@@ -3113,6 +3185,8 @@ def main(argv: list[str] | None = None) -> int:
                 "review_prompt_surface": written_review_prompt.as_posix(),
                 "review_effect": review_effect_artifact_path.as_posix(),
                 "review_effect_surface": written_review_effect.as_posix(),
+                "learning_ledger": learning_ledger_artifact_path.as_posix(),
+                "learning_ledger_surface": written_learning.as_posix(),
                 "agent_pattern_radar": pattern_radar_artifact_path.as_posix(),
                 "agent_pattern_radar_surface": written_pattern_radar.as_posix(),
                 "pattern_dry_run_proof": pattern_proof_artifact_path.as_posix(),
