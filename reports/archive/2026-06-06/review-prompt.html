@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Review Prompt</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:760px; margin:0 auto; padding:16px; }
+.eyebrow,.card span,.command b { color:var(--green); font-size:12px; font-weight:900; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 10px; font-size:20px; }
+p,small { color:var(--muted); }
+.hero,.section,.card { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:16px; margin:14px 0; }
+.status { display:block; margin:8px 0; font-size:28px; line-height:1.1; }
+.metrics,.links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.metric,.card,.command { background:white; padding:14px; min-width:0; }
+.metric strong { display:block; font-size:26px; }
+.stack { display:grid; grid-template-columns:1fr; gap:10px; }
+.card strong { display:block; margin:5px 0; font-size:20px; }
+.card p,.card small { overflow-wrap:anywhere; }
+.command { margin-top:10px; border:1px solid var(--line); border-radius:8px; }
+code { display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--blue); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.links { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Review Prompt · 2026-06-06 local</span>
+<h1>오늘 남길 피드백</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">피드백 있음</strong>
+<p>다음 scout와 방향 점검이 실제 사용자 피드백을 근거로 조정되도록, 오늘 남길 수 있는 짧은 응답을 제안합니다.</p>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Prompts</span><strong>3</strong></article>
+<article class="metric"><span>Responses</span><strong>1</strong></article>
+<article class="metric"><span>Applied</span><strong>1</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>복사해서 남길 응답</h2>
+<div class="stack"><article class='card'><span>RP-001 · 내일 scout 조정</span><strong>Semiconductors</strong><p>근거 4개 · 출처군 2개 · vault 1개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p><small>응답은 local review memory에만 저장되고 다음 scout 점수에 반영됩니다.</small><div class='command'><b>읽었음</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;read &quot;Semiconductors&quot; &quot;Semiconductors을 읽었다&quot;&#x27;</code><small>오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다.</small></div><div class='command'><b>더 보기</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;more &quot;Semiconductors&quot; &quot;Semiconductors을 내일도 더 보고 싶다&quot;&#x27;</code><small>내일도 이 주제를 더 높은 우선순위로 보게 합니다.</small></div><div class='command'><b>헷갈림</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;confusing &quot;Semiconductors&quot; &quot;Semiconductors 설명이 아직 어렵다&quot;&#x27;</code><small>다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.</small></div><div class='command'><b>건너뜀</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;skip &quot;Semiconductors&quot; &quot;Semiconductors은 오늘은 건너뛴다&quot;&#x27;</code><small>이 주제를 당장은 낮은 우선순위로 내리게 합니다.</small></div></article><article class='card'><span>RP-002 · 내일 scout 조정</span><strong>Consumer weakness</strong><p>근거 5개 · 출처군 3개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p><small>응답은 local review memory에만 저장되고 다음 scout 점수에 반영됩니다.</small><div class='command'><b>읽었음</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;read &quot;Consumer weakness&quot; &quot;Consumer weakness을 읽었다&quot;&#x27;</code><small>오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다.</small></div><div class='command'><b>더 보기</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;more &quot;Consumer weakness&quot; &quot;Consumer weakness을 내일도 더 보고 싶다&quot;&#x27;</code><small>내일도 이 주제를 더 높은 우선순위로 보게 합니다.</small></div><div class='command'><b>헷갈림</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;confusing &quot;Consumer weakness&quot; &quot;Consumer weakness 설명이 아직 어렵다&quot;&#x27;</code><small>다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.</small></div><div class='command'><b>건너뜀</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;skip &quot;Consumer weakness&quot; &quot;Consumer weakness은 오늘은 건너뛴다&quot;&#x27;</code><small>이 주제를 당장은 낮은 우선순위로 내리게 합니다.</small></div></article><article class='card'><span>RP-003 · 내일 scout 조정</span><strong>Korea semiconductors</strong><p>근거 5개 · 출처군 3개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p><small>응답은 local review memory에만 저장되고 다음 scout 점수에 반영됩니다.</small><div class='command'><b>읽었음</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;read &quot;Korea semiconductors&quot; &quot;Korea semiconductors을 읽었다&quot;&#x27;</code><small>오늘 내용을 읽었고 다음 run에서 기본 관심 신호로 남깁니다.</small></div><div class='command'><b>더 보기</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;more &quot;Korea semiconductors&quot; &quot;Korea semiconductors을 내일도 더 보고 싶다&quot;&#x27;</code><small>내일도 이 주제를 더 높은 우선순위로 보게 합니다.</small></div><div class='command'><b>헷갈림</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;confusing &quot;Korea semiconductors&quot; &quot;Korea semiconductors 설명이 아직 어렵다&quot;&#x27;</code><small>다음 run에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.</small></div><div class='command'><b>건너뜀</b><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;skip &quot;Korea semiconductors&quot; &quot;Korea semiconductors은 오늘은 건너뛴다&quot;&#x27;</code><small>이 주제를 당장은 낮은 우선순위로 내리게 합니다.</small></div></article></div>
+</section>
+<section class="section">
+<h2>다음에 바뀌는 것</h2>
+<p>review-response-apply를 남기면 daily_review, daily_scout, review_prompt, review_effect가 같은 local run에서 갱신되고 operator_review 반영 여부가 증명됩니다.</p>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links"><a href='reports/product/today.html'>today</a><a href='reports/product/review.html'>review</a><a href='reports/product/drift-review.html'>drift_review</a><a href='reports/product/morning.html'>morning</a></div>
+</section>
+</main>
+</body>
+</html>

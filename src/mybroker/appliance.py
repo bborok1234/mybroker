@@ -2991,6 +2991,7 @@ def build_daily_handoff(
     )
     reflected = [item for item in carried_forward if item.get("reflected_today")]
     unresolved = [item for item in carried_forward if not item.get("reflected_today")]
+    study_closure = _daily_handoff_study_closure(unresolved=unresolved, council=council, memory_audit=memory_audit, scout=scout)
     duplicate_count = int(run_ledger.get("summary", {}).get("duplicate_today_count", 0) or 0)
     status = "blocked" if not canonical_run else ("review" if unresolved or duplicate_count else "ready")
     payload = {
@@ -3006,11 +3007,13 @@ def build_daily_handoff(
             "review_effect_status": review_effect.get("status", "missing"),
             "council_status": council.get("status", "missing"),
             "memory_risk_count": int(memory_audit.get("summary", {}).get("risk_count", 0) or 0),
+            "study_closure_count": study_closure.get("item_count", 0),
         },
         "canonical_run": canonical_run,
         "carried_forward": carried_forward,
         "reflected_today": reflected,
         "unresolved": unresolved,
+        "study_closure": study_closure,
         "copy_ready_commands": _daily_handoff_commands(unresolved=unresolved, scout=scout),
         "artifact_inputs": {
             "journal": Path(journal_path).as_posix(),
@@ -3080,7 +3083,7 @@ def validate_daily_handoff_payload(payload: dict[str, Any]) -> list[str]:
     if payload.get("host_write_performed") is not False:
         errors.append("host_write_performed must be false")
     summary = payload.get("summary", {})
-    for field in ["carried_item_count", "reflected_today_count", "unresolved_count", "duplicate_today_count"]:
+    for field in ["carried_item_count", "reflected_today_count", "unresolved_count", "duplicate_today_count", "study_closure_count"]:
         if field not in summary:
             errors.append(f"summary missing {field}")
     if payload.get("status") != "blocked" and not payload.get("canonical_run", {}).get("entry_id"):
@@ -3089,6 +3092,24 @@ def validate_daily_handoff_payload(payload: dict[str, Any]) -> list[str]:
         for field in ["id", "kind", "title", "source", "reflected_today", "evidence", "next_action"]:
             if field not in item:
                 errors.append(f"carried_forward[{index}] missing {field}")
+    closure = payload.get("study_closure", {})
+    for field in ["status", "item_count", "items", "external_effect_performed", "host_write_performed"]:
+        if field not in closure:
+            errors.append(f"study_closure missing {field}")
+    if closure.get("external_effect_performed") is not False:
+        errors.append("study_closure.external_effect_performed must be false")
+    if closure.get("host_write_performed") is not False:
+        errors.append("study_closure.host_write_performed must be false")
+    if closure.get("item_count", 0) != len(closure.get("items", [])):
+        errors.append("study_closure.item_count must match items length")
+    for index, item in enumerate(closure.get("items", [])):
+        for field in ["id", "kind", "title", "beginner_question", "why_it_matters", "source", "linked_surface", "copy_ready_command", "done_when", "severity", "external_effect_performed", "host_write_performed"]:
+            if field not in item:
+                errors.append(f"study_closure.items[{index}] missing {field}")
+        if item.get("external_effect_performed") is not False:
+            errors.append(f"study_closure.items[{index}].external_effect_performed must be false")
+        if item.get("host_write_performed") is not False:
+            errors.append(f"study_closure.items[{index}].host_write_performed must be false")
     for index, command in enumerate(payload.get("copy_ready_commands", [])):
         if not command.get("command"):
             errors.append(f"copy_ready_commands[{index}] missing command")
@@ -3289,6 +3310,7 @@ code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; backgrou
 def render_daily_handoff(payload: dict[str, Any]) -> str:
     summary = payload.get("summary", {})
     canonical = payload.get("canonical_run", {})
+    study = payload.get("study_closure", {})
     carried_cards = "".join(
         "<article class='card'>"
         f"<span>{esc(item.get('kind', 'item'))} · {esc('반영됨' if item.get('reflected_today') else '남아있음')}</span>"
@@ -3307,6 +3329,18 @@ def render_daily_handoff(payload: dict[str, Any]) -> str:
         "</article>"
         for item in payload.get("unresolved", [])
     ) or "<p>오늘 handoff에서 즉시 처리할 unresolved 항목은 없습니다.</p>"
+    study_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(item.get('kind', 'study'))} · {esc(item.get('severity', 'normal'))}</span>"
+        f"<h2>{esc(item.get('title', ''))}</h2>"
+        f"<p>{esc(item.get('beginner_question', ''))}</p>"
+        f"<p>{esc(item.get('why_it_matters', ''))}</p>"
+        f"<small>닫는 기준: {esc(item.get('done_when', ''))}</small>"
+        f"<code>{esc(item.get('copy_ready_command', ''))}</code>"
+        f"<p><a href='{esc(_relative_href(Path(item.get('linked_surface', 'reports/product/handoff.html'))))}'>관련 화면 열기</a></p>"
+        "</article>"
+        for item in study.get("items", [])
+    ) or "<p>오늘 공부로 닫을 handoff 항목은 없습니다.</p>"
     command_cards = "".join(
         "<article class='command'>"
         f"<span>{esc(command.get('label', 'local command'))}</span>"
@@ -3365,8 +3399,13 @@ code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; backgrou
 <article class="metric"><span>Carried</span><strong>{esc(summary.get('carried_item_count', 0))}</strong></article>
 <article class="metric"><span>Reflected</span><strong>{esc(summary.get('reflected_today_count', 0))}</strong></article>
 <article class="metric"><span>Unresolved</span><strong>{esc(summary.get('unresolved_count', 0))}</strong></article>
-<article class="metric"><span>Duplicates</span><strong>{esc(summary.get('duplicate_today_count', 0))}</strong></article>
+<article class="metric"><span>Study</span><strong>{esc(summary.get('study_closure_count', 0))}</strong></article>
 </div>
+</section>
+<section class="section">
+<h2>오늘 공부로 닫을 항목</h2>
+<p>{esc(study.get('operator_rule', '남은 질문과 주의 항목을 읽고 짧은 local feedback으로 내일 루프에 넘깁니다.'))}</p>
+<div class="grid">{study_cards}</div>
 </section>
 <section class="section">
 <h2>이월 항목 전체</h2>
@@ -7454,6 +7493,7 @@ def _daily_home_action_inbox(
 ) -> dict[str, Any]:
     pending_decisions = morning.get("pending_decisions", [])
     unresolved = handoff.get("unresolved", [])
+    study_items = handoff.get("study_closure", {}).get("items", [])
     task_entries = task_ledger.get("entries", []) if task_ledger.get("schema_version") == ANALYST_TASK_LEDGER_SCHEMA_VERSION else []
     carried_tasks = [entry for entry in task_entries if entry.get("status") == "carried"]
     ready_tasks = [entry for entry in task_entries if entry.get("status") == "ready_for_local_work"]
@@ -7474,7 +7514,23 @@ def _daily_home_action_inbox(
             "host_write_performed": False,
         })
 
-    for item in unresolved[:3]:
+    for item in study_items[:4]:
+        priority_items.append({
+            "kind": item.get("kind", "study_closure"),
+            "id": item.get("id", "study"),
+            "title": item.get("title", "study closure"),
+            "why": item.get("beginner_question", item.get("why_it_matters", "")),
+            "source": item.get("source", "study_closure"),
+            "status": "study_closure",
+            "href": item.get("linked_surface", links.get("handoff", "")),
+            "copy_ready_command": item.get("copy_ready_command", ""),
+            "requires_separate_approval": False,
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+
+    unresolved_fallback = [] if study_items else unresolved[:3]
+    for item in unresolved_fallback:
         command = ""
         if str(item.get("id", "")).startswith("DH-AT-"):
             command = f'{item.get("id", "").replace("DH-", "")} carry "오늘 action inbox에서 계속 이월"'
@@ -7516,7 +7572,7 @@ def _daily_home_action_inbox(
     status = "clear"
     if pending_decisions:
         status = "approval_review"
-    elif unresolved or carried_tasks or ready_tasks:
+    elif unresolved or study_items or carried_tasks or ready_tasks:
         status = "needs_attention"
 
     return {
@@ -7525,12 +7581,13 @@ def _daily_home_action_inbox(
         "summary": {
             "pending_decision_count": len(pending_decisions),
             "unresolved_handoff_count": len(unresolved),
+            "study_closure_count": len(study_items),
             "carried_task_count": len(carried_tasks),
             "ready_task_count": len(ready_tasks),
             "priority_item_count": len(priority_items),
         },
         "priority_items": priority_items[:8],
-        "operator_rule": "먼저 approval gate를 읽되, 실행은 별도 승인 전까지 하지 않습니다. 그 다음 unresolved handoff와 local task를 짧은 응답으로 닫습니다.",
+        "operator_rule": "action inbox: 먼저 approval gate를 읽되, 실행은 별도 승인 전까지 하지 않습니다. 그 다음 study closure 질문을 읽고 local 응답 한 줄로 내일 루프에 넘깁니다.",
         "phone_links": {
             "morning": links.get("morning", ""),
             "handoff": links.get("handoff", ""),
@@ -8093,6 +8150,7 @@ td strong,td span {{ display:block; }}
 <p>{esc(inbox.get('operator_rule', '오늘 action inbox를 아직 만들 수 없습니다.'))}</p>
 <div class="metrics">
 <article class="metric"><span>Approvals</span><strong>{esc(inbox_summary.get('pending_decision_count', 0))}</strong></article>
+<article class="metric"><span>Study</span><strong>{esc(inbox_summary.get('study_closure_count', 0))}</strong></article>
 <article class="metric"><span>Handoff</span><strong>{esc(inbox_summary.get('unresolved_handoff_count', 0))}</strong></article>
 <article class="metric"><span>Carried</span><strong>{esc(inbox_summary.get('carried_task_count', 0))}</strong></article>
 <article class="metric"><span>Ready</span><strong>{esc(inbox_summary.get('ready_task_count', 0))}</strong></article>
@@ -9908,6 +9966,74 @@ def _daily_handoff_carried_items(
             "next_action": "오늘 브리프를 읽은 뒤 review-prompt의 짧은 응답을 남기면 내일 handoff가 생깁니다.",
         })
     return items
+
+
+def _daily_handoff_study_closure(
+    *,
+    unresolved: list[dict[str, Any]],
+    council: dict[str, Any],
+    memory_audit: dict[str, Any],
+    scout: dict[str, Any],
+) -> dict[str, Any]:
+    recommended = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
+    topic = recommended.get("name", "오늘 브리프")
+    items: list[dict[str, Any]] = []
+    for item in unresolved:
+        kind = item.get("kind", "handoff")
+        title = item.get("title", "남은 질문")
+        if kind == "follow_up_question":
+            command = f"PYTHONPATH=src python3 -m mybroker appliance review-response-apply {shlex.quote(f'more \"{topic}\" \"handoff question: {title}\"')}"
+            linked_surface = DEFAULT_REVIEW_PROMPT_SURFACE.as_posix()
+            beginner_question = title
+            why = "이 질문을 오늘 브리프와 연결해 읽으면 내일 scout가 무엇을 더 볼지 배웁니다."
+            done_when = "오늘 브리프나 evidence에서 답이 되는 문장 하나와 아직 부족한 근거 하나를 말할 수 있습니다."
+            severity = "study"
+        elif kind == "council_warning":
+            caution = council.get("decision", {}).get("operator_action", title)
+            command = f"PYTHONPATH=src python3 -m mybroker appliance council-response-apply {shlex.quote(f'more \"{topic}\" \"council: {caution}\"')}"
+            linked_surface = DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix()
+            beginner_question = "역할별 council 중 어떤 역할이 오늘 결론을 가장 약하게 만들었나요?"
+            why = "council caution은 결론을 금지하는 신호가 아니라, 어떤 조건을 먼저 확인할지 알려주는 안전장치입니다."
+            done_when = "caution 역할 하나와 그 역할이 요구한 다음 확인 항목 하나를 고릅니다."
+            severity = "caution"
+        elif kind == "memory_warning":
+            question = memory_audit.get("next_questions", [title])[0] if memory_audit.get("next_questions") else title
+            command = f"PYTHONPATH=src python3 -m mybroker appliance review-response-apply {shlex.quote(f'confusing \"{topic}\" \"memory: {question}\"')}"
+            linked_surface = DEFAULT_MEMORY_AUDIT_SURFACE.as_posix()
+            beginner_question = question
+            why = "기억 품질 경고는 오늘 결론보다 누적 노트와 archive가 제대로 이어지는지 먼저 확인하라는 신호입니다."
+            done_when = "vault/archive/source 중 어떤 기억 근거가 약한지 하나를 고릅니다."
+            severity = "memory"
+        else:
+            command = f"PYTHONPATH=src python3 -m mybroker appliance handoff-response-apply {shlex.quote(f'more \"{topic}\" \"handoff: {title}\"')}"
+            linked_surface = DEFAULT_DAILY_HANDOFF_SURFACE.as_posix()
+            beginner_question = title
+            why = "남은 handoff 항목을 local feedback으로 넘기면 다음 run이 같은 맥락을 잃지 않습니다."
+            done_when = "이 항목을 내일 이어볼지, 오늘 충분한지 한 줄로 남깁니다."
+            severity = "study"
+        items.append({
+            "id": f"SC-{item.get('id', len(items) + 1)}",
+            "source_item_id": item.get("id", ""),
+            "kind": kind,
+            "title": title,
+            "beginner_question": beginner_question,
+            "why_it_matters": why,
+            "source": item.get("source", "handoff"),
+            "linked_surface": linked_surface,
+            "copy_ready_command": command,
+            "done_when": done_when,
+            "severity": severity,
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        })
+    return {
+        "status": "queued" if items else "clear",
+        "item_count": len(items),
+        "items": items,
+        "operator_rule": "남은 질문과 caution은 예측/추천이 아니라 오늘 공부로 닫습니다. 읽은 뒤 복사 가능한 local 응답 한 줄만 남깁니다.",
+        "external_effect_performed": False,
+        "host_write_performed": False,
+    }
 
 
 def _daily_handoff_match_text(*, scout: dict[str, Any], review_effect: dict[str, Any], daily_review: dict[str, Any]) -> str:

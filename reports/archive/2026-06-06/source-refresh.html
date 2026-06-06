@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Source Refresh</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:760px; margin:0 auto; padding:16px; }
+a { color:var(--blue); font-weight:900; text-decoration:none; }
+.eyebrow,.card span,.decision span { color:var(--green); font-size:12px; font-weight:900; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; }
+h2 { margin:0 0 10px; font-size:20px; }
+p,small { color:var(--muted); }
+.hero,.section,.card,.decision { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:16px; margin:14px 0; }
+.status { display:block; margin:8px 0; font-size:28px; line-height:1.1; }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.metric { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; }
+.metric strong { display:block; font-size:24px; }
+.stack { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.card,.decision { background:white; padding:14px; min-width:0; }
+.card strong,.decision strong { display:block; margin:5px 0; }
+.card p,.card small,.decision p,.decision small { overflow-wrap:anywhere; }
+code { display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.stack,.links { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Source Refresh · 2026-06-06 local</span>
+<h1>오늘 근거 새로고침 판단</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">승인 필요</strong>
+<p>필요하면 다음 응답을 검토하세요: approve live_network_refresh live_network_refresh</p>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Actions</span><strong>4</strong></article>
+<article class="metric"><span>Local</span><strong>2</strong></article>
+<article class="metric"><span>Live</span><strong>2</strong></article>
+<article class="metric"><span>Weak</span><strong>6</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>오늘 주제</h2>
+<article class="card">
+<span>low-medium</span>
+<strong>Semiconductors</strong>
+<p>근거 4개 · 출처군 2개 · vault 1개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p>
+</article>
+</section>
+<section class="section">
+<h2>약한 근거</h2>
+<div class="stack"><article class='card'><span>catalog_gap</span><strong>실시간 새로고침은 아직 연결되지 않았습니다.</strong><p>브리프 확신도를 낮추는 evidence catalog gap입니다.</p></article><article class='card'><span>catalog_gap</span><strong>소스 이용조건 검토가 남아 있습니다.</strong><p>브리프 확신도를 낮추는 evidence catalog gap입니다.</p></article><article class='card'><span>Semiconductors</span><strong>deduplication</strong><p>근거 4개 · 출처군 2개 · vault 1개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p></article><article class='card'><span>Semiconductors</span><strong>live_refresh</strong><p>근거 4개 · 출처군 2개 · vault 1개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p></article><article class='card'><span>Consumer weakness</span><strong>deduplication</strong><p>근거 5개 · 출처군 3개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p></article><article class='card'><span>Consumer weakness</span><strong>live_refresh</strong><p>근거 5개 · 출처군 3개 · 부족한 근거 점검 필요. 결론보다 먼저 확인할 주제입니다.</p></article></div>
+</section>
+<section class="section">
+<h2>Source freshness</h2>
+<div class="stack"><article class='card'><span>sample_or_fallback · sample_cache</span><strong>GDELT</strong><p>학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다.</p><small>relevance strong · items 2</small></article><article class='card'><span>sample_or_fallback · sample_cache</span><strong>SEC EDGAR</strong><p>학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다.</p><small>relevance strong · items 2</small></article><article class='card'><span>sample_or_fallback · sample_cache</span><strong>Stooq</strong><p>학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다.</p><small>relevance strong · items 1</small></article></div>
+</section>
+<section class="section">
+<h2>Source actions</h2>
+<div class="stack"><article class='card'><span>blocked · live_network_refresh</span><strong>GDELT</strong><p>GDELT 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.</p><small>reports/evidence/live-evidence-catalog.json</small></article><article class='card'><span>blocked · live_network_refresh</span><strong>Stooq</strong><p>Stooq 새로고침은 무료/no-key 후보지만 라이브 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.</p><small>reports/evidence/live-evidence-catalog.json</small></article><article class='card'><span>ready · none</span><strong>SEC EDGAR</strong><p>SEC EDGAR 작업은 로컬/샘플 캐시 경계 안에서 다음 dry-run 검증 대상으로 사용할 수 있습니다.</p><small>reports/evidence/live-evidence-catalog.json</small></article><article class='card'><span>ready · none</span><strong>Local vault</strong><p>Local vault 작업은 로컬/샘플 캐시 경계 안에서 다음 dry-run 검증 대상으로 사용할 수 있습니다.</p><small>reports/vault/compile.json</small></article></div>
+</section>
+<section class="section">
+<h2>사람이 결정할 것</h2>
+<article class='decision'><span>medium</span><strong>free/no-key live source refresh 승인</strong><p>GDELT 또는 Stooq 같은 무료 공개 자료 live refresh 후보가 있지만 네트워크 호출이므로 별도 승인 전에는 실행하지 않습니다.</p><code>approve live_network_refresh live_network_refresh</code><small>Regenerate source_refresh_apply.v1 before approval if scout, evidence, or source plan changed.</small></article>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links"><a href='reports/product/today.html'>today</a><a href='reports/product/daily-agenda.html'>agenda</a><a href='reports/product/morning.html'>morning</a><a href='reports/product/readiness.html'>readiness</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 화면은 로컬 artifact만 읽습니다. live network refresh, paid API, credential use, notification send, host scheduler write, 계좌 접근, 주문 실행은 별도 승인 없이 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
