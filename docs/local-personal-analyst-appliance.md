@@ -187,6 +187,8 @@ The local loop now writes three memory-facing surfaces:
   response handoff.
 - `reports/runtime/agent-pattern-radar.json`: machine-readable record of which external agentic workflow patterns are adopted, partially adopted, or rejected for the local daily analyst loop.
 - `reports/product/pattern-radar.html`: phone-readable workflow evolution radar for the next safe slice and safety guardrails.
+- `reports/runtime/pattern-evidence-intake.json`: machine-readable method-adoption intake that separates already verified patterns, new local candidates, approval-gated candidates, and blocked patterns.
+- `reports/product/pattern-evidence-intake.html`: phone-readable method-adoption intake for deciding whether newly researched agent/investment workflow patterns should enter the local loop.
 - `reports/runtime/pattern-dry-run-proof.json`: machine-readable proof that local-only workflow pattern candidates have validated artifacts and surfaces before deeper adoption.
 - `reports/product/pattern-dry-run.html`: phone-readable proof surface for which queued workflow patterns are safe to promote, approval-gated, or blocked.
 - `reports/runtime/daily-run-ledger.json`: machine-readable heartbeat ledger for canonical daily run, duplicate same-day runs, archive link, scheduler status, and external-effect proof.
@@ -280,9 +282,11 @@ It also emits a pattern scout: one next local-only workflow experiment, the reas
 proof command, done-when criteria, deferred watchlist, and rejected boundaries. This keeps new agent
 techniques from becoming product behavior merely because they are popular today.
 New external agent or research patterns do not become product behavior directly. They must move
-through the radar's dry-run queue first: local proof command, expected artifact, validator,
+through the radar's evidence intake and dry-run queue first: already-verified classification,
+new local-candidate classification, local proof command, expected artifact, validator,
 operator-facing explanation, and explicit approval scope. Browser/scraper/live-source patterns
-remain gated until source-refresh approval and preflight prove the boundary.
+remain gated until source-refresh approval and preflight prove the boundary. This prevents yesterday's
+best pattern from being recommended again after it already has proof.
 
 `pattern-dry-run` writes `pattern_dry_run_proof.v1` and
 `reports/product/pattern-dry-run.html`. It does not run the queued proof commands. It reads the

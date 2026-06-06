@@ -1,19 +1,20 @@
 {
   "schema_version": "agent_pattern_radar.v1",
-  "generated_at": "2026-06-06T03:01:46.427464+00:00",
+  "generated_at": "2026-06-06T03:34:14.146746+00:00",
   "status": "ready",
   "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
   "playbook_source": "reports/runtime/local-analyst-playbook.json",
+  "previous_pattern_proof": "reports/runtime/pattern-dry-run-proof.json",
   "playbook_pattern_count": 6,
   "summary": {
     "case_count": 19,
     "adopted_count": 15,
     "deferred_count": 2,
     "rejected_count": 2,
-    "dry_run_candidate_count": 5,
-    "ready_dry_run_count": 3,
+    "dry_run_candidate_count": 7,
+    "ready_dry_run_count": 5,
     "gated_dry_run_count": 1,
-    "top_next_pattern": "pattern freshness intake before new runtime authority"
+    "top_next_pattern": "pattern evidence intake before workflow adoption"
   },
   "cases": [
     {
@@ -230,12 +231,13 @@
     "status": "ready",
     "cadence": "run inside the daily appliance loop before adopting or widening any agent workflow pattern",
     "recommended_next": {
-      "candidate_id": "pattern-freshness-intake",
-      "title": "pattern freshness intake before new runtime authority",
-      "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
-      "why_now": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
-      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
+      "candidate_id": "pattern-method-evidence-intake",
+      "title": "pattern evidence intake before workflow adoption",
+      "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
+      "why_now": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
       "approval_scope": "local_dry_run_only",
+      "previously_passed_candidate_count": 3,
       "operator_decision_needed": false,
       "done_when": [
         "agent_pattern_radar.v1 validates",
@@ -284,6 +286,30 @@
       "expected_artifact": "reports/runtime/agent-pattern-radar.json",
       "approval_scope": "local_dry_run_only",
       "promotion_rule": "Adopt only if pattern_scout recommends a local next experiment, deferred/rejected boundaries remain explicit, and the phone surface validates.",
+      "source_decision": "adopt_partial",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-method-evidence-intake",
+      "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
+      "status": "ready",
+      "why": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
+      "expected_artifact": "reports/runtime/pattern-evidence-intake.json",
+      "approval_scope": "local_dry_run_only",
+      "promotion_rule": "Adopt only if the intake validates, shows stale/repeated recommendations, links the phone surface, and keeps external_effect_performed false.",
+      "source_decision": "adopt_partial",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-source-refresh-execution-confirmation",
+      "source": "OpenClaw safety research / source freshness gate",
+      "status": "ready",
+      "why": "Approval response and preflight need a final phone-readable confirmation layer before any live source execution.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-source-refresh-execution-brief reports/runtime/source-refresh-execution-brief.json",
+      "expected_artifact": "reports/runtime/source-refresh-execution-brief.json",
+      "approval_scope": "local_dry_run_only",
+      "promotion_rule": "Adopt only if approval, preflight, final confirmation, and actual execution remain separate states.",
       "source_decision": "adopt_partial",
       "external_effect_performed": false
     },

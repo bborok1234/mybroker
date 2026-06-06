@@ -1,0 +1,422 @@
+{
+  "schema_version": "pattern_evidence_intake.v1",
+  "generated_at": "2026-06-06T03:34:24.128368+00:00",
+  "status": "review",
+  "source_artifacts": {
+    "pattern_radar": "reports/runtime/agent-pattern-radar.json",
+    "pattern_dry_run_proof": "reports/runtime/pattern-dry-run-proof.json"
+  },
+  "summary": {
+    "case_count": 19,
+    "candidate_count": 7,
+    "already_verified_count": 5,
+    "local_candidate_count": 0,
+    "approval_gated_count": 1,
+    "blocked_count": 1,
+    "recommended_candidate": "pattern-method-evidence-intake",
+    "recommended_candidate_status": "already_verified"
+  },
+  "evidence_items": [
+    {
+      "source": "Hermes Agent",
+      "source_url": "https://github.com/NousResearch/hermes-agent",
+      "decision": "adopt",
+      "priority": "high",
+      "observed_pattern": "persistent workspace memory, staged tool use, messaging-style handoff",
+      "mybroker_translation": "keep daily artifacts, task state, review memory, and morning control as local files before any external effects",
+      "guardrail": "prepare, approve, preflight, and execute remain separate gates",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "채택 또는 부분채택 사례입니다. local proof 후보와 연결될 때만 daily loop에 더 깊게 들어갑니다."
+    },
+    {
+      "source": "OpenClaw",
+      "source_url": "https://openclaw.ai/",
+      "decision": "adopt",
+      "priority": "high",
+      "observed_pattern": "agent-native computer workspace with local memory and tool routing",
+      "mybroker_translation": "use narrow appliance commands and phone-readable surfaces instead of a generic unrestricted assistant",
+      "guardrail": "validate artifacts, mark source freshness, and keep credentialed or live actions behind scoped approval",
+      "linked_candidates": [
+        "pattern-freshness-intake",
+        "pattern-method-evidence-intake",
+        "pattern-source-refresh-execution-confirmation"
+      ],
+      "proof_states": [
+        "passed",
+        "passed",
+        "passed"
+      ],
+      "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    },
+    {
+      "source": "MiroFish",
+      "source_url": "https://github.com/666ghj/MiroFish",
+      "decision": "adopt",
+      "priority": "high",
+      "observed_pattern": "graph-style entity/event map, persona simulation, scenario paths",
+      "mybroker_translation": "market map, beginner explanations, persona viewpoints, and optimistic/base/downside paths",
+      "guardrail": "show confidence, missing evidence, stale sources, and research-only action candidates",
+      "linked_candidates": [
+        "pattern-method-evidence-intake"
+      ],
+      "proof_states": [
+        "passed"
+      ],
+      "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    },
+    {
+      "source": "TradingAgents",
+      "source_url": "https://github.com/TauricResearch/TradingAgents",
+      "decision": "adopt",
+      "priority": "medium",
+      "observed_pattern": "specialized analyst roles debate market, fundamentals, sentiment, and risk before a decision",
+      "mybroker_translation": "source scout, evidence curator, market mapper, scenario analyst, skeptic, tutor, memory librarian, publisher",
+      "guardrail": "roles produce questions, explanations, and research-only next inspections, not trade instructions",
+      "linked_candidates": [
+        "pattern-method-evidence-intake"
+      ],
+      "proof_states": [
+        "passed"
+      ],
+      "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    },
+    {
+      "source": "FinRobot",
+      "source_url": "https://github.com/AI4Finance-Foundation/FinRobot",
+      "decision": "adopt_partial",
+      "priority": "medium",
+      "observed_pattern": "financial LLM agents grounded in reports, data, and analyst workflows",
+      "mybroker_translation": "ground generated briefs in local artifacts, source status, and archive history",
+      "guardrail": "keep free/public/local evidence first and separate beginner education from execution",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "채택 또는 부분채택 사례입니다. local proof 후보와 연결될 때만 daily loop에 더 깊게 들어갑니다."
+    },
+    {
+      "source": "Obsidian vault research workflow",
+      "source_url": "https://obsidian.md/",
+      "decision": "adopt",
+      "priority": "high",
+      "observed_pattern": "raw inbox, compiled wiki, linked notes, recurring audit",
+      "mybroker_translation": "compile local raw notes into reports/vault/wiki and feed scout, memory, today, and archive",
+      "guardrail": "surface source paths, freshness, and review feedback; do not delete raw notes automatically",
+      "linked_candidates": [
+        "pattern-memory-recall-quality"
+      ],
+      "proof_states": [
+        "passed"
+      ],
+      "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    },
+    {
+      "source": "Claude Code finance research appliance workflow",
+      "source_url": "https://x.com/leopardracer/status/2058949350315667829",
+      "decision": "adopt",
+      "priority": "high",
+      "observed_pattern": "plain-language research operator, local knowledge base, browser automation, scraper gateway, and four verbs: clip, compile, query, audit",
+      "mybroker_translation": "keep the phone as a command/review surface while the laptop loop records local memory, compiles vault notes, asks for short feedback, and proves whether feedback shaped the next scout",
+      "guardrail": "live network, host writes, notifications, credentials, and paid/API operations stay behind scoped gates; copied feedback uses review-response-apply only",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "채택 또는 부분채택 사례입니다. local proof 후보와 연결될 때만 daily loop에 더 깊게 들어갑니다."
+    },
+    {
+      "source": "Browser-use / Playwright / Firecrawl",
+      "source_url": "https://github.com/browser-use/browser-use",
+      "decision": "defer",
+      "priority": "watch",
+      "observed_pattern": "agent-driven browser use and web extraction can gather current evidence beyond local cache",
+      "mybroker_translation": "treat browser and scraper tools as live-source candidates behind source-refresh preflight, not as default daily behavior",
+      "guardrail": "only move through source-refresh approval, preflight, cached output, and validation before it influences the daily brief",
+      "linked_candidates": [
+        "pattern-live-source-browser-gateway"
+      ],
+      "proof_states": [
+        "approval_required"
+      ],
+      "intake_note": "보류 사례입니다. live/browser/scraper/host 권한을 넓히기 전에 별도 승인과 preflight가 필요합니다."
+    },
+    {
+      "source": "work-buddy",
+      "source_url": "https://github.com/gusye1234/work-buddy",
+      "decision": "adopt_partial",
+      "priority": "high",
+      "observed_pattern": "Claude Code plus local MCP gateway, Obsidian memory, task backlog, and cross-session context",
+      "mybroker_translation": "treat the local vault, task ledger, review log, and recall page as the first narrow gateway before adding broader tool access",
+      "guardrail": "keep gateway-like commands narrow, artifact-backed, and separately validated before any external effect",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "채택 또는 부분채택 사례입니다. local proof 후보와 연결될 때만 daily loop에 더 깊게 들어갑니다."
+    },
+    {
+      "source": "Hermes Studio",
+      "source_url": "https://github.com/JPeetz/Hermes-Studio",
+      "decision": "adopt_partial",
+      "priority": "high",
+      "observed_pattern": "agent operations console with cron jobs, approvals, memory graph, audit trail, cost awareness, and Kanban-style work state",
+      "mybroker_translation": "keep the phone home, morning control, run ledger, handoff, and pattern radar as local control surfaces before building a hosted frontend",
+      "guardrail": "first screen shows only the next reading/action queue; detailed traces and gates stay one link away",
+      "linked_candidates": [
+        "pattern-freshness-intake"
+      ],
+      "proof_states": [
+        "passed"
+      ],
+      "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    },
+    {
+      "source": "OpenClaw safety research",
+      "source_url": "https://arxiv.org/abs/2604.04759",
+      "decision": "adopt",
+      "priority": "high",
+      "observed_pattern": "personal agent systems need explicit protection against capability, identity, and knowledge poisoning before broad tool use",
+      "mybroker_translation": "treat source freshness, memory audit warnings, and scoped approvals as first-class daily artifacts before any browser, account, or host authority expands",
+      "guardrail": "live network, browser/scraper, credentials, notifications, host writes, and account access remain separate approval scopes",
+      "linked_candidates": [
+        "pattern-freshness-intake",
+        "pattern-source-refresh-execution-confirmation"
+      ],
+      "proof_states": [
+        "passed",
+        "passed"
+      ],
+      "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    },
+    {
+      "source": "SemaClaw",
+      "source_url": "https://arxiv.org/abs/2604.11548",
+      "decision": "adopt_partial",
+      "priority": "high",
+      "observed_pattern": "agent-native work improves through harness engineering: typed DAGs, permission bridges, layered context, and agentic wiki memory",
+      "mybroker_translation": "prefer typed local artifacts, validators, archive manifests, and vault/wiki compounding over a larger prompt-only assistant",
+      "guardrail": "new harness pieces must produce a phone-readable operator outcome and a validator before adoption",
+      "linked_candidates": [
+        "pattern-freshness-intake"
+      ],
+      "proof_states": [
+        "passed"
+      ],
+      "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    },
+    {
+      "source": "Dexter",
+      "source_url": "https://github.com/kamalkraj/Dexter",
+      "decision": "adopt_partial",
+      "priority": "high",
+      "observed_pattern": "autonomous research-agent loops with planning, source gathering, synthesis, and evaluation",
+      "mybroker_translation": "split daily work into agenda, scout, evidence, skeptic, tutor, memory, and publisher outputs with explicit quality checks",
+      "guardrail": "show weak spots, source freshness, disagreement, and no-execution status in every user-facing research surface",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "채택 또는 부분채택 사례입니다. local proof 후보와 연결될 때만 daily loop에 더 깊게 들어갑니다."
+    },
+    {
+      "source": "TradingAgents Lab",
+      "source_url": "https://github.com/PatrickKalkman/TradingAgents",
+      "decision": "adopt_partial",
+      "priority": "medium",
+      "observed_pattern": "local desktop research lab around multi-agent financial workflows and portfolio inspection",
+      "mybroker_translation": "favor a local appliance and phone-readable surfaces over a hosted dashboard, while keeping execution out of scope",
+      "guardrail": "keep MyBroker beginner-first, research-only, and separate from account, order, or credential flows",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "채택 또는 부분채택 사례입니다. local proof 후보와 연결될 때만 daily loop에 더 깊게 들어갑니다."
+    },
+    {
+      "source": "TaskWeaver",
+      "source_url": "https://github.com/microsoft/TaskWeaver",
+      "decision": "defer",
+      "priority": "watch",
+      "observed_pattern": "code-first data analytics agent that turns requests into executable analysis steps",
+      "mybroker_translation": "later add sandboxed data-analysis notebooks for simulations and chart generation after artifact schemas are stable",
+      "guardrail": "only run generated analysis in a sandbox with deterministic inputs, saved outputs, and validation",
+      "linked_candidates": [
+        "pattern-code-analytics-sandbox"
+      ],
+      "proof_states": [
+        "blocked"
+      ],
+      "intake_note": "보류 사례입니다. live/browser/scraper/host 권한을 넓히기 전에 별도 승인과 preflight가 필요합니다."
+    },
+    {
+      "source": "TraceAgent",
+      "source_url": "https://github.com/Scale3-Labs/TraceAgent",
+      "decision": "adopt_partial",
+      "priority": "medium",
+      "observed_pattern": "agent observability and traces for tool calls, decisions, and runtime behavior",
+      "mybroker_translation": "add run trace artifacts that explain which local steps shaped today's brief, recall result, and follow-up queue",
+      "guardrail": "summarize traces into a small daily proof, keep raw traces linkable, and validate freshness",
+      "linked_candidates": [
+        "pattern-run-trace-observability"
+      ],
+      "proof_states": [
+        "passed"
+      ],
+      "intake_note": "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    },
+    {
+      "source": "Hermes/OpenClaw-style heartbeat ledgers",
+      "source_url": "",
+      "decision": "adopt_partial",
+      "priority": "high",
+      "observed_pattern": "persistent local agent loops keep heartbeat, latest-run, and duplicate-run state visible to the operator",
+      "mybroker_translation": "write a daily run ledger that identifies the canonical run for each local day, duplicate/manual runs, archive links, and no-external-effect proof",
+      "guardrail": "render a compact run-ledger surface and link it from morning/readiness/trace outputs",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "채택 또는 부분채택 사례입니다. local proof 후보와 연결될 때만 daily loop에 더 깊게 들어갑니다."
+    },
+    {
+      "source": "Hosted trading bots and broker-connected agents",
+      "source_url": "",
+      "decision": "reject",
+      "priority": "blocked",
+      "observed_pattern": "always-on execution, account credentials, live orders, discretionary automation",
+      "mybroker_translation": "none",
+      "guardrail": "no brokerage credentials, no live trading, no discretionary management",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "거절 사례입니다. 현재 research-only 경계를 넘습니다."
+    },
+    {
+      "source": "Farol-style exchange-connected bots",
+      "source_url": "https://github.com/FredericoRB/farol",
+      "decision": "reject",
+      "priority": "blocked",
+      "observed_pattern": "self-hosted automated market agents connected to exchange credentials and live execution loops",
+      "mybroker_translation": "none",
+      "guardrail": "no exchange credentials, no account connection, no live orders, no autonomous execution",
+      "linked_candidates": [],
+      "proof_states": [],
+      "intake_note": "거절 사례입니다. 현재 research-only 경계를 넘습니다."
+    }
+  ],
+  "candidate_assessments": [
+    {
+      "candidate_id": "pattern-freshness-intake",
+      "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
+      "candidate_status": "ready",
+      "proof_status": "passed",
+      "intake_status": "already_verified",
+      "approval_scope": "local_dry_run_only",
+      "expected_artifact": "reports/runtime/agent-pattern-radar.json",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
+      "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+      "promotion_rule": "Adopt only if pattern_scout recommends a local next experiment, deferred/rejected boundaries remain explicit, and the phone surface validates.",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-method-evidence-intake",
+      "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
+      "candidate_status": "ready",
+      "proof_status": "passed",
+      "intake_status": "already_verified",
+      "approval_scope": "local_dry_run_only",
+      "expected_artifact": "reports/runtime/pattern-evidence-intake.json",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
+      "why": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
+      "promotion_rule": "Adopt only if the intake validates, shows stale/repeated recommendations, links the phone surface, and keeps external_effect_performed false.",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-source-refresh-execution-confirmation",
+      "source": "OpenClaw safety research / source freshness gate",
+      "candidate_status": "ready",
+      "proof_status": "passed",
+      "intake_status": "already_verified",
+      "approval_scope": "local_dry_run_only",
+      "expected_artifact": "reports/runtime/source-refresh-execution-brief.json",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-source-refresh-execution-brief reports/runtime/source-refresh-execution-brief.json",
+      "why": "Approval response and preflight need a final phone-readable confirmation layer before any live source execution.",
+      "promotion_rule": "Adopt only if approval, preflight, final confirmation, and actual execution remain separate states.",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-memory-recall-quality",
+      "source": "Obsidian vault research workflow",
+      "candidate_status": "ready",
+      "proof_status": "passed",
+      "intake_status": "already_verified",
+      "approval_scope": "local_dry_run_only",
+      "expected_artifact": "reports/memory/audit.json",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance audit",
+      "why": "Local vault, memory, archive, and audit artifacts can be evaluated without external effects.",
+      "promotion_rule": "Adopt only if memory audit artifact validates and phone surface shows stale or weak coverage clearly.",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-run-trace-observability",
+      "source": "TraceAgent",
+      "candidate_status": "ready",
+      "proof_status": "passed",
+      "intake_status": "already_verified",
+      "approval_scope": "local_dry_run_only",
+      "expected_artifact": "reports/runtime/run-trace.json",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-run-trace reports/runtime/run-trace.json",
+      "why": "Run trace already exists and can prove which local steps influenced the daily loop.",
+      "promotion_rule": "Adopt only if trace stays compact, fresh, and linked from daily home/readiness surfaces.",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-live-source-browser-gateway",
+      "source": "Browser-use / Playwright / Firecrawl",
+      "candidate_status": "requires_approval",
+      "proof_status": "approval_required",
+      "intake_status": "approval_gated",
+      "approval_scope": "live_network_refresh",
+      "expected_artifact": "reports/daily/source-refresh-live-preflight.json",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-live-preflight --intend-execute --confirm-live-network",
+      "why": "Browser/scraper tools can improve freshness but cross the live-network boundary.",
+      "promotion_rule": "Adopt only after scoped approval, preflight, cached output validation, and source freshness labeling.",
+      "external_effect_performed": false
+    },
+    {
+      "candidate_id": "pattern-code-analytics-sandbox",
+      "source": "TaskWeaver",
+      "candidate_status": "blocked",
+      "proof_status": "blocked",
+      "intake_status": "blocked",
+      "approval_scope": "future_local_sandbox",
+      "expected_artifact": "reports/runtime/analytics-sandbox-proof.json",
+      "proof_command": "not_available_until_sandbox_schema_exists",
+      "why": "Generated analysis code needs a deterministic sandbox and report schema before it can shape the daily brief.",
+      "promotion_rule": "Adopt only after deterministic inputs, saved outputs, validator, and no external effect proof exist.",
+      "external_effect_performed": false
+    }
+  ],
+  "next_candidate": {
+    "candidate_id": "pattern-live-source-browser-gateway",
+    "source": "Browser-use / Playwright / Firecrawl",
+    "candidate_status": "requires_approval",
+    "proof_status": "approval_required",
+    "intake_status": "approval_gated",
+    "approval_scope": "live_network_refresh",
+    "expected_artifact": "reports/daily/source-refresh-live-preflight.json",
+    "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-live-preflight --intend-execute --confirm-live-network",
+    "why": "Browser/scraper tools can improve freshness but cross the live-network boundary.",
+    "promotion_rule": "Adopt only after scoped approval, preflight, cached output validation, and source freshness labeling.",
+    "external_effect_performed": false
+  },
+  "operator_rule": "새 agent/workflow 사례는 바로 daily loop에 섞지 않습니다. local_candidate는 proof artifact와 validator를 먼저 통과해야 하고, approval_gated는 별도 scope 승인이 필요합니다.",
+  "phone_links": {
+    "pattern_evidence_intake": "reports/product/pattern-evidence-intake.html",
+    "pattern_radar": "reports/product/pattern-radar.html",
+    "pattern_dry_run": "reports/product/pattern-dry-run.html",
+    "daily_home": "reports/product/daily-home.html",
+    "trace": "reports/product/run-trace.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "reads_existing_local_artifacts_only",
+    "does_not_fetch_live_network",
+    "does_not_open_browser_or_scraper",
+    "does_not_write_host_scheduler",
+    "does_not_send_notifications",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_order_execution"
+  ]
+}
