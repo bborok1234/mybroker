@@ -31,6 +31,7 @@ DAILY_OPERATOR_HOME_SCHEMA_VERSION = "daily_operator_home.v1"
 DAILY_BRIEF_AGENDA_SCHEMA_VERSION = "daily_brief_agenda.v1"
 DAILY_READINESS_SCHEMA_VERSION = "daily_readiness.v1"
 SOURCE_REFRESH_BRIEF_SCHEMA_VERSION = "source_refresh_brief.v1"
+SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION = "source_freshness_intake.v1"
 NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
@@ -78,6 +79,8 @@ DEFAULT_DAILY_READINESS_OUTPUT = Path("reports/runtime/daily-readiness.json")
 DEFAULT_DAILY_READINESS_SURFACE = Path("reports/product/readiness.html")
 DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT = Path("reports/runtime/source-refresh-brief.json")
 DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE = Path("reports/product/source-refresh.html")
+DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT = Path("reports/runtime/source-freshness-intake.json")
+DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE = Path("reports/product/source-freshness-intake.html")
 DEFAULT_NOTIFICATION_OUTPUT = Path("reports/notifications/latest.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
@@ -2587,6 +2590,8 @@ def build_daily_readiness(
         ("daily_agenda", DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT, "machine_artifact", True),
         ("source_refresh_brief", DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT, "control_artifact", False),
         ("source_refresh_surface", DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE, "phone_surface", False),
+        ("source_freshness_intake", DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT, "control_artifact", False),
+        ("source_freshness_intake_surface", DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE, "phone_surface", False),
         ("pattern_dry_run_proof", DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT, "control_artifact", False),
         ("pattern_dry_run_proof_surface", DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE, "phone_surface", False),
         ("morning_control", DEFAULT_MORNING_CONTROL_OUTPUT, "control_artifact", True),
@@ -2671,6 +2676,7 @@ def build_daily_readiness(
             "morning": DEFAULT_MORNING_CONTROL_SURFACE.as_posix(),
             "scheduler": DEFAULT_SCHEDULER_OPERATIONS_SURFACE.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+            "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
             "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
@@ -2764,6 +2770,7 @@ def build_run_trace(
     memory_query_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
     agenda_path: str | Path = DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
     source_refresh_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
+    source_freshness_intake_path: str | Path = DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT,
     scenario_path: str | Path = Path("reports/scenarios/daily-research-sim.json"),
     verdict_path: str | Path = Path("reports/scenarios/daily-research-verdict.json"),
     journal_path: str | Path = DEFAULT_ANALYST_JOURNAL_ARTIFACT,
@@ -2790,6 +2797,7 @@ def build_run_trace(
         ("memory_query", memory_query_path, "memory", "Recalls prior local context for the scout-selected topic.", False),
         ("daily_agenda", agenda_path, "study", "Converts the scout recommendation into a phone-first study sequence.", True),
         ("source_refresh_brief", source_refresh_brief_path, "gate", "Explains weak evidence and blocked refresh authority.", False),
+        ("source_freshness_intake", source_freshness_intake_path, "gate", "Packages source freshness, blocked live candidates, and scoped approval response before any live refresh.", False),
         ("scenario_report", scenario_path, "simulate", "Builds beginner-readable paths from available evidence.", True),
         ("verdict", verdict_path, "summarize", "Summarizes the research-only next inspection posture.", True),
         ("analyst_journal", journal_path, "reflect", "Records role notes and follow-up questions.", True),
@@ -2858,6 +2866,7 @@ def build_run_trace(
             "learning": DEFAULT_LEARNING_LEDGER_SURFACE.as_posix(),
             "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+            "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
         },
         "external_effect_performed": False,
         "host_write_performed": False,
@@ -4081,6 +4090,327 @@ def validate_source_refresh_brief_payload(payload: dict[str, Any]) -> list[str]:
 
 def validate_source_refresh_brief_file(path: str | Path) -> list[str]:
     return validate_source_refresh_brief_payload(load_json(path))
+
+
+def build_source_freshness_intake(
+    *,
+    source_refresh_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
+    refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    refresh_live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    generated = generated_at or datetime.now(timezone.utc)
+    brief = _load_optional_json(source_refresh_brief_path)
+    live_gate = _load_optional_json(refresh_live_gate_path)
+    live_run = _load_optional_json(refresh_live_run_path)
+    preflight = _load_optional_json(refresh_live_preflight_path)
+    source_freshness = brief.get("source_freshness", [])
+    actions = brief.get("actions", [])
+    blocked_live = [
+        action for action in actions
+        if action.get("approval_required") == "live_network_refresh"
+        or action.get("decision") == "requires_approval"
+        or action.get("status") in {"blocked_live_network", "approval_required"}
+    ]
+    stale_sources = [
+        source for source in source_freshness
+        if source.get("trust_state") != "fresh_enough"
+    ]
+    decision = brief.get("operator_decision", {})
+    gate_decision = (live_gate.get("decisions") or [{}])[0]
+    copy_ready_response = (
+        decision.get("copy_ready_response")
+        or gate_decision.get("copy_ready_response")
+        or "approve live_network_refresh live_network_refresh"
+    )
+    status = "ready_for_operator_review"
+    if not source_freshness:
+        status = "blocked_missing_source_refresh_brief"
+    elif not blocked_live and not stale_sources:
+        status = "no_intake_needed"
+    elif decision.get("approval_required") or live_gate.get("status") == "approval_required":
+        status = "approval_packet_ready"
+    payload = {
+        "schema_version": SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION,
+        "generated_at": generated.isoformat(),
+        "status": status,
+        "summary": {
+            "source_count": len(source_freshness),
+            "fresh_source_count": sum(1 for source in source_freshness if source.get("trust_state") == "fresh_enough"),
+            "stale_or_sample_source_count": len(stale_sources),
+            "blocked_live_candidate_count": len(blocked_live),
+            "approval_status": live_run.get("approval_status", "missing"),
+            "preflight_status": preflight.get("status", "missing"),
+        },
+        "operator_question": "오늘 brief가 sample/cache 근거에 기대고 있으므로, live 공개 소스 refresh를 승인할지 판단하세요.",
+        "source_freshness": source_freshness,
+        "blocked_live_candidates": [
+            {
+                "source_name": action.get("source_name", ""),
+                "adapter_id": action.get("adapter_id", ""),
+                "why_blocked": action.get("reason", ""),
+                "approval_required": action.get("approval_required", "live_network_refresh"),
+                "expected_artifact": action.get("expected_artifact", ""),
+                "candidate_command": action.get("command", ""),
+            }
+            for action in blocked_live
+        ],
+        "approval_packet": {
+            "decision_id": decision.get("id", gate_decision.get("id", "live_network_refresh")),
+            "approval_scope": decision.get("approval_scope", gate_decision.get("approval_scope", "live_network_refresh")),
+            "risk_level": decision.get("risk_level", gate_decision.get("risk_level", "medium")),
+            "reversibility": gate_decision.get("reversibility", "cache_artifact_can_be_deleted"),
+            "copy_ready_response": copy_ready_response,
+            "apply_command": f'PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-response "{copy_ready_response}" --intend-execute --confirm-live-network',
+            "agent_will_run": gate_decision.get("agent_will_run", []),
+            "agent_will_not_run": gate_decision.get(
+                "agent_will_not_run",
+                ["paid API calls", "credentialed sources", "notification send", "host-level writes", "orders or brokerage actions"],
+            ),
+        },
+        "stale_context_guard": {
+            "guard": decision.get("stale_context_guard", gate_decision.get("stale_context_guard", "Regenerate intake if scout, source plan, or source-refresh brief changed.")),
+            "input_artifacts": {
+                "source_refresh_brief": Path(source_refresh_brief_path).as_posix(),
+                "source_refresh_live_gate": Path(refresh_live_gate_path).as_posix(),
+                "source_refresh_live_run": Path(refresh_live_run_path).as_posix(),
+                "source_refresh_live_preflight": Path(refresh_live_preflight_path).as_posix(),
+            },
+        },
+        "expected_after_approval": [
+            {
+                "artifact": DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix(),
+                "meaning": "승인 응답이 정확한 scope와 decision id를 통과했는지 기록합니다.",
+            },
+            {
+                "artifact": DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix(),
+                "meaning": "실행 의도와 live-network 확인이 모두 있는지 네트워크 없이 점검합니다.",
+            },
+            {
+                "artifact": DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT.as_posix(),
+                "meaning": "승인/사전점검 상태를 다시 읽어 source refresh 판단을 갱신합니다.",
+            },
+        ],
+        "next_action": _source_freshness_intake_next_action(status=status, response=copy_ready_response),
+        "phone_links": {
+            "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
+            "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
+            "daily_home": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
+            "readiness": DEFAULT_DAILY_READINESS_SURFACE.as_posix(),
+            "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_send_notifications",
+            "does_not_write_host_scheduler",
+            "does_not_use_credentials",
+            "no_paid_api",
+            "no_account_access",
+            "no_order_execution",
+            "approval_response_is_not_execution",
+        ],
+    }
+    return payload
+
+
+def write_source_freshness_intake(
+    *,
+    source_refresh_brief_path: str | Path = DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT,
+    refresh_live_gate_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT,
+    refresh_live_run_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT,
+    refresh_live_preflight_path: str | Path = DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE,
+) -> Path:
+    payload = build_source_freshness_intake(
+        source_refresh_brief_path=source_refresh_brief_path,
+        refresh_live_gate_path=refresh_live_gate_path,
+        refresh_live_run_path=refresh_live_run_path,
+        refresh_live_preflight_path=refresh_live_preflight_path,
+    )
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_source_freshness_intake(payload), encoding="utf-8")
+    return target
+
+
+def validate_source_freshness_intake_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"approval_packet_ready", "ready_for_operator_review", "no_intake_needed", "blocked_missing_source_refresh_brief"}:
+        errors.append("status must be a recognized source freshness intake status")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if not payload.get("operator_question"):
+        errors.append("operator_question must not be empty")
+    if not payload.get("source_freshness"):
+        errors.append("source_freshness must not be empty")
+    packet = payload.get("approval_packet", {})
+    for field in ["decision_id", "approval_scope", "risk_level", "copy_ready_response", "apply_command", "agent_will_not_run"]:
+        if not packet.get(field):
+            errors.append(f"approval_packet.{field} must not be empty")
+    if packet.get("approval_scope") != "live_network_refresh" and payload.get("status") == "approval_packet_ready":
+        errors.append("approval_packet.approval_scope must remain live_network_refresh for approval packets")
+    if "--confirm-live-network" not in packet.get("apply_command", ""):
+        errors.append("approval_packet.apply_command must show explicit live-network confirmation")
+    if not payload.get("stale_context_guard", {}).get("guard"):
+        errors.append("stale_context_guard.guard must not be empty")
+    if not payload.get("expected_after_approval"):
+        errors.append("expected_after_approval must not be empty")
+    if not payload.get("next_action"):
+        errors.append("next_action must not be empty")
+    if not payload.get("phone_links", {}).get("source_freshness_intake"):
+        errors.append("phone_links.source_freshness_intake must not be empty")
+    boundary = payload.get("safety_boundary", [])
+    for required in ["reads_local_artifacts_only", "does_not_fetch_live_network", "approval_response_is_not_execution"]:
+        if required not in boundary:
+            errors.append(f"safety_boundary must include {required}")
+    forbidden = [" --send", "--confirm-host-write", "launchctl bootstrap", "tailscale serve --bg"]
+    commands = [packet.get("apply_command", "")]
+    commands.extend(item.get("candidate_command", "") for item in payload.get("blocked_live_candidates", []))
+    for index, command in enumerate(commands):
+        if any(fragment in command for fragment in forbidden):
+            errors.append(f"command[{index}] crosses non-source-refresh external-effect boundary")
+    return errors
+
+
+def validate_source_freshness_intake_file(path: str | Path) -> list[str]:
+    return validate_source_freshness_intake_payload(load_json(path))
+
+
+def render_source_freshness_intake(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    packet = payload.get("approval_packet", {})
+    status_label = {
+        "approval_packet_ready": "승인 검토 가능",
+        "ready_for_operator_review": "사람 검토 필요",
+        "no_intake_needed": "오늘 승인 항목 없음",
+        "blocked_missing_source_refresh_brief": "source-refresh brief 먼저 필요",
+    }.get(payload.get("status", ""), payload.get("status", "review"))
+    source_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(source.get('trust_state', ''))} · {esc(source.get('freshness_status', ''))}</span>"
+        f"<strong>{esc(source.get('source_name', 'source'))}</strong>"
+        f"<p>{esc(source.get('operator_rule', ''))}</p>"
+        f"<small>{esc(source.get('source_id', ''))} · relevance {esc(source.get('relevance_label', 'unscored'))}</small>"
+        "</article>"
+        for source in payload.get("source_freshness", [])
+    ) or "<p>source freshness를 표시하려면 source-refresh brief를 먼저 생성하세요.</p>"
+    blocked_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(item.get('approval_required', 'approval'))}</span>"
+        f"<strong>{esc(item.get('source_name', 'source'))}</strong>"
+        f"<p>{esc(item.get('why_blocked', ''))}</p>"
+        f"<small>{esc(item.get('expected_artifact', ''))}</small>"
+        "</article>"
+        for item in payload.get("blocked_live_candidates", [])
+    ) or "<p>승인이 필요한 live refresh 후보가 없습니다.</p>"
+    expected_items = "".join(
+        "<li>"
+        f"<strong>{esc(item.get('artifact', ''))}</strong>: {esc(item.get('meaning', ''))}"
+        "</li>"
+        for item in payload.get("expected_after_approval", [])
+    )
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if label != "source_freshness_intake" and path
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Source Freshness Intake</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+html,body {{ max-width:100%; overflow-x:hidden; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:430px; margin:0; padding:14px; }}
+a {{ color:var(--blue); font-weight:900; text-decoration:none; }}
+.eyebrow,.card span,.metric span {{ color:var(--green); font-size:12px; font-weight:900; }}
+.card span {{ display:block; overflow-wrap:anywhere; }}
+h1 {{ margin:8px 0 10px; font-size:31px; line-height:1.12; overflow-wrap:anywhere; }}
+h2 {{ margin:0 0 10px; font-size:19px; }}
+p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.card,.metric,.decision {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:15px; margin:12px 0; }}
+.status {{ display:block; margin:10px 0; font-size:24px; line-height:1.15; }}
+.metrics {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.metric,.card,.decision {{ padding:12px; background:white; min-width:0; }}
+.metric strong {{ display:block; font-size:24px; }}
+.stack {{ display:grid; grid-template-columns:minmax(0,1fr); gap:9px; }}
+code {{ display:block; white-space:pre-wrap; word-break:break-word; border:1px solid var(--line); border-radius:8px; background:#f1f5f7; padding:10px; color:var(--ink); font-size:13px; }}
+.links {{ display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:11px; }}
+.boundary {{ border-left:4px solid var(--green); }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Source Freshness Intake · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>승인 전 근거 신선도 확인</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">지금 판단</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('operator_question', ''))}</p>
+<div class="metrics">
+<article class="metric"><span>Sources</span><strong>{esc(summary.get('source_count', 0))}</strong></article>
+<article class="metric"><span>Weak</span><strong>{esc(summary.get('stale_or_sample_source_count', 0))}</strong></article>
+<article class="metric"><span>Blocked live</span><strong>{esc(summary.get('blocked_live_candidate_count', 0))}</strong></article>
+<article class="metric"><span>Preflight</span><strong>{esc(summary.get('preflight_status', 'missing'))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>Source freshness</h2>
+<div class="stack">{source_cards}</div>
+</section>
+<section class="section">
+<h2>승인 전 막힌 후보</h2>
+<div class="stack">{blocked_cards}</div>
+</section>
+<section class="section decision">
+<h2>복사 가능한 승인 응답</h2>
+<p>이 응답은 승인 기록과 preflight proof를 만들 뿐, 이 intake 화면 자체는 live network를 실행하지 않습니다.</p>
+<code>{esc(packet.get('copy_ready_response', ''))}</code>
+<h2>적용 명령 preview</h2>
+<code>{esc(packet.get('apply_command', ''))}</code>
+<p>{esc(payload.get('stale_context_guard', {}).get('guard', ''))}</p>
+</section>
+<section class="section">
+<h2>승인 후 생길 증거</h2>
+<ul>{expected_items}</ul>
+</section>
+<section class="section">
+<h2>다음 행동</h2>
+<p>{esc(payload.get('next_action', ''))}</p>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+<section class="section boundary">
+<h2>안전 경계</h2>
+<p>이 화면은 기존 로컬 artifact만 읽습니다. live network, paid API, credential, 알림, host scheduler, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
 
 
 def render_source_refresh_brief(payload: dict[str, Any]) -> str:
@@ -8023,6 +8353,7 @@ def _daily_home_action_inbox(
     morning: dict[str, Any],
     handoff: dict[str, Any],
     task_ledger: dict[str, Any],
+    source_freshness_intake: dict[str, Any],
     pattern_radar: dict[str, Any],
     pattern_proof: dict[str, Any],
     links: dict[str, str],
@@ -8049,6 +8380,23 @@ def _daily_home_action_inbox(
             "external_effect_performed": False,
             "host_write_performed": False,
         })
+
+    if source_freshness_intake.get("schema_version") == SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION:
+        intake_summary = source_freshness_intake.get("summary", {})
+        if intake_summary.get("stale_or_sample_source_count", 0) or intake_summary.get("blocked_live_candidate_count", 0):
+            priority_items.append({
+                "kind": "source_freshness_intake",
+                "id": "source-freshness-intake",
+                "title": "승인 전 근거 신선도 확인",
+                "why": source_freshness_intake.get("next_action", "source freshness intake를 먼저 확인하세요."),
+                "source": "source_freshness_intake",
+                "status": source_freshness_intake.get("status", "review"),
+                "href": links.get("source_freshness_intake", ""),
+                "copy_ready_command": source_freshness_intake.get("approval_packet", {}).get("copy_ready_response", ""),
+                "requires_separate_approval": source_freshness_intake.get("status") == "approval_packet_ready",
+                "external_effect_performed": False,
+                "host_write_performed": False,
+            })
 
     scout = pattern_radar.get("pattern_scout", {}) if pattern_radar.get("schema_version") == AGENT_PATTERN_RADAR_SCHEMA_VERSION else {}
     recommended = scout.get("recommended_next", {})
@@ -8144,6 +8492,7 @@ def _daily_home_action_inbox(
             "study_closure_count": len(study_items),
             "pattern_scout_count": 1 if recommended else 0,
             "pattern_scout_proof_ready_count": 1 if scout_proof.get("proof_status") == "passed" else 0,
+            "source_freshness_intake_count": 1 if source_freshness_intake.get("schema_version") == SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION else 0,
             "carried_task_count": len(carried_tasks),
             "ready_task_count": len(ready_tasks),
             "priority_item_count": len(priority_items),
@@ -8157,6 +8506,7 @@ def _daily_home_action_inbox(
             "task_ledger": links.get("task_ledger", ""),
             "pattern_radar": links.get("pattern_radar", ""),
             "pattern_dry_run": links.get("pattern_dry_run", ""),
+            "source_freshness_intake": links.get("source_freshness_intake", ""),
         },
         "external_effect_performed": False,
         "host_write_performed": False,
@@ -8179,6 +8529,7 @@ def build_daily_operator_home(
     phone_access_path: str | Path = DEFAULT_PHONE_ACCESS_OUTPUT,
     phone_access_verify_path: str | Path = DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT,
     notification_path: str | Path = DEFAULT_NOTIFICATION_OUTPUT,
+    source_freshness_intake_path: str | Path = DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT,
     memory_query_path: str | Path = DEFAULT_MEMORY_QUERY_OUTPUT,
     memory_audit_path: str | Path = DEFAULT_MEMORY_AUDIT_OUTPUT,
     learning_ledger_path: str | Path = DEFAULT_LEARNING_LEDGER_OUTPUT,
@@ -8200,6 +8551,7 @@ def build_daily_operator_home(
     phone_access = _load_optional_json(phone_access_path)
     phone_access_verify = _load_optional_json(phone_access_verify_path)
     notification = _load_optional_json(notification_path)
+    source_freshness_intake = _load_optional_json(source_freshness_intake_path)
     memory_query = _load_optional_json(memory_query_path)
     memory_audit = _load_optional_json(memory_audit_path)
     learning_ledger = _load_optional_json(learning_ledger_path)
@@ -8272,6 +8624,7 @@ def build_daily_operator_home(
         "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
         "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
         "learning": DEFAULT_LEARNING_LEDGER_SURFACE.as_posix(),
+        "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
         "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
         "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
         "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
@@ -8317,6 +8670,14 @@ def build_daily_operator_home(
         },
         {
             "step": 5,
+            "label": "근거 신선도 승인 전 점검",
+            "title": "source freshness intake",
+            "why": "sample/cache 근거와 blocked live refresh 후보를 한 화면에서 보고, 승인 범위를 복사 전에 확인합니다.",
+            "href": links["source_freshness_intake"],
+            "status": source_freshness_intake.get("status", "missing"),
+        },
+        {
+            "step": 6,
             "label": "오늘 결과 영향 경로 확인",
             "title": "run trace",
             "why": "오늘 scout, 근거, memory, review, pattern gate 중 무엇이 결과를 만들었는지 compact trace로 확인합니다.",
@@ -8324,7 +8685,7 @@ def build_daily_operator_home(
             "status": run_trace.get("status", "missing"),
         },
         {
-            "step": 6,
+            "step": 7,
             "label": "운영 상태 확인",
             "title": "morning control",
             "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -8332,7 +8693,7 @@ def build_daily_operator_home(
             "status": morning.get("status", "missing"),
         },
         {
-            "step": 7,
+            "step": 8,
             "label": "신뢰도 확인",
             "title": "readiness",
             "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -8340,7 +8701,7 @@ def build_daily_operator_home(
             "status": readiness.get("status", "missing"),
         },
         {
-            "step": 8,
+            "step": 9,
             "label": "전날 맥락 닫기",
             "title": "handoff",
             "why": f"남은 항목 {unresolved_count}개를 보고 필요한 응답을 복사합니다.",
@@ -8348,7 +8709,7 @@ def build_daily_operator_home(
             "status": handoff.get("status", "missing"),
         },
         {
-            "step": 9,
+            "step": 10,
             "label": "응답 반영 확인",
             "title": "handoff apply proof",
             "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -8356,7 +8717,7 @@ def build_daily_operator_home(
             "status": handoff_apply.get("status", "missing"),
         },
         {
-            "step": 10,
+            "step": 11,
             "label": "기억 품질 확인",
             "title": "memory audit",
             "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -8364,7 +8725,7 @@ def build_daily_operator_home(
             "status": memory_audit.get("status", "missing"),
         },
         {
-            "step": 11,
+            "step": 12,
             "label": "새 작업 방식 증거 확인",
             "title": "pattern dry-run proof",
             "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -8377,6 +8738,7 @@ def build_daily_operator_home(
         morning=morning,
         handoff=handoff,
         task_ledger=task_ledger,
+        source_freshness_intake=source_freshness_intake,
         pattern_radar=pattern_radar,
         pattern_proof=pattern_proof,
         links=links,
@@ -8402,6 +8764,9 @@ def build_daily_operator_home(
             "learning_status": learning_ledger.get("status", "missing"),
             "learning_concept_count": learning_ledger.get("summary", {}).get("concept_count", 0),
             "learning_question_count": learning_ledger.get("summary", {}).get("question_count", 0),
+            "source_freshness_intake_status": source_freshness_intake.get("status", "missing"),
+            "source_freshness_blocked_live_count": source_freshness_intake.get("summary", {}).get("blocked_live_candidate_count", 0),
+            "source_freshness_weak_count": source_freshness_intake.get("summary", {}).get("stale_or_sample_source_count", 0),
             "trace_status": run_trace.get("status", "missing"),
             "trace_fresh_count": trace_summary.get("fresh_count", 0),
             "trace_weak_spot_count": len(run_trace.get("weak_spots", [])),
@@ -8462,6 +8827,19 @@ def build_daily_operator_home(
             "external_effect_performed": False,
             "host_write_performed": False,
         },
+        "source_freshness_intake_adoption": {
+            "pattern_candidate_id": "pattern-freshness-intake",
+            "status": source_freshness_intake.get("status", "missing"),
+            "source_count": source_freshness_intake.get("summary", {}).get("source_count", 0),
+            "stale_or_sample_source_count": source_freshness_intake.get("summary", {}).get("stale_or_sample_source_count", 0),
+            "blocked_live_candidate_count": source_freshness_intake.get("summary", {}).get("blocked_live_candidate_count", 0),
+            "approval_scope": source_freshness_intake.get("approval_packet", {}).get("approval_scope", ""),
+            "copy_ready_response": source_freshness_intake.get("approval_packet", {}).get("copy_ready_response", ""),
+            "next_action": source_freshness_intake.get("next_action", ""),
+            "surface": links["source_freshness_intake"],
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        },
         "pattern_scout_adoption": {
             "pattern_candidate_id": pattern_recommended.get("candidate_id", "missing"),
             "proof_status": pattern_scout_proof.get("proof_status", "missing"),
@@ -8510,6 +8888,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="memory_query", path=memory_query_path, payload=memory_query),
             _daily_home_artifact_status(name="memory_audit", path=memory_audit_path, payload=memory_audit),
             _daily_home_artifact_status(name="learning_ledger", path=learning_ledger_path, payload=learning_ledger),
+            _daily_home_artifact_status(name="source_freshness_intake", path=source_freshness_intake_path, payload=source_freshness_intake),
             _daily_home_artifact_status(name="pattern_radar", path=pattern_radar_path, payload=pattern_radar),
             _daily_home_artifact_status(name="pattern_dry_run_proof", path=pattern_dry_run_proof_path, payload=pattern_proof),
         ],
@@ -8584,6 +8963,14 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("trace_observability_adoption.status must be ready, review, blocked, or missing")
     if trace.get("step_count", 0) and not trace.get("what_shaped_today"):
         errors.append("trace_observability_adoption.what_shaped_today must not be empty when trace exists")
+    intake = payload.get("source_freshness_intake_adoption", {})
+    for field in ["pattern_candidate_id", "status", "source_count", "stale_or_sample_source_count", "blocked_live_candidate_count", "surface", "external_effect_performed", "host_write_performed"]:
+        if field not in intake:
+            errors.append(f"source_freshness_intake_adoption missing {field}")
+    if intake.get("external_effect_performed") is not False:
+        errors.append("source_freshness_intake_adoption.external_effect_performed must be false")
+    if intake.get("host_write_performed") is not False:
+        errors.append("source_freshness_intake_adoption.host_write_performed must be false")
     pattern = payload.get("pattern_scout_adoption", {})
     for field in ["pattern_candidate_id", "proof_status", "status", "title", "why_now", "approval_scope", "done_when", "surface", "proof_surface", "external_effect_performed", "host_write_performed"]:
         if field not in pattern:
@@ -8612,7 +8999,7 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(f"operator_action_inbox.priority_items[{index}] external_effect_performed must be false")
         if item.get("host_write_performed") is not False:
             errors.append(f"operator_action_inbox.priority_items[{index}] host_write_performed must be false")
-    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "learning", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
+    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_apply", "learning", "source_freshness_intake", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
     if "daily_home_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
@@ -8632,6 +9019,8 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
                 errors.append(f"daily_route[{index}] missing {field}")
     if not any(step.get("title") == "learning ledger" for step in payload.get("daily_route", [])):
         errors.append("daily_route must include learning ledger")
+    if not any(step.get("title") == "source freshness intake" for step in payload.get("daily_route", [])):
+        errors.append("daily_route must include source freshness intake")
     return errors
 
 
@@ -8644,6 +9033,7 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
     autonomous = payload.get("autonomous_scout", {})
     recall = payload.get("memory_recall_adoption", {})
     trace = payload.get("trace_observability_adoption", {})
+    intake = payload.get("source_freshness_intake_adoption", {})
     pattern = payload.get("pattern_scout_adoption", {})
     inbox = payload.get("operator_action_inbox", {})
     status_label = {
@@ -8713,6 +9103,7 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
     ) or "<li>아직 오늘 결과를 만든 trace influence가 없습니다.</li>"
     trace_weak_items = "".join(f"<li>{esc(item)}</li>" for item in trace.get("weak_spots", [])) or "<li>trace에서 즉시 막힌 약점은 없습니다.</li>"
     trace_debug_items = "".join(f"<li>{esc(item)}</li>" for item in trace.get("debug_order", [])) or "<li>debug 순서가 아직 없습니다.</li>"
+    intake_response = intake.get("copy_ready_response", "")
     pattern_done_items = "".join(f"<li>{esc(item)}</li>" for item in pattern.get("done_when", [])) or "<li>아직 done-when 기준이 없습니다.</li>"
     pattern_watch_items = "".join(
         "<li>"
@@ -8858,6 +9249,18 @@ td strong,td span {{ display:block; }}
 <ul>{trace_weak_items}</ul>
 <h2>문제 확인 순서</h2>
 	<ul>{trace_debug_items}</ul>
+	</section>
+	<section class="section">
+	<h2>근거 신선도 intake</h2>
+	<div class="grid">
+	<article class="metric"><span>Status</span><strong>{esc(intake.get('status', 'missing'))}</strong></article>
+	<article class="metric"><span>Weak</span><strong>{esc(intake.get('stale_or_sample_source_count', 0))}</strong></article>
+	<article class="metric"><span>Blocked live</span><strong>{esc(intake.get('blocked_live_candidate_count', 0))}</strong></article>
+	<article class="metric"><span>Scope</span><strong>{esc(intake.get('approval_scope', ''))}</strong></article>
+	</div>
+	<p>{esc(intake.get('next_action', 'source freshness intake를 먼저 생성하세요.'))}</p>
+	{f"<code>{esc(intake_response)}</code>" if intake_response else "<p>지금 복사할 source refresh 승인 응답은 없습니다.</p>"}
+	<p><a href="{esc(_relative_href(Path(intake.get('surface', 'reports/product/source-freshness-intake.html'))))}">source freshness intake 열기</a></p>
 	</section>
 	<section class="section">
 	<h2>오늘의 방식 Scout</h2>
@@ -12412,6 +12815,16 @@ def _source_refresh_next_action(
         return "오늘은 별도 source refresh가 필요하지 않습니다. agenda와 today brief를 먼저 읽으세요."
     blockers = preflight.get("blockers") or live_run.get("execution", {}).get("blockers", [])
     return "차단 이유를 먼저 해소하세요: " + (", ".join(blockers[:3]) if blockers else "refresh artifacts를 다시 생성하세요.")
+
+
+def _source_freshness_intake_next_action(*, status: str, response: str) -> str:
+    if status == "approval_packet_ready":
+        return f"필요하면 이 응답을 복사해 local approval proof를 만드세요: {response}"
+    if status == "ready_for_operator_review":
+        return "source freshness와 blocked candidate를 읽고, live refresh가 필요한지 source-refresh 화면과 함께 판단하세요."
+    if status == "no_intake_needed":
+        return "오늘 source freshness intake에서 승인할 항목은 없습니다. daily home과 learning ledger를 먼저 읽으세요."
+    return "source-refresh brief, live gate, live run, preflight artifact를 다시 생성한 뒤 intake를 재실행하세요."
 
 
 def _scheduler_proof_artifact(

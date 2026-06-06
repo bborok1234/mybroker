@@ -47,6 +47,7 @@ PYTHONPATH=src python3 -m mybroker source-refresh-live-run --live-gate reports/d
 PYTHONPATH=src python3 -m mybroker source-refresh-live-preflight --live-run reports/daily/source-refresh-live-run.json --output reports/daily/source-refresh-live-preflight.json
 PYTHONPATH=src python3 -m mybroker appliance agenda --scout reports/daily/scout.json --evidence reports/evidence/daily-evidence-catalog.json --memory reports/memory/topic-memory.json --vault reports/vault/compile.json --refresh-plan reports/daily/source-refresh-plan.json
 PYTHONPATH=src python3 -m mybroker appliance source-refresh
+PYTHONPATH=src python3 -m mybroker appliance source-freshness-intake
 PYTHONPATH=src python3 -m mybroker appliance source-refresh-response "approve live_network_refresh live_network_refresh" --intend-execute --confirm-live-network
 PYTHONPATH=src python3 -m mybroker appliance readiness --freshness-hours 24
 PYTHONPATH=src python3 -m mybroker appliance home
@@ -67,6 +68,7 @@ PYTHONPATH=src python3 -m mybroker validate-source-refresh-live-gate reports/dai
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-live-run reports/daily/source-refresh-live-run.json
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-live-preflight reports/daily/source-refresh-live-preflight.json
 PYTHONPATH=src python3 -m mybroker validate-source-refresh-brief reports/runtime/source-refresh-brief.json
+PYTHONPATH=src python3 -m mybroker validate-source-freshness-intake reports/runtime/source-freshness-intake.json
 PYTHONPATH=src python3 -m mybroker dashboard --reports-dir reports/runs --output reports/dashboard.html --rollup-output reports/report-rollup.json
 PYTHONPATH=src python3 -m mybroker brief --scenario reports/scenarios/public-evidence-sim.json --verdict reports/scenarios/public-evidence-verdict.json --output reports/product/market-brief.html
 PYTHONPATH=src python3 -m mybroker appliance playbook
@@ -258,6 +260,7 @@ appliance run` uses the existing daily research loop, then writes:
 - `reports/daily/source-refresh-live-run.json`: approval/execute proof for the live-network gate, with no network call unless explicitly approved and confirmed;
 - `reports/daily/source-refresh-live-preflight.json`: no-network preflight proof before any approved live source execution;
 - `reports/runtime/source-refresh-brief.json` and `reports/product/source-refresh.html`: phone-readable source refresh judgment that explains weak evidence, proposed free/no-key sources, approval status, preflight status, and the next safe action without calling the network;
+- `reports/runtime/source-freshness-intake.json` and `reports/product/source-freshness-intake.html`: approval-before-execution intake that packages source freshness, blocked live candidates, stale-context guard, copy-ready scoped response, and expected proof artifacts without calling the network;
 - `appliance source-refresh-response`: a one-command local handoff from the phone's copied approval response into refreshed live-run proof, preflight proof, and source refresh briefing. It does not execute live network calls;
 - `reports/product/journal.html` and `reports/memory/analyst-journal.json`: the daily analyst work log with today's focus, role notes, weak evidence, and follow-up questions;
 - `reports/product/learning.html` and `reports/memory/learning-ledger.json`: the beginner learning ledger that turns each daily brief into concepts learned, repeated observations, carried questions, source gaps, and linked artifacts;

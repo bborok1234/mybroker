@@ -131,6 +131,7 @@ PYTHONPATH=src python3 -m mybroker appliance run --topics config/topics.json --v
 PYTHONPATH=src python3 -m mybroker appliance today --vault reports/vault/compile.json --memory-surface reports/product/memory.html --archive-manifest reports/archive/2026-06-05/manifest.json
 PYTHONPATH=src python3 -m mybroker appliance agenda
 PYTHONPATH=src python3 -m mybroker appliance source-refresh
+PYTHONPATH=src python3 -m mybroker appliance source-freshness-intake
 PYTHONPATH=src python3 -m mybroker appliance readiness --freshness-hours 24
 PYTHONPATH=src python3 -m mybroker appliance home
 PYTHONPATH=src python3 -m mybroker appliance memory
@@ -194,6 +195,8 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/handoff.html`: phone-readable handoff surface that answers whether yesterday's context affected today's run or still needs a short local response.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
 - `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
+- `reports/runtime/source-freshness-intake.json`: machine-readable approval intake that turns source freshness, sample/cache status, blocked live candidates, stale-context guard, and scoped approval response into one local proof packet.
+- `reports/product/source-freshness-intake.html`: phone-readable approval-before-execution screen for deciding whether a free/no-key live refresh is worth approving. It does not call the network.
 - `reports/runtime/daily-readiness.json`: machine-readable freshness/readiness proof for required daily artifacts.
 - `reports/product/readiness.html`: phone-readable control page that says whether today's brief is fresh enough, what is stale or missing, and what local run command to use next.
 - `reports/runtime/daily-home.json`: machine-readable phone entrypoint over existing daily artifacts.
@@ -294,6 +297,12 @@ memory, vault notes, and prior archives already know before reading today's brie
 shows source actions, weak evidence, and a source freshness scorecard. The scorecard separates
 fresh-enough sources from sample/cache/fallback sources so the operator can study the brief without
 mistaking cached evidence for current market evidence.
+
+`source-freshness-intake` writes `source_freshness_intake.v1` and
+`reports/product/source-freshness-intake.html`. It is the approval-intake layer before live source
+work: the operator sees which sources are sample/cache/fallback, which live candidates are blocked,
+the exact scoped response to copy, the stale-context guard, and which proof artifacts will be
+regenerated after approval. The command reads local artifacts only.
 
 The local vault is the raw inbox side of the same pattern:
 

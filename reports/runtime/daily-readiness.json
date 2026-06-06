@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-06T01:45:39.368484+00:00",
+  "generated_at": "2026-06-06T02:05:18.795089+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -19,7 +19,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.351000+00:00",
+      "generated_at": "2026-06-06T02:05:18.783685+00:00",
       "schema_version": "daily_operator_home.v1"
     },
     {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.365633+00:00",
+      "generated_at": "2026-06-06T02:05:18.790376+00:00",
       "schema_version": "phone_access_verify.v1"
     },
     {
@@ -85,7 +85,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.061847+00:00",
+      "generated_at": "2026-06-06T02:05:18.633816+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -96,12 +96,34 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.060311+00:00",
+      "generated_at": "2026-06-06T02:05:18.629615+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
       "name": "source_refresh_surface",
       "path": "reports/product/source-refresh.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "source_freshness_intake",
+      "path": "reports/runtime/source-freshness-intake.json",
+      "kind": "control_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-06T02:05:18.630963+00:00",
+      "schema_version": "source_freshness_intake.v1"
+    },
+    {
+      "name": "source_freshness_intake_surface",
+      "path": "reports/product/source-freshness-intake.html",
       "kind": "phone_surface",
       "required": false,
       "exists": true,
@@ -118,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.240644+00:00",
+      "generated_at": "2026-06-06T02:05:18.734127+00:00",
       "schema_version": "pattern_dry_run_proof.v1"
     },
     {
@@ -140,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.252992+00:00",
+      "generated_at": "2026-06-06T02:05:18.743438+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -162,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.232853+00:00",
+      "generated_at": "2026-06-06T02:05:18.724275+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
@@ -184,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.291033+00:00",
+      "generated_at": "2026-06-06T02:05:18.766184+00:00",
       "schema_version": "daily_run_ledger.v1"
     },
     {
@@ -206,7 +228,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.295790+00:00",
+      "generated_at": "2026-06-06T02:05:18.767579+00:00",
       "schema_version": "daily_handoff.v1"
     },
     {
@@ -227,7 +249,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 5.12,
+      "age_hours": 5.45,
       "generated_at": "2026-06-05T20:38:09.499318+00:00",
       "schema_version": "operator_handoff_response_apply.v1"
     },
@@ -238,7 +260,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 5.03,
+      "age_hours": 5.36,
       "generated_at": "",
       "schema_version": ""
     },
@@ -250,7 +272,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.277228+00:00",
+      "generated_at": "2026-06-06T02:05:18.756141+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
@@ -272,7 +294,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.281818+00:00",
+      "generated_at": "2026-06-06T02:05:18.764720+00:00",
       "schema_version": "operator_review_prompt.v1"
     },
     {
@@ -294,7 +316,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.287746+00:00",
+      "generated_at": "2026-06-06T02:05:18.765776+00:00",
       "schema_version": "operator_review_effect.v1"
     },
     {
@@ -316,7 +338,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.186755+00:00",
+      "generated_at": "2026-06-06T02:05:18.699614+00:00",
       "schema_version": "analyst_council.v1"
     },
     {
@@ -338,7 +360,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.182531+00:00",
+      "generated_at": "2026-06-06T02:05:18.698101+00:00",
       "schema_version": "personal_learning_ledger.v1"
     },
     {
@@ -360,7 +382,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.055630+00:00",
+      "generated_at": "2026-06-06T02:05:18.622075+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -371,7 +393,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.052911+00:00",
+      "generated_at": "2026-06-06T02:05:18.618427+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -382,7 +404,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.053465+00:00",
+      "generated_at": "2026-06-06T02:05:18.619016+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -393,7 +415,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.064381+00:00",
+      "generated_at": "2026-06-06T02:05:18.637081+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -404,7 +426,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.064381+00:00",
+      "generated_at": "2026-06-06T02:05:18.637081+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -415,7 +437,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.098488+00:00",
+      "generated_at": "2026-06-06T02:05:18.672193+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -425,7 +447,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 18.27,
+      "age_hours": 18.59,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -437,7 +459,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.229639+00:00",
+      "generated_at": "2026-06-06T02:05:18.715692+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -448,7 +470,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.230656+00:00",
+      "generated_at": "2026-06-06T02:05:18.716581+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -469,7 +491,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 7.74,
+      "age_hours": 8.07,
       "generated_at": "",
       "schema_version": ""
     },
@@ -492,7 +514,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.178682+00:00",
+      "generated_at": "2026-06-06T02:05:18.693318+00:00",
       "schema_version": "personal_memory_query.v1"
     },
     {
@@ -514,7 +536,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T01:45:39.167849+00:00",
+      "generated_at": "2026-06-06T02:05:18.691736+00:00",
       "schema_version": "personal_memory_audit.v1"
     },
     {
@@ -543,6 +565,7 @@
     "morning": "reports/product/morning.html",
     "scheduler": "reports/product/scheduler.html",
     "source_refresh": "reports/product/source-refresh.html",
+    "source_freshness_intake": "reports/product/source-freshness-intake.html",
     "pattern_dry_run": "reports/product/pattern-dry-run.html",
     "trace": "reports/product/run-trace.html",
     "run_ledger": "reports/product/run-ledger.html",

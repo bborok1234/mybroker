@@ -52,6 +52,8 @@ It must also surface the current pattern scout when local proof is ready, so the
 `reports/product/source-refresh.html` is not a live data runner. It is the personal analyst's source refresh judgment screen: what evidence is weak, which free/no-key sources are proposed, what is blocked by approval, whether preflight has passed, and what the next safe action is before any live network call.
 It must show a source freshness scorecard so sample/cache/fallback evidence is not mistaken for current evidence.
 
+`reports/product/source-freshness-intake.html` is not the live data runner either. It is the approval-before-execution intake: which sources are not fresh enough, which live candidates remain blocked, what scoped response can be copied, what stale-context guard applies, and which proof artifacts will change after approval. It must not show market conclusions as if fresh data had already been fetched.
+
 `reports/product/scheduler.html` is not the Flyhigh project dashboard and it is not a market brief. It is the personal analyst appliance operations screen: whether scheduler assets exist, whether run-once passed, whether activation preflight is ready, whether activation was verified, and which local command or separately approved host-write command comes next.
 
 `reports/product/tasks.html` is not an executor. It is the role-based task board for the next local research loop. Queued tasks do not run live network, host writes, notification send, credential access, account access, trading, or discretionary advice.

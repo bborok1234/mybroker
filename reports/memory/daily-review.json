@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_review.v1",
-  "generated_at": "2026-06-06T01:45:39.190333+00:00",
+  "generated_at": "2026-06-06T02:05:18.702062+00:00",
   "inputs": {
     "scout_path": "reports/daily/scout.json",
     "task_status_apply_path": "reports/memory/analyst-task-status-apply.json",

@@ -1,6 +1,6 @@
 {
   "schema_version": "phone_access_verify.v1",
-  "generated_at": "2026-06-06T01:45:39.378283+00:00",
+  "generated_at": "2026-06-06T02:05:18.805159+00:00",
   "status": "ready",
   "summary": {
     "entrypoint": "reports/product/daily-home.html",
@@ -97,7 +97,7 @@
       "status": "pass",
       "message": "Daily home local links resolve to files in the project workspace.",
       "evidence": {
-        "checked_count": 44,
+        "checked_count": 48,
         "missing": [],
         "optional_missing": []
       }
