@@ -1,6 +1,6 @@
 {
   "schema_version": "agent_pattern_radar.v1",
-  "generated_at": "2026-06-06T00:54:38.544274+00:00",
+  "generated_at": "2026-06-06T01:24:07.657356+00:00",
   "status": "ready",
   "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
   "playbook_source": "reports/runtime/local-analyst-playbook.json",

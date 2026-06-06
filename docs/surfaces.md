@@ -32,6 +32,7 @@ Must not show adapter IDs, schema names, raw validation logs, Flyhigh gates, or 
 It must show the adopted local memory-recall proof for the scout-selected topic: recall quality, proof status, matched topics/archives/vault notes, weak spots, and the memory-query link.
 It must also show the adopted run-trace observability proof: trace status, proof status, run id, fresh/missing/stale counts, what shaped today's output, weak spots, debug order, and the run-trace link.
 It must show the operator action inbox: pending approval gates, unresolved handoff items, carried local tasks, copy-ready local responses, and links to the relevant phone surfaces without implying execution authority.
+It must also surface the current pattern scout when local proof is ready, so the operator sees the next workflow experiment on the first daily screen instead of hunting through the radar page.
 
 `reports/product/phone-access.html` is not a server console and not an approval executor. It is the read-only proof that the daily home can be treated as the private/local phone entrypoint: access guidance exists, required local links resolve, public exposure is not the default, and manual commands are visible but not executed.
 

@@ -348,6 +348,10 @@ screen must show the autonomous scout's recommended topic and why it was picked 
 operator to open deeper surfaces. It does not render project progress, fetch live data, send
 notifications, write host state, or make recommendations; it only orders the existing local
 surfaces and safe response commands.
+When pattern scout proof is ready, the same first screen must promote the recommended local-only
+workflow experiment into the action inbox with proof status, done-when criteria, deferred watchlist,
+and rejected boundaries. This keeps workflow evolution visible on the phone without granting
+browser, network, host, account, notification, credential, or execution authority.
 
 `appliance access-verify` is the no-effect proof before testing from the phone. It writes
 `phone_access_verify.v1` and `reports/product/phone-access.html` by reading the access plan and
