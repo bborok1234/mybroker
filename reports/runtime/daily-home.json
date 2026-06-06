@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T03:01:57.766752+00:00",
+  "generated_at": "2026-06-06T03:34:24.153625+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -29,10 +29,13 @@
     "handoff_resolution_ready_count": 1,
     "handoff_resolution_blocked_count": 3,
     "trace_status": "ready",
-    "trace_fresh_count": 25,
+    "trace_fresh_count": 26,
     "trace_weak_spot_count": 0,
-    "pattern_scout_candidate": "pattern-freshness-intake",
+    "pattern_scout_candidate": "pattern-method-evidence-intake",
     "pattern_scout_proof_status": "passed",
+    "pattern_evidence_intake_status": "review",
+    "pattern_evidence_local_candidate_count": 0,
+    "pattern_evidence_already_verified_count": 5,
     "action_item_count": 6
   },
   "daily_route": [
@@ -142,6 +145,14 @@
     },
     {
       "step": 14,
+      "label": "새 방법론 근거 분류",
+      "title": "pattern evidence intake",
+      "why": "최신 에이전트/투자 워크플로 사례를 이미 검증됨, 신규 local 후보, 승인 필요, 차단으로 나눠 반복 추천을 막습니다.",
+      "href": "reports/product/pattern-evidence-intake.html",
+      "status": "review"
+    },
+    {
+      "step": 15,
       "label": "새 작업 방식 증거 확인",
       "title": "pattern dry-run proof",
       "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -336,8 +347,8 @@
     "proof_status": "passed",
     "status": "ready",
     "run_id": "daily-research",
-    "step_count": 25,
-    "fresh_count": 25,
+    "step_count": 26,
+    "fresh_count": 26,
     "missing_required_count": 0,
     "stale_count": 0,
     "external_effect_flag_count": 0,
@@ -354,12 +365,12 @@
       },
       {
         "label": "누적 실행",
-        "value": "66회",
+        "value": "67회",
         "source": "topic_memory"
       },
       {
         "label": "다음 안전 후보",
-        "value": "pattern freshness intake before new runtime authority",
+        "value": "pattern evidence intake before workflow adoption",
         "source": "pattern_radar"
       },
       {
@@ -375,9 +386,9 @@
       "topic_memory",
       "scenario_report",
       "verdict",
+      "pattern_evidence_intake",
       "source_refresh_brief",
-      "source_refresh_execution_brief",
-      "task_ledger"
+      "source_refresh_execution_brief"
     ],
     "surface": "reports/product/run-trace.html",
     "external_effect_performed": false,
@@ -415,12 +426,12 @@
     "host_write_performed": false
   },
   "pattern_scout_adoption": {
-    "pattern_candidate_id": "pattern-freshness-intake",
+    "pattern_candidate_id": "pattern-method-evidence-intake",
     "proof_status": "passed",
     "status": "ready",
-    "title": "pattern freshness intake before new runtime authority",
-    "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
-    "why_now": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+    "title": "pattern evidence intake before workflow adoption",
+    "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
+    "why_now": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
     "approval_scope": "local_dry_run_only",
     "operator_decision_needed": false,
     "done_when": [
@@ -460,6 +471,19 @@
     "external_effect_performed": false,
     "host_write_performed": false
   },
+  "pattern_evidence_intake_adoption": {
+    "pattern_candidate_id": "pattern-method-evidence-intake",
+    "status": "review",
+    "candidate_count": 7,
+    "local_candidate_count": 0,
+    "already_verified_count": 5,
+    "approval_gated_count": 1,
+    "blocked_count": 1,
+    "recommended_candidate": "pattern-method-evidence-intake",
+    "surface": "reports/product/pattern-evidence-intake.html",
+    "external_effect_performed": false,
+    "host_write_performed": false
+  },
   "operator_action_inbox": {
     "pattern_source": "Hermes/OpenClaw operator handoff",
     "status": "approval_review",
@@ -469,6 +493,9 @@
       "study_closure_count": 4,
       "pattern_scout_count": 1,
       "pattern_scout_proof_ready_count": 1,
+      "pattern_evidence_intake_count": 1,
+      "pattern_evidence_local_candidate_count": 0,
+      "pattern_evidence_already_verified_count": 5,
       "source_freshness_intake_count": 1,
       "source_refresh_execution_count": 1,
       "source_refresh_execution_blocker_count": 5,
@@ -534,13 +561,13 @@
       },
       {
         "kind": "pattern_scout",
-        "id": "pattern-freshness-intake",
-        "title": "pattern freshness intake before new runtime authority",
-        "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+        "id": "pattern-method-evidence-intake",
+        "title": "pattern evidence intake before workflow adoption",
+        "why": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
         "source": "pattern_scout",
         "status": "local_proof_ready",
         "href": "reports/product/pattern-radar.html",
-        "copy_ready_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
+        "copy_ready_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
         "requires_separate_approval": false,
         "external_effect_performed": false,
         "host_write_performed": false
@@ -568,6 +595,7 @@
       "task_ledger": "reports/product/task-ledger.html",
       "pattern_radar": "reports/product/pattern-radar.html",
       "pattern_dry_run": "reports/product/pattern-dry-run.html",
+      "pattern_evidence_intake": "reports/product/pattern-evidence-intake.html",
       "source_freshness_intake": "reports/product/source-freshness-intake.html",
       "source_refresh_execution": "reports/product/source-refresh-execution.html"
     },
@@ -630,6 +658,7 @@
     "source_refresh_execution": "reports/product/source-refresh-execution.html",
     "pattern_radar": "reports/product/pattern-radar.html",
     "pattern_dry_run": "reports/product/pattern-dry-run.html",
+    "pattern_evidence_intake": "reports/product/pattern-evidence-intake.html",
     "trace": "reports/product/run-trace.html",
     "tasks": "reports/product/tasks.html",
     "task_ledger": "reports/product/task-ledger.html",
@@ -656,7 +685,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T03:01:57.695967+00:00"
+      "generated_at": "2026-06-06T03:34:24.081656+00:00"
     },
     {
       "name": "agenda",
@@ -664,7 +693,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T03:01:57.699029+00:00"
+      "generated_at": "2026-06-06T03:34:24.086697+00:00"
     },
     {
       "name": "morning",
@@ -672,7 +701,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-06T03:01:57.745672+00:00"
+      "generated_at": "2026-06-06T03:34:24.130424+00:00"
     },
     {
       "name": "readiness",
@@ -680,7 +709,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:01:57.763738+00:00"
+      "generated_at": "2026-06-06T03:34:24.150420+00:00"
     },
     {
       "name": "handoff",
@@ -688,7 +717,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-06T03:01:57.752530+00:00"
+      "generated_at": "2026-06-06T03:34:24.137748+00:00"
     },
     {
       "name": "handoff_study_resolution",
@@ -696,7 +725,7 @@
       "exists": true,
       "schema_version": "handoff_study_resolution.v1",
       "status": "review",
-      "generated_at": "2026-06-06T03:01:57.753499+00:00"
+      "generated_at": "2026-06-06T03:34:24.138720+00:00"
     },
     {
       "name": "handoff_apply",
@@ -712,7 +741,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:01:57.751667+00:00"
+      "generated_at": "2026-06-06T03:34:24.136608+00:00"
     },
     {
       "name": "run_trace",
@@ -720,7 +749,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:01:57.754162+00:00"
+      "generated_at": "2026-06-06T03:34:24.139564+00:00"
     },
     {
       "name": "task_ledger",
@@ -728,7 +757,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T03:01:57.717931+00:00"
+      "generated_at": "2026-06-06T03:34:24.110841+00:00"
     },
     {
       "name": "scheduler",
@@ -736,7 +765,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-06T03:01:57.738431+00:00"
+      "generated_at": "2026-06-06T03:34:24.121123+00:00"
     },
     {
       "name": "phone_access",
@@ -744,7 +773,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T03:01:46.427228+00:00"
+      "generated_at": "2026-06-06T03:34:14.146456+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -752,7 +781,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:01:57.763052+00:00"
+      "generated_at": "2026-06-06T03:34:24.149565+00:00"
     },
     {
       "name": "notification",
@@ -760,7 +789,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-06T03:01:57.720695+00:00"
+      "generated_at": "2026-06-06T03:34:24.113515+00:00"
     },
     {
       "name": "memory_query",
@@ -768,7 +797,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-06T03:01:57.714937+00:00"
+      "generated_at": "2026-06-06T03:34:24.107724+00:00"
     },
     {
       "name": "memory_audit",
@@ -776,7 +805,7 @@
       "exists": true,
       "schema_version": "personal_memory_audit.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:01:57.714246+00:00"
+      "generated_at": "2026-06-06T03:34:24.107149+00:00"
     },
     {
       "name": "learning_ledger",
@@ -784,7 +813,7 @@
       "exists": true,
       "schema_version": "personal_learning_ledger.v1",
       "status": "review",
-      "generated_at": "2026-06-06T03:01:57.716332+00:00"
+      "generated_at": "2026-06-06T03:34:24.109113+00:00"
     },
     {
       "name": "source_freshness_intake",
@@ -792,7 +821,7 @@
       "exists": true,
       "schema_version": "source_freshness_intake.v1",
       "status": "approval_packet_ready",
-      "generated_at": "2026-06-06T03:01:57.697909+00:00"
+      "generated_at": "2026-06-06T03:34:24.085559+00:00"
     },
     {
       "name": "source_refresh_execution_brief",
@@ -800,7 +829,7 @@
       "exists": true,
       "schema_version": "source_refresh_execution_brief.v1",
       "status": "approval_required",
-      "generated_at": "2026-06-06T03:01:57.698308+00:00"
+      "generated_at": "2026-06-06T03:34:24.085976+00:00"
     },
     {
       "name": "pattern_radar",
@@ -808,7 +837,7 @@
       "exists": true,
       "schema_version": "agent_pattern_radar.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T03:01:46.427464+00:00"
+      "generated_at": "2026-06-06T03:34:14.146746+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -816,7 +845,15 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-06T03:01:57.743392+00:00"
+      "generated_at": "2026-06-06T03:34:24.127268+00:00"
+    },
+    {
+      "name": "pattern_evidence_intake",
+      "path": "reports/runtime/pattern-evidence-intake.json",
+      "exists": true,
+      "schema_version": "pattern_evidence_intake.v1",
+      "status": "review",
+      "generated_at": "2026-06-06T03:34:24.128368+00:00"
     }
   ],
   "external_effect_performed": false,

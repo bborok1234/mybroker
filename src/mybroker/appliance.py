@@ -38,6 +38,7 @@ NOTIFICATION_SCHEMA_VERSION = "notification_delivery.v1"
 ARCHIVE_SCHEMA_VERSION = "daily_archive.v1"
 RUNTIME_PLAYBOOK_SCHEMA_VERSION = "personal_analyst_runtime_playbook.v1"
 AGENT_PATTERN_RADAR_SCHEMA_VERSION = "agent_pattern_radar.v1"
+PATTERN_EVIDENCE_INTAKE_SCHEMA_VERSION = "pattern_evidence_intake.v1"
 PATTERN_DRY_RUN_PROOF_SCHEMA_VERSION = "pattern_dry_run_proof.v1"
 PHONE_ACCESS_SCHEMA_VERSION = "phone_access_plan.v1"
 PHONE_ACCESS_VERIFY_SCHEMA_VERSION = "phone_access_verify.v1"
@@ -92,6 +93,8 @@ DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
 DEFAULT_RUNTIME_PLAYBOOK_OUTPUT = Path("reports/runtime/local-analyst-playbook.json")
 DEFAULT_AGENT_PATTERN_RADAR_OUTPUT = Path("reports/runtime/agent-pattern-radar.json")
 DEFAULT_AGENT_PATTERN_RADAR_SURFACE = Path("reports/product/pattern-radar.html")
+DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT = Path("reports/runtime/pattern-evidence-intake.json")
+DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE = Path("reports/product/pattern-evidence-intake.html")
 DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT = Path("reports/runtime/pattern-dry-run-proof.json")
 DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE = Path("reports/product/pattern-dry-run.html")
 DEFAULT_PHONE_ACCESS_OUTPUT = Path("reports/runtime/phone-access.json")
@@ -236,9 +239,11 @@ def write_runtime_playbook(output_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OU
 def build_agent_pattern_radar(
     *,
     playbook_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
+    pattern_proof_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     playbook = _load_optional_json(playbook_path)
+    previous_proof = _load_optional_json(pattern_proof_path)
     cases = [
         {
             "source": "Hermes Agent",
@@ -454,13 +459,14 @@ def build_agent_pattern_radar(
     deferred = [case for case in cases if case["decision"] == "defer"]
     rejected = [case for case in cases if case["decision"] == "reject"]
     dry_run_candidates = _pattern_dry_run_candidates(cases)
-    pattern_scout = _build_pattern_scout(cases=cases, dry_run_candidates=dry_run_candidates)
+    pattern_scout = _build_pattern_scout(cases=cases, dry_run_candidates=dry_run_candidates, previous_proof=previous_proof)
     payload = {
         "schema_version": AGENT_PATTERN_RADAR_SCHEMA_VERSION,
         "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
         "status": "ready",
         "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
         "playbook_source": Path(playbook_path).as_posix(),
+        "previous_pattern_proof": Path(pattern_proof_path).as_posix() if Path(pattern_proof_path).exists() else "",
         "playbook_pattern_count": len(playbook.get("absorbed_patterns", [])),
         "summary": {
             "case_count": len(cases),
@@ -558,10 +564,11 @@ def build_agent_pattern_radar(
 def write_agent_pattern_radar(
     *,
     playbook_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
+    pattern_proof_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
     artifact_output_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
     surface_output_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
 ) -> Path:
-    payload = build_agent_pattern_radar(playbook_path=playbook_path)
+    payload = build_agent_pattern_radar(playbook_path=playbook_path, pattern_proof_path=pattern_proof_path)
     write_json(payload, artifact_output_path)
     target = Path(surface_output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -569,15 +576,318 @@ def write_agent_pattern_radar(
     return target
 
 
-def _build_pattern_scout(*, cases: list[dict[str, Any]], dry_run_candidates: list[dict[str, Any]]) -> dict[str, Any]:
+def build_pattern_evidence_intake(
+    *,
+    pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
+    pattern_proof_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
+    generated_at: datetime | None = None,
+) -> dict[str, Any]:
+    radar = _load_optional_json(pattern_radar_path)
+    proof = _load_optional_json(pattern_proof_path)
+    cases = radar.get("cases", []) if radar.get("schema_version") == AGENT_PATTERN_RADAR_SCHEMA_VERSION else []
+    candidates = radar.get("dry_run_candidates", []) if radar.get("schema_version") == AGENT_PATTERN_RADAR_SCHEMA_VERSION else []
+    proof_by_id = {
+        row.get("candidate_id", ""): row
+        for row in proof.get("candidate_results", [])
+        if row.get("candidate_id")
+    } if proof.get("schema_version") == PATTERN_DRY_RUN_PROOF_SCHEMA_VERSION else {}
+    recommended = radar.get("pattern_scout", {}).get("recommended_next", {}) if radar.get("schema_version") == AGENT_PATTERN_RADAR_SCHEMA_VERSION else {}
+    evidence_items = [
+        _pattern_evidence_item(case=case, candidates=candidates, proof_by_id=proof_by_id)
+        for case in cases
+    ]
+    candidate_assessments = [
+        _pattern_candidate_assessment(candidate=candidate, proof=proof_by_id.get(candidate.get("candidate_id", ""), {}))
+        for candidate in candidates
+    ]
+    repeated = [row for row in candidate_assessments if row.get("intake_status") == "already_verified"]
+    approval_gated = [row for row in candidate_assessments if row.get("intake_status") == "approval_gated"]
+    blocked = [row for row in candidate_assessments if row.get("intake_status") == "blocked"]
+    unproven_local = [row for row in candidate_assessments if row.get("intake_status") == "local_candidate"]
+    recommended_status = next(
+        (row.get("intake_status", "missing") for row in candidate_assessments if row.get("candidate_id") == recommended.get("candidate_id")),
+        "missing",
+    )
+    status = "ready" if unproven_local else ("review" if approval_gated else "blocked")
+    payload = {
+        "schema_version": PATTERN_EVIDENCE_INTAKE_SCHEMA_VERSION,
+        "generated_at": (generated_at or datetime.now(timezone.utc)).isoformat(),
+        "status": status,
+        "source_artifacts": {
+            "pattern_radar": Path(pattern_radar_path).as_posix(),
+            "pattern_dry_run_proof": Path(pattern_proof_path).as_posix(),
+        },
+        "summary": {
+            "case_count": len(evidence_items),
+            "candidate_count": len(candidate_assessments),
+            "already_verified_count": len(repeated),
+            "local_candidate_count": len(unproven_local),
+            "approval_gated_count": len(approval_gated),
+            "blocked_count": len(blocked),
+            "recommended_candidate": recommended.get("candidate_id", ""),
+            "recommended_candidate_status": recommended_status,
+        },
+        "evidence_items": evidence_items,
+        "candidate_assessments": candidate_assessments,
+        "next_candidate": unproven_local[0] if unproven_local else (approval_gated[0] if approval_gated else {}),
+        "operator_rule": "새 agent/workflow 사례는 바로 daily loop에 섞지 않습니다. local_candidate는 proof artifact와 validator를 먼저 통과해야 하고, approval_gated는 별도 scope 승인이 필요합니다.",
+        "phone_links": {
+            "pattern_evidence_intake": DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE.as_posix(),
+            "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
+            "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
+            "daily_home": DEFAULT_DAILY_HOME_SURFACE.as_posix(),
+            "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
+        },
+        "external_effect_performed": False,
+        "host_write_performed": False,
+        "policy": "research_only",
+        "safety_boundary": [
+            "reads_existing_local_artifacts_only",
+            "does_not_fetch_live_network",
+            "does_not_open_browser_or_scraper",
+            "does_not_write_host_scheduler",
+            "does_not_send_notifications",
+            "does_not_use_credentials",
+            "no_account_access",
+            "no_order_execution",
+        ],
+    }
+    return payload
+
+
+def write_pattern_evidence_intake(
+    *,
+    pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
+    pattern_proof_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
+    artifact_output_path: str | Path = DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE,
+) -> Path:
+    payload = build_pattern_evidence_intake(pattern_radar_path=pattern_radar_path, pattern_proof_path=pattern_proof_path)
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_pattern_evidence_intake(payload), encoding="utf-8")
+    return target
+
+
+def _pattern_evidence_item(*, case: dict[str, Any], candidates: list[dict[str, Any]], proof_by_id: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    source = case.get("source", "")
+    linked_candidates = [
+        candidate.get("candidate_id", "")
+        for candidate in candidates
+        if source and (source in candidate.get("source", "") or candidate.get("source", "") in source)
+    ]
+    proof_states = [
+        proof_by_id.get(candidate_id, {}).get("proof_status", "missing")
+        for candidate_id in linked_candidates
+    ]
+    return {
+        "source": source,
+        "source_url": case.get("source_url", ""),
+        "decision": case.get("decision", ""),
+        "priority": case.get("priority", ""),
+        "observed_pattern": case.get("observed_pattern", ""),
+        "mybroker_translation": case.get("mybroker_translation", ""),
+        "guardrail": case.get("guardrail", ""),
+        "linked_candidates": linked_candidates,
+        "proof_states": proof_states,
+        "intake_note": _pattern_intake_note(case=case, proof_states=proof_states),
+    }
+
+
+def _pattern_candidate_assessment(*, candidate: dict[str, Any], proof: dict[str, Any]) -> dict[str, Any]:
+    proof_status = proof.get("proof_status", "missing")
+    if proof_status == "passed":
+        intake_status = "already_verified"
+    elif candidate.get("status") == "requires_approval":
+        intake_status = "approval_gated"
+    elif candidate.get("status") == "blocked":
+        intake_status = "blocked"
+    else:
+        intake_status = "local_candidate"
+    return {
+        "candidate_id": candidate.get("candidate_id", ""),
+        "source": candidate.get("source", ""),
+        "candidate_status": candidate.get("status", ""),
+        "proof_status": proof_status,
+        "intake_status": intake_status,
+        "approval_scope": candidate.get("approval_scope", ""),
+        "expected_artifact": candidate.get("expected_artifact", ""),
+        "proof_command": candidate.get("proof_command", ""),
+        "why": candidate.get("why", ""),
+        "promotion_rule": candidate.get("promotion_rule", ""),
+        "external_effect_performed": False,
+    }
+
+
+def _pattern_intake_note(*, case: dict[str, Any], proof_states: list[str]) -> str:
+    if "passed" in proof_states:
+        return "이미 local proof가 있는 사례입니다. 반복 추천보다 다음 미검증 후보를 봐야 합니다."
+    if case.get("decision") == "defer":
+        return "보류 사례입니다. live/browser/scraper/host 권한을 넓히기 전에 별도 승인과 preflight가 필요합니다."
+    if case.get("decision") == "reject":
+        return "거절 사례입니다. 현재 research-only 경계를 넘습니다."
+    return "채택 또는 부분채택 사례입니다. local proof 후보와 연결될 때만 daily loop에 더 깊게 들어갑니다."
+
+
+def validate_pattern_evidence_intake_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != PATTERN_EVIDENCE_INTAKE_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"ready", "review", "blocked"}:
+        errors.append("status must be ready, review, or blocked")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    summary = payload.get("summary", {})
+    for field in ["case_count", "candidate_count", "already_verified_count", "local_candidate_count", "approval_gated_count", "blocked_count", "recommended_candidate", "recommended_candidate_status"]:
+        if field not in summary:
+            errors.append(f"summary missing {field}")
+    if not payload.get("evidence_items"):
+        errors.append("evidence_items must not be empty")
+    if not payload.get("candidate_assessments"):
+        errors.append("candidate_assessments must not be empty")
+    for index, row in enumerate(payload.get("candidate_assessments", [])):
+        for field in ["candidate_id", "source", "candidate_status", "proof_status", "intake_status", "approval_scope", "expected_artifact", "proof_command", "promotion_rule"]:
+            if field not in row:
+                errors.append(f"candidate_assessments[{index}] missing {field}")
+        if row.get("intake_status") not in {"already_verified", "local_candidate", "approval_gated", "blocked"}:
+            errors.append(f"candidate_assessments[{index}] invalid intake_status")
+        if row.get("external_effect_performed") is not False:
+            errors.append(f"candidate_assessments[{index}] external_effect_performed must be false")
+    for field in ["pattern_evidence_intake", "pattern_radar", "pattern_dry_run", "daily_home", "trace"]:
+        if not payload.get("phone_links", {}).get(field):
+            errors.append(f"phone_links.{field} must not be empty")
+    if "reads_existing_local_artifacts_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include reads_existing_local_artifacts_only")
+    return errors
+
+
+def validate_pattern_evidence_intake_file(path: str | Path) -> list[str]:
+    return validate_pattern_evidence_intake_payload(load_json(path))
+
+
+def render_pattern_evidence_intake(payload: dict[str, Any]) -> str:
+    summary = payload.get("summary", {})
+    next_candidate = payload.get("next_candidate", {})
+    status_label = {
+        "ready": "다음 local 후보 있음",
+        "review": "승인 게이트 검토",
+        "blocked": "새 local 후보 없음",
+    }.get(payload.get("status", ""), payload.get("status", "review"))
+    candidate_cards = "".join(
+        "<article class='card'>"
+        f"<span>{esc(row.get('intake_status', ''))} · {esc(row.get('proof_status', ''))}</span>"
+        f"<h2>{esc(row.get('candidate_id', ''))}</h2>"
+        f"<p>{esc(row.get('why', ''))}</p>"
+        f"<small>scope: {esc(row.get('approval_scope', ''))}</small>"
+        f"<code>{esc(row.get('proof_command', ''))}</code>"
+        "</article>"
+        for row in payload.get("candidate_assessments", [])
+    )
+    evidence_cards = "".join(
+        "<article class='mini'>"
+        f"<strong>{esc(row.get('source', ''))}</strong>"
+        f"<p>{esc(row.get('intake_note', ''))}</p>"
+        f"<small>{esc(row.get('guardrail', ''))}</small>"
+        "</article>"
+        for row in payload.get("evidence_items", [])[:8]
+    )
+    links = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in payload.get("phone_links", {}).items()
+        if label != "pattern_evidence_intake"
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Pattern Evidence Intake</title>
+<style>
+:root {{ --bg:#f7f8f4; --ink:#18212b; --muted:#66717e; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; }}
+.eyebrow,.card span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:32px; line-height:1.1; }}
+h2 {{ margin:0 0 8px; font-size:18px; }}
+p,small,li {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,.card,.mini {{ border:1px solid var(--line); border-radius:8px; background:var(--panel); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+.metrics,.links {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }}
+.metric,.card,.mini {{ background:white; padding:14px; min-width:0; }}
+.metric strong {{ display:block; font-size:27px; }}
+.stack {{ display:grid; grid-template-columns:1fr; gap:10px; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#f1f5f9; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:11px; color:var(--blue); font-weight:900; text-decoration:none; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:28px; }} .metrics,.links {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Pattern Evidence Intake · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>새 에이전트 방법론을 루프에 넣어도 되나</h1>
+<p>외부 사례 자체가 아니라, 로컬 proof와 승인 경계를 기준으로 다음 후보를 분류합니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<h2>{esc(status_label)}</h2>
+<p>{esc(payload.get('operator_rule', ''))}</p>
+</section>
+<section class="section">
+<div class="metrics">
+<article class="metric"><span>Cases</span><strong>{esc(summary.get('case_count', 0))}</strong></article>
+<article class="metric"><span>Local candidates</span><strong>{esc(summary.get('local_candidate_count', 0))}</strong></article>
+<article class="metric"><span>Already verified</span><strong>{esc(summary.get('already_verified_count', 0))}</strong></article>
+<article class="metric"><span>Approval gated</span><strong>{esc(summary.get('approval_gated_count', 0))}</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>다음 후보</h2>
+<article class="card">
+<span>{esc(next_candidate.get('intake_status', 'missing'))}</span>
+<h2>{esc(next_candidate.get('candidate_id', '후보 없음'))}</h2>
+<p>{esc(next_candidate.get('why', '새 local 후보가 없습니다. approval-gated 후보는 별도 승인 전까지 보류합니다.'))}</p>
+</article>
+</section>
+<section class="section">
+<h2>후보 판정</h2>
+<div class="stack">{candidate_cards}</div>
+</section>
+<section class="section">
+<h2>근거 사례</h2>
+<div class="stack">{evidence_cards}</div>
+</section>
+<section class="section">
+<h2>연결 화면</h2>
+<div class="links">{links}</div>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
+def _build_pattern_scout(*, cases: list[dict[str, Any]], dry_run_candidates: list[dict[str, Any]], previous_proof: dict[str, Any] | None = None) -> dict[str, Any]:
+    passed_ids = {
+        row.get("candidate_id", "")
+        for row in (previous_proof or {}).get("candidate_results", [])
+        if row.get("proof_status") == "passed"
+    }
     ready_local = [
         candidate
         for candidate in dry_run_candidates
         if candidate.get("status") == "ready" and candidate.get("approval_scope") == "local_dry_run_only"
     ]
+    unproven_ready = [candidate for candidate in ready_local if candidate.get("candidate_id") not in passed_ids]
     recommended = next(
-        (candidate for candidate in ready_local if candidate.get("candidate_id") == "pattern-freshness-intake"),
-        ready_local[0] if ready_local else {},
+        (candidate for candidate in unproven_ready if candidate.get("candidate_id") == "pattern-method-evidence-intake"),
+        unproven_ready[0] if unproven_ready else (ready_local[0] if ready_local else {}),
     )
     watchlist = [
         {
@@ -603,7 +913,7 @@ def _build_pattern_scout(*, cases: list[dict[str, Any]], dry_run_candidates: lis
         "cadence": "run inside the daily appliance loop before adopting or widening any agent workflow pattern",
         "recommended_next": {
             "candidate_id": recommended.get("candidate_id", ""),
-            "title": "pattern freshness intake before new runtime authority",
+            "title": _pattern_candidate_title(recommended.get("candidate_id", "")),
             "source": recommended.get("source", ""),
             "why_now": recommended.get(
                 "why",
@@ -611,6 +921,7 @@ def _build_pattern_scout(*, cases: list[dict[str, Any]], dry_run_candidates: lis
             ),
             "proof_command": recommended.get("proof_command", ""),
             "approval_scope": recommended.get("approval_scope", ""),
+            "previously_passed_candidate_count": len(passed_ids),
             "operator_decision_needed": recommended.get("approval_scope") != "local_dry_run_only",
             "done_when": [
                 "agent_pattern_radar.v1 validates",
@@ -625,6 +936,17 @@ def _build_pattern_scout(*, cases: list[dict[str, Any]], dry_run_candidates: lis
         "external_effect_performed": False,
         "host_write_performed": False,
     }
+
+
+def _pattern_candidate_title(candidate_id: str) -> str:
+    titles = {
+        "pattern-freshness-intake": "source freshness intake before live authority",
+        "pattern-method-evidence-intake": "pattern evidence intake before workflow adoption",
+        "pattern-source-refresh-execution-confirmation": "source refresh execution confirmation before live fetch",
+        "pattern-memory-recall-quality": "memory recall quality before daily briefing",
+        "pattern-run-trace-observability": "run trace observability before autonomous loop widening",
+    }
+    return titles.get(candidate_id, "local-only pattern proof before wider authority")
 
 
 def validate_agent_pattern_radar_payload(payload: dict[str, Any]) -> list[str]:
@@ -724,13 +1046,35 @@ def _pattern_proof_artifact_check(*, candidate: dict[str, Any], payload: dict[st
         if errors:
             status = "failed"
             reasons.extend(errors)
-        recommended = payload.get("pattern_scout", {}).get("recommended_next", {})
-        if recommended.get("candidate_id") != "pattern-freshness-intake":
+        candidates = payload.get("dry_run_candidates", [])
+        if not any(row.get("candidate_id") == "pattern-freshness-intake" and row.get("status") == "ready" for row in candidates):
             status = "failed"
-            reasons.append("pattern scout가 freshness intake를 다음 local 실험으로 선택하지 않았습니다.")
+            reasons.append("pattern freshness intake 후보가 ready 상태로 남아 있지 않습니다.")
         if not surface_path.exists():
             status = "failed"
             reasons.append("phone-readable pattern radar surface가 없습니다.")
+    elif candidate_id == "pattern-method-evidence-intake":
+        errors = validate_pattern_evidence_intake_payload(payload)
+        if errors:
+            status = "failed"
+            reasons.extend(errors)
+        if payload.get("status") not in {"ready", "review", "blocked"}:
+            status = "failed"
+            reasons.append("pattern evidence intake status가 허용 범위 밖입니다.")
+        if not surface_path.exists():
+            status = "failed"
+            reasons.append("phone-readable pattern evidence intake surface가 없습니다.")
+    elif candidate_id == "pattern-source-refresh-execution-confirmation":
+        errors = validate_source_refresh_execution_brief_payload(payload)
+        if errors:
+            status = "failed"
+            reasons.extend(errors)
+        if payload.get("status") not in {"not_required", "approval_required", "preflight_required", "ready_for_final_confirmation", "executed", "blocked"}:
+            status = "failed"
+            reasons.append("source refresh execution status가 허용 범위 밖입니다.")
+        if not surface_path.exists():
+            status = "failed"
+            reasons.append("phone-readable source refresh execution surface가 없습니다.")
     else:
         status = "blocked"
         reasons.append("이 후보에 대한 local proof 규칙이 아직 없습니다.")
@@ -752,6 +1096,10 @@ def _pattern_proof_surface_for_candidate(candidate_id: str) -> Path:
         return DEFAULT_RUN_TRACE_SURFACE
     if candidate_id == "pattern-freshness-intake":
         return DEFAULT_AGENT_PATTERN_RADAR_SURFACE
+    if candidate_id == "pattern-method-evidence-intake":
+        return DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE
+    if candidate_id == "pattern-source-refresh-execution-confirmation":
+        return DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE
     if candidate_id == "pattern-live-source-browser-gateway":
         return DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE
     return Path("reports/product/missing.html")
@@ -1011,6 +1359,30 @@ def _pattern_dry_run_candidates(cases: list[dict[str, Any]]) -> list[dict[str, A
             "expected_artifact": "reports/runtime/agent-pattern-radar.json",
             "approval_scope": "local_dry_run_only",
             "promotion_rule": "Adopt only if pattern_scout recommends a local next experiment, deferred/rejected boundaries remain explicit, and the phone surface validates.",
+            "source_decision": "adopt_partial",
+            "external_effect_performed": False,
+        },
+        {
+            "candidate_id": "pattern-method-evidence-intake",
+            "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
+            "status": "ready",
+            "why": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
+            "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
+            "expected_artifact": "reports/runtime/pattern-evidence-intake.json",
+            "approval_scope": "local_dry_run_only",
+            "promotion_rule": "Adopt only if the intake validates, shows stale/repeated recommendations, links the phone surface, and keeps external_effect_performed false.",
+            "source_decision": "adopt_partial",
+            "external_effect_performed": False,
+        },
+        {
+            "candidate_id": "pattern-source-refresh-execution-confirmation",
+            "source": "OpenClaw safety research / source freshness gate",
+            "status": "ready",
+            "why": "Approval response and preflight need a final phone-readable confirmation layer before any live source execution.",
+            "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-source-refresh-execution-brief reports/runtime/source-refresh-execution-brief.json",
+            "expected_artifact": "reports/runtime/source-refresh-execution-brief.json",
+            "approval_scope": "local_dry_run_only",
+            "promotion_rule": "Adopt only if approval, preflight, final confirmation, and actual execution remain separate states.",
             "source_decision": "adopt_partial",
             "external_effect_performed": False,
         },
@@ -2640,6 +3012,8 @@ def build_daily_readiness(
         ("memory_query_surface", DEFAULT_MEMORY_QUERY_SURFACE, "phone_surface", False),
         ("memory_audit", DEFAULT_MEMORY_AUDIT_OUTPUT, "memory_artifact", False),
         ("memory_audit_surface", DEFAULT_MEMORY_AUDIT_SURFACE, "phone_surface", False),
+        ("pattern_evidence_intake", DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT, "control_artifact", False),
+        ("pattern_evidence_intake_surface", DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE, "phone_surface", False),
     ]
     artifacts = [
         _readiness_artifact_check(
@@ -2688,6 +3062,7 @@ def build_daily_readiness(
             "source_refresh": DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix(),
             "source_freshness_intake": DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix(),
             "source_refresh_execution": DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE.as_posix(),
+            "pattern_evidence_intake": DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE.as_posix(),
             "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
             "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
             "run_ledger": DEFAULT_DAILY_RUN_LEDGER_SURFACE.as_posix(),
@@ -2775,6 +3150,7 @@ def build_run_trace(
     *,
     playbook_path: str | Path = DEFAULT_RUNTIME_PLAYBOOK_OUTPUT,
     pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
+    pattern_evidence_intake_path: str | Path = DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT,
     plan_path: str | Path = Path("reports/daily/research-plan.json"),
     scout_path: str | Path = DEFAULT_DAILY_SCOUT_OUTPUT,
     evidence_path: str | Path = DEFAULT_DAILY_EVIDENCE_OUTPUT,
@@ -2804,6 +3180,7 @@ def build_run_trace(
     step_specs = [
         ("runtime_playbook", playbook_path, "setup", "Defines the local appliance operating pattern.", True),
         ("pattern_radar", pattern_radar_path, "strategy", "Classifies external workflow patterns before they shape future work.", True),
+        ("pattern_evidence_intake", pattern_evidence_intake_path, "strategy", "Classifies researched agent patterns against local proof, stale repeats, and approval-gated boundaries.", False),
         ("research_plan", plan_path, "plan", "Turns configured interests into today's candidate topics.", True),
         ("daily_scout", scout_path, "prioritize", "Chooses what the operator should inspect first.", True),
         ("evidence_catalog", evidence_path, "evidence", "Records which local/free sources support the daily scenario.", True),
@@ -2857,6 +3234,7 @@ def build_run_trace(
             "topic_memory",
             "scenario_report",
             "verdict",
+            "pattern_evidence_intake",
             "source_refresh_brief",
             "source_refresh_execution_brief",
             "task_ledger",
@@ -2878,6 +3256,7 @@ def build_run_trace(
             "handoff_apply": DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix(),
             "council": DEFAULT_ANALYST_COUNCIL_SURFACE.as_posix(),
             "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
+            "pattern_evidence_intake": DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE.as_posix(),
             "memory": DEFAULT_MEMORY_OUTPUT.as_posix(),
             "memory_query": DEFAULT_MEMORY_QUERY_SURFACE.as_posix(),
             "memory_audit": DEFAULT_MEMORY_AUDIT_SURFACE.as_posix(),
@@ -8995,6 +9374,7 @@ def _daily_home_action_inbox(
     source_refresh_execution_brief: dict[str, Any],
     pattern_radar: dict[str, Any],
     pattern_proof: dict[str, Any],
+    pattern_evidence_intake: dict[str, Any],
     links: dict[str, str],
 ) -> dict[str, Any]:
     pending_decisions = morning.get("pending_decisions", [])
@@ -9082,6 +9462,24 @@ def _daily_home_action_inbox(
             "host_write_performed": False,
         })
 
+    if pattern_evidence_intake.get("schema_version") == PATTERN_EVIDENCE_INTAKE_SCHEMA_VERSION:
+        pattern_intake_summary = pattern_evidence_intake.get("summary", {})
+        if pattern_intake_summary.get("local_candidate_count", 0):
+            next_candidate = pattern_evidence_intake.get("next_candidate", {})
+            priority_items.append({
+                "kind": "pattern_evidence_intake",
+                "id": next_candidate.get("candidate_id", "pattern-evidence-intake"),
+                "title": "새 에이전트 방식 도입 후보 검토",
+                "why": next_candidate.get("why", "새 방법론을 바로 도입하지 않고 로컬 증거와 dry-run 후보로 분류합니다."),
+                "source": "pattern_evidence_intake",
+                "status": pattern_evidence_intake.get("status", "ready"),
+                "href": links.get("pattern_evidence_intake", ""),
+                "copy_ready_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance pattern-evidence-intake",
+                "requires_separate_approval": False,
+                "external_effect_performed": False,
+                "host_write_performed": False,
+            })
+
     if resolution_items:
         resolution_summary = handoff_study_resolution.get("summary", {})
         priority_items.append({
@@ -9168,6 +9566,9 @@ def _daily_home_action_inbox(
             "study_closure_count": len(study_items),
             "pattern_scout_count": 1 if recommended else 0,
             "pattern_scout_proof_ready_count": 1 if scout_proof.get("proof_status") == "passed" else 0,
+            "pattern_evidence_intake_count": 1 if pattern_evidence_intake.get("schema_version") == PATTERN_EVIDENCE_INTAKE_SCHEMA_VERSION else 0,
+            "pattern_evidence_local_candidate_count": pattern_evidence_intake.get("summary", {}).get("local_candidate_count", 0),
+            "pattern_evidence_already_verified_count": pattern_evidence_intake.get("summary", {}).get("already_verified_count", 0),
             "source_freshness_intake_count": 1 if source_freshness_intake.get("schema_version") == SOURCE_FRESHNESS_INTAKE_SCHEMA_VERSION else 0,
             "source_refresh_execution_count": 1 if source_refresh_execution_brief.get("schema_version") == SOURCE_REFRESH_EXECUTION_BRIEF_SCHEMA_VERSION else 0,
             "source_refresh_execution_blocker_count": source_refresh_execution_brief.get("summary", {}).get("blocker_count", 0),
@@ -9188,6 +9589,7 @@ def _daily_home_action_inbox(
             "task_ledger": links.get("task_ledger", ""),
             "pattern_radar": links.get("pattern_radar", ""),
             "pattern_dry_run": links.get("pattern_dry_run", ""),
+            "pattern_evidence_intake": links.get("pattern_evidence_intake", ""),
             "source_freshness_intake": links.get("source_freshness_intake", ""),
             "source_refresh_execution": links.get("source_refresh_execution", ""),
         },
@@ -9220,6 +9622,7 @@ def build_daily_operator_home(
     learning_ledger_path: str | Path = DEFAULT_LEARNING_LEDGER_OUTPUT,
     pattern_radar_path: str | Path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
     pattern_dry_run_proof_path: str | Path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
+    pattern_evidence_intake_path: str | Path = DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     generated = generated_at or datetime.now(timezone.utc)
@@ -9244,6 +9647,7 @@ def build_daily_operator_home(
     learning_ledger = _load_optional_json(learning_ledger_path)
     pattern_radar = _load_optional_json(pattern_radar_path)
     pattern_proof = _load_optional_json(pattern_dry_run_proof_path)
+    pattern_evidence_intake = _load_optional_json(pattern_evidence_intake_path)
     read_first = morning.get("read_first", {})
     scout_topic = scout.get("recommended_topic", {}) if scout.get("schema_version") == "daily_scout.v1" else {}
     primary_agenda = agenda.get("primary_topic", {}) if agenda.get("schema_version") == DAILY_BRIEF_AGENDA_SCHEMA_VERSION else {}
@@ -9316,6 +9720,7 @@ def build_daily_operator_home(
         "source_refresh_execution": DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE.as_posix(),
         "pattern_radar": DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix(),
         "pattern_dry_run": DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE.as_posix(),
+        "pattern_evidence_intake": DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE.as_posix(),
         "trace": DEFAULT_RUN_TRACE_SURFACE.as_posix(),
         "tasks": DEFAULT_ANALYST_TASK_QUEUE_OUTPUT.as_posix(),
         "task_ledger": DEFAULT_ANALYST_TASK_LEDGER_OUTPUT.as_posix(),
@@ -9431,6 +9836,14 @@ def build_daily_operator_home(
         },
         {
             "step": 14,
+            "label": "새 방법론 근거 분류",
+            "title": "pattern evidence intake",
+            "why": "최신 에이전트/투자 워크플로 사례를 이미 검증됨, 신규 local 후보, 승인 필요, 차단으로 나눠 반복 추천을 막습니다.",
+            "href": links["pattern_evidence_intake"],
+            "status": pattern_evidence_intake.get("status", "missing"),
+        },
+        {
+            "step": 15,
             "label": "새 작업 방식 증거 확인",
             "title": "pattern dry-run proof",
             "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -9448,6 +9861,7 @@ def build_daily_operator_home(
         source_refresh_execution_brief=source_refresh_execution_brief,
         pattern_radar=pattern_radar,
         pattern_proof=pattern_proof,
+        pattern_evidence_intake=pattern_evidence_intake,
         links=links,
     )
     payload = {
@@ -9485,6 +9899,9 @@ def build_daily_operator_home(
             "trace_weak_spot_count": len(run_trace.get("weak_spots", [])),
             "pattern_scout_candidate": pattern_recommended.get("candidate_id", "missing"),
             "pattern_scout_proof_status": pattern_scout_proof.get("proof_status", "missing"),
+            "pattern_evidence_intake_status": pattern_evidence_intake.get("status", "missing"),
+            "pattern_evidence_local_candidate_count": pattern_evidence_intake.get("summary", {}).get("local_candidate_count", 0),
+            "pattern_evidence_already_verified_count": pattern_evidence_intake.get("summary", {}).get("already_verified_count", 0),
             "action_item_count": action_inbox.get("summary", {}).get("priority_item_count", 0),
         },
         "daily_route": daily_route,
@@ -9583,6 +10000,19 @@ def build_daily_operator_home(
             "external_effect_performed": False,
             "host_write_performed": False,
         },
+        "pattern_evidence_intake_adoption": {
+            "pattern_candidate_id": "pattern-method-evidence-intake",
+            "status": pattern_evidence_intake.get("status", "missing"),
+            "candidate_count": pattern_evidence_intake.get("summary", {}).get("candidate_count", 0),
+            "local_candidate_count": pattern_evidence_intake.get("summary", {}).get("local_candidate_count", 0),
+            "already_verified_count": pattern_evidence_intake.get("summary", {}).get("already_verified_count", 0),
+            "approval_gated_count": pattern_evidence_intake.get("summary", {}).get("approval_gated_count", 0),
+            "blocked_count": pattern_evidence_intake.get("summary", {}).get("blocked_count", 0),
+            "recommended_candidate": pattern_evidence_intake.get("summary", {}).get("recommended_candidate", "missing"),
+            "surface": links["pattern_evidence_intake"],
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        },
         "operator_action_inbox": action_inbox,
         "copy_ready_commands": _daily_home_commands(payloads=payloads),
         "phone_links": links,
@@ -9619,6 +10049,7 @@ def build_daily_operator_home(
             _daily_home_artifact_status(name="source_refresh_execution_brief", path=source_refresh_execution_brief_path, payload=source_refresh_execution_brief),
             _daily_home_artifact_status(name="pattern_radar", path=pattern_radar_path, payload=pattern_radar),
             _daily_home_artifact_status(name="pattern_dry_run_proof", path=pattern_dry_run_proof_path, payload=pattern_proof),
+            _daily_home_artifact_status(name="pattern_evidence_intake", path=pattern_evidence_intake_path, payload=pattern_evidence_intake),
         ],
         "external_effect_performed": False,
         "host_write_performed": False,
@@ -9717,6 +10148,14 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("pattern_scout_adoption.host_write_performed must be false")
     if pattern.get("operator_decision_needed") is not False and pattern.get("approval_scope") == "local_dry_run_only":
         errors.append("local pattern scout must not require operator approval")
+    pattern_evidence = payload.get("pattern_evidence_intake_adoption", {})
+    for field in ["pattern_candidate_id", "status", "candidate_count", "local_candidate_count", "already_verified_count", "approval_gated_count", "blocked_count", "recommended_candidate", "surface", "external_effect_performed", "host_write_performed"]:
+        if field not in pattern_evidence:
+            errors.append(f"pattern_evidence_intake_adoption missing {field}")
+    if pattern_evidence.get("external_effect_performed") is not False:
+        errors.append("pattern_evidence_intake_adoption.external_effect_performed must be false")
+    if pattern_evidence.get("host_write_performed") is not False:
+        errors.append("pattern_evidence_intake_adoption.host_write_performed must be false")
     inbox = payload.get("operator_action_inbox", {})
     for field in ["pattern_source", "status", "summary", "priority_items", "operator_rule", "external_effect_performed", "host_write_performed"]:
         if field not in inbox:
@@ -9735,7 +10174,7 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(f"operator_action_inbox.priority_items[{index}] external_effect_performed must be false")
         if item.get("host_write_performed") is not False:
             errors.append(f"operator_action_inbox.priority_items[{index}] host_write_performed must be false")
-    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_study_resolution", "handoff_apply", "learning", "source_freshness_intake", "source_refresh_execution", "memory_query", "trace", "pattern_radar", "pattern_dry_run"]:
+    for field in ["daily_home", "today", "morning", "readiness", "handoff", "handoff_study_resolution", "handoff_apply", "learning", "source_freshness_intake", "source_refresh_execution", "memory_query", "trace", "pattern_radar", "pattern_dry_run", "pattern_evidence_intake"]:
         if not payload.get("phone_links", {}).get(field):
             errors.append(f"phone_links.{field} must not be empty")
     if "daily_home_reads_existing_artifacts_only" not in payload.get("safety_boundary", []):
@@ -9759,6 +10198,8 @@ def validate_daily_operator_home_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("daily_route must include source freshness intake")
     if not any(step.get("title") == "source refresh execution" for step in payload.get("daily_route", [])):
         errors.append("daily_route must include source refresh execution")
+    if not any(step.get("title") == "pattern evidence intake" for step in payload.get("daily_route", [])):
+        errors.append("daily_route must include pattern evidence intake")
     if not any(step.get("title") == "handoff study resolution" for step in payload.get("daily_route", [])):
         errors.append("daily_route must include handoff study resolution")
     return errors
@@ -9775,6 +10216,7 @@ def render_daily_operator_home(payload: dict[str, Any]) -> str:
     trace = payload.get("trace_observability_adoption", {})
     intake = payload.get("source_freshness_intake_adoption", {})
     pattern = payload.get("pattern_scout_adoption", {})
+    pattern_evidence = payload.get("pattern_evidence_intake_adoption", {})
     inbox = payload.get("operator_action_inbox", {})
     status_label = {
         "ready": "오늘 읽기 준비됨",
@@ -9929,6 +10371,7 @@ td strong,td span {{ display:block; }}
 <div class="metrics">
 	<article class="metric"><span>Approvals</span><strong>{esc(inbox_summary.get('pending_decision_count', 0))}</strong></article>
 	<article class="metric"><span>Pattern</span><strong>{esc(inbox_summary.get('pattern_scout_count', 0))}</strong></article>
+	<article class="metric"><span>Method</span><strong>{esc(inbox_summary.get('pattern_evidence_local_candidate_count', 0))}</strong></article>
 	<article class="metric"><span>Study</span><strong>{esc(inbox_summary.get('study_closure_count', 0))}</strong></article>
 	<article class="metric"><span>Handoff</span><strong>{esc(inbox_summary.get('unresolved_handoff_count', 0))}</strong></article>
 	<article class="metric"><span>Carried</span><strong>{esc(inbox_summary.get('carried_task_count', 0))}</strong></article>
@@ -10015,6 +10458,15 @@ td strong,td span {{ display:block; }}
 	<p><a href="{esc(_relative_href(Path(pattern.get('surface', 'reports/product/pattern-radar.html'))))}">pattern radar 열기</a> · <a href="{esc(_relative_href(Path(pattern.get('proof_surface', 'reports/product/pattern-dry-run.html'))))}">dry-run proof 열기</a></p>
 	<h2>Done when</h2>
 	<ul>{pattern_done_items}</ul>
+    <h2>방법론 intake</h2>
+    <p>새로 발견한 Hermes/OpenClaw/투자 에이전트 사례를 바로 도입하지 않고, 이미 검증됨/신규 local 후보/승인 필요/차단으로 분류합니다.</p>
+    <div class="metrics">
+    <article class="metric"><span>Status</span><strong>{esc(pattern_evidence.get('status', 'missing'))}</strong></article>
+    <article class="metric"><span>Local</span><strong>{esc(pattern_evidence.get('local_candidate_count', 0))}</strong></article>
+    <article class="metric"><span>Verified</span><strong>{esc(pattern_evidence.get('already_verified_count', 0))}</strong></article>
+    <article class="metric"><span>Gated</span><strong>{esc(pattern_evidence.get('approval_gated_count', 0))}</strong></article>
+    </div>
+    <p><a href="{esc(_relative_href(Path(pattern_evidence.get('surface', 'reports/product/pattern-evidence-intake.html'))))}">pattern evidence intake 열기</a></p>
 	<h2>보류 중인 방식</h2>
 	<ul>{pattern_watch_items}</ul>
 	<h2>넘지 않을 경계</h2>

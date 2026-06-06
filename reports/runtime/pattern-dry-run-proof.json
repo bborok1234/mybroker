@@ -1,11 +1,11 @@
 {
   "schema_version": "pattern_dry_run_proof.v1",
-  "generated_at": "2026-06-06T03:01:57.743392+00:00",
+  "generated_at": "2026-06-06T03:34:24.127268+00:00",
   "status": "proof_ready",
   "source_artifact": "reports/runtime/agent-pattern-radar.json",
   "summary": {
-    "candidate_count": 5,
-    "passed_count": 3,
+    "candidate_count": 7,
+    "passed_count": 5,
     "approval_required_count": 1,
     "blocked_count": 1,
     "failed_count": 0
@@ -13,6 +13,18 @@
   "promotion_decisions": [
     {
       "candidate_id": "pattern-freshness-intake",
+      "decision": "adopted_proof_ready",
+      "reason": "로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.",
+      "requires_operator_approval": false
+    },
+    {
+      "candidate_id": "pattern-method-evidence-intake",
+      "decision": "adopted_proof_ready",
+      "reason": "로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.",
+      "requires_operator_approval": false
+    },
+    {
+      "candidate_id": "pattern-source-refresh-execution-confirmation",
       "decision": "adopted_proof_ready",
       "reason": "로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.",
       "requires_operator_approval": false
@@ -43,6 +55,42 @@
       "surface": "reports/product/pattern-radar.html",
       "surface_exists": true,
       "promotion_rule": "Adopt only if pattern_scout recommends a local next experiment, deferred/rejected boundaries remain explicit, and the phone surface validates.",
+      "proof_notes": [
+        "로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다."
+      ],
+      "external_effect_performed": false,
+      "host_write_performed": false
+    },
+    {
+      "candidate_id": "pattern-method-evidence-intake",
+      "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
+      "input_status": "ready",
+      "approval_scope": "local_dry_run_only",
+      "proof_status": "passed",
+      "expected_artifact": "reports/runtime/pattern-evidence-intake.json",
+      "artifact_exists": true,
+      "artifact_schema_version": "pattern_evidence_intake.v1",
+      "surface": "reports/product/pattern-evidence-intake.html",
+      "surface_exists": true,
+      "promotion_rule": "Adopt only if the intake validates, shows stale/repeated recommendations, links the phone surface, and keeps external_effect_performed false.",
+      "proof_notes": [
+        "로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다."
+      ],
+      "external_effect_performed": false,
+      "host_write_performed": false
+    },
+    {
+      "candidate_id": "pattern-source-refresh-execution-confirmation",
+      "source": "OpenClaw safety research / source freshness gate",
+      "input_status": "ready",
+      "approval_scope": "local_dry_run_only",
+      "proof_status": "passed",
+      "expected_artifact": "reports/runtime/source-refresh-execution-brief.json",
+      "artifact_exists": true,
+      "artifact_schema_version": "source_refresh_execution_brief.v1",
+      "surface": "reports/product/source-refresh-execution.html",
+      "surface_exists": true,
+      "promotion_rule": "Adopt only if approval, preflight, final confirmation, and actual execution remain separate states.",
       "proof_notes": [
         "로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다."
       ],

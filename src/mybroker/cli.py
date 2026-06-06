@@ -20,6 +20,8 @@ from mybroker.appliance import (
     DEFAULT_ANALYST_TASK_STATUS_APPLY,
     DEFAULT_AGENT_PATTERN_RADAR_OUTPUT,
     DEFAULT_AGENT_PATTERN_RADAR_SURFACE,
+    DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT,
+    DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE,
     DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT,
     DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE,
     DEFAULT_DAILY_BRIEF_AGENDA_OUTPUT,
@@ -92,6 +94,7 @@ from mybroker.appliance import (
     parse_daily_review_response,
     send_notification_payload,
     write_agent_pattern_radar,
+    write_pattern_evidence_intake,
     write_pattern_dry_run_proof,
     write_launchd_assets,
     write_analyst_council,
@@ -144,6 +147,7 @@ from mybroker.appliance import (
     validate_analyst_task_queue_file,
     validate_analyst_task_ledger_file,
     validate_agent_pattern_radar_file,
+    validate_pattern_evidence_intake_file,
     validate_pattern_dry_run_proof_file,
     validate_daily_brief_agenda_file,
     validate_daily_operator_home_file,
@@ -403,6 +407,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_council_parser.add_argument("council_path")
     validate_pattern_radar_parser = subcommands.add_parser("validate-agent-pattern-radar", help="Validate an agent_pattern_radar.v1 artifact.")
     validate_pattern_radar_parser.add_argument("pattern_radar_path")
+    validate_pattern_evidence_parser = subcommands.add_parser("validate-pattern-evidence-intake", help="Validate a pattern_evidence_intake.v1 artifact.")
+    validate_pattern_evidence_parser.add_argument("pattern_evidence_intake_path")
     validate_pattern_proof_parser = subcommands.add_parser("validate-pattern-dry-run-proof", help="Validate a pattern_dry_run_proof.v1 artifact.")
     validate_pattern_proof_parser.add_argument("pattern_proof_path")
     validate_journal_parser = subcommands.add_parser("validate-analyst-journal", help="Validate a personal_analyst_journal.v1 artifact.")
@@ -575,6 +581,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_home_parser.add_argument("--learning-ledger", default=DEFAULT_LEARNING_LEDGER_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--pattern-radar", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--pattern-dry-run-proof", default=DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--pattern-evidence-intake", default=DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--artifact-output", default=DEFAULT_DAILY_HOME_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--output", default=DEFAULT_DAILY_HOME_SURFACE.as_posix())
     appliance_agenda_parser = appliance_subcommands.add_parser("agenda", help="Render the phone-first daily study agenda from scout and evidence artifacts.")
@@ -780,8 +787,14 @@ def main(argv: list[str] | None = None) -> int:
     appliance_review_effect_parser.add_argument("--output", default=DEFAULT_REVIEW_EFFECT_SURFACE.as_posix())
     appliance_pattern_radar_parser = appliance_subcommands.add_parser("pattern-radar", help="Render the workflow-pattern radar for local analyst evolution.")
     appliance_pattern_radar_parser.add_argument("--playbook", default=DEFAULT_RUNTIME_PLAYBOOK_OUTPUT.as_posix())
+    appliance_pattern_radar_parser.add_argument("--pattern-proof", default=DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT.as_posix())
     appliance_pattern_radar_parser.add_argument("--artifact-output", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
     appliance_pattern_radar_parser.add_argument("--output", default=DEFAULT_AGENT_PATTERN_RADAR_SURFACE.as_posix())
+    appliance_pattern_evidence_parser = appliance_subcommands.add_parser("pattern-evidence-intake", help="Render local evidence intake for workflow-pattern candidates.")
+    appliance_pattern_evidence_parser.add_argument("--pattern-radar", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
+    appliance_pattern_evidence_parser.add_argument("--pattern-proof", default=DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT.as_posix())
+    appliance_pattern_evidence_parser.add_argument("--artifact-output", default=DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT.as_posix())
+    appliance_pattern_evidence_parser.add_argument("--output", default=DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE.as_posix())
     appliance_pattern_proof_parser = appliance_subcommands.add_parser("pattern-dry-run", help="Render proof that local workflow-pattern candidates can be adopted safely.")
     appliance_pattern_proof_parser.add_argument("--pattern-radar", default=DEFAULT_AGENT_PATTERN_RADAR_OUTPUT.as_posix())
     appliance_pattern_proof_parser.add_argument("--artifact-output", default=DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT.as_posix())
@@ -1318,6 +1331,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-pattern-evidence-intake":
+        errors = validate_pattern_evidence_intake_file(args.pattern_evidence_intake_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-pattern-dry-run-proof":
         errors = validate_pattern_dry_run_proof_file(args.pattern_proof_path)
         if errors:
@@ -1746,6 +1766,7 @@ def main(argv: list[str] | None = None) -> int:
                 learning_ledger_path=args.learning_ledger,
                 pattern_radar_path=args.pattern_radar,
                 pattern_dry_run_proof_path=args.pattern_dry_run_proof,
+                pattern_evidence_intake_path=args.pattern_evidence_intake,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
@@ -2451,6 +2472,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.appliance_command == "pattern-radar":
             path = write_agent_pattern_radar(
                 playbook_path=args.playbook,
+                pattern_proof_path=args.pattern_proof,
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
@@ -2460,6 +2482,23 @@ def main(argv: list[str] | None = None) -> int:
                 "agent_pattern_radar_surface": path.as_posix(),
                 "case_count": payload["summary"]["case_count"],
                 "adopted_count": payload["summary"]["adopted_count"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "pattern-evidence-intake":
+            path = write_pattern_evidence_intake(
+                pattern_radar_path=args.pattern_radar,
+                pattern_proof_path=args.pattern_proof,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "pattern_evidence_intake": args.artifact_output,
+                "pattern_evidence_intake_surface": path.as_posix(),
+                "status": payload["status"],
+                "local_candidate_count": payload["summary"]["local_candidate_count"],
+                "already_verified_count": payload["summary"]["already_verified_count"],
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
@@ -2708,6 +2747,8 @@ def main(argv: list[str] | None = None) -> int:
             review_effect_surface_path = DEFAULT_REVIEW_EFFECT_SURFACE
             pattern_radar_artifact_path = DEFAULT_AGENT_PATTERN_RADAR_OUTPUT
             pattern_radar_surface_path = DEFAULT_AGENT_PATTERN_RADAR_SURFACE
+            pattern_evidence_artifact_path = DEFAULT_PATTERN_EVIDENCE_INTAKE_OUTPUT
+            pattern_evidence_surface_path = DEFAULT_PATTERN_EVIDENCE_INTAKE_SURFACE
             pattern_proof_artifact_path = DEFAULT_PATTERN_DRY_RUN_PROOF_OUTPUT
             pattern_proof_surface_path = DEFAULT_PATTERN_DRY_RUN_PROOF_SURFACE
             run_trace_artifact_path = DEFAULT_RUN_TRACE_OUTPUT
@@ -2746,8 +2787,15 @@ def main(argv: list[str] | None = None) -> int:
             phone_access_path = write_phone_access_plan(output_path=DEFAULT_PHONE_ACCESS_OUTPUT)
             written_pattern_radar = write_agent_pattern_radar(
                 playbook_path=playbook_path,
+                pattern_proof_path=pattern_proof_artifact_path,
                 artifact_output_path=pattern_radar_artifact_path,
                 surface_output_path=pattern_radar_surface_path,
+            )
+            written_pattern_evidence = write_pattern_evidence_intake(
+                pattern_radar_path=pattern_radar_artifact_path,
+                pattern_proof_path=pattern_proof_artifact_path,
+                artifact_output_path=pattern_evidence_artifact_path,
+                surface_output_path=pattern_evidence_surface_path,
             )
             vault_compile = None
             if not args.skip_vault_compile and Path(args.vault_raw_dir).exists():
@@ -3112,6 +3160,7 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=run_trace_artifact_path,
                 surface_output_path=run_trace_surface_path,
                 today_path=written_today,
+                pattern_evidence_intake_path=pattern_evidence_artifact_path,
                 source_freshness_intake_path=source_freshness_intake_artifact_path,
                 source_refresh_execution_brief_path=source_refresh_execution_artifact_path,
                 review_prompt_path=review_prompt_artifact_path,
@@ -3127,6 +3176,12 @@ def main(argv: list[str] | None = None) -> int:
                 pattern_radar_path=pattern_radar_artifact_path,
                 artifact_output_path=pattern_proof_artifact_path,
                 surface_output_path=pattern_proof_surface_path,
+            )
+            written_pattern_evidence = write_pattern_evidence_intake(
+                pattern_radar_path=pattern_radar_artifact_path,
+                pattern_proof_path=pattern_proof_artifact_path,
+                artifact_output_path=pattern_evidence_artifact_path,
+                surface_output_path=pattern_evidence_surface_path,
             )
             written_drift_review = write_drift_review(
                 artifact_output_path=drift_review_artifact_path,
@@ -3233,6 +3288,7 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=run_trace_artifact_path,
                 surface_output_path=run_trace_surface_path,
                 today_path=written_today,
+                pattern_evidence_intake_path=pattern_evidence_artifact_path,
                 source_freshness_intake_path=source_freshness_intake_artifact_path,
                 source_refresh_execution_brief_path=source_refresh_execution_artifact_path,
                 review_prompt_path=review_prompt_artifact_path,
@@ -3269,6 +3325,7 @@ def main(argv: list[str] | None = None) -> int:
                 memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
                 learning_ledger_path=learning_ledger_artifact_path,
+                pattern_evidence_intake_path=pattern_evidence_artifact_path,
                 pattern_dry_run_proof_path=pattern_proof_artifact_path,
             )
             written_phone_access_verify = write_phone_access_verify(
@@ -3304,6 +3361,7 @@ def main(argv: list[str] | None = None) -> int:
                 memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
                 learning_ledger_path=learning_ledger_artifact_path,
+                pattern_evidence_intake_path=pattern_evidence_artifact_path,
                 pattern_dry_run_proof_path=pattern_proof_artifact_path,
             )
             written_phone_access_verify = write_phone_access_verify(
@@ -3346,6 +3404,8 @@ def main(argv: list[str] | None = None) -> int:
                     "memory_audit_surface": written_memory_audit,
                     "learning_ledger": learning_ledger_artifact_path,
                     "learning_ledger_surface": written_learning,
+                    "pattern_evidence_intake": pattern_evidence_artifact_path,
+                    "pattern_evidence_intake_surface": written_pattern_evidence,
                     "pattern_dry_run_proof": pattern_proof_artifact_path,
                     "pattern_dry_run_proof_surface": written_pattern_proof,
                     "run_trace": run_trace_artifact_path,
@@ -3390,6 +3450,8 @@ def main(argv: list[str] | None = None) -> int:
                 "learning_ledger_surface": written_learning.as_posix(),
                 "agent_pattern_radar": pattern_radar_artifact_path.as_posix(),
                 "agent_pattern_radar_surface": written_pattern_radar.as_posix(),
+                "pattern_evidence_intake": pattern_evidence_artifact_path.as_posix(),
+                "pattern_evidence_intake_surface": written_pattern_evidence.as_posix(),
                 "pattern_dry_run_proof": pattern_proof_artifact_path.as_posix(),
                 "pattern_dry_run_proof_surface": written_pattern_proof.as_posix(),
                 "run_trace": run_trace_artifact_path.as_posix(),

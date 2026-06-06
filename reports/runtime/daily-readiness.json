@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_readiness.v1",
-  "generated_at": "2026-06-06T03:01:57.763738+00:00",
+  "generated_at": "2026-06-06T03:34:24.150420+00:00",
   "status": "ready",
   "freshness_hours": 24,
   "summary": {
@@ -19,7 +19,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.760941+00:00",
+      "generated_at": "2026-06-06T03:34:24.146412+00:00",
       "schema_version": "daily_operator_home.v1"
     },
     {
@@ -41,7 +41,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.763052+00:00",
+      "generated_at": "2026-06-06T03:34:24.149565+00:00",
       "schema_version": "phone_access_verify.v1"
     },
     {
@@ -85,7 +85,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.699029+00:00",
+      "generated_at": "2026-06-06T03:34:24.086697+00:00",
       "schema_version": "daily_brief_agenda.v1"
     },
     {
@@ -96,7 +96,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.697516+00:00",
+      "generated_at": "2026-06-06T03:34:24.085045+00:00",
       "schema_version": "source_refresh_brief.v1"
     },
     {
@@ -118,7 +118,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.697909+00:00",
+      "generated_at": "2026-06-06T03:34:24.085559+00:00",
       "schema_version": "source_freshness_intake.v1"
     },
     {
@@ -140,7 +140,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.698308+00:00",
+      "generated_at": "2026-06-06T03:34:24.085976+00:00",
       "schema_version": "source_refresh_execution_brief.v1"
     },
     {
@@ -162,7 +162,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.743392+00:00",
+      "generated_at": "2026-06-06T03:34:24.127268+00:00",
       "schema_version": "pattern_dry_run_proof.v1"
     },
     {
@@ -184,7 +184,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.745672+00:00",
+      "generated_at": "2026-06-06T03:34:24.130424+00:00",
       "schema_version": "morning_control_packet.v1"
     },
     {
@@ -206,7 +206,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.754162+00:00",
+      "generated_at": "2026-06-06T03:34:24.139564+00:00",
       "schema_version": "local_run_trace.v1"
     },
     {
@@ -228,7 +228,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.751667+00:00",
+      "generated_at": "2026-06-06T03:34:24.136608+00:00",
       "schema_version": "daily_run_ledger.v1"
     },
     {
@@ -250,7 +250,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.752530+00:00",
+      "generated_at": "2026-06-06T03:34:24.137748+00:00",
       "schema_version": "daily_handoff.v1"
     },
     {
@@ -272,7 +272,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.753499+00:00",
+      "generated_at": "2026-06-06T03:34:24.138720+00:00",
       "schema_version": "handoff_study_resolution.v1"
     },
     {
@@ -293,7 +293,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 6.4,
+      "age_hours": 6.94,
       "generated_at": "2026-06-05T20:38:09.499318+00:00",
       "schema_version": "operator_handoff_response_apply.v1"
     },
@@ -304,7 +304,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 6.31,
+      "age_hours": 6.85,
       "generated_at": "",
       "schema_version": ""
     },
@@ -316,7 +316,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.750026+00:00",
+      "generated_at": "2026-06-06T03:34:24.135038+00:00",
       "schema_version": "local_drift_review.v1"
     },
     {
@@ -338,7 +338,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.751035+00:00",
+      "generated_at": "2026-06-06T03:34:24.135990+00:00",
       "schema_version": "operator_review_prompt.v1"
     },
     {
@@ -360,7 +360,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.751487+00:00",
+      "generated_at": "2026-06-06T03:34:24.136430+00:00",
       "schema_version": "operator_review_effect.v1"
     },
     {
@@ -382,7 +382,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.717074+00:00",
+      "generated_at": "2026-06-06T03:34:24.109886+00:00",
       "schema_version": "analyst_council.v1"
     },
     {
@@ -404,7 +404,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.716332+00:00",
+      "generated_at": "2026-06-06T03:34:24.109113+00:00",
       "schema_version": "personal_learning_ledger.v1"
     },
     {
@@ -426,7 +426,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.695967+00:00",
+      "generated_at": "2026-06-06T03:34:24.081656+00:00",
       "schema_version": "daily_scout.v1"
     },
     {
@@ -437,7 +437,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.694838+00:00",
+      "generated_at": "2026-06-06T03:34:24.079508+00:00",
       "schema_version": "public_evidence_catalog.v1"
     },
     {
@@ -448,7 +448,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.695038+00:00",
+      "generated_at": "2026-06-06T03:34:24.080459+00:00",
       "schema_version": "topic_memory.v1"
     },
     {
@@ -459,7 +459,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.699936+00:00",
+      "generated_at": "2026-06-06T03:34:24.087603+00:00",
       "schema_version": "scenario_report.v1"
     },
     {
@@ -470,7 +470,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.699936+00:00",
+      "generated_at": "2026-06-06T03:34:24.087603+00:00",
       "schema_version": "market_verdict.v1"
     },
     {
@@ -481,7 +481,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.707676+00:00",
+      "generated_at": "2026-06-06T03:34:24.097919+00:00",
       "schema_version": "daily_archive.v1"
     },
     {
@@ -491,7 +491,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 19.54,
+      "age_hours": 20.08,
       "generated_at": "2026-06-05T07:29:44.695756+00:00",
       "schema_version": "local_runtime_doctor.v1"
     },
@@ -503,7 +503,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.737873+00:00",
+      "generated_at": "2026-06-06T03:34:24.120775+00:00",
       "schema_version": "local_scheduler_status.v1"
     },
     {
@@ -514,7 +514,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.738431+00:00",
+      "generated_at": "2026-06-06T03:34:24.121123+00:00",
       "schema_version": "local_scheduler_operations.v1"
     },
     {
@@ -535,7 +535,7 @@
       "required": false,
       "exists": true,
       "freshness_status": "fresh",
-      "age_hours": 9.02,
+      "age_hours": 9.56,
       "generated_at": "",
       "schema_version": ""
     },
@@ -558,7 +558,7 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.714937+00:00",
+      "generated_at": "2026-06-06T03:34:24.107724+00:00",
       "schema_version": "personal_memory_query.v1"
     },
     {
@@ -580,12 +580,34 @@
       "exists": true,
       "freshness_status": "fresh",
       "age_hours": 0.0,
-      "generated_at": "2026-06-06T03:01:57.714246+00:00",
+      "generated_at": "2026-06-06T03:34:24.107149+00:00",
       "schema_version": "personal_memory_audit.v1"
     },
     {
       "name": "memory_audit_surface",
       "path": "reports/product/memory-audit.html",
+      "kind": "phone_surface",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "",
+      "schema_version": ""
+    },
+    {
+      "name": "pattern_evidence_intake",
+      "path": "reports/runtime/pattern-evidence-intake.json",
+      "kind": "control_artifact",
+      "required": false,
+      "exists": true,
+      "freshness_status": "fresh",
+      "age_hours": 0.0,
+      "generated_at": "2026-06-06T03:34:24.128368+00:00",
+      "schema_version": "pattern_evidence_intake.v1"
+    },
+    {
+      "name": "pattern_evidence_intake_surface",
+      "path": "reports/product/pattern-evidence-intake.html",
       "kind": "phone_surface",
       "required": false,
       "exists": true,
@@ -611,6 +633,7 @@
     "source_refresh": "reports/product/source-refresh.html",
     "source_freshness_intake": "reports/product/source-freshness-intake.html",
     "source_refresh_execution": "reports/product/source-refresh-execution.html",
+    "pattern_evidence_intake": "reports/product/pattern-evidence-intake.html",
     "pattern_dry_run": "reports/product/pattern-dry-run.html",
     "trace": "reports/product/run-trace.html",
     "run_ledger": "reports/product/run-ledger.html",
