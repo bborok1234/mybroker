@@ -1,0 +1,45 @@
+{
+  "schema_version": "knowledge_vault_compile.v1",
+  "generated_at": "2026-06-05T18:01:00.233592+00:00",
+  "raw_dir": "examples/vault/raw",
+  "wiki_dir": "reports/vault/wiki",
+  "topics_path": "config/topics.json",
+  "compiled_count": 1,
+  "topic_count": 1,
+  "compiled_notes": [
+    {
+      "source_path": "examples/vault/raw/semiconductor-cycle.md",
+      "wiki_path": "reports/vault/wiki/semiconductors/semiconductor-cycle-learning-note.md",
+      "topic_id": "semiconductors",
+      "topic_name": "Semiconductors",
+      "title": "Semiconductor cycle learning note",
+      "source_hash": "54a5c929028a710bf844f4a0e53e01e326655cdad2a611948ed3011cb57d1c8e",
+      "word_count": 57,
+      "key_takeaways": [
+        "AI data center demand can lift chip suppliers before the effect is visible in every company's reported revenue.",
+        "Memory pricing remains cyclical, so a beginner should separate structural AI demand from short-term inventory swings.",
+        "Before trusting the trend, inspect source freshness, whether multiple sources agree, and whether the narrative is already crowded."
+      ]
+    }
+  ],
+  "topics": [
+    {
+      "topic_id": "semiconductors",
+      "name": "Semiconductors",
+      "note_count": 1,
+      "notes": [
+        {
+          "title": "Semiconductor cycle learning note",
+          "wiki_path": "reports/vault/wiki/semiconductors/semiconductor-cycle-learning-note.md",
+          "source_path": "examples/vault/raw/semiconductor-cycle.md"
+        }
+      ]
+    }
+  ],
+  "surface_path": "reports/product/vault.html",
+  "policy": "research_only",
+  "limitations": [
+    "Compilation is deterministic local filing, not an investment recommendation.",
+    "Raw files are not deleted or moved; inspect source_path before relying on a note."
+  ]
+}

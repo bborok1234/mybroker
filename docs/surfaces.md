@@ -41,7 +41,7 @@ It must show the operator action inbox: pending approval gates, unresolved hando
 
 `reports/product/run-ledger.html` is not a project dashboard and not a market brief. It is the local appliance heartbeat: which same-day run is canonical, which runs are duplicates/manual validation runs, which archive belongs to the run, and whether any external or host effect was observed.
 
-`reports/product/handoff.html` is not a market brief and not a project tracker. It is the cross-day continuity proof: whether prior questions, local feedback, carried tasks, council warnings, and memory risks were reflected in today's run or still need a short local response.
+`reports/product/handoff.html` is not a market brief and not a project tracker. It is the cross-day continuity proof: whether prior questions, local feedback, carried tasks, council warnings, and memory risks were reflected in today's run or still need a short local response. It must also expose a beginner-readable study closure queue for unresolved questions and non-blocking cautions, with done-when criteria, linked local surfaces, and copy-ready local feedback commands.
 
 `reports/product/handoff-response-apply.html` is not a chat surface and not an executor. It is the local proof after a copied handoff command records either review feedback or task status, refreshes the affected local artifacts, and regenerates handoff in the same run.
 

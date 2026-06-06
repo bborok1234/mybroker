@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-05T23:36:17.644734+00:00",
+  "generated_at": "2026-06-05T23:49:01.582052+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -19,7 +19,7 @@
     "trace_status": "ready",
     "trace_fresh_count": 21,
     "trace_weak_spot_count": 0,
-    "action_item_count": 5
+    "action_item_count": 6
   },
   "daily_route": [
     {
@@ -308,7 +308,7 @@
       },
       {
         "label": "누적 실행",
-        "value": "56회",
+        "value": "57회",
         "source": "topic_memory"
       },
       {
@@ -343,9 +343,10 @@
     "summary": {
       "pending_decision_count": 2,
       "unresolved_handoff_count": 4,
+      "study_closure_count": 4,
       "carried_task_count": 0,
       "ready_task_count": 0,
-      "priority_item_count": 5
+      "priority_item_count": 6
     },
     "priority_items": [
       {
@@ -376,45 +377,58 @@
       },
       {
         "kind": "follow_up_question",
-        "id": "DH-Q03",
+        "id": "SC-DH-Q03",
         "title": "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
-        "why": "review-prompt에서 이 질문을 tomorrow focus로 남기세요.",
+        "why": "AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?",
         "source": "analyst_journal",
-        "status": "unresolved",
-        "href": "reports/product/handoff.html",
-        "copy_ready_command": "more \"AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?\" \"내일 이어서 확인\"",
+        "status": "study_closure",
+        "href": "reports/product/review-prompt.html",
+        "copy_ready_command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more \"Semiconductors\" \"handoff question: AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?\"'",
         "requires_separate_approval": false,
         "external_effect_performed": false,
         "host_write_performed": false
       },
       {
         "kind": "follow_up_question",
-        "id": "DH-Q06",
+        "id": "SC-DH-Q06",
         "title": "먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?",
-        "why": "review-prompt에서 이 질문을 tomorrow focus로 남기세요.",
+        "why": "먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?",
         "source": "analyst_journal",
-        "status": "unresolved",
-        "href": "reports/product/handoff.html",
-        "copy_ready_command": "more \"먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?\" \"내일 이어서 확인\"",
+        "status": "study_closure",
+        "href": "reports/product/review-prompt.html",
+        "copy_ready_command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'more \"Semiconductors\" \"handoff question: 먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?\"'",
         "requires_separate_approval": false,
         "external_effect_performed": false,
         "host_write_performed": false
       },
       {
         "kind": "council_warning",
-        "id": "DH-COUNCIL",
+        "id": "SC-DH-COUNCIL",
         "title": "analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.",
-        "why": "council.html에서 역할별 caution/blocker를 먼저 읽고 오늘 결론 강도를 낮추세요.",
+        "why": "역할별 council 중 어떤 역할이 오늘 결론을 가장 약하게 만들었나요?",
         "source": "analyst_council",
-        "status": "unresolved",
-        "href": "reports/product/handoff.html",
-        "copy_ready_command": "more \"analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.\" \"내일 이어서 확인\"",
+        "status": "study_closure",
+        "href": "reports/product/council.html",
+        "copy_ready_command": "PYTHONPATH=src python3 -m mybroker appliance council-response-apply 'more \"Semiconductors\" \"council: 역할별 caution 카드와 다음 질문을 먼저 읽고 review-response-apply로 피드백을 남깁니다.\"'",
+        "requires_separate_approval": false,
+        "external_effect_performed": false,
+        "host_write_performed": false
+      },
+      {
+        "kind": "memory_warning",
+        "id": "SC-DH-MEMORY",
+        "title": "누적 기억 품질 경고가 남아 있습니다.",
+        "why": "AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?",
+        "source": "memory_audit",
+        "status": "study_closure",
+        "href": "reports/product/memory-audit.html",
+        "copy_ready_command": "PYTHONPATH=src python3 -m mybroker appliance review-response-apply 'confusing \"Semiconductors\" \"memory: AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?\"'",
         "requires_separate_approval": false,
         "external_effect_performed": false,
         "host_write_performed": false
       }
     ],
-    "operator_rule": "먼저 approval gate를 읽되, 실행은 별도 승인 전까지 하지 않습니다. 그 다음 unresolved handoff와 local task를 짧은 응답으로 닫습니다.",
+    "operator_rule": "action inbox: 먼저 approval gate를 읽되, 실행은 별도 승인 전까지 하지 않습니다. 그 다음 study closure 질문을 읽고 local 응답 한 줄로 내일 루프에 넘깁니다.",
     "phone_links": {
       "morning": "reports/product/morning.html",
       "handoff": "reports/product/handoff.html",
@@ -501,7 +515,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T23:36:17.589342+00:00"
+      "generated_at": "2026-06-05T23:49:01.522514+00:00"
     },
     {
       "name": "agenda",
@@ -509,7 +523,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T23:36:17.591702+00:00"
+      "generated_at": "2026-06-05T23:49:01.524954+00:00"
     },
     {
       "name": "morning",
@@ -517,7 +531,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-05T23:36:17.629528+00:00"
+      "generated_at": "2026-06-05T23:49:01.566786+00:00"
     },
     {
       "name": "readiness",
@@ -525,7 +539,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T23:36:17.641593+00:00"
+      "generated_at": "2026-06-05T23:49:01.579046+00:00"
     },
     {
       "name": "handoff",
@@ -533,7 +547,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-05T23:36:17.635620+00:00"
+      "generated_at": "2026-06-05T23:49:01.573591+00:00"
     },
     {
       "name": "handoff_apply",
@@ -549,7 +563,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T23:36:17.634894+00:00"
+      "generated_at": "2026-06-05T23:49:01.572884+00:00"
     },
     {
       "name": "run_trace",
@@ -557,7 +571,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T23:36:17.624465+00:00"
+      "generated_at": "2026-06-05T23:49:01.560788+00:00"
     },
     {
       "name": "task_ledger",
@@ -565,7 +579,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T23:36:17.609519+00:00"
+      "generated_at": "2026-06-05T23:49:01.547139+00:00"
     },
     {
       "name": "scheduler",
@@ -573,7 +587,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-05T23:36:17.623601+00:00"
+      "generated_at": "2026-06-05T23:49:01.559394+00:00"
     },
     {
       "name": "phone_access",
@@ -581,7 +595,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-05T23:36:17.587120+00:00"
+      "generated_at": "2026-06-05T23:49:01.518009+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -589,7 +603,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-05T23:36:17.640908+00:00"
+      "generated_at": "2026-06-05T23:49:01.578479+00:00"
     },
     {
       "name": "notification",
@@ -597,7 +611,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-05T23:36:17.612165+00:00"
+      "generated_at": "2026-06-05T23:49:01.549888+00:00"
     },
     {
       "name": "memory_query",
@@ -605,7 +619,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-05T23:36:17.607106+00:00"
+      "generated_at": "2026-06-05T23:49:01.544379+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -613,7 +627,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-05T23:36:17.627777+00:00"
+      "generated_at": "2026-06-05T23:49:01.564572+00:00"
     }
   ],
   "external_effect_performed": false,

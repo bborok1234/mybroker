@@ -373,6 +373,10 @@ write host scheduler state, use credentials, or touch account flows.
 already present. The ledger records `local_completion` evidence for each task and marks the task
 `completed` only from local artifact presence or an explicit local response; it never runs the
 suggested task command as part of status inference.
+`appliance handoff` also emits a `study_closure` queue. This keeps unresolved questions, council
+cautions, and memory warnings from becoming vague backlog: each item gets a beginner question,
+done-when criterion, linked local surface, and copy-ready local response that can influence the
+next run without fetching live data or executing tasks.
 When unresolved items remain, `handoff.html` now suggests copy-ready `handoff-response-apply`
 commands so the phone operator can close the loop without remembering separate review/task command
 grammars.

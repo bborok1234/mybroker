@@ -1,6 +1,6 @@
 {
   "schema_version": "personal_memory_query.v1",
-  "generated_at": "2026-06-05T23:36:17.607106+00:00",
+  "generated_at": "2026-06-05T23:49:01.544379+00:00",
   "query": "Semiconductors",
   "status": "matched",
   "recall_quality": {
@@ -69,7 +69,7 @@
   "matched_archives": [
     {
       "run_id": "daily-research",
-      "generated_at": "2026-06-05T23:36:17.600538+00:00",
+      "generated_at": "2026-06-05T23:49:01.536467+00:00",
       "score": 0.0,
       "archive_dir": "reports/archive/2026-06-05",
       "artifacts": {
