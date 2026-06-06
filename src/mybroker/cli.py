@@ -82,6 +82,8 @@ from mybroker.appliance import (
     DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT,
     DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE,
+    DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT,
+    DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE,
     DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT,
     DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE,
     DEFAULT_TODAY_OUTPUT,
@@ -133,6 +135,7 @@ from mybroker.appliance import (
     write_scheduler_status,
     write_source_refresh_brief,
     write_source_freshness_intake,
+    write_source_refresh_execution_brief,
     write_handoff_study_resolution,
     write_today_surface,
     validate_analyst_journal_file,
@@ -162,6 +165,7 @@ from mybroker.appliance import (
     validate_scheduler_operations_file,
     validate_source_refresh_brief_file,
     validate_source_freshness_intake_file,
+    validate_source_refresh_execution_brief_file,
     validate_handoff_study_resolution_file,
     validate_phone_access_verify_file,
 )
@@ -429,6 +433,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_source_refresh_brief_parser.add_argument("source_refresh_brief_path")
     validate_source_freshness_intake_parser = subcommands.add_parser("validate-source-freshness-intake", help="Validate a source_freshness_intake.v1 artifact.")
     validate_source_freshness_intake_parser.add_argument("source_freshness_intake_path")
+    validate_source_refresh_execution_parser = subcommands.add_parser("validate-source-refresh-execution-brief", help="Validate a source_refresh_execution_brief.v1 artifact.")
+    validate_source_refresh_execution_parser.add_argument("source_refresh_execution_brief_path")
 
     brief_parser = subcommands.add_parser("brief", help="Build a user-facing MyBroker product brief from scenario and verdict artifacts.")
     brief_parser.add_argument("--scenario", required=True, help="scenario_report.v1 artifact path.")
@@ -563,6 +569,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_home_parser.add_argument("--phone-access-verify", default=DEFAULT_PHONE_ACCESS_VERIFY_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--notification", default=DEFAULT_NOTIFICATION_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--source-freshness-intake", default=DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--source-refresh-execution", default=DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--memory-query", default=DEFAULT_MEMORY_QUERY_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--learning-ledger", default=DEFAULT_LEARNING_LEDGER_OUTPUT.as_posix())
@@ -595,6 +602,13 @@ def main(argv: list[str] | None = None) -> int:
     appliance_source_freshness_intake_parser.add_argument("--refresh-live-preflight", default=DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix())
     appliance_source_freshness_intake_parser.add_argument("--artifact-output", default=DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT.as_posix())
     appliance_source_freshness_intake_parser.add_argument("--output", default=DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE.as_posix())
+    appliance_source_refresh_execution_parser = appliance_subcommands.add_parser("source-refresh-execution", help="Render the final-confirmation proof before any live source refresh execution.")
+    appliance_source_refresh_execution_parser.add_argument("--source-refresh-brief", default=DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT.as_posix())
+    appliance_source_refresh_execution_parser.add_argument("--refresh-live-gate", default=DEFAULT_SOURCE_REFRESH_LIVE_GATE_OUTPUT.as_posix())
+    appliance_source_refresh_execution_parser.add_argument("--refresh-live-run", default=DEFAULT_SOURCE_REFRESH_LIVE_RUN_OUTPUT.as_posix())
+    appliance_source_refresh_execution_parser.add_argument("--refresh-live-preflight", default=DEFAULT_SOURCE_REFRESH_LIVE_PREFLIGHT_OUTPUT.as_posix())
+    appliance_source_refresh_execution_parser.add_argument("--artifact-output", default=DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT.as_posix())
+    appliance_source_refresh_execution_parser.add_argument("--output", default=DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE.as_posix())
     appliance_source_refresh_response_parser = appliance_subcommands.add_parser("source-refresh-response", help="Apply a source refresh approval response into local proof artifacts without live network execution.")
     appliance_source_refresh_response_parser.add_argument("response", help='Example: approve live_network_refresh live_network_refresh')
     appliance_source_refresh_response_parser.add_argument("--scout", default=DEFAULT_DAILY_SCOUT_OUTPUT.as_posix())
@@ -609,6 +623,8 @@ def main(argv: list[str] | None = None) -> int:
     appliance_source_refresh_response_parser.add_argument("--confirm-live-network", action="store_true", help="Record live-network confirmation for preflight only; does not execute live network.")
     appliance_source_refresh_response_parser.add_argument("--artifact-output", default=DEFAULT_SOURCE_REFRESH_BRIEF_OUTPUT.as_posix())
     appliance_source_refresh_response_parser.add_argument("--output", default=DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--source-refresh-execution-output", default=DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT.as_posix())
+    appliance_source_refresh_response_parser.add_argument("--source-refresh-execution-surface", default=DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE.as_posix())
     appliance_readiness_parser = appliance_subcommands.add_parser("readiness", help="Render daily freshness and next-run readiness for phone review.")
     appliance_readiness_parser.add_argument("--project-root", default=".")
     appliance_readiness_parser.add_argument("--freshness-hours", type=int, default=24)
@@ -1400,6 +1416,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-source-refresh-execution-brief":
+        errors = validate_source_refresh_execution_brief_file(args.source_refresh_execution_brief_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-vault":
         errors = validate_knowledge_vault_compile_file(args.vault_path)
         if errors:
@@ -1717,6 +1740,7 @@ def main(argv: list[str] | None = None) -> int:
                 phone_access_verify_path=args.phone_access_verify,
                 notification_path=args.notification,
                 source_freshness_intake_path=args.source_freshness_intake,
+                source_refresh_execution_brief_path=args.source_refresh_execution,
                 memory_query_path=args.memory_query,
                 memory_audit_path=args.memory_audit,
                 learning_ledger_path=args.learning_ledger,
@@ -1808,6 +1832,24 @@ def main(argv: list[str] | None = None) -> int:
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
+        if args.appliance_command == "source-refresh-execution":
+            path = write_source_refresh_execution_brief(
+                source_refresh_brief_path=args.source_refresh_brief,
+                refresh_live_gate_path=args.refresh_live_gate,
+                refresh_live_run_path=args.refresh_live_run,
+                refresh_live_preflight_path=args.refresh_live_preflight,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "source_refresh_execution": path.as_posix(),
+                "artifact": args.artifact_output,
+                "status": payload["status"],
+                "preflight_status": payload["summary"]["preflight_status"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
         if args.appliance_command == "source-refresh-response":
             live_run = build_source_refresh_live_run(
                 live_gate_path=args.refresh_live_gate,
@@ -1834,12 +1876,22 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=args.artifact_output,
                 surface_output_path=args.output,
             )
+            execution_surface = write_source_refresh_execution_brief(
+                source_refresh_brief_path=args.artifact_output,
+                refresh_live_gate_path=args.refresh_live_gate,
+                refresh_live_run_path=args.refresh_live_run_output,
+                refresh_live_preflight_path=args.refresh_live_preflight_output,
+                artifact_output_path=args.source_refresh_execution_output,
+                surface_output_path=args.source_refresh_execution_surface,
+            )
             brief_payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
             print(json.dumps({
                 "source_refresh_response": "applied",
                 "source_refresh_live_run": args.refresh_live_run_output,
                 "source_refresh_live_preflight": args.refresh_live_preflight_output,
                 "source_refresh": path.as_posix(),
+                "source_refresh_execution": execution_surface.as_posix(),
+                "source_refresh_execution_artifact": args.source_refresh_execution_output,
                 "artifact": args.artifact_output,
                 "approval_status": live_run["approval_status"],
                 "live_run_status": live_run["execution"]["status"],
@@ -2674,6 +2726,8 @@ def main(argv: list[str] | None = None) -> int:
             source_refresh_brief_surface_path = DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE
             source_freshness_intake_artifact_path = DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT
             source_freshness_intake_surface_path = DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE
+            source_refresh_execution_artifact_path = DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_OUTPUT
+            source_refresh_execution_surface_path = DEFAULT_SOURCE_REFRESH_EXECUTION_BRIEF_SURFACE
             scheduler_operations_artifact_path = DEFAULT_SCHEDULER_OPERATIONS_OUTPUT
             scheduler_operations_surface_path = DEFAULT_SCHEDULER_OPERATIONS_SURFACE
             daily_home_artifact_path = DEFAULT_DAILY_HOME_OUTPUT
@@ -2764,6 +2818,14 @@ def main(argv: list[str] | None = None) -> int:
                 refresh_live_preflight_path=refresh_live_preflight_path,
                 artifact_output_path=source_freshness_intake_artifact_path,
                 surface_output_path=source_freshness_intake_surface_path,
+            )
+            written_source_refresh_execution = write_source_refresh_execution_brief(
+                source_refresh_brief_path=source_refresh_brief_artifact_path,
+                refresh_live_gate_path=refresh_live_gate_path,
+                refresh_live_run_path=refresh_live_run_path,
+                refresh_live_preflight_path=refresh_live_preflight_path,
+                artifact_output_path=source_refresh_execution_artifact_path,
+                surface_output_path=source_refresh_execution_surface_path,
             )
             written_agenda = write_daily_brief_agenda(
                 scout_path=scout_path,
@@ -3051,6 +3113,7 @@ def main(argv: list[str] | None = None) -> int:
                 surface_output_path=run_trace_surface_path,
                 today_path=written_today,
                 source_freshness_intake_path=source_freshness_intake_artifact_path,
+                source_refresh_execution_brief_path=source_refresh_execution_artifact_path,
                 review_prompt_path=review_prompt_artifact_path,
                 review_effect_path=review_effect_artifact_path,
                 analyst_council_path=analyst_council_artifact_path,
@@ -3171,6 +3234,7 @@ def main(argv: list[str] | None = None) -> int:
                 surface_output_path=run_trace_surface_path,
                 today_path=written_today,
                 source_freshness_intake_path=source_freshness_intake_artifact_path,
+                source_refresh_execution_brief_path=source_refresh_execution_artifact_path,
                 review_prompt_path=review_prompt_artifact_path,
                 review_effect_path=review_effect_artifact_path,
                 analyst_council_path=analyst_council_artifact_path,
@@ -3201,6 +3265,7 @@ def main(argv: list[str] | None = None) -> int:
                 phone_access_path=phone_access_path,
                 notification_path=notification_path,
                 source_freshness_intake_path=source_freshness_intake_artifact_path,
+                source_refresh_execution_brief_path=source_refresh_execution_artifact_path,
                 memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
                 learning_ledger_path=learning_ledger_artifact_path,
@@ -3235,6 +3300,7 @@ def main(argv: list[str] | None = None) -> int:
                 phone_access_path=phone_access_path,
                 notification_path=notification_path,
                 source_freshness_intake_path=source_freshness_intake_artifact_path,
+                source_refresh_execution_brief_path=source_refresh_execution_artifact_path,
                 memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
                 learning_ledger_path=learning_ledger_artifact_path,
@@ -3260,6 +3326,8 @@ def main(argv: list[str] | None = None) -> int:
                     "source_refresh_brief_surface": written_source_refresh_brief,
                     "source_freshness_intake": source_freshness_intake_artifact_path,
                     "source_freshness_intake_surface": written_source_freshness_intake,
+                    "source_refresh_execution_brief": source_refresh_execution_artifact_path,
+                    "source_refresh_execution_surface": written_source_refresh_execution,
                     "scheduler_operations": scheduler_operations_artifact_path,
                     "scheduler_operations_surface": written_scheduler_operations,
                     "daily_readiness": readiness_artifact_path,
@@ -3338,6 +3406,8 @@ def main(argv: list[str] | None = None) -> int:
                 "source_refresh_brief_surface": written_source_refresh_brief.as_posix(),
                 "source_freshness_intake": source_freshness_intake_artifact_path.as_posix(),
                 "source_freshness_intake_surface": written_source_freshness_intake.as_posix(),
+                "source_refresh_execution_brief": source_refresh_execution_artifact_path.as_posix(),
+                "source_refresh_execution_surface": written_source_refresh_execution.as_posix(),
                 "scheduler_operations": scheduler_operations_artifact_path.as_posix(),
                 "scheduler_operations_surface": written_scheduler_operations.as_posix(),
                 "evidence_catalog": evidence_path.as_posix(),

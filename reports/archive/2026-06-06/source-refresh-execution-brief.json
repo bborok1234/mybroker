@@ -1,0 +1,104 @@
+{
+  "schema_version": "source_refresh_execution_brief.v1",
+  "generated_at": "2026-06-06T03:01:57.698308+00:00",
+  "status": "approval_required",
+  "summary": {
+    "approval_status": "missing",
+    "live_run_status": "not_requested",
+    "preflight_status": "blocked",
+    "source_count": 3,
+    "proposed_command_count": 1,
+    "blocker_count": 5,
+    "warning_count": 0,
+    "external_effect_performed": false
+  },
+  "execution_readiness": {
+    "approval_status": "missing",
+    "live_run_status": "not_requested",
+    "preflight_status": "blocked",
+    "requested_execution": {
+      "intend_execute": false,
+      "confirm_live_network": false
+    },
+    "source_ids": [
+      "gdelt-live",
+      "stooq-live",
+      "sec-sample"
+    ],
+    "proposed_commands": [
+      "PYTHONPATH=src python3 -m mybroker ingest-public-evidence --source gdelt-live --source stooq-live --source sec-sample --output reports/evidence/live-evidence-catalog.json"
+    ],
+    "blockers": [
+      "approval_not_approved",
+      "live_run_status_not_requested",
+      "execute_intent_missing",
+      "confirm_live_network_missing",
+      "live_network_refresh_not_approved"
+    ],
+    "warnings": [],
+    "evidence_output_path": "reports/evidence/live-evidence-catalog.json"
+  },
+  "final_confirmation": {
+    "required": false,
+    "run_command_preview": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-execution",
+    "operator_must_confirm": [
+      "이 명령은 기존 로컬 artifact만 읽고 확인 화면을 다시 생성합니다.",
+      "approval/preflight가 통과하기 전까지 live network 실행 명령을 노출하지 않습니다.",
+      "실행 결과는 research evidence artifact일 뿐 투자 추천이나 주문이 아닙니다."
+    ],
+    "agent_will_not_do": [
+      "paid API",
+      "credentialed source",
+      "notification send",
+      "host scheduler write",
+      "account access",
+      "order execution",
+      "personalized/discretionary advice"
+    ]
+  },
+  "stop_conditions": [
+    "approval_status가 approved가 아니면 실행하지 않습니다.",
+    "preflight status가 passed가 아니면 실행하지 않습니다.",
+    "proposed command 안에 알림, host write, credential, account, order 관련 fragment가 보이면 실행하지 않습니다.",
+    "source plan, scout, evidence가 바뀌었으면 approval/preflight를 다시 생성합니다."
+  ],
+  "rollback_plan": [
+    "생성된 live evidence artifact를 삭제하거나 archive에서 제외하면 로컬 상태를 되돌릴 수 있습니다.",
+    "실행 후 daily brief가 약해지면 source freshness intake와 run trace를 비교해 해당 source를 보류합니다.",
+    "네트워크 실패는 실패 artifact로 남기고 같은 run에서 재시도하지 않습니다."
+  ],
+  "next_local_steps": [
+    "실행하지 않을 때: source-refresh-intake와 handoff-study-resolution을 읽고 어떤 근거가 약한지 공부용 응답으로 남깁니다.",
+    "승인만 기록할 때: appliance source-refresh-response 명령으로 live-run/preflight proof를 갱신합니다.",
+    "preflight가 passed일 때만: 별도 최종 확인 후 source-refresh-live-run --execute --confirm-live-network를 사용합니다.",
+    "실행 후: live evidence validator를 통과시키고 appliance run --dry-run으로 daily brief에 흡수합니다."
+  ],
+  "input_artifacts": {
+    "source_refresh_brief": "reports/runtime/source-refresh-brief.json",
+    "source_refresh_live_gate": "reports/daily/source-refresh-live-gate.json",
+    "source_refresh_live_run": "reports/daily/source-refresh-live-run.json",
+    "source_refresh_live_preflight": "reports/daily/source-refresh-live-preflight.json"
+  },
+  "phone_links": {
+    "source_refresh_execution": "reports/product/source-refresh-execution.html",
+    "source_freshness_intake": "reports/product/source-freshness-intake.html",
+    "source_refresh": "reports/product/source-refresh.html",
+    "daily_home": "reports/product/daily-home.html",
+    "readiness": "reports/product/readiness.html",
+    "trace": "reports/product/run-trace.html"
+  },
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "reads_local_artifacts_only",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_paid_api",
+    "no_account_access",
+    "no_order_execution",
+    "execution_requires_separate_final_confirmation"
+  ]
+}

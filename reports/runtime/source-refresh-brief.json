@@ -1,6 +1,6 @@
 {
   "schema_version": "source_refresh_brief.v1",
-  "generated_at": "2026-06-06T02:34:38.231147+00:00",
+  "generated_at": "2026-06-06T03:01:57.697516+00:00",
   "status": "approval_required",
   "recommended_topic": {
     "topic_id": "semiconductors",
@@ -155,9 +155,9 @@
     {
       "source_name": "GDELT",
       "source_id": "gdelt",
-      "freshness_status": "sample_cache",
+      "freshness_status": "live_error_fallback_sample",
       "relevance_label": "strong",
-      "relevance_score": "0.97",
+      "relevance_score": "0.98",
       "item_count": "2",
       "trust_state": "sample_or_fallback",
       "operator_rule": "학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다."
@@ -175,9 +175,9 @@
     {
       "source_name": "Stooq",
       "source_id": "stooq",
-      "freshness_status": "sample_cache",
+      "freshness_status": "live_error_fallback_sample",
       "relevance_label": "strong",
-      "relevance_score": "0.78",
+      "relevance_score": "0.81",
       "item_count": "1",
       "trust_state": "sample_or_fallback",
       "operator_rule": "학습용 맥락으로만 읽고, 오늘의 최신 시장 판단에는 낮은 확신으로 반영합니다."

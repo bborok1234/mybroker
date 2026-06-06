@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T02:34:38.297482+00:00",
+  "generated_at": "2026-06-06T03:01:57.766752+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -22,15 +22,18 @@
     "source_freshness_intake_status": "approval_packet_ready",
     "source_freshness_blocked_live_count": 2,
     "source_freshness_weak_count": 3,
+    "source_refresh_execution_status": "approval_required",
+    "source_refresh_execution_preflight": "blocked",
+    "source_refresh_execution_blockers": 5,
     "handoff_resolution_status": "review",
     "handoff_resolution_ready_count": 1,
     "handoff_resolution_blocked_count": 3,
     "trace_status": "ready",
-    "trace_fresh_count": 24,
+    "trace_fresh_count": 25,
     "trace_weak_spot_count": 0,
     "pattern_scout_candidate": "pattern-freshness-intake",
     "pattern_scout_proof_status": "passed",
-    "action_item_count": 5
+    "action_item_count": 6
   },
   "daily_route": [
     {
@@ -75,6 +78,14 @@
     },
     {
       "step": 6,
+      "label": "live refresh 실행 전 확인",
+      "title": "source refresh execution",
+      "why": "승인, preflight, stop 조건, rollback, 실행 후 흡수 경로를 live network 없이 확인합니다.",
+      "href": "reports/product/source-refresh-execution.html",
+      "status": "approval_required"
+    },
+    {
+      "step": 7,
       "label": "오늘 결과 영향 경로 확인",
       "title": "run trace",
       "why": "오늘 scout, 근거, memory, review, pattern gate 중 무엇이 결과를 만들었는지 compact trace로 확인합니다.",
@@ -82,7 +93,7 @@
       "status": "ready"
     },
     {
-      "step": 7,
+      "step": 8,
       "label": "운영 상태 확인",
       "title": "morning control",
       "why": "막힌 승인, 오늘 task, runtime 상태를 확인합니다.",
@@ -90,7 +101,7 @@
       "status": "operator_review"
     },
     {
-      "step": 8,
+      "step": 9,
       "label": "신뢰도 확인",
       "title": "readiness",
       "why": "오늘 파일이 fresh한지, 빠진 필수 artifact가 있는지 확인합니다.",
@@ -98,7 +109,7 @@
       "status": "ready"
     },
     {
-      "step": 9,
+      "step": 10,
       "label": "남은 질문 공부로 닫기",
       "title": "handoff study resolution",
       "why": "전날에서 넘어온 질문을 답변 후보, 근거, 종료 조건, 복사 응답으로 정리합니다.",
@@ -106,7 +117,7 @@
       "status": "review"
     },
     {
-      "step": 10,
+      "step": 11,
       "label": "전날 맥락 닫기",
       "title": "handoff",
       "why": "남은 항목 4개를 보고 필요한 응답을 복사합니다.",
@@ -114,7 +125,7 @@
       "status": "review"
     },
     {
-      "step": 11,
+      "step": 12,
       "label": "응답 반영 확인",
       "title": "handoff apply proof",
       "why": "복사한 응답이 review memory 또는 task state에 반영됐는지 확인합니다.",
@@ -122,7 +133,7 @@
       "status": "applied"
     },
     {
-      "step": 12,
+      "step": 13,
       "label": "기억 품질 확인",
       "title": "memory audit",
       "why": "누적 기억, archive, source weakness를 확인하고 다음 질문을 고릅니다.",
@@ -130,7 +141,7 @@
       "status": "ready"
     },
     {
-      "step": 13,
+      "step": 14,
       "label": "새 작업 방식 증거 확인",
       "title": "pattern dry-run proof",
       "why": "새 에이전트 운영 패턴을 실제 루프에 더 깊게 넣어도 되는지 로컬 증거로 확인합니다.",
@@ -325,8 +336,8 @@
     "proof_status": "passed",
     "status": "ready",
     "run_id": "daily-research",
-    "step_count": 24,
-    "fresh_count": 24,
+    "step_count": 25,
+    "fresh_count": 25,
     "missing_required_count": 0,
     "stale_count": 0,
     "external_effect_flag_count": 0,
@@ -343,7 +354,7 @@
       },
       {
         "label": "누적 실행",
-        "value": "63회",
+        "value": "66회",
         "source": "topic_memory"
       },
       {
@@ -365,8 +376,8 @@
       "scenario_report",
       "verdict",
       "source_refresh_brief",
-      "task_ledger",
-      "daily_review"
+      "source_refresh_execution_brief",
+      "task_ledger"
     ],
     "surface": "reports/product/run-trace.html",
     "external_effect_performed": false,
@@ -382,6 +393,24 @@
     "copy_ready_response": "approve live_network_refresh live_network_refresh",
     "next_action": "필요하면 이 응답을 복사해 local approval proof를 만드세요: approve live_network_refresh live_network_refresh",
     "surface": "reports/product/source-freshness-intake.html",
+    "external_effect_performed": false,
+    "host_write_performed": false
+  },
+  "source_refresh_execution_adoption": {
+    "pattern_candidate_id": "pattern-source-refresh-final-confirmation",
+    "status": "approval_required",
+    "approval_status": "missing",
+    "live_run_status": "not_requested",
+    "preflight_status": "blocked",
+    "blocker_count": 5,
+    "final_confirmation_required": false,
+    "stop_conditions": [
+      "approval_status가 approved가 아니면 실행하지 않습니다.",
+      "preflight status가 passed가 아니면 실행하지 않습니다.",
+      "proposed command 안에 알림, host write, credential, account, order 관련 fragment가 보이면 실행하지 않습니다.",
+      "source plan, scout, evidence가 바뀌었으면 approval/preflight를 다시 생성합니다."
+    ],
+    "surface": "reports/product/source-refresh-execution.html",
     "external_effect_performed": false,
     "host_write_performed": false
   },
@@ -441,12 +470,14 @@
       "pattern_scout_count": 1,
       "pattern_scout_proof_ready_count": 1,
       "source_freshness_intake_count": 1,
+      "source_refresh_execution_count": 1,
+      "source_refresh_execution_blocker_count": 5,
       "handoff_resolution_count": 1,
       "handoff_resolution_ready_count": 1,
       "handoff_resolution_blocked_count": 3,
       "carried_task_count": 0,
       "ready_task_count": 0,
-      "priority_item_count": 5
+      "priority_item_count": 6
     },
     "priority_items": [
       {
@@ -489,6 +520,19 @@
         "host_write_performed": false
       },
       {
+        "kind": "source_refresh_execution",
+        "id": "source-refresh-execution",
+        "title": "live refresh 실행 전 최종 확인",
+        "why": "approval missing, preflight blocked, blockers 5개를 확인합니다.",
+        "source": "source_refresh_execution_brief",
+        "status": "approval_required",
+        "href": "reports/product/source-refresh-execution.html",
+        "copy_ready_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-execution",
+        "requires_separate_approval": false,
+        "external_effect_performed": false,
+        "host_write_performed": false
+      },
+      {
         "kind": "pattern_scout",
         "id": "pattern-freshness-intake",
         "title": "pattern freshness intake before new runtime authority",
@@ -524,7 +568,8 @@
       "task_ledger": "reports/product/task-ledger.html",
       "pattern_radar": "reports/product/pattern-radar.html",
       "pattern_dry_run": "reports/product/pattern-dry-run.html",
-      "source_freshness_intake": "reports/product/source-freshness-intake.html"
+      "source_freshness_intake": "reports/product/source-freshness-intake.html",
+      "source_refresh_execution": "reports/product/source-refresh-execution.html"
     },
     "external_effect_performed": false,
     "host_write_performed": false
@@ -582,6 +627,7 @@
     "memory_audit": "reports/product/memory-audit.html",
     "learning": "reports/product/learning.html",
     "source_freshness_intake": "reports/product/source-freshness-intake.html",
+    "source_refresh_execution": "reports/product/source-refresh-execution.html",
     "pattern_radar": "reports/product/pattern-radar.html",
     "pattern_dry_run": "reports/product/pattern-dry-run.html",
     "trace": "reports/product/run-trace.html",
@@ -610,7 +656,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T02:34:38.229611+00:00"
+      "generated_at": "2026-06-06T03:01:57.695967+00:00"
     },
     {
       "name": "agenda",
@@ -618,7 +664,7 @@
       "exists": true,
       "schema_version": "daily_brief_agenda.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T02:34:38.232864+00:00"
+      "generated_at": "2026-06-06T03:01:57.699029+00:00"
     },
     {
       "name": "morning",
@@ -626,7 +672,7 @@
       "exists": true,
       "schema_version": "morning_control_packet.v1",
       "status": "operator_review",
-      "generated_at": "2026-06-06T02:34:38.275469+00:00"
+      "generated_at": "2026-06-06T03:01:57.745672+00:00"
     },
     {
       "name": "readiness",
@@ -634,7 +680,7 @@
       "exists": true,
       "schema_version": "daily_readiness.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:34:38.294549+00:00"
+      "generated_at": "2026-06-06T03:01:57.763738+00:00"
     },
     {
       "name": "handoff",
@@ -642,7 +688,7 @@
       "exists": true,
       "schema_version": "daily_handoff.v1",
       "status": "review",
-      "generated_at": "2026-06-06T02:34:38.282612+00:00"
+      "generated_at": "2026-06-06T03:01:57.752530+00:00"
     },
     {
       "name": "handoff_study_resolution",
@@ -650,7 +696,7 @@
       "exists": true,
       "schema_version": "handoff_study_resolution.v1",
       "status": "review",
-      "generated_at": "2026-06-06T02:34:38.283551+00:00"
+      "generated_at": "2026-06-06T03:01:57.753499+00:00"
     },
     {
       "name": "handoff_apply",
@@ -666,7 +712,7 @@
       "exists": true,
       "schema_version": "daily_run_ledger.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:34:38.281807+00:00"
+      "generated_at": "2026-06-06T03:01:57.751667+00:00"
     },
     {
       "name": "run_trace",
@@ -674,7 +720,7 @@
       "exists": true,
       "schema_version": "local_run_trace.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:34:38.284245+00:00"
+      "generated_at": "2026-06-06T03:01:57.754162+00:00"
     },
     {
       "name": "task_ledger",
@@ -682,7 +728,7 @@
       "exists": true,
       "schema_version": "personal_analyst_task_ledger.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T02:34:38.258403+00:00"
+      "generated_at": "2026-06-06T03:01:57.717931+00:00"
     },
     {
       "name": "scheduler",
@@ -690,7 +736,7 @@
       "exists": true,
       "schema_version": "local_scheduler_operations.v1",
       "status": "activation_ready",
-      "generated_at": "2026-06-06T02:34:38.267713+00:00"
+      "generated_at": "2026-06-06T03:01:57.738431+00:00"
     },
     {
       "name": "phone_access",
@@ -698,7 +744,7 @@
       "exists": true,
       "schema_version": "phone_access_plan.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T02:34:38.226036+00:00"
+      "generated_at": "2026-06-06T03:01:46.427228+00:00"
     },
     {
       "name": "phone_access_verify",
@@ -706,7 +752,7 @@
       "exists": true,
       "schema_version": "phone_access_verify.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:34:38.293558+00:00"
+      "generated_at": "2026-06-06T03:01:57.763052+00:00"
     },
     {
       "name": "notification",
@@ -714,7 +760,7 @@
       "exists": true,
       "schema_version": "notification_delivery.v1",
       "status": "dry_run_ready",
-      "generated_at": "2026-06-06T02:34:38.261745+00:00"
+      "generated_at": "2026-06-06T03:01:57.720695+00:00"
     },
     {
       "name": "memory_query",
@@ -722,7 +768,7 @@
       "exists": true,
       "schema_version": "personal_memory_query.v1",
       "status": "matched",
-      "generated_at": "2026-06-06T02:34:38.255136+00:00"
+      "generated_at": "2026-06-06T03:01:57.714937+00:00"
     },
     {
       "name": "memory_audit",
@@ -730,7 +776,7 @@
       "exists": true,
       "schema_version": "personal_memory_audit.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:34:38.254546+00:00"
+      "generated_at": "2026-06-06T03:01:57.714246+00:00"
     },
     {
       "name": "learning_ledger",
@@ -738,7 +784,7 @@
       "exists": true,
       "schema_version": "personal_learning_ledger.v1",
       "status": "review",
-      "generated_at": "2026-06-06T02:34:38.256596+00:00"
+      "generated_at": "2026-06-06T03:01:57.716332+00:00"
     },
     {
       "name": "source_freshness_intake",
@@ -746,7 +792,15 @@
       "exists": true,
       "schema_version": "source_freshness_intake.v1",
       "status": "approval_packet_ready",
-      "generated_at": "2026-06-06T02:34:38.231968+00:00"
+      "generated_at": "2026-06-06T03:01:57.697909+00:00"
+    },
+    {
+      "name": "source_refresh_execution_brief",
+      "path": "reports/runtime/source-refresh-execution-brief.json",
+      "exists": true,
+      "schema_version": "source_refresh_execution_brief.v1",
+      "status": "approval_required",
+      "generated_at": "2026-06-06T03:01:57.698308+00:00"
     },
     {
       "name": "pattern_radar",
@@ -754,7 +808,7 @@
       "exists": true,
       "schema_version": "agent_pattern_radar.v1",
       "status": "ready",
-      "generated_at": "2026-06-06T02:34:38.226811+00:00"
+      "generated_at": "2026-06-06T03:01:46.427464+00:00"
     },
     {
       "name": "pattern_dry_run_proof",
@@ -762,7 +816,7 @@
       "exists": true,
       "schema_version": "pattern_dry_run_proof.v1",
       "status": "proof_ready",
-      "generated_at": "2026-06-06T02:34:38.272955+00:00"
+      "generated_at": "2026-06-06T03:01:57.743392+00:00"
     }
   ],
   "external_effect_performed": false,
