@@ -1,6 +1,6 @@
 {
   "schema_version": "source_refresh_live_preflight.v1",
-  "generated_at": "2026-06-06T04:19:32.405261+00:00",
+  "generated_at": "2026-06-06T04:58:01.242965+00:00",
   "inputs": {
     "live_run_path": "reports/daily/source-refresh-live-run.json",
     "live_gate_path": "reports/daily/source-refresh-live-gate.json",
