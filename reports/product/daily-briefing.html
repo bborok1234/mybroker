@@ -58,6 +58,13 @@ a { color:var(--accent); font-weight:900; text-decoration:none; }
 <div class="grid"><article><span>read</span><strong>읽었음</strong><p>오늘 브리핑을 읽었다는 최소 피드백을 남깁니다.</p><code>PYTHONPATH=src python3 -m mybroker appliance briefing-response-apply &#x27;read &quot;Semiconductors&quot; &quot;Semiconductors 브리핑을 읽었다&quot;&#x27;</code></article><article><span>more</span><strong>더 보기</strong><p>내일도 같은 흐름을 더 높은 우선순위로 보게 합니다.</p><code>PYTHONPATH=src python3 -m mybroker appliance briefing-response-apply &#x27;more &quot;Semiconductors&quot; &quot;Semiconductors 흐름을 더 보고 싶다&quot;&#x27;</code></article><article><span>confusing</span><strong>헷갈림</strong><p>다음 브리프에서 더 쉬운 설명과 추가 근거가 필요하다는 신호를 남깁니다.</p><code>PYTHONPATH=src python3 -m mybroker appliance briefing-response-apply &#x27;confusing &quot;Semiconductors&quot; &quot;Semiconductors 설명이 아직 어렵다&quot;&#x27;</code></article><article><span>skip</span><strong>건너뜀</strong><p>이 주제를 당장은 낮은 우선순위로 내리게 합니다.</p><code>PYTHONPATH=src python3 -m mybroker appliance briefing-response-apply &#x27;skip &quot;Semiconductors&quot; &quot;Semiconductors은 오늘은 건너뛴다&quot;&#x27;</code></article></div>
 </section>
 <section>
+<h2>로컬 inbox로 모으기</h2>
+<p>폰/Shortcuts/메모 앱에서 아래 한 줄들을 로컬 inbox 파일에 쌓아두고, 노트북에서 apply 명령을 실행하면 마지막 유효 답장이 반영됩니다.</p>
+<code>inbox: reports/inbox/briefing-responses.txt</code>
+<code>read &quot;Semiconductors&quot; &quot;Semiconductors 브리핑을 읽었다&quot;</code><code>more &quot;Semiconductors&quot; &quot;Semiconductors 흐름을 더 보고 싶다&quot;</code>
+<code>PYTHONPATH=src python3 -m mybroker appliance briefing-inbox-apply</code>
+</section>
+<section>
 <h2>먼저 열 순서</h2>
 <div class="grid"><article><span>오늘 주제 잡기</span><strong>Semiconductors</strong><p>최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.</p><a href='reports/product/daily-agenda.html'>열기</a></article><article><span>먼저 읽기</span><strong>Semiconductors</strong><p>최근 연결된 공개 근거 4개와 출처군 2개가 있어 시장 흐름을 배우기 좋은 주제입니다.</p><a href='reports/product/today.html'>열기</a></article><article><span>오늘 배운 것 남기기</span><strong>learning ledger</strong><p>오늘 배운 개념, 반복 관찰, 내일 질문을 한 화면에 누적합니다.</p><a href='reports/product/learning.html'>열기</a></article><article><span>과거 기억 먼저 불러오기</span><strong>memory recall</strong><p>Semiconductors에 대해 로컬 vault, archive, memory가 무엇을 기억하는지 먼저 확인합니다.</p><a href='reports/product/memory-query.html'>열기</a></article><article><span>근거 신선도 승인 전 점검</span><strong>source freshness intake</strong><p>sample/cache 근거와 blocked live refresh 후보를 한 화면에서 보고, 승인 범위를 복사 전에 확인합니다.</p><a href='reports/product/source-freshness-intake.html'>열기</a></article></div>
 </section>

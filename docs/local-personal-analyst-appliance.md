@@ -61,6 +61,7 @@ launchd
   -> daily_handoff.v1 + /handoff continuity surface
   -> daily_briefing_packet.v1 + /daily-briefing copy-ready phone/message packet
   -> operator_briefing_response_apply.v1 + /briefing-response-apply reply proof
+  -> operator_briefing_inbox_apply.v1 + /briefing-inbox-apply local inbox proof
   -> notification_delivery.v1 dry-run or sender payload
   -> daily_archive.v1
 ```
@@ -147,6 +148,7 @@ PYTHONPATH=src python3 -m mybroker appliance run-ledger
 PYTHONPATH=src python3 -m mybroker appliance handoff
 PYTHONPATH=src python3 -m mybroker appliance briefing
 PYTHONPATH=src python3 -m mybroker appliance briefing-response-apply 'more "Semiconductors" "오늘 브리핑을 더 보고 싶다"'
+PYTHONPATH=src python3 -m mybroker appliance briefing-inbox-apply
 PYTHONPATH=src python3 -m mybroker appliance query "semiconductor cycle"
 PYTHONPATH=src python3 -m mybroker appliance audit
 PYTHONPATH=src python3 -m mybroker appliance council
@@ -205,6 +207,9 @@ The local loop now writes three memory-facing surfaces:
 - `reports/product/daily-briefing.html`: phone-readable copy-ready daily briefing packet with today's topic, trust status, first links, caveats, and one message suitable for Telegram, iMessage, Slack, or manual paste.
 - `reports/runtime/briefing-response-apply.json`: machine-readable proof that one copied briefing response refreshed review memory, scout, review-effect, daily-home, and daily-briefing.
 - `reports/product/briefing-response-apply.html`: phone-readable proof surface showing whether the briefing reply affected the next local analyst loop.
+- `reports/inbox/briefing-responses.txt`: optional plain local inbox where phone Shortcuts, notes, or copied message replies can append one-line briefing responses.
+- `reports/runtime/briefing-inbox-apply.json`: machine-readable proof that MyBroker read the local inbox, selected the latest valid reply, and applied it through the local briefing response path.
+- `reports/product/briefing-inbox-apply.html`: phone-readable proof surface showing accepted/ignored inbox lines and whether the selected reply refreshed the local analyst loop.
 - `reports/runtime/source-refresh-brief.json`: machine-readable source refresh briefing from refresh plan, apply, live gate, live run, and preflight artifacts.
 - `reports/product/source-refresh.html`: phone-readable source refresh judgment page that shows weak evidence, proposed free/no-key sources, approval state, preflight state, and the next safe action.
 - `reports/runtime/source-freshness-intake.json`: machine-readable approval intake that turns source freshness, sample/cache status, blocked live candidates, stale-context guard, and scoped approval response into one local proof packet.
@@ -262,6 +267,12 @@ briefing response as review memory, regenerates review/scout/effect proof, then 
 daily-home and daily-briefing so the operator can see whether the reply is now part of the loop.
 It does not send a message, poll a messaging inbox, fetch live sources, write host state, use
 credentials, access accounts, execute orders, or make discretionary decisions.
+`briefing-inbox-apply` is the local file inbox version of the same loop. It reads
+`reports/inbox/briefing-responses.txt`, ignores blank/comment/invalid lines, selects the latest
+valid briefing reply, and then applies that reply locally. It is designed for phone Shortcuts or
+manual copy workflows that can append to a synced/local file, but it does not poll Telegram,
+iMessage, Slack, email, or any external inbox, and it does not send messages, fetch sources, write
+host state, use credentials, access accounts, execute orders, or make discretionary decisions.
 `tasks.html` translates that journal into queued work for source_scout, market_mapper, skeptic,
 beginner_tutor, memory_librarian, and publisher roles. It does not execute commands; live network,
 host writes, notification send, credentials, and trading remain behind separate approval gates.

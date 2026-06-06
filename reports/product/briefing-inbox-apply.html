@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Briefing Inbox Apply</title>
+<style>
+:root { --bg:#f8f7f2; --ink:#17202a; --muted:#68727c; --line:#dfe3dc; --paper:#fffef9; --accent:#1f5f8b; --green:#1e6b53; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-x:hidden; }
+main { width:100%; max-width:760px; margin:0 auto; padding:16px; overflow:hidden; }
+.eyebrow,.metric span,article span { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
+h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }
+h2 { margin:0 0 10px; font-size:20px; }
+p,li,small { color:var(--muted); overflow-wrap:anywhere; }
+.hero,.section,article { border:1px solid var(--line); border-radius:8px; background:var(--paper); }
+.hero,.section { padding:16px; margin:14px 0; }
+article { padding:13px; background:white; min-width:0; }
+.status { display:block; margin:8px 0; font-size:28px; line-height:1.1; overflow-wrap:anywhere; }
+.metrics,.links,.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.metric { border:1px solid var(--line); border-radius:8px; background:white; padding:14px; min-width:0; }
+.metric strong,article strong { display:block; font-size:22px; overflow-wrap:anywhere; }
+code { display:block; margin-top:8px; padding:10px; border-radius:8px; background:#edf3f7; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-all; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--accent); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }
+@media (max-width:640px) { main { padding:12px; } h1 { font-size:29px; } .metrics,.links,.grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Briefing Inbox · 2026-06-06 local</span>
+<h1>브리핑 inbox 반영</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">inbox 답장 적용됨</strong>
+<p>로컬 briefing inbox의 마지막 유효 답장이 오늘 브리핑 루프에 반영됐습니다.</p>
+<code>more &quot;Semiconductors&quot; &quot;반도체 흐름을 내일도 더 보고 싶다&quot;</code>
+</section>
+<section class="section">
+<h2>inbox 처리 결과</h2>
+<div class="metrics">
+<article class="metric"><span>lines</span><strong>3</strong><small>reports/inbox/briefing-responses.txt</small></article>
+<article class="metric"><span>accepted</span><strong>2</strong><small>valid replies</small></article>
+<article class="metric"><span>ignored</span><strong>1</strong><small>blank/comment/invalid</small></article>
+<article class="metric"><span>selected</span><strong>3</strong><small>latest valid line</small></article>
+<article class="metric"><span>apply</span><strong>applied</strong><small>briefing-response-apply</small></article>
+<article class="metric"><span>external</span><strong>no</strong><small>local only</small></article>
+</div>
+</section>
+<section class="section">
+<h2>최근 유효 답장</h2>
+<div class="grid"><article><span>line 2</span><strong>reviewed · Semiconductors</strong><code>read &quot;Semiconductors&quot; &quot;오늘 브리핑을 폰에서 읽었다&quot;</code></article><article><span>line 3</span><strong>want_more · Semiconductors</strong><code>more &quot;Semiconductors&quot; &quot;반도체 흐름을 내일도 더 보고 싶다&quot;</code></article></div>
+</section>
+<section class="section">
+<h2>무시된 줄</h2>
+<ul><li>line 1: comment</li></ul>
+</section>
+<section class="section">
+<h2>다음에 열 화면</h2>
+<div class="links"><a href='reports/product/briefing-inbox-apply.html'>briefing_inbox_apply</a><a href='reports/product/briefing-response-apply.html'>briefing_response_apply</a><a href='reports/product/daily-briefing.html'>daily_briefing</a><a href='reports/product/daily-home.html'>daily_home</a><a href='reports/product/review-effect.html'>review_effect</a><a href='reports/product/review.html'>daily_review</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 inbox 반영은 로컬 파일을 읽고 로컬 review memory와 산출물만 갱신합니다. 알림 전송, 메시지 polling, live source 실행, host scheduler write, credential, 계좌 접근, 주문 실행, 일임/개인화 추천은 별도 승인 전까지 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>

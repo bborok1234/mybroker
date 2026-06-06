@@ -59,6 +59,7 @@ OPERATOR_REVIEW_PROMPT_SCHEMA_VERSION = "operator_review_prompt.v1"
 OPERATOR_REVIEW_EFFECT_SCHEMA_VERSION = "operator_review_effect.v1"
 OPERATOR_REVIEW_RESPONSE_APPLY_SCHEMA_VERSION = "operator_review_response_apply.v1"
 OPERATOR_BRIEFING_RESPONSE_APPLY_SCHEMA_VERSION = "operator_briefing_response_apply.v1"
+OPERATOR_BRIEFING_INBOX_APPLY_SCHEMA_VERSION = "operator_briefing_inbox_apply.v1"
 OPERATOR_COUNCIL_RESPONSE_APPLY_SCHEMA_VERSION = "operator_council_response_apply.v1"
 OPERATOR_HANDOFF_RESPONSE_APPLY_SCHEMA_VERSION = "operator_handoff_response_apply.v1"
 MORNING_CONTROL_SCHEMA_VERSION = "morning_control_packet.v1"
@@ -134,6 +135,9 @@ DEFAULT_REVIEW_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/review-response-app
 DEFAULT_REVIEW_RESPONSE_APPLY_SURFACE = Path("reports/product/review-response-apply.html")
 DEFAULT_BRIEFING_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/briefing-response-apply.json")
 DEFAULT_BRIEFING_RESPONSE_APPLY_SURFACE = Path("reports/product/briefing-response-apply.html")
+DEFAULT_BRIEFING_INBOX = Path("reports/inbox/briefing-responses.txt")
+DEFAULT_BRIEFING_INBOX_APPLY_OUTPUT = Path("reports/runtime/briefing-inbox-apply.json")
+DEFAULT_BRIEFING_INBOX_APPLY_SURFACE = Path("reports/product/briefing-inbox-apply.html")
 DEFAULT_COUNCIL_RESPONSE_APPLY_OUTPUT = Path("reports/runtime/council-response-apply.json")
 DEFAULT_COUNCIL_RESPONSE_APPLY_SURFACE = Path("reports/product/council-response-apply.html")
 DEFAULT_HANDOFF_RESPONSES = Path("reports/memory/daily-handoff-responses.jsonl")
@@ -8824,6 +8828,195 @@ def validate_operator_briefing_response_apply_file(path: str | Path) -> list[str
     return validate_operator_briefing_response_apply_payload(load_json(path))
 
 
+def read_briefing_inbox(path: str | Path) -> dict[str, Any]:
+    inbox_path = Path(path)
+    raw_text = inbox_path.read_text(encoding="utf-8") if inbox_path.exists() else ""
+    accepted: list[dict[str, Any]] = []
+    ignored: list[dict[str, Any]] = []
+    for line_number, raw_line in enumerate(raw_text.splitlines(), start=1):
+        text = raw_line.strip()
+        if not text:
+            ignored.append({"line_number": line_number, "reason": "blank"})
+            continue
+        if text.startswith("#"):
+            ignored.append({"line_number": line_number, "reason": "comment", "text": text})
+            continue
+        try:
+            parsed = parse_daily_review_response(text)
+        except ValueError as exc:
+            ignored.append({"line_number": line_number, "reason": "parse_error", "message": str(exc), "text": text})
+            continue
+        if parsed.get("action") not in {"read", "reviewed", "more", "skip", "skipped", "confusing"} or not parsed.get("topic"):
+            ignored.append({"line_number": line_number, "reason": "not_a_briefing_reply", "text": text})
+            continue
+        accepted.append({
+            "line_number": line_number,
+            "text": text,
+            "parsed": parsed,
+        })
+    selected = accepted[-1] if accepted else {}
+    return {
+        "path": inbox_path.as_posix(),
+        "exists": inbox_path.exists(),
+        "line_count": len(raw_text.splitlines()) if raw_text else 0,
+        "accepted_count": len(accepted),
+        "ignored_count": len(ignored),
+        "accepted": accepted,
+        "ignored": ignored,
+        "selected": selected,
+    }
+
+
+def write_operator_briefing_inbox_apply(
+    *,
+    payload: dict[str, Any],
+    artifact_output_path: str | Path = DEFAULT_BRIEFING_INBOX_APPLY_OUTPUT,
+    surface_output_path: str | Path = DEFAULT_BRIEFING_INBOX_APPLY_SURFACE,
+) -> Path:
+    write_json(payload, artifact_output_path)
+    target = Path(surface_output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_operator_briefing_inbox_apply(payload), encoding="utf-8")
+    return target
+
+
+def validate_operator_briefing_inbox_apply_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != OPERATOR_BRIEFING_INBOX_APPLY_SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {payload.get('schema_version')}")
+    if payload.get("status") not in {"applied", "empty", "blocked"}:
+        errors.append("status must be applied, empty, or blocked")
+    if payload.get("external_effect_performed") is not False:
+        errors.append("external_effect_performed must be false")
+    if payload.get("host_write_performed") is not False:
+        errors.append("host_write_performed must be false")
+    if payload.get("policy") != "research_only":
+        errors.append("policy must be research_only")
+    if "local_briefing_inbox_apply_only" not in payload.get("safety_boundary", []):
+        errors.append("safety_boundary must include local_briefing_inbox_apply_only")
+    for field in ["inbox", "selected_response", "briefing_response_apply", "phone_links", "next_action"]:
+        if field not in payload:
+            errors.append(f"missing {field}")
+    inbox = payload.get("inbox", {})
+    if payload.get("status") == "applied" and not inbox.get("accepted_count"):
+        errors.append("applied inbox proof must have accepted responses")
+    selected = payload.get("selected_response", {})
+    if payload.get("status") == "applied" and not selected.get("text"):
+        errors.append("applied inbox proof must include selected_response.text")
+    response_apply = payload.get("briefing_response_apply", {})
+    if payload.get("status") == "applied" and response_apply.get("status") != "applied":
+        errors.append("applied inbox proof must include applied briefing_response_apply")
+    forbidden = [" --send", "--execute", "--confirm-host-write", "launchctl bootstrap"]
+    if any(fragment in selected.get("text", "") for fragment in forbidden):
+        errors.append("selected_response includes gated execution fragment")
+    return errors
+
+
+def validate_operator_briefing_inbox_apply_file(path: str | Path) -> list[str]:
+    return validate_operator_briefing_inbox_apply_payload(load_json(path))
+
+
+def render_operator_briefing_inbox_apply(payload: dict[str, Any]) -> str:
+    inbox = payload.get("inbox", {})
+    selected = payload.get("selected_response", {})
+    response_apply = payload.get("briefing_response_apply", {})
+    status_label = {
+        "applied": "inbox 답장 적용됨",
+        "empty": "적용할 inbox 답장 없음",
+        "blocked": "inbox 답장 적용 차단됨",
+    }.get(payload.get("status", ""), payload.get("status", "unknown"))
+    links = payload.get("phone_links", {})
+    link_cards = "".join(
+        f"<a href='{esc(_relative_href(Path(path)))}'>{esc(label)}</a>"
+        for label, path in links.items()
+        if path
+    )
+    accepted_rows = "".join(
+        "<article>"
+        f"<span>line {esc(row.get('line_number', ''))}</span>"
+        f"<strong>{esc(row.get('parsed', {}).get('status', ''))} · {esc(row.get('parsed', {}).get('topic', ''))}</strong>"
+        f"<code>{esc(row.get('text', ''))}</code>"
+        "</article>"
+        for row in inbox.get("accepted", [])[-5:]
+    ) or "<p>유효한 briefing reply가 없습니다.</p>"
+    ignored_rows = "".join(
+        "<li>"
+        f"line {esc(row.get('line_number', ''))}: {esc(row.get('reason', ''))}"
+        "</li>"
+        for row in inbox.get("ignored", [])[-6:]
+    ) or "<li>무시된 줄 없음</li>"
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Briefing Inbox Apply</title>
+<style>
+:root {{ --bg:#f8f7f2; --ink:#17202a; --muted:#68727c; --line:#dfe3dc; --paper:#fffef9; --accent:#1f5f8b; --green:#1e6b53; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-x:hidden; }}
+main {{ width:100%; max-width:760px; margin:0 auto; padding:16px; overflow:hidden; }}
+.eyebrow,.metric span,article span {{ color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }}
+h1 {{ margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }}
+h2 {{ margin:0 0 10px; font-size:20px; }}
+p,li,small {{ color:var(--muted); overflow-wrap:anywhere; }}
+.hero,.section,article {{ border:1px solid var(--line); border-radius:8px; background:var(--paper); }}
+.hero,.section {{ padding:16px; margin:14px 0; }}
+article {{ padding:13px; background:white; min-width:0; }}
+.status {{ display:block; margin:8px 0; font-size:28px; line-height:1.1; overflow-wrap:anywhere; }}
+.metrics,.links,.grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+.metric {{ border:1px solid var(--line); border-radius:8px; background:white; padding:14px; min-width:0; }}
+.metric strong,article strong {{ display:block; font-size:22px; overflow-wrap:anywhere; }}
+code {{ display:block; margin-top:8px; padding:10px; border-radius:8px; background:#edf3f7; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-all; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }}
+.links a {{ border:1px solid var(--line); border-radius:8px; background:white; padding:12px; color:var(--accent); font-weight:900; text-decoration:none; overflow-wrap:anywhere; }}
+@media (max-width:640px) {{ main {{ padding:12px; }} h1 {{ font-size:29px; }} .metrics,.links,.grid {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Briefing Inbox · {esc(_local_date_label(payload.get('generated_at', '')))}</span>
+<h1>브리핑 inbox 반영</h1>
+</header>
+<section class="hero">
+<span class="eyebrow">판정</span>
+<strong class="status">{esc(status_label)}</strong>
+<p>{esc(payload.get('next_action', ''))}</p>
+<code>{esc(selected.get('text', ''))}</code>
+</section>
+<section class="section">
+<h2>inbox 처리 결과</h2>
+<div class="metrics">
+<article class="metric"><span>lines</span><strong>{esc(inbox.get('line_count', 0))}</strong><small>{esc(inbox.get('path', ''))}</small></article>
+<article class="metric"><span>accepted</span><strong>{esc(inbox.get('accepted_count', 0))}</strong><small>valid replies</small></article>
+<article class="metric"><span>ignored</span><strong>{esc(inbox.get('ignored_count', 0))}</strong><small>blank/comment/invalid</small></article>
+<article class="metric"><span>selected</span><strong>{esc(selected.get('line_number', ''))}</strong><small>latest valid line</small></article>
+<article class="metric"><span>apply</span><strong>{esc(response_apply.get('status', ''))}</strong><small>briefing-response-apply</small></article>
+<article class="metric"><span>external</span><strong>no</strong><small>local only</small></article>
+</div>
+</section>
+<section class="section">
+<h2>최근 유효 답장</h2>
+<div class="grid">{accepted_rows}</div>
+</section>
+<section class="section">
+<h2>무시된 줄</h2>
+<ul>{ignored_rows}</ul>
+</section>
+<section class="section">
+<h2>다음에 열 화면</h2>
+<div class="links">{link_cards}</div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 inbox 반영은 로컬 파일을 읽고 로컬 review memory와 산출물만 갱신합니다. 알림 전송, 메시지 polling, live source 실행, host scheduler write, credential, 계좌 접근, 주문 실행, 일임/개인화 추천은 별도 승인 전까지 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
+"""
+
+
 def render_operator_briefing_response_apply(payload: dict[str, Any]) -> str:
     effect = payload.get("review_effect", {})
     review = payload.get("daily_review", {})
@@ -10473,6 +10666,17 @@ def build_daily_briefing_packet(
         "briefing_goal": "폰에서 바로 읽거나 메시지로 붙여넣을 수 있는 하루의 압축 handoff",
         "copy_ready_message": "\n".join(message_lines),
         "copy_ready_reply_commands": _briefing_reply_commands(selected_topic),
+        "local_inbox": {
+            "path": DEFAULT_BRIEFING_INBOX.as_posix(),
+            "append_examples": [
+                f'read "{selected_topic}" "{selected_topic} 브리핑을 읽었다"',
+                f'more "{selected_topic}" "{selected_topic} 흐름을 더 보고 싶다"',
+            ],
+            "apply_command": "PYTHONPATH=src python3 -m mybroker appliance briefing-inbox-apply",
+            "surface": DEFAULT_BRIEFING_INBOX_APPLY_SURFACE.as_posix(),
+            "external_effect_performed": False,
+            "host_write_performed": False,
+        },
         "recommended_first_link": home_link,
         "reading_route": reading_route,
         "action_items": top_items,
@@ -10516,6 +10720,7 @@ def build_daily_briefing_packet(
             "handoff_study_resolution": home.get("phone_links", {}).get("handoff_study_resolution", DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE.as_posix()),
             "readiness": home.get("phone_links", {}).get("readiness", DEFAULT_DAILY_READINESS_SURFACE.as_posix()),
             "briefing_response_apply": home.get("phone_links", {}).get("briefing_response_apply", DEFAULT_BRIEFING_RESPONSE_APPLY_SURFACE.as_posix()),
+            "briefing_inbox_apply": home.get("phone_links", {}).get("briefing_inbox_apply", DEFAULT_BRIEFING_INBOX_APPLY_SURFACE.as_posix()),
         },
         "safety_boundary": [
             "briefing_packet_reads_existing_artifacts_only",
@@ -10569,6 +10774,14 @@ def validate_daily_briefing_packet_payload(payload: dict[str, Any]) -> list[str]
             errors.append(f"copy_ready_reply_commands[{index}] must call briefing-response-apply")
         if command.get("external_effect_performed") is not False:
             errors.append(f"copy_ready_reply_commands[{index}] external_effect_performed must be false")
+    local_inbox = payload.get("local_inbox", {})
+    if local_inbox:
+        if "briefing-inbox-apply" not in local_inbox.get("apply_command", ""):
+            errors.append("local_inbox.apply_command must call briefing-inbox-apply")
+        if local_inbox.get("external_effect_performed") is not False:
+            errors.append("local_inbox.external_effect_performed must be false")
+        if local_inbox.get("host_write_performed") is not False:
+            errors.append("local_inbox.host_write_performed must be false")
     if not payload.get("reading_route"):
         errors.append("reading_route must not be empty")
     if not payload.get("phone_links", {}).get("daily_home"):
@@ -10594,6 +10807,7 @@ def validate_daily_briefing_packet_file(path: str | Path) -> list[str]:
 
 
 def render_daily_briefing_packet(payload: dict[str, Any]) -> str:
+    local_inbox = payload.get("local_inbox", {})
     route_cards = "".join(
         f"<article><span>{esc(item.get('label', ''))}</span><strong>{esc(item.get('title', ''))}</strong><p>{esc(item.get('why', ''))}</p><a href='{esc(_relative_href(Path(item.get('href', ''))))}'>열기</a></article>"
         for item in payload.get("reading_route", [])
@@ -10610,6 +10824,10 @@ def render_daily_briefing_packet(payload: dict[str, Any]) -> str:
         f"<code>{esc(command.get('command', ''))}</code>"
         "</article>"
         for command in payload.get("copy_ready_reply_commands", [])
+    )
+    inbox_examples = "".join(
+        f"<code>{esc(example)}</code>"
+        for example in local_inbox.get("append_examples", [])
     )
     trust = payload.get("trust", {})
     learning = payload.get("learning", {})
@@ -10666,6 +10884,13 @@ a {{ color:var(--accent); font-weight:900; text-decoration:none; }}
 <section>
 <h2>답장으로 남길 것</h2>
 <div class="grid">{reply_cards}</div>
+</section>
+<section>
+<h2>로컬 inbox로 모으기</h2>
+<p>폰/Shortcuts/메모 앱에서 아래 한 줄들을 로컬 inbox 파일에 쌓아두고, 노트북에서 apply 명령을 실행하면 마지막 유효 답장이 반영됩니다.</p>
+<code>inbox: {esc(local_inbox.get('path', ''))}</code>
+{inbox_examples}
+<code>{esc(local_inbox.get('apply_command', ''))}</code>
 </section>
 <section>
 <h2>먼저 열 순서</h2>

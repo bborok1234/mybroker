@@ -1,15 +1,15 @@
 {
   "schema_version": "operator_briefing_response_apply.v1",
-  "generated_at": "2026-06-06T05:33:48.542031+00:00",
+  "generated_at": "2026-06-06T06:01:14.970108+00:00",
   "status": "applied",
-  "operator_response": "read \"Semiconductors\" \"오늘 브리핑 답장 반영 화면을 최종 확인했다\"",
+  "operator_response": "more \"Semiconductors\" \"반도체 흐름을 내일도 더 보고 싶다\"",
   "parsed_response": {
     "schema_version": "daily_review_response.v1",
-    "recorded_at": "2026-06-06T05:33:48.527681+00:00",
-    "action": "read",
-    "status": "reviewed",
+    "recorded_at": "2026-06-06T06:01:14.962259+00:00",
+    "action": "more",
+    "status": "want_more",
     "topic": "Semiconductors",
-    "note": "오늘 브리핑 답장 반영 화면을 최종 확인했다",
+    "note": "반도체 흐름을 내일도 더 보고 싶다",
     "external_effect_performed": false
   },
   "responses_path": "reports/memory/daily-review-responses.jsonl",
@@ -17,18 +17,18 @@
     "path": "reports/runtime/daily-briefing-packet.json",
     "status": "review",
     "topic": "Semiconductors",
-    "generated_at": "2026-06-06T05:33:00.912002+00:00"
+    "generated_at": "2026-06-06T05:35:02.144643+00:00"
   },
   "daily_review": {
     "path": "reports/memory/daily-review.json",
     "surface": "reports/product/review.html",
-    "response_count": 5,
+    "response_count": 6,
     "signal_count": 1
   },
   "daily_scout": {
     "path": "reports/daily/scout.json",
     "recommended_topic": "Semiconductors",
-    "review_response_count": 5,
+    "review_response_count": 6,
     "review_signal_count": 1
   },
   "review_prompt": {
