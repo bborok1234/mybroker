@@ -38,6 +38,7 @@ from mybroker.appliance import (
     write_daily_review,
     write_daily_run_ledger,
     write_daily_handoff,
+    write_handoff_study_resolution,
     write_drift_review,
     write_operator_review_prompt,
     write_operator_review_effect,
@@ -68,6 +69,7 @@ from mybroker.appliance import (
     validate_daily_review_payload,
     validate_daily_run_ledger_file,
     validate_daily_handoff_file,
+    validate_handoff_study_resolution_file,
     validate_drift_review_file,
     validate_operator_review_prompt_file,
     validate_operator_review_effect_file,
@@ -80,6 +82,7 @@ from mybroker.appliance import (
     validate_source_refresh_brief_file,
     validate_source_refresh_brief_payload,
     validate_source_freshness_intake_file,
+    validate_handoff_study_resolution_payload,
     validate_phone_access_verify_file,
 )
 from mybroker.public_evidence import build_public_evidence_catalog, write_public_evidence_catalog
@@ -1174,6 +1177,8 @@ class LocalApplianceTests(unittest.TestCase):
             run_ledger_errors = validate_daily_run_ledger_file(root / "reports" / "runtime" / "daily-run-ledger.json")
             handoff_payload = json.loads((root / "reports" / "runtime" / "daily-handoff.json").read_text(encoding="utf-8"))
             handoff_errors = validate_daily_handoff_file(root / "reports" / "runtime" / "daily-handoff.json")
+            handoff_resolution_payload = json.loads((root / "reports" / "runtime" / "handoff-study-resolution.json").read_text(encoding="utf-8"))
+            handoff_resolution_errors = validate_handoff_study_resolution_file(root / "reports" / "runtime" / "handoff-study-resolution.json")
             drift_review_payload = json.loads((root / "reports" / "runtime" / "drift-review.json").read_text(encoding="utf-8"))
             drift_review_errors = validate_drift_review_file(root / "reports" / "runtime" / "drift-review.json")
             review_payload = json.loads((root / "reports" / "memory" / "daily-review.json").read_text(encoding="utf-8"))
@@ -1200,6 +1205,7 @@ class LocalApplianceTests(unittest.TestCase):
             run_trace_html = (root / "reports" / "product" / "run-trace.html").read_text(encoding="utf-8")
             run_ledger_html = (root / "reports" / "product" / "run-ledger.html").read_text(encoding="utf-8")
             handoff_html = (root / "reports" / "product" / "handoff.html").read_text(encoding="utf-8")
+            handoff_resolution_html = (root / "reports" / "product" / "handoff-study-resolution.html").read_text(encoding="utf-8")
             drift_review_html = (root / "reports" / "product" / "drift-review.html").read_text(encoding="utf-8")
             review_html = (root / "reports" / "product" / "review.html").read_text(encoding="utf-8")
             review_prompt_html = (root / "reports" / "product" / "review-prompt.html").read_text(encoding="utf-8")
@@ -1289,6 +1295,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("trace", readiness_payload["phone_links"])
         self.assertIn("run_ledger", readiness_payload["phone_links"])
         self.assertIn("handoff", readiness_payload["phone_links"])
+        self.assertIn("handoff_study_resolution", readiness_payload["phone_links"])
         self.assertIn("handoff_apply", readiness_payload["phone_links"])
         self.assertIn("daily_home", readiness_payload["phone_links"])
         self.assertIn("phone_access", readiness_payload["phone_links"])
@@ -1309,6 +1316,8 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(item["name"] == "run_trace" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "daily_handoff" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "daily_handoff_surface" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "handoff_study_resolution" for item in readiness_payload["artifacts"]))
+        self.assertTrue(any(item["name"] == "handoff_study_resolution_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "handoff_response_apply" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "handoff_response_apply_surface" for item in readiness_payload["artifacts"]))
         self.assertTrue(any(item["name"] == "drift_review" for item in readiness_payload["artifacts"]))
@@ -1373,6 +1382,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(step["name"] == "analyst_council" for step in run_trace_payload["trace_steps"]))
         self.assertTrue(any(step["name"] == "memory_audit" for step in run_trace_payload["trace_steps"]))
         self.assertTrue(any(step["name"] == "learning_ledger" for step in run_trace_payload["trace_steps"]))
+        self.assertTrue(any(step["name"] == "handoff_study_resolution" for step in run_trace_payload["trace_steps"]))
         self.assertTrue(any(step["name"] == "today_surface" for step in run_trace_payload["trace_steps"]))
         self.assertEqual(run_ledger_payload["schema_version"], "daily_run_ledger.v1")
         self.assertEqual(run_ledger_errors, [])
@@ -1389,6 +1399,17 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertGreaterEqual(handoff_payload["summary"]["carried_item_count"], 1)
         self.assertTrue(handoff_payload["copy_ready_commands"])
         self.assertIn("canonical_run", handoff_payload)
+        self.assertEqual(handoff_resolution_payload["schema_version"], "handoff_study_resolution.v1")
+        self.assertEqual(handoff_resolution_errors, [])
+        self.assertEqual(validate_handoff_study_resolution_payload(handoff_resolution_payload), [])
+        self.assertFalse(handoff_resolution_payload["external_effect_performed"])
+        self.assertFalse(handoff_resolution_payload["host_write_performed"])
+        self.assertGreaterEqual(handoff_resolution_payload["summary"]["resolution_item_count"], 1)
+        self.assertGreaterEqual(handoff_resolution_payload["summary"]["copy_ready_response_count"], 1)
+        self.assertTrue(handoff_resolution_payload["operator_rule"])
+        self.assertTrue(all(item["evidence_refs"] for item in handoff_resolution_payload["items"]))
+        self.assertIn("남은 질문을 공부로 닫기", handoff_resolution_html)
+        self.assertNotIn("schema_version", handoff_resolution_html)
         self.assertEqual(daily_home_payload["schema_version"], "daily_operator_home.v1")
         self.assertEqual(daily_home_errors, [])
         self.assertFalse(daily_home_payload["external_effect_performed"])
@@ -1405,6 +1426,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(daily_home_payload["phone_links"]["memory_query"], "reports/product/memory-query.html")
         self.assertEqual(daily_home_payload["phone_links"]["learning"], "reports/product/learning.html")
         self.assertEqual(daily_home_payload["phone_links"]["source_freshness_intake"], "reports/product/source-freshness-intake.html")
+        self.assertEqual(daily_home_payload["phone_links"]["handoff_study_resolution"], "reports/product/handoff-study-resolution.html")
         self.assertEqual(daily_home_payload["phone_links"]["pattern_dry_run"], "reports/product/pattern-dry-run.html")
         self.assertEqual(daily_home_payload["phone_links"]["trace"], "reports/product/run-trace.html")
         self.assertEqual(daily_home_payload["memory_recall_adoption"]["pattern_candidate_id"], "pattern-memory-recall-quality")
@@ -1429,7 +1451,10 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertEqual(inbox["summary"]["pattern_scout_count"], 1)
         self.assertEqual(inbox["summary"]["pattern_scout_proof_ready_count"], 1)
         self.assertGreaterEqual(inbox["summary"]["unresolved_handoff_count"], 1)
+        self.assertEqual(inbox["summary"]["handoff_resolution_count"], 1)
+        self.assertGreaterEqual(inbox["summary"]["handoff_resolution_blocked_count"], 0)
         self.assertGreaterEqual(inbox["summary"]["carried_task_count"], 1)
+        self.assertTrue(any(item["kind"] == "handoff_study_resolution" for item in inbox["priority_items"]))
         self.assertTrue(any(item["kind"] == "pattern_scout" and item["status"] == "local_proof_ready" for item in inbox["priority_items"]))
         self.assertEqual(daily_home_payload["pattern_scout_adoption"]["pattern_candidate_id"], "pattern-freshness-intake")
         self.assertEqual(daily_home_payload["pattern_scout_adoption"]["proof_status"], "passed")
@@ -1444,6 +1469,7 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(step["title"] == "memory recall" for step in daily_home_payload["daily_route"]))
         self.assertTrue(any(step["title"] == "learning ledger" for step in daily_home_payload["daily_route"]))
         self.assertTrue(any(step["title"] == "run trace" for step in daily_home_payload["daily_route"]))
+        self.assertTrue(any(step["title"] == "handoff study resolution" for step in daily_home_payload["daily_route"]))
         self.assertTrue(any(step["title"] == "pattern dry-run proof" for step in daily_home_payload["daily_route"]))
         self.assertEqual(access_verify_payload["schema_version"], "phone_access_verify.v1")
         self.assertEqual(access_verify_errors, [])
@@ -1706,6 +1732,12 @@ class LocalApplianceTests(unittest.TestCase):
             run_ledger_path = root / "daily-run-ledger.json"
             handoff_path = root / "daily-handoff.json"
             handoff_surface = root / "handoff.html"
+            handoff_resolution_path = root / "handoff-study-resolution.json"
+            handoff_resolution_surface = root / "handoff-study-resolution.html"
+            learning_path = root / "learning-ledger.json"
+            memory_query_path = root / "memory-query.json"
+            freshness_path = root / "source-freshness-intake.json"
+            review_prompt_path = root / "review-prompt.json"
             journal_path.write_text(json.dumps({
                 "schema_version": "personal_analyst_journal.v1",
                 "run_id": "daily-research",
@@ -1749,6 +1781,7 @@ class LocalApplianceTests(unittest.TestCase):
             audit_path.write_text(json.dumps({
                 "schema_version": "personal_memory_audit.v1",
                 "summary": {"risk_count": 1},
+                "next_questions": ["Semiconductors 기억이 최근 archive와 연결되나요?"],
             }), encoding="utf-8")
             scout_path.write_text(json.dumps({
                 "schema_version": "daily_scout.v1",
@@ -1777,6 +1810,31 @@ class LocalApplianceTests(unittest.TestCase):
                     }
                 ],
             }), encoding="utf-8")
+            learning_path.write_text(json.dumps({
+                "schema_version": "personal_learning_ledger.v1",
+                "status": "review",
+                "questions": [{"question": "반도체 기대가 실제 수요 근거로 이어지나요?"}],
+            }), encoding="utf-8")
+            memory_query_path.write_text(json.dumps({
+                "schema_version": "personal_memory_query.v1",
+                "status": "ready",
+                "recall_quality": {
+                    "level": "usable",
+                    "summary": "Semiconductors에 대한 로컬 기억이 일부 있습니다.",
+                },
+            }), encoding="utf-8")
+            freshness_path.write_text(json.dumps({
+                "schema_version": "source_freshness_intake.v1",
+                "status": "approval_packet_ready",
+                "summary": {
+                    "stale_or_sample_source_count": 2,
+                    "blocked_live_candidate_count": 1,
+                },
+            }), encoding="utf-8")
+            review_prompt_path.write_text(json.dumps({
+                "schema_version": "operator_review_prompt.v1",
+                "prompt_cards": [{"title": "Semiconductors", "question": "오늘 더 볼 질문은?"}],
+            }), encoding="utf-8")
 
             write_daily_handoff(
                 artifact_output_path=handoff_path,
@@ -1793,6 +1851,20 @@ class LocalApplianceTests(unittest.TestCase):
             payload = json.loads(handoff_path.read_text(encoding="utf-8"))
             html = handoff_surface.read_text(encoding="utf-8")
             errors = validate_daily_handoff_file(handoff_path)
+            write_handoff_study_resolution(
+                artifact_output_path=handoff_resolution_path,
+                surface_output_path=handoff_resolution_surface,
+                handoff_path=handoff_path,
+                learning_ledger_path=learning_path,
+                memory_query_path=memory_query_path,
+                memory_audit_path=audit_path,
+                source_freshness_intake_path=freshness_path,
+                analyst_council_path=council_path,
+                review_prompt_path=review_prompt_path,
+            )
+            resolution_payload = json.loads(handoff_resolution_path.read_text(encoding="utf-8"))
+            resolution_html = handoff_resolution_surface.read_text(encoding="utf-8")
+            resolution_errors = validate_handoff_study_resolution_file(handoff_resolution_path)
 
         self.assertEqual(errors, [])
         self.assertEqual(payload["schema_version"], "daily_handoff.v1")
@@ -1810,6 +1882,16 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertIn("어제가 오늘에 반영됐나", html)
         self.assertIn("오늘 공부로 닫을 항목", html)
         self.assertNotIn("schema_version", html)
+        self.assertEqual(resolution_errors, [])
+        self.assertEqual(resolution_payload["schema_version"], "handoff_study_resolution.v1")
+        self.assertEqual(resolution_payload["status"], "review")
+        self.assertGreaterEqual(resolution_payload["summary"]["resolution_item_count"], 1)
+        self.assertGreaterEqual(resolution_payload["summary"]["blocked_by_source_freshness_count"], 1)
+        self.assertTrue(any(item["status"] == "blocked_by_source_freshness" for item in resolution_payload["items"]))
+        self.assertTrue(all(item["evidence_refs"] for item in resolution_payload["items"]))
+        self.assertIn("남은 질문을 공부로 닫기", resolution_html)
+        self.assertIn("답변 후보", resolution_html)
+        self.assertNotIn("schema_version", resolution_html)
 
     def test_task_status_response_apply_updates_ledger_locally(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -82,6 +82,8 @@ from mybroker.appliance import (
     DEFAULT_SOURCE_REFRESH_BRIEF_SURFACE,
     DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT,
     DEFAULT_SOURCE_FRESHNESS_INTAKE_SURFACE,
+    DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT,
+    DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE,
     DEFAULT_TODAY_OUTPUT,
     add_archive_artifacts,
     archive_daily_run,
@@ -131,6 +133,7 @@ from mybroker.appliance import (
     write_scheduler_status,
     write_source_refresh_brief,
     write_source_freshness_intake,
+    write_handoff_study_resolution,
     write_today_surface,
     validate_analyst_journal_file,
     validate_learning_ledger_file,
@@ -159,6 +162,7 @@ from mybroker.appliance import (
     validate_scheduler_operations_file,
     validate_source_refresh_brief_file,
     validate_source_freshness_intake_file,
+    validate_handoff_study_resolution_file,
     validate_phone_access_verify_file,
 )
 from mybroker.data import load_price_csv
@@ -415,6 +419,8 @@ def main(argv: list[str] | None = None) -> int:
     validate_run_ledger_parser.add_argument("run_ledger_path")
     validate_handoff_parser = subcommands.add_parser("validate-daily-handoff", help="Validate a daily_handoff.v1 artifact.")
     validate_handoff_parser.add_argument("handoff_path")
+    validate_handoff_study_parser = subcommands.add_parser("validate-handoff-study-resolution", help="Validate a handoff_study_resolution.v1 artifact.")
+    validate_handoff_study_parser.add_argument("handoff_study_resolution_path")
     validate_drift_review_parser = subcommands.add_parser("validate-drift-review", help="Validate a local_drift_review.v1 artifact.")
     validate_drift_review_parser.add_argument("drift_review_path")
     validate_scheduler_operations_parser = subcommands.add_parser("validate-scheduler-operations", help="Validate a local_scheduler_operations.v1 artifact.")
@@ -547,6 +553,7 @@ def main(argv: list[str] | None = None) -> int:
     appliance_home_parser.add_argument("--morning", default=DEFAULT_MORNING_CONTROL_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--readiness", default=DEFAULT_DAILY_READINESS_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--handoff", default=DEFAULT_DAILY_HANDOFF_OUTPUT.as_posix())
+    appliance_home_parser.add_argument("--handoff-study-resolution", default=DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--handoff-apply", default=DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--run-ledger", default=DEFAULT_DAILY_RUN_LEDGER_OUTPUT.as_posix())
     appliance_home_parser.add_argument("--run-trace", default=DEFAULT_RUN_TRACE_OUTPUT.as_posix())
@@ -701,6 +708,16 @@ def main(argv: list[str] | None = None) -> int:
     appliance_handoff_response_apply_parser.add_argument("--artifact-output", default=DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT.as_posix())
     appliance_handoff_response_apply_parser.add_argument("--output", default=DEFAULT_HANDOFF_RESPONSE_APPLY_SURFACE.as_posix())
     appliance_handoff_response_apply_parser.add_argument("--run-id", default="daily-research")
+    appliance_handoff_study_parser = appliance_subcommands.add_parser("handoff-study-resolution", help="Render answer candidates and stop conditions for unresolved handoff questions.")
+    appliance_handoff_study_parser.add_argument("--handoff", default=DEFAULT_DAILY_HANDOFF_OUTPUT.as_posix())
+    appliance_handoff_study_parser.add_argument("--learning-ledger", default=DEFAULT_LEARNING_LEDGER_OUTPUT.as_posix())
+    appliance_handoff_study_parser.add_argument("--memory-query", default=DEFAULT_MEMORY_QUERY_OUTPUT.as_posix())
+    appliance_handoff_study_parser.add_argument("--memory-audit", default=DEFAULT_MEMORY_AUDIT_OUTPUT.as_posix())
+    appliance_handoff_study_parser.add_argument("--source-freshness-intake", default=DEFAULT_SOURCE_FRESHNESS_INTAKE_OUTPUT.as_posix())
+    appliance_handoff_study_parser.add_argument("--analyst-council", default=DEFAULT_ANALYST_COUNCIL_OUTPUT.as_posix())
+    appliance_handoff_study_parser.add_argument("--review-prompt", default=DEFAULT_REVIEW_PROMPT_OUTPUT.as_posix())
+    appliance_handoff_study_parser.add_argument("--artifact-output", default=DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT.as_posix())
+    appliance_handoff_study_parser.add_argument("--output", default=DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE.as_posix())
     appliance_council_response_apply_parser = appliance_subcommands.add_parser("council-response-apply", help="Record one local council response and refresh review/scout/effect/council proof.")
     appliance_council_response_apply_parser.add_argument("response")
     appliance_council_response_apply_parser.add_argument("--topics", default=DEFAULT_TOPICS_PATH.as_posix())
@@ -1348,6 +1365,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"valid": True, "errors": []}, indent=2))
         return 0
+    if args.command == "validate-handoff-study-resolution":
+        errors = validate_handoff_study_resolution_file(args.handoff_study_resolution_path)
+        if errors:
+            print(json.dumps({"valid": False, "errors": errors}, indent=2, ensure_ascii=False))
+            return 1
+        print(json.dumps({"valid": True, "errors": []}, indent=2))
+        return 0
     if args.command == "validate-drift-review":
         errors = validate_drift_review_file(args.drift_review_path)
         if errors:
@@ -1683,6 +1707,7 @@ def main(argv: list[str] | None = None) -> int:
                 morning_path=args.morning,
                 readiness_path=args.readiness,
                 handoff_path=args.handoff,
+                handoff_study_resolution_path=args.handoff_study_resolution,
                 handoff_apply_path=args.handoff_apply,
                 run_ledger_path=args.run_ledger,
                 run_trace_path=args.run_trace,
@@ -1705,6 +1730,27 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_home": args.artifact_output,
                 "daily_home_surface": path.as_posix(),
                 "status": payload["status"],
+                "external_effect_performed": payload["external_effect_performed"],
+            }, indent=2, ensure_ascii=False))
+            return 0
+        if args.appliance_command == "handoff-study-resolution":
+            path = write_handoff_study_resolution(
+                handoff_path=args.handoff,
+                learning_ledger_path=args.learning_ledger,
+                memory_query_path=args.memory_query,
+                memory_audit_path=args.memory_audit,
+                source_freshness_intake_path=args.source_freshness_intake,
+                analyst_council_path=args.analyst_council,
+                review_prompt_path=args.review_prompt,
+                artifact_output_path=args.artifact_output,
+                surface_output_path=args.output,
+            )
+            payload = json.loads(Path(args.artifact_output).read_text(encoding="utf-8"))
+            print(json.dumps({
+                "handoff_study_resolution": args.artifact_output,
+                "handoff_study_resolution_surface": path.as_posix(),
+                "status": payload["status"],
+                "resolution_item_count": payload["summary"]["resolution_item_count"],
                 "external_effect_performed": payload["external_effect_performed"],
             }, indent=2, ensure_ascii=False))
             return 0
@@ -2618,6 +2664,8 @@ def main(argv: list[str] | None = None) -> int:
             run_ledger_surface_path = DEFAULT_DAILY_RUN_LEDGER_SURFACE
             handoff_artifact_path = DEFAULT_DAILY_HANDOFF_OUTPUT
             handoff_surface_path = DEFAULT_DAILY_HANDOFF_SURFACE
+            handoff_resolution_artifact_path = DEFAULT_HANDOFF_STUDY_RESOLUTION_OUTPUT
+            handoff_resolution_surface_path = DEFAULT_HANDOFF_STUDY_RESOLUTION_SURFACE
             drift_review_artifact_path = DEFAULT_DRIFT_REVIEW_OUTPUT
             drift_review_surface_path = DEFAULT_DRIFT_REVIEW_SURFACE
             readiness_artifact_path = DEFAULT_DAILY_READINESS_OUTPUT
@@ -3009,6 +3057,7 @@ def main(argv: list[str] | None = None) -> int:
                 memory_query_path=memory_query_artifact_path,
                 memory_audit_path=memory_audit_artifact_path,
                 learning_ledger_path=learning_ledger_artifact_path,
+                handoff_study_resolution_path=handoff_resolution_artifact_path,
                 scheduler_operations_path=scheduler_operations_artifact_path,
             )
             written_pattern_proof = write_pattern_dry_run_proof(
@@ -3106,6 +3155,31 @@ def main(argv: list[str] | None = None) -> int:
                 memory_audit_path=memory_audit_artifact_path,
                 scout_path=scout_path,
             )
+            written_handoff_resolution = write_handoff_study_resolution(
+                artifact_output_path=handoff_resolution_artifact_path,
+                surface_output_path=handoff_resolution_surface_path,
+                handoff_path=handoff_artifact_path,
+                learning_ledger_path=learning_ledger_artifact_path,
+                memory_query_path=memory_query_artifact_path,
+                memory_audit_path=memory_audit_artifact_path,
+                source_freshness_intake_path=source_freshness_intake_artifact_path,
+                analyst_council_path=analyst_council_artifact_path,
+                review_prompt_path=review_prompt_artifact_path,
+            )
+            written_run_trace = write_run_trace(
+                artifact_output_path=run_trace_artifact_path,
+                surface_output_path=run_trace_surface_path,
+                today_path=written_today,
+                source_freshness_intake_path=source_freshness_intake_artifact_path,
+                review_prompt_path=review_prompt_artifact_path,
+                review_effect_path=review_effect_artifact_path,
+                analyst_council_path=analyst_council_artifact_path,
+                memory_query_path=memory_query_artifact_path,
+                memory_audit_path=memory_audit_artifact_path,
+                learning_ledger_path=learning_ledger_artifact_path,
+                handoff_study_resolution_path=handoff_resolution_artifact_path,
+                scheduler_operations_path=scheduler_operations_artifact_path,
+            )
             written_readiness = write_daily_readiness(
                 project_root=".",
                 artifact_output_path=readiness_artifact_path,
@@ -3118,6 +3192,7 @@ def main(argv: list[str] | None = None) -> int:
                 morning_path=morning_artifact_path,
                 readiness_path=readiness_artifact_path,
                 handoff_path=handoff_artifact_path,
+                handoff_study_resolution_path=handoff_resolution_artifact_path,
                 handoff_apply_path=DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT,
                 run_ledger_path=run_ledger_artifact_path,
                 run_trace_path=run_trace_artifact_path,
@@ -3151,6 +3226,7 @@ def main(argv: list[str] | None = None) -> int:
                 morning_path=morning_artifact_path,
                 readiness_path=readiness_artifact_path,
                 handoff_path=handoff_artifact_path,
+                handoff_study_resolution_path=handoff_resolution_artifact_path,
                 handoff_apply_path=DEFAULT_HANDOFF_RESPONSE_APPLY_OUTPUT,
                 run_ledger_path=run_ledger_artifact_path,
                 run_trace_path=run_trace_artifact_path,
@@ -3210,6 +3286,8 @@ def main(argv: list[str] | None = None) -> int:
                     "daily_run_ledger_surface": written_run_ledger,
                     "daily_handoff": handoff_artifact_path,
                     "daily_handoff_surface": written_handoff,
+                    "handoff_study_resolution": handoff_resolution_artifact_path,
+                    "handoff_study_resolution_surface": written_handoff_resolution,
                     "drift_review": drift_review_artifact_path,
                     "drift_review_surface": written_drift_review,
                     "today": written_today,
@@ -3252,6 +3330,8 @@ def main(argv: list[str] | None = None) -> int:
                 "daily_run_ledger_surface": written_run_ledger.as_posix(),
                 "daily_handoff": handoff_artifact_path.as_posix(),
                 "daily_handoff_surface": written_handoff.as_posix(),
+                "handoff_study_resolution": handoff_resolution_artifact_path.as_posix(),
+                "handoff_study_resolution_surface": written_handoff_resolution.as_posix(),
                 "drift_review": drift_review_artifact_path.as_posix(),
                 "drift_review_surface": written_drift_review.as_posix(),
                 "source_refresh_brief": source_refresh_brief_artifact_path.as_posix(),

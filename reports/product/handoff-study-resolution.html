@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyBroker Handoff Study Resolution</title>
+<style>
+:root { --bg:#f7f8f4; --ink:#18212b; --muted:#64707d; --line:#dbe1d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; }
+* { box-sizing:border-box; }
+html,body { max-width:100%; overflow-x:hidden; }
+body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { width:100%; max-width:430px; margin:0; padding:14px; }
+a { color:var(--blue); font-weight:900; text-decoration:none; }
+.eyebrow,.metric span,.card span { color:var(--green); font-size:12px; font-weight:900; }
+h1 { margin:8px 0 10px; font-size:31px; line-height:1.12; overflow-wrap:anywhere; }
+h2 { margin:6px 0 8px; font-size:19px; line-height:1.2; }
+p { color:var(--muted); overflow-wrap:anywhere; }
+.hero,.section,.card,.metric { border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.hero,.section { padding:15px; margin:12px 0; }
+.status { display:block; margin:10px 0; font-size:25px; line-height:1.15; }
+.metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.metric,.card { padding:12px; background:white; min-width:0; }
+.metric strong { display:block; font-size:24px; }
+.stack { display:grid; grid-template-columns:minmax(0,1fr); gap:9px; }
+code { display:block; white-space:pre-wrap; word-break:break-word; border:1px solid var(--line); border-radius:8px; background:#f1f5f7; padding:10px; color:var(--ink); font-size:12px; }
+.links { display:grid; grid-template-columns:1fr; gap:8px; }
+.links a { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; overflow-wrap:anywhere; }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">MyBroker Handoff Study · 2026-06-06 local</span>
+<h1>남은 질문을 공부로 닫기</h1>
+<p>전날에서 넘어온 질문을 숨기지 않고, 오늘 어떤 근거로 어디까지 답하면 충분한지 보여줍니다.</p>
+</header>
+<section class="hero">
+<span class="eyebrow">상태</span>
+<strong class="status">공부 후 응답 필요</strong>
+<p>이 화면은 질문을 자동으로 닫지 않습니다. 답변 후보를 읽고, 사람이 복사 가능한 local 응답 한 줄을 실행했을 때만 다음 run에 반영됩니다.</p>
+<div class="metrics">
+<article class="metric"><span>Items</span><strong>4</strong></article>
+<article class="metric"><span>Ready</span><strong>1</strong></article>
+<article class="metric"><span>Blocked</span><strong>3</strong></article>
+<article class="metric"><span>Memory</span><strong>strong</strong></article>
+</div>
+</section>
+<section class="section">
+<h2>질문별 해소 카드</h2>
+<div class="stack"><article class='card'><span>blocked_by_source_freshness · confidence low</span><h2>AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?</h2><p><strong>질문</strong> AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?</p><p><strong>답변 후보</strong> 현재 답변 후보는 sample/cache 근거에 의존합니다. live source refresh 승인이 없으면 방향성 학습용으로만 읽어야 합니다.</p><p><strong>끝나는 조건</strong> 오늘 브리프나 evidence에서 답이 되는 문장 하나와 아직 부족한 근거 하나를 말할 수 있습니다.</p><p><strong>멈춤 기준</strong> 오늘은 이 질문을 매수/매도 판단으로 바꾸지 않고, 공부용 응답 한 줄만 남기면 충분합니다.</p><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;more &quot;Semiconductors&quot; &quot;handoff question: AI/반도체 기대가 실제 수요, 공급망, 실적 근거로 이어지고 있나요?&quot;&#x27;</code></article><article class='card'><span>blocked_by_source_freshness · confidence low</span><h2>먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?</h2><p><strong>질문</strong> 먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?</p><p><strong>답변 후보</strong> 현재 답변 후보는 sample/cache 근거에 의존합니다. live source refresh 승인이 없으면 방향성 학습용으로만 읽어야 합니다.</p><p><strong>끝나는 조건</strong> 오늘 브리프나 evidence에서 답이 되는 문장 하나와 아직 부족한 근거 하나를 말할 수 있습니다.</p><p><strong>멈춤 기준</strong> 오늘은 이 질문을 매수/매도 판단으로 바꾸지 않고, 공부용 응답 한 줄만 남기면 충분합니다.</p><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;more &quot;Semiconductors&quot; &quot;handoff question: 먼저 시장 흐름을 학습 후보가 성립하려면 어떤 반대 근거를 먼저 확인해야 하나요?&quot;&#x27;</code></article><article class='card'><span>blocked_by_source_freshness · confidence low</span><h2>analyst council이 오늘 브리프를 주의해서 읽으라고 표시했습니다.</h2><p><strong>질문</strong> 역할별 council 중 어떤 역할이 오늘 결론을 가장 약하게 만들었나요?</p><p><strong>답변 후보</strong> council은 오늘 결론을 바로 믿기보다 &#x27;역할별 caution 카드와 다음 질문을 먼저 읽고 review-response-apply로 피드백을 남깁니다.&#x27;를 먼저 확인하라고 요구합니다.</p><p><strong>끝나는 조건</strong> caution 역할 하나와 그 역할이 요구한 다음 확인 항목 하나를 고릅니다.</p><p><strong>멈춤 기준</strong> 오늘은 이 질문을 매수/매도 판단으로 바꾸지 않고, 공부용 응답 한 줄만 남기면 충분합니다.</p><code>PYTHONPATH=src python3 -m mybroker appliance council-response-apply &#x27;more &quot;Semiconductors&quot; &quot;council: 역할별 caution 카드와 다음 질문을 먼저 읽고 review-response-apply로 피드백을 남깁니다.&quot;&#x27;</code></article><article class='card'><span>ready_to_study · confidence medium</span><h2>누적 기억 품질 경고가 남아 있습니다.</h2><p><strong>질문</strong> AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?</p><p><strong>답변 후보</strong> 기억 경고는 결론 문제가 아니라 누적 맥락 문제입니다. 누적 주제 기억, 과거 실행, 원천 노트가 함께 잡혔습니다. 그래도 원문과 최신성은 확인해야 합니다.</p><p><strong>끝나는 조건</strong> vault/archive/source 중 어떤 기억 근거가 약한지 하나를 고릅니다.</p><p><strong>멈춤 기준</strong> 오늘은 이 질문을 매수/매도 판단으로 바꾸지 않고, 공부용 응답 한 줄만 남기면 충분합니다.</p><code>PYTHONPATH=src python3 -m mybroker appliance review-response-apply &#x27;confusing &quot;Semiconductors&quot; &quot;memory: AI infrastructure에 대해 최근 3일 archive에서 같은 결론이 반복되고 있나?&quot;&#x27;</code></article></div>
+</section>
+<section class="section">
+<h2>관련 화면</h2>
+<div class="links"><a href='reports/product/handoff.html'>handoff</a><a href='reports/product/review-prompt.html'>review_prompt</a><a href='reports/product/learning.html'>learning</a><a href='reports/product/memory-query.html'>memory_query</a><a href='reports/product/memory-audit.html'>memory_audit</a><a href='reports/product/source-freshness-intake.html'>source_freshness_intake</a><a href='reports/product/daily-home.html'>daily_home</a></div>
+</section>
+<section class="section">
+<h2>안전 경계</h2>
+<p>이 화면은 기존 로컬 artifact만 읽습니다. live network, 알림 발송, host scheduler write, credential 사용, 계좌 접근, 주문 실행은 수행하지 않습니다.</p>
+</section>
+</main>
+</body>
+</html>
