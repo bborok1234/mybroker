@@ -1,6 +1,6 @@
 {
   "schema_version": "notification_delivery.v1",
-  "generated_at": "2026-06-06T04:58:01.327688+00:00",
+  "generated_at": "2026-06-06T06:44:40.532365+00:00",
   "provider": "telegram",
   "dry_run": true,
   "title": "MyBroker 오늘의 개인 애널리스트",

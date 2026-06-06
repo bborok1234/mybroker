@@ -1,11 +1,11 @@
 {
   "schema_version": "pattern_dry_run_proof.v1",
-  "generated_at": "2026-06-06T04:58:01.293989+00:00",
+  "generated_at": "2026-06-06T06:44:40.522609+00:00",
   "status": "proof_ready",
   "source_artifact": "reports/runtime/agent-pattern-radar.json",
   "summary": {
-    "candidate_count": 7,
-    "passed_count": 5,
+    "candidate_count": 8,
+    "passed_count": 6,
     "approval_required_count": 1,
     "blocked_count": 1,
     "failed_count": 0
@@ -37,6 +37,12 @@
     },
     {
       "candidate_id": "pattern-run-trace-observability",
+      "decision": "adopted_proof_ready",
+      "reason": "로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.",
+      "requires_operator_approval": false
+    },
+    {
+      "candidate_id": "pattern-private-phone-access-proof",
       "decision": "adopted_proof_ready",
       "reason": "로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.",
       "requires_operator_approval": false
@@ -134,6 +140,24 @@
       "host_write_performed": false
     },
     {
+      "candidate_id": "pattern-private-phone-access-proof",
+      "source": "Tailscale Serve private phone access",
+      "input_status": "ready",
+      "approval_scope": "local_dry_run_only",
+      "proof_status": "passed",
+      "expected_artifact": "reports/runtime/phone-access-verify.json",
+      "artifact_exists": true,
+      "artifact_schema_version": "phone_access_verify.v1",
+      "surface": "reports/product/phone-access.html",
+      "surface_exists": true,
+      "promotion_rule": "Adopt only if phone access verify validates, daily-home remains the first entrypoint, required product links resolve, and no serving command is executed.",
+      "proof_notes": [
+        "로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다."
+      ],
+      "external_effect_performed": false,
+      "host_write_performed": false
+    },
+    {
       "candidate_id": "pattern-live-source-browser-gateway",
       "source": "Browser-use / Playwright / Firecrawl",
       "input_status": "requires_approval",
@@ -164,7 +188,7 @@
       "surface_exists": false,
       "promotion_rule": "Adopt only after deterministic inputs, saved outputs, validator, and no external effect proof exist.",
       "proof_notes": [
-        "Generated analysis code needs a deterministic sandbox and report schema before it can shape the daily brief."
+        "생성 코드 분석은 deterministic sandbox와 report schema가 생기기 전까지 daily brief에 영향을 주면 안 된다."
       ],
       "external_effect_performed": false,
       "host_write_performed": false

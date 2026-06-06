@@ -1,20 +1,20 @@
 {
   "schema_version": "agent_pattern_radar.v1",
-  "generated_at": "2026-06-06T04:58:01.238436+00:00",
+  "generated_at": "2026-06-06T06:44:40.442426+00:00",
   "status": "ready",
-  "objective": "Evolve MyBroker as a local daily personal analyst by absorbing only verified agentic workflow patterns.",
+  "objective": "검증된 에이전트 운영 패턴만 로컬 daily loop에 흡수한다.",
   "playbook_source": "reports/runtime/local-analyst-playbook.json",
   "previous_pattern_proof": "reports/runtime/pattern-dry-run-proof.json",
   "playbook_pattern_count": 6,
   "summary": {
-    "case_count": 19,
-    "adopted_count": 15,
-    "deferred_count": 2,
+    "case_count": 21,
+    "adopted_count": 16,
+    "deferred_count": 3,
     "rejected_count": 2,
-    "dry_run_candidate_count": 7,
-    "ready_dry_run_count": 5,
+    "dry_run_candidate_count": 8,
+    "ready_dry_run_count": 6,
     "gated_dry_run_count": 1,
-    "top_next_pattern": "source freshness intake before live authority"
+    "top_next_pattern": "라이브 권한 전 근거 신선도 intake"
   },
   "cases": [
     {
@@ -37,6 +37,17 @@
       "why": "Local workspace control is useful, but MyBroker needs finance-research boundaries and explicit non-execution defaults.",
       "risk": "capability, identity, and knowledge poisoning if unchecked tools or untrusted memory shape decisions",
       "guardrail": "validate artifacts, mark source freshness, and keep credentialed or live actions behind scoped approval",
+      "priority": "high"
+    },
+    {
+      "source": "Tailscale Serve private phone access",
+      "source_url": "https://tailscale.com/kb/1312/serve",
+      "observed_pattern": "private tailnet serving can expose local static artifacts to the operator's phone without making the service public",
+      "decision": "adopt_partial",
+      "mybroker_translation": "keep phone-access guidance and access-verify proof as local no-effect artifacts before any private serving command is run",
+      "why": "The operator wants to read the daily analyst output on a phone while the laptop remains the local appliance; private serving is useful, but enablement should stay separate from proof.",
+      "risk": "public exposure or accidental persistent serving if private access and public tunnel commands are collapsed",
+      "guardrail": "access-verify reads links only; tailscale serve, LAN serving, and any public exposure remain separate operator-approved actions",
       "priority": "high"
     },
     {
@@ -205,6 +216,17 @@
       "priority": "high"
     },
     {
+      "source": "DBOS durable workflows",
+      "source_url": "https://www.dbos.dev/",
+      "observed_pattern": "durable workflow steps, queues, cron scheduling, resume, and backfill make long-running agents recoverable",
+      "decision": "defer",
+      "mybroker_translation": "keep launchd, archive manifests, run ledger, and drift review for v1; revisit durable workflow only when missed-run recovery and backfill become recurring operator needs",
+      "why": "Durable workflows are valuable for always-on agents, but MyBroker first needs the local daily analyst loop to prove its artifact contracts and phone handoff.",
+      "risk": "adding a server/workflow runtime too early can create deployment, state, and queue complexity before the personal analyst loop is trustworthy",
+      "guardrail": "defer until missed-run/backfill evidence appears in run-ledger and scheduler proofs; do not add hosted runtime as a default",
+      "priority": "watch"
+    },
+    {
       "source": "Hosted trading bots and broker-connected agents",
       "source_url": "",
       "observed_pattern": "always-on execution, account credentials, live orders, discretionary automation",
@@ -232,12 +254,12 @@
     "cadence": "run inside the daily appliance loop before adopting or widening any agent workflow pattern",
     "recommended_next": {
       "candidate_id": "pattern-freshness-intake",
-      "title": "source freshness intake before live authority",
+      "title": "라이브 권한 전 근거 신선도 intake",
       "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
-      "why_now": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+      "why_now": "개인 에이전트 방식은 빠르게 바뀐다. 권한을 넓히기 전에 radar가 최신 패턴을 로컬 증거로 흡수했는지 먼저 확인한다.",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
       "approval_scope": "local_dry_run_only",
-      "previously_passed_candidate_count": 5,
+      "previously_passed_candidate_count": 6,
       "operator_decision_needed": false,
       "done_when": [
         "agent_pattern_radar.v1 validates",
@@ -257,6 +279,12 @@
         "source": "TaskWeaver",
         "why_watch": "Code-first analytics could improve scenario simulation, but it should not precede memory quality, source quality, and clear user surfaces.",
         "blocked_by": "only run generated analysis in a sandbox with deterministic inputs, saved outputs, and validation",
+        "decision": "defer"
+      },
+      {
+        "source": "DBOS durable workflows",
+        "why_watch": "Durable workflows are valuable for always-on agents, but MyBroker first needs the local daily analyst loop to prove its artifact contracts and phone handoff.",
+        "blocked_by": "defer until missed-run/backfill evidence appears in run-ledger and scheduler proofs; do not add hosted runtime as a default",
         "decision": "defer"
       }
     ],
@@ -281,7 +309,7 @@
       "candidate_id": "pattern-freshness-intake",
       "source": "Hermes Studio / OpenClaw safety research / SemaClaw",
       "status": "ready",
-      "why": "New personal-agent practices change quickly, so the daily loop needs a local proof that the radar has absorbed current patterns without widening authority.",
+      "why": "개인 에이전트 방식은 빠르게 바뀐다. 권한을 넓히기 전에 radar가 최신 패턴을 로컬 증거로 흡수했는지 먼저 확인한다.",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-agent-pattern-radar reports/runtime/agent-pattern-radar.json",
       "expected_artifact": "reports/runtime/agent-pattern-radar.json",
       "approval_scope": "local_dry_run_only",
@@ -293,7 +321,7 @@
       "candidate_id": "pattern-method-evidence-intake",
       "source": "Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research",
       "status": "ready",
-      "why": "The radar currently absorbs researched practices as static cases; the next safe step is a local evidence intake that shows which cases are new, already proven, stale, approval-gated, or rejected before they alter the daily loop.",
+      "why": "조사한 사례가 바로 제품 행동이 되면 안 된다. 신규, 검증됨, 승인필요, 차단 후보를 먼저 분류한다.",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-pattern-evidence-intake reports/runtime/pattern-evidence-intake.json",
       "expected_artifact": "reports/runtime/pattern-evidence-intake.json",
       "approval_scope": "local_dry_run_only",
@@ -305,7 +333,7 @@
       "candidate_id": "pattern-source-refresh-execution-confirmation",
       "source": "OpenClaw safety research / source freshness gate",
       "status": "ready",
-      "why": "Approval response and preflight need a final phone-readable confirmation layer before any live source execution.",
+      "why": "live source 실행 전에는 승인, preflight, 최종 확인이 분리되어야 한다.",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-source-refresh-execution-brief reports/runtime/source-refresh-execution-brief.json",
       "expected_artifact": "reports/runtime/source-refresh-execution-brief.json",
       "approval_scope": "local_dry_run_only",
@@ -317,7 +345,7 @@
       "candidate_id": "pattern-memory-recall-quality",
       "source": "Obsidian vault research workflow",
       "status": "ready",
-      "why": "Local vault, memory, archive, and audit artifacts can be evaluated without external effects.",
+      "why": "vault, memory, archive, audit 품질은 외부 효과 없이 로컬에서 검증할 수 있다.",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance audit",
       "expected_artifact": "reports/memory/audit.json",
       "approval_scope": "local_dry_run_only",
@@ -329,7 +357,7 @@
       "candidate_id": "pattern-run-trace-observability",
       "source": "TraceAgent",
       "status": "ready",
-      "why": "Run trace already exists and can prove which local steps influenced the daily loop.",
+      "why": "run trace는 오늘 산출물에 어떤 로컬 단계가 영향을 줬는지 설명한다.",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-run-trace reports/runtime/run-trace.json",
       "expected_artifact": "reports/runtime/run-trace.json",
       "approval_scope": "local_dry_run_only",
@@ -338,10 +366,22 @@
       "external_effect_performed": false
     },
     {
+      "candidate_id": "pattern-private-phone-access-proof",
+      "source": "Tailscale Serve private phone access",
+      "status": "ready",
+      "why": "폰에서 읽을 수 있어야 daily analyst가 쓸모 있다. 다만 서빙 실행과 public 노출은 proof와 분리한다.",
+      "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker validate-phone-access-verify reports/runtime/phone-access-verify.json",
+      "expected_artifact": "reports/runtime/phone-access-verify.json",
+      "approval_scope": "local_dry_run_only",
+      "promotion_rule": "Adopt only if phone access verify validates, daily-home remains the first entrypoint, required product links resolve, and no serving command is executed.",
+      "source_decision": "adopt_partial",
+      "external_effect_performed": false
+    },
+    {
       "candidate_id": "pattern-live-source-browser-gateway",
       "source": "Browser-use / Playwright / Firecrawl",
       "status": "requires_approval",
-      "why": "Browser/scraper tools can improve freshness but cross the live-network boundary.",
+      "why": "브라우저/스크래퍼는 최신성에 유용하지만 live-network 경계를 넘는다.",
       "proof_command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m mybroker appliance source-refresh-live-preflight --intend-execute --confirm-live-network",
       "expected_artifact": "reports/daily/source-refresh-live-preflight.json",
       "approval_scope": "live_network_refresh",
@@ -353,7 +393,7 @@
       "candidate_id": "pattern-code-analytics-sandbox",
       "source": "TaskWeaver",
       "status": "blocked",
-      "why": "Generated analysis code needs a deterministic sandbox and report schema before it can shape the daily brief.",
+      "why": "생성 코드 분석은 deterministic sandbox와 report schema가 생기기 전까지 daily brief에 영향을 주면 안 된다.",
       "proof_command": "not_available_until_sandbox_schema_exists",
       "expected_artifact": "reports/runtime/analytics-sandbox-proof.json",
       "approval_scope": "future_local_sandbox",
@@ -394,6 +434,12 @@
       "priority": "high",
       "translation": "use narrow appliance commands and phone-readable surfaces instead of a generic unrestricted assistant",
       "guardrail": "validate artifacts, mark source freshness, and keep credentialed or live actions behind scoped approval"
+    },
+    {
+      "source": "Tailscale Serve private phone access",
+      "priority": "high",
+      "translation": "keep phone-access guidance and access-verify proof as local no-effect artifacts before any private serving command is run",
+      "guardrail": "access-verify reads links only; tailscale serve, LAN serving, and any public exposure remain separate operator-approved actions"
     },
     {
       "source": "MiroFish",

@@ -6,17 +6,20 @@
 <title>MyBroker Pattern Dry-run Proof</title>
 <style>
 :root { --bg:#f8f7f2; --ink:#17212b; --muted:#66717e; --line:#dfe2d8; --panel:#fffefa; --blue:#1f5f8b; --green:#1d6b52; --warn:#9a6a1d; --bad:#9f2d2d; }
-* { box-sizing:border-box; }
+* { box-sizing:border-box; min-width:0; }
+html,body { max-width:100%; overflow-x:hidden; }
 body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-main { width:100%; max-width:900px; margin:0 auto; padding:16px; }
+main { width:100%; max-width:900px; margin:0 auto; padding:16px; overflow:hidden; }
 .eyebrow { color:var(--green); font-size:12px; font-weight:900; text-transform:uppercase; }
 h1 { margin:8px 0 10px; font-size:34px; line-height:1.08; overflow-wrap:anywhere; }
+h2,strong,span { overflow-wrap:anywhere; word-break:break-word; }
 h2 { margin:0 0 8px; font-size:20px; }
-p,small { color:var(--muted); overflow-wrap:anywhere; }
+p,small { color:var(--muted); overflow-wrap:anywhere; word-break:break-word; }
+code { max-width:100%; white-space:normal; overflow-wrap:anywhere; word-break:break-all; }
 .hero,.section { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; margin:14px 0; }
 .status { display:block; margin:8px 0; font-size:28px; line-height:1.1; }
 .metrics,.grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
-.metric,.card,.mini { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; min-width:0; }
+.metric,.card,.mini { border:1px solid var(--line); border-radius:8px; background:white; padding:12px; min-width:0; max-width:100%; overflow:hidden; }
 .metric strong { display:block; font-size:24px; }
 .card span { color:var(--green); font-size:12px; font-weight:900; }
 .links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
@@ -35,19 +38,19 @@ p,small { color:var(--muted); overflow-wrap:anywhere; }
 <span class="eyebrow">상태</span>
 <strong class="status">로컬 채택 후보 있음</strong>
 <div class="metrics">
-<article class="metric"><span>후보</span><strong>7</strong></article>
-<article class="metric"><span>통과</span><strong>5</strong></article>
+<article class="metric"><span>후보</span><strong>8</strong></article>
+<article class="metric"><span>통과</span><strong>6</strong></article>
 <article class="metric"><span>승인필요</span><strong>1</strong></article>
 <article class="metric"><span>막힘</span><strong>1</strong></article>
 </div>
 </section>
 <section class="section">
 <h2>승격 가능한 후보</h2>
-<div class="grid"><article class='mini'><strong>pattern-freshness-intake</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article><article class='mini'><strong>pattern-method-evidence-intake</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article><article class='mini'><strong>pattern-source-refresh-execution-confirmation</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article><article class='mini'><strong>pattern-memory-recall-quality</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article><article class='mini'><strong>pattern-run-trace-observability</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article></div>
+<div class="grid"><article class='mini'><strong>pattern-freshness-intake</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article><article class='mini'><strong>pattern-method-evidence-intake</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article><article class='mini'><strong>pattern-source-refresh-execution-confirmation</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article><article class='mini'><strong>pattern-memory-recall-quality</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article><article class='mini'><strong>pattern-run-trace-observability</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article><article class='mini'><strong>pattern-private-phone-access-proof</strong><p>로컬 proof artifact와 phone surface가 검증됐으므로 daily loop에 더 깊게 연결할 수 있습니다.</p></article></div>
 </section>
 <section class="section">
 <h2>후보별 dry-run 증거</h2>
-<div class="grid"><article class='card'><span>passed · local_dry_run_only</span><h2>Hermes Studio / OpenClaw safety research / SemaClaw</h2><strong>pattern-freshness-intake</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/runtime/agent-pattern-radar.json · Surface: reports/product/pattern-radar.html</small></article><article class='card'><span>passed · local_dry_run_only</span><h2>Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research</h2><strong>pattern-method-evidence-intake</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/runtime/pattern-evidence-intake.json · Surface: reports/product/pattern-evidence-intake.html</small></article><article class='card'><span>passed · local_dry_run_only</span><h2>OpenClaw safety research / source freshness gate</h2><strong>pattern-source-refresh-execution-confirmation</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/runtime/source-refresh-execution-brief.json · Surface: reports/product/source-refresh-execution.html</small></article><article class='card'><span>passed · local_dry_run_only</span><h2>Obsidian vault research workflow</h2><strong>pattern-memory-recall-quality</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/memory/audit.json · Surface: reports/product/memory-audit.html</small></article><article class='card'><span>passed · local_dry_run_only</span><h2>TraceAgent</h2><strong>pattern-run-trace-observability</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/runtime/run-trace.json · Surface: reports/product/run-trace.html</small></article><article class='card'><span>approval_required · live_network_refresh</span><h2>Browser-use / Playwright / Firecrawl</h2><strong>pattern-live-source-browser-gateway</strong><p>live network, browser, scraper, credential, 또는 host write 경계는 별도 승인 전에는 실행하지 않습니다.</p><small>Artifact: reports/daily/source-refresh-live-preflight.json · Surface: reports/product/source-refresh.html</small></article><article class='card'><span>blocked · future_local_sandbox</span><h2>TaskWeaver</h2><strong>pattern-code-analytics-sandbox</strong><p>Generated analysis code needs a deterministic sandbox and report schema before it can shape the daily brief.</p><small>Artifact: reports/runtime/analytics-sandbox-proof.json · Surface: reports/product/missing.html</small></article></div>
+<div class="grid"><article class='card'><span>passed · local_dry_run_only</span><h2>Hermes Studio / OpenClaw safety research / SemaClaw</h2><strong>pattern-freshness-intake</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/runtime/agent-pattern-radar.json · Surface: reports/product/pattern-radar.html</small></article><article class='card'><span>passed · local_dry_run_only</span><h2>Hermes / OpenClaw / MiroFish / TradingAgents / Obsidian vault research</h2><strong>pattern-method-evidence-intake</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/runtime/pattern-evidence-intake.json · Surface: reports/product/pattern-evidence-intake.html</small></article><article class='card'><span>passed · local_dry_run_only</span><h2>OpenClaw safety research / source freshness gate</h2><strong>pattern-source-refresh-execution-confirmation</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/runtime/source-refresh-execution-brief.json · Surface: reports/product/source-refresh-execution.html</small></article><article class='card'><span>passed · local_dry_run_only</span><h2>Obsidian vault research workflow</h2><strong>pattern-memory-recall-quality</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/memory/audit.json · Surface: reports/product/memory-audit.html</small></article><article class='card'><span>passed · local_dry_run_only</span><h2>TraceAgent</h2><strong>pattern-run-trace-observability</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/runtime/run-trace.json · Surface: reports/product/run-trace.html</small></article><article class='card'><span>passed · local_dry_run_only</span><h2>Tailscale Serve private phone access</h2><strong>pattern-private-phone-access-proof</strong><p>로컬 artifact와 phone surface가 있고 외부 효과 플래그가 없습니다.</p><small>Artifact: reports/runtime/phone-access-verify.json · Surface: reports/product/phone-access.html</small></article><article class='card'><span>approval_required · live_network_refresh</span><h2>Browser-use / Playwright / Firecrawl</h2><strong>pattern-live-source-browser-gateway</strong><p>live network, browser, scraper, credential, 또는 host write 경계는 별도 승인 전에는 실행하지 않습니다.</p><small>Artifact: reports/daily/source-refresh-live-preflight.json · Surface: reports/product/source-refresh.html</small></article><article class='card'><span>blocked · future_local_sandbox</span><h2>TaskWeaver</h2><strong>pattern-code-analytics-sandbox</strong><p>생성 코드 분석은 deterministic sandbox와 report schema가 생기기 전까지 daily brief에 영향을 주면 안 된다.</p><small>Artifact: reports/runtime/analytics-sandbox-proof.json · Surface: reports/product/missing.html</small></article></div>
 </section>
 <section class="section">
 <h2>연결 화면</h2>

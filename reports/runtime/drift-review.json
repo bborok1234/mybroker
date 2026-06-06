@@ -1,6 +1,6 @@
 {
   "schema_version": "local_drift_review.v1",
-  "generated_at": "2026-06-06T04:58:01.301879+00:00",
+  "generated_at": "2026-06-06T06:44:40.502759+00:00",
   "status": "approval_required",
   "run_id": "daily-research",
   "decision": {
@@ -17,7 +17,7 @@
     },
     {
       "name": "pattern_next",
-      "value": "source freshness intake before live authority",
+      "value": "라이브 권한 전 근거 신선도 intake",
       "interpretation": "다음 slice 후보가 pattern radar에 남아 있는지 확인합니다."
     },
     {
@@ -37,7 +37,7 @@
     },
     {
       "name": "operator_feedback",
-      "value": "1",
+      "value": "6",
       "interpretation": "operator review가 적으면 방향 판단 confidence를 낮춥니다."
     }
   ],

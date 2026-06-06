@@ -3947,6 +3947,17 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_output_path=phone_access_verify_artifact_path,
                 surface_output_path=phone_access_verify_surface_path,
             )
+            written_pattern_proof = write_pattern_dry_run_proof(
+                pattern_radar_path=pattern_radar_artifact_path,
+                artifact_output_path=pattern_proof_artifact_path,
+                surface_output_path=pattern_proof_surface_path,
+            )
+            written_pattern_evidence = write_pattern_evidence_intake(
+                pattern_radar_path=pattern_radar_artifact_path,
+                pattern_proof_path=pattern_proof_artifact_path,
+                artifact_output_path=pattern_evidence_artifact_path,
+                surface_output_path=pattern_evidence_surface_path,
+            )
             written_readiness = write_daily_readiness(
                 project_root=".",
                 artifact_output_path=readiness_artifact_path,
