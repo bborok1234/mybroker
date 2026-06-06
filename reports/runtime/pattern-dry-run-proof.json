@@ -1,6 +1,6 @@
 {
   "schema_version": "pattern_dry_run_proof.v1",
-  "generated_at": "2026-06-06T04:49:26.559989+00:00",
+  "generated_at": "2026-06-06T04:58:01.293989+00:00",
   "status": "proof_ready",
   "source_artifact": "reports/runtime/agent-pattern-radar.json",
   "summary": {

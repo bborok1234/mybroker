@@ -19,7 +19,7 @@ p, li, small { color:var(--muted); overflow-wrap:anywhere; word-break:break-all;
 .metrics, .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .metric, article { padding:13px; background:white; min-width:0; }
 .metric strong, article strong { display:block; font-size:21px; overflow-wrap:anywhere; }
-code { display:block; padding:12px; border-radius:8px; background:#edf3f7; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-all; font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+code { display:block; box-sizing:border-box; max-width:100%; padding:12px; border-radius:8px; background:#edf3f7; color:#24415f; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; line-break:anywhere; font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
 a { color:var(--accent); font-weight:900; text-decoration:none; }
 @media (max-width:640px) { main { padding:12px; } h1 { font-size:30px; } .metrics, .grid { grid-template-columns:1fr; } }
 </style>
@@ -29,7 +29,7 @@ a { color:var(--accent); font-weight:900; text-decoration:none; }
 <header>
 <span class="eyebrow">MyBroker Daily Briefing · 2026-06-06 local</span>
 <h1>오늘의 브리핑</h1>
-<p>폰 메시지, 메신저, iMessage, Telegram dry-run에 그대로 태울 수 있는 하루의 압축 handoff입니다.</p>
+<p>폰에서 바로 읽고 메시지로 붙여넣는 하루 요약입니다.</p>
 </header>
 <section class="hero">
 <span class="eyebrow">오늘 한 줄</span>
