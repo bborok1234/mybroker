@@ -1,0 +1,102 @@
+{
+  "schema_version": "operator_briefing_inbox_apply.v1",
+  "generated_at": "2026-06-06T06:01:14.970315+00:00",
+  "status": "applied",
+  "inbox": {
+    "path": "reports/inbox/briefing-responses.txt",
+    "exists": true,
+    "line_count": 3,
+    "accepted_count": 2,
+    "ignored_count": 1,
+    "accepted": [
+      {
+        "line_number": 2,
+        "text": "read \"Semiconductors\" \"오늘 브리핑을 폰에서 읽었다\"",
+        "parsed": {
+          "schema_version": "daily_review_response.v1",
+          "recorded_at": "2026-06-06T06:01:14.962045+00:00",
+          "action": "read",
+          "status": "reviewed",
+          "topic": "Semiconductors",
+          "note": "오늘 브리핑을 폰에서 읽었다",
+          "external_effect_performed": false
+        }
+      },
+      {
+        "line_number": 3,
+        "text": "more \"Semiconductors\" \"반도체 흐름을 내일도 더 보고 싶다\"",
+        "parsed": {
+          "schema_version": "daily_review_response.v1",
+          "recorded_at": "2026-06-06T06:01:14.962227+00:00",
+          "action": "more",
+          "status": "want_more",
+          "topic": "Semiconductors",
+          "note": "반도체 흐름을 내일도 더 보고 싶다",
+          "external_effect_performed": false
+        }
+      }
+    ],
+    "ignored": [
+      {
+        "line_number": 1,
+        "reason": "comment",
+        "text": "# Local phone replies appended by Shortcuts or manual copy"
+      }
+    ],
+    "selected": {
+      "line_number": 3,
+      "text": "more \"Semiconductors\" \"반도체 흐름을 내일도 더 보고 싶다\"",
+      "parsed": {
+        "schema_version": "daily_review_response.v1",
+        "recorded_at": "2026-06-06T06:01:14.962227+00:00",
+        "action": "more",
+        "status": "want_more",
+        "topic": "Semiconductors",
+        "note": "반도체 흐름을 내일도 더 보고 싶다",
+        "external_effect_performed": false
+      }
+    }
+  },
+  "selected_response": {
+    "line_number": 3,
+    "text": "more \"Semiconductors\" \"반도체 흐름을 내일도 더 보고 싶다\"",
+    "parsed": {
+      "schema_version": "daily_review_response.v1",
+      "recorded_at": "2026-06-06T06:01:14.962227+00:00",
+      "action": "more",
+      "status": "want_more",
+      "topic": "Semiconductors",
+      "note": "반도체 흐름을 내일도 더 보고 싶다",
+      "external_effect_performed": false
+    }
+  },
+  "briefing_response_apply": {
+    "status": "applied",
+    "path": "reports/runtime/briefing-response-apply.json",
+    "surface": "reports/product/briefing-response-apply.html",
+    "selected_line_number": 3
+  },
+  "phone_links": {
+    "briefing_inbox_apply": "reports/product/briefing-inbox-apply.html",
+    "briefing_response_apply": "reports/product/briefing-response-apply.html",
+    "daily_briefing": "reports/product/daily-briefing.html",
+    "daily_home": "reports/product/daily-home.html",
+    "review_effect": "reports/product/review-effect.html",
+    "daily_review": "reports/product/review.html"
+  },
+  "next_action": "로컬 briefing inbox의 마지막 유효 답장이 오늘 브리핑 루프에 반영됐습니다.",
+  "external_effect_performed": false,
+  "host_write_performed": false,
+  "policy": "research_only",
+  "safety_boundary": [
+    "local_briefing_inbox_apply_only",
+    "does_not_poll_messages",
+    "does_not_fetch_live_network",
+    "does_not_send_notifications",
+    "does_not_write_host_scheduler",
+    "does_not_use_credentials",
+    "no_account_access",
+    "no_order_execution",
+    "research_only_not_personalized_advice"
+  ]
+}

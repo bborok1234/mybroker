@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_briefing_packet.v1",
-  "generated_at": "2026-06-06T05:35:02.144643+00:00",
+  "generated_at": "2026-06-06T06:01:14.968597+00:00",
   "policy": "research_only",
   "status": "review",
   "title": "MyBroker 오늘의 개인 애널리스트",
@@ -43,6 +43,17 @@
       "host_write_performed": false
     }
   ],
+  "local_inbox": {
+    "path": "reports/inbox/briefing-responses.txt",
+    "append_examples": [
+      "read \"Semiconductors\" \"Semiconductors 브리핑을 읽었다\"",
+      "more \"Semiconductors\" \"Semiconductors 흐름을 더 보고 싶다\""
+    ],
+    "apply_command": "PYTHONPATH=src python3 -m mybroker appliance briefing-inbox-apply",
+    "surface": "reports/product/briefing-inbox-apply.html",
+    "external_effect_performed": false,
+    "host_write_performed": false
+  },
   "recommended_first_link": "reports/product/daily-home.html",
   "reading_route": [
     {
@@ -161,7 +172,8 @@
     "memory_query": "reports/product/memory-query.html",
     "handoff_study_resolution": "reports/product/handoff-study-resolution.html",
     "readiness": "reports/product/readiness.html",
-    "briefing_response_apply": "reports/product/briefing-response-apply.html"
+    "briefing_response_apply": "reports/product/briefing-response-apply.html",
+    "briefing_inbox_apply": "reports/product/briefing-inbox-apply.html"
   },
   "safety_boundary": [
     "briefing_packet_reads_existing_artifacts_only",

@@ -1,6 +1,6 @@
 {
   "schema_version": "daily_operator_home.v1",
-  "generated_at": "2026-06-06T05:33:48.533435+00:00",
+  "generated_at": "2026-06-06T06:01:14.965959+00:00",
   "status": "operator_review",
   "summary": {
     "read_first": "Semiconductors",
@@ -169,7 +169,7 @@
     "recommended_topic": {
       "topic_id": "semiconductors",
       "name": "Semiconductors",
-      "score": 6.9,
+      "score": 8.1,
       "priority_rank": 1,
       "action": "inspect_first",
       "confidence": "low-medium",
@@ -243,13 +243,22 @@
             "topic": "Semiconductors",
             "note": "오늘 브리핑 답장 반영 화면을 최종 확인했다",
             "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T06:01:14.962607+00:00",
+            "action": "more",
+            "status": "want_more",
+            "topic": "Semiconductors",
+            "note": "반도체 흐름을 내일도 더 보고 싶다",
+            "external_effect_performed": false
           }
         ],
-        "score_delta": 4.2,
+        "score_delta": 5.4,
         "reason": "운영자가 이 주제를 더 보고 싶다고 기록했습니다.",
-        "response_count": 5,
-        "latest_status": "reviewed",
-        "latest_note": "오늘 브리핑 답장 반영 화면을 최종 확인했다"
+        "response_count": 6,
+        "latest_status": "want_more",
+        "latest_note": "반도체 흐름을 내일도 더 보고 싶다"
       },
       "missing_evidence": [
         "deduplication",
@@ -263,7 +272,7 @@
         },
         {
           "name": "operator_review",
-          "delta": 4.2,
+          "delta": 5.4,
           "reason": "운영자가 이 주제를 더 보고 싶다고 기록했습니다."
         },
         {
@@ -737,7 +746,7 @@
       "exists": true,
       "schema_version": "daily_scout.v1",
       "status": "missing",
-      "generated_at": "2026-06-06T05:33:48.530711+00:00"
+      "generated_at": "2026-06-06T06:01:14.964397+00:00"
     },
     {
       "name": "agenda",

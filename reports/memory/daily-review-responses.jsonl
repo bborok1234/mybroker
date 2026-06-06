@@ -3,3 +3,4 @@
 {"schema_version": "daily_review_response.v1", "recorded_at": "2026-06-06T05:24:31.065478+00:00", "action": "read", "status": "reviewed", "topic": "Semiconductors", "note": "오늘 브리핑 답장 반영 화면을 확인했다", "external_effect_performed": false}
 {"schema_version": "daily_review_response.v1", "recorded_at": "2026-06-06T05:33:00.786722+00:00", "action": "read", "status": "reviewed", "topic": "Semiconductors", "note": "오늘 브리핑 답장 반영 화면을 확인했다", "external_effect_performed": false}
 {"schema_version": "daily_review_response.v1", "recorded_at": "2026-06-06T05:33:48.528345+00:00", "action": "read", "status": "reviewed", "topic": "Semiconductors", "note": "오늘 브리핑 답장 반영 화면을 최종 확인했다", "external_effect_performed": false}
+{"schema_version": "daily_review_response.v1", "recorded_at": "2026-06-06T06:01:14.962607+00:00", "action": "more", "status": "want_more", "topic": "Semiconductors", "note": "반도체 흐름을 내일도 더 보고 싶다", "external_effect_performed": false}
