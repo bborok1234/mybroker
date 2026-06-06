@@ -78,6 +78,7 @@ from mybroker.appliance import (
     validate_operator_review_prompt_file,
     validate_operator_review_effect_file,
     validate_operator_review_response_apply_file,
+    validate_operator_briefing_response_apply_file,
     validate_operator_council_response_apply_file,
     validate_operator_handoff_response_apply_file,
     validate_task_status_apply_file,
@@ -486,9 +487,11 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertFalse(briefing_payload["external_effect_performed"])
         self.assertFalse(briefing_payload["host_write_performed"])
         self.assertIn("copy_ready_message", briefing_payload)
+        self.assertTrue(any("briefing-response-apply" in command["command"] for command in briefing_payload["copy_ready_reply_commands"]))
         self.assertIn("daily-home", briefing_payload["recommended_first_link"])
         self.assertIn("MyBroker Daily Briefing", briefing_html)
         self.assertIn("복사할 메시지", briefing_html)
+        self.assertIn("답장으로 남길 것", briefing_html)
         self.assertNotIn("schema_version", briefing_html)
         self.assertEqual(access_payload["schema_version"], "phone_access_plan.v1")
         self.assertEqual(access_payload["recommended_path"], "tailscale_serve_private")
@@ -2717,6 +2720,142 @@ class LocalApplianceTests(unittest.TestCase):
         self.assertTrue(any(factor["name"] == "operator_review" for factor in topic_after["score_factors"]))
         self.assertIn("피드백 응답 적용", apply_html)
         self.assertIn("응답 적용됨", apply_html)
+
+    def test_briefing_response_apply_refreshes_briefing_loop_locally(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            topics_path = root / "topics.json"
+            plan_path = root / "research-plan.json"
+            evidence_path = root / "daily-evidence.json"
+            memory_path = root / "topic-memory.json"
+            scout_path = root / "scout.json"
+            responses_path = root / "daily-review-responses.jsonl"
+            review_path = root / "daily-review.json"
+            review_surface_path = root / "review.html"
+            review_prompt_path = root / "review-prompt.json"
+            review_prompt_surface_path = root / "review-prompt.html"
+            review_effect_path = root / "review-effect.json"
+            review_effect_surface_path = root / "review-effect.html"
+            home_path = root / "daily-home.json"
+            home_surface_path = root / "daily-home.html"
+            briefing_path = root / "daily-briefing-packet.json"
+            briefing_surface_path = root / "daily-briefing.html"
+            apply_path = root / "briefing-response-apply.json"
+            apply_surface_path = root / "briefing-response-apply.html"
+            today_path = root / "today.html"
+
+            init_topic_config(topics_path)
+            build_research_plan(topics_path=topics_path, output_path=plan_path, run_id="briefing-reply")
+            collect_topic_evidence(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                output_path=evidence_path,
+                memory_path=memory_path,
+            )
+            scout_before = build_daily_scout(
+                topics_path=topics_path,
+                plan_path=plan_path,
+                evidence_path=evidence_path,
+                memory_path=memory_path,
+                vault_path=root / "missing-vault.json",
+                review_path=root / "missing-review.json",
+                output_path=scout_path,
+                run_id="briefing-reply",
+            )
+            topic_name = scout_before["recommended_topic"]["name"]
+            today_path.write_text("<html>today</html>", encoding="utf-8")
+            write_daily_operator_home(
+                scout_path=scout_path,
+                today_path=today_path,
+                artifact_output_path=home_path,
+                surface_output_path=home_surface_path,
+            )
+            write_daily_briefing_packet(
+                daily_home_path=home_path,
+                today_path=today_path,
+                artifact_output_path=briefing_path,
+                surface_output_path=briefing_surface_path,
+            )
+
+            result = cli_main([
+                "appliance",
+                "briefing-response-apply",
+                f'more "{topic_name}" "오늘 브리핑 답장으로 더 보고 싶다"',
+                "--topics",
+                topics_path.as_posix(),
+                "--plan",
+                plan_path.as_posix(),
+                "--evidence",
+                evidence_path.as_posix(),
+                "--memory",
+                memory_path.as_posix(),
+                "--vault",
+                (root / "missing-vault.json").as_posix(),
+                "--responses",
+                responses_path.as_posix(),
+                "--daily-review-output",
+                review_path.as_posix(),
+                "--daily-review-surface",
+                review_surface_path.as_posix(),
+                "--scout-output",
+                scout_path.as_posix(),
+                "--review-prompt-output",
+                review_prompt_path.as_posix(),
+                "--review-prompt-surface",
+                review_prompt_surface_path.as_posix(),
+                "--review-effect-output",
+                review_effect_path.as_posix(),
+                "--review-effect-surface",
+                review_effect_surface_path.as_posix(),
+                "--source-briefing-packet",
+                briefing_path.as_posix(),
+                "--today",
+                today_path.as_posix(),
+                "--daily-home-output",
+                home_path.as_posix(),
+                "--daily-home-surface",
+                home_surface_path.as_posix(),
+                "--briefing-packet-output",
+                briefing_path.as_posix(),
+                "--briefing-packet-surface",
+                briefing_surface_path.as_posix(),
+                "--artifact-output",
+                apply_path.as_posix(),
+                "--output",
+                apply_surface_path.as_posix(),
+                "--run-id",
+                "briefing-reply",
+            ])
+
+            apply_payload = json.loads(apply_path.read_text(encoding="utf-8"))
+            home_payload = json.loads(home_path.read_text(encoding="utf-8"))
+            briefing_payload = json.loads(briefing_path.read_text(encoding="utf-8"))
+            effect_payload = json.loads(review_effect_path.read_text(encoding="utf-8"))
+            scout_after = json.loads(scout_path.read_text(encoding="utf-8"))
+            apply_html = apply_surface_path.read_text(encoding="utf-8")
+            apply_errors = validate_operator_briefing_response_apply_file(apply_path)
+            home_errors = validate_daily_operator_home_file(home_path)
+            briefing_errors = validate_daily_briefing_packet_file(briefing_path)
+            effect_errors = validate_operator_review_effect_file(review_effect_path)
+
+        self.assertEqual(result, 0)
+        self.assertEqual(apply_errors, [])
+        self.assertEqual(home_errors, [])
+        self.assertEqual(briefing_errors, [])
+        self.assertEqual(effect_errors, [])
+        self.assertEqual(apply_payload["schema_version"], "operator_briefing_response_apply.v1")
+        self.assertEqual(apply_payload["status"], "applied")
+        self.assertEqual(effect_payload["status"], "applied")
+        self.assertEqual(scout_after["review_context"]["response_count"], 1)
+        self.assertEqual(apply_payload["daily_briefing_packet"]["path"], briefing_path.as_posix())
+        self.assertEqual(briefing_payload["topic"], topic_name)
+        self.assertTrue(any("briefing-response-apply" in command["command"] for command in briefing_payload["copy_ready_reply_commands"]))
+        self.assertEqual(home_payload["autonomous_scout"]["recommended_topic"]["name"], topic_name)
+        self.assertFalse(apply_payload["external_effect_performed"])
+        self.assertFalse(apply_payload["host_write_performed"])
+        self.assertIn("브리핑 답장 반영", apply_html)
+        self.assertIn("브리핑 응답 적용됨", apply_html)
+        self.assertIn("daily-briefing.html", apply_html)
 
     def test_handoff_response_apply_routes_review_feedback_and_refreshes_handoff(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

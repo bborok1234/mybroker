@@ -1,7 +1,7 @@
 {
   "schema_version": "daily_scout.v1",
   "run_id": "daily-research",
-  "generated_at": "2026-06-06T04:58:01.241467+00:00",
+  "generated_at": "2026-06-06T05:33:48.530711+00:00",
   "inputs": {
     "topics_path": "config/topics.json",
     "plan_path": "reports/daily/research-plan.json",
@@ -14,7 +14,7 @@
   "recommended_topic": {
     "topic_id": "semiconductors",
     "name": "Semiconductors",
-    "score": 3.9,
+    "score": 6.9,
     "priority_rank": 1,
     "action": "inspect_first",
     "confidence": "low-medium",
@@ -52,13 +52,49 @@
           "topic": "Semiconductors",
           "note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다",
           "external_effect_performed": false
+        },
+        {
+          "schema_version": "daily_review_response.v1",
+          "recorded_at": "2026-06-06T05:22:50.610408+00:00",
+          "action": "more",
+          "status": "want_more",
+          "topic": "Semiconductors",
+          "note": "오늘 브리핑 답장으로 반도체 흐름을 더 보고 싶다",
+          "external_effect_performed": false
+        },
+        {
+          "schema_version": "daily_review_response.v1",
+          "recorded_at": "2026-06-06T05:24:31.065478+00:00",
+          "action": "read",
+          "status": "reviewed",
+          "topic": "Semiconductors",
+          "note": "오늘 브리핑 답장 반영 화면을 확인했다",
+          "external_effect_performed": false
+        },
+        {
+          "schema_version": "daily_review_response.v1",
+          "recorded_at": "2026-06-06T05:33:00.786722+00:00",
+          "action": "read",
+          "status": "reviewed",
+          "topic": "Semiconductors",
+          "note": "오늘 브리핑 답장 반영 화면을 확인했다",
+          "external_effect_performed": false
+        },
+        {
+          "schema_version": "daily_review_response.v1",
+          "recorded_at": "2026-06-06T05:33:48.528345+00:00",
+          "action": "read",
+          "status": "reviewed",
+          "topic": "Semiconductors",
+          "note": "오늘 브리핑 답장 반영 화면을 최종 확인했다",
+          "external_effect_performed": false
         }
       ],
-      "score_delta": 1.2,
+      "score_delta": 4.2,
       "reason": "운영자가 이 주제를 더 보고 싶다고 기록했습니다.",
-      "response_count": 1,
-      "latest_status": "want_more",
-      "latest_note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다"
+      "response_count": 5,
+      "latest_status": "reviewed",
+      "latest_note": "오늘 브리핑 답장 반영 화면을 최종 확인했다"
     },
     "missing_evidence": [
       "deduplication",
@@ -72,7 +108,7 @@
       },
       {
         "name": "operator_review",
-        "delta": 1.2,
+        "delta": 4.2,
         "reason": "운영자가 이 주제를 더 보고 싶다고 기록했습니다."
       },
       {
@@ -153,7 +189,7 @@
     {
       "topic_id": "semiconductors",
       "name": "Semiconductors",
-      "score": 3.9,
+      "score": 6.9,
       "priority_rank": 1,
       "action": "inspect_first",
       "confidence": "low-medium",
@@ -191,13 +227,49 @@
             "topic": "Semiconductors",
             "note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다",
             "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T05:22:50.610408+00:00",
+            "action": "more",
+            "status": "want_more",
+            "topic": "Semiconductors",
+            "note": "오늘 브리핑 답장으로 반도체 흐름을 더 보고 싶다",
+            "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T05:24:31.065478+00:00",
+            "action": "read",
+            "status": "reviewed",
+            "topic": "Semiconductors",
+            "note": "오늘 브리핑 답장 반영 화면을 확인했다",
+            "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T05:33:00.786722+00:00",
+            "action": "read",
+            "status": "reviewed",
+            "topic": "Semiconductors",
+            "note": "오늘 브리핑 답장 반영 화면을 확인했다",
+            "external_effect_performed": false
+          },
+          {
+            "schema_version": "daily_review_response.v1",
+            "recorded_at": "2026-06-06T05:33:48.528345+00:00",
+            "action": "read",
+            "status": "reviewed",
+            "topic": "Semiconductors",
+            "note": "오늘 브리핑 답장 반영 화면을 최종 확인했다",
+            "external_effect_performed": false
           }
         ],
-        "score_delta": 1.2,
+        "score_delta": 4.2,
         "reason": "운영자가 이 주제를 더 보고 싶다고 기록했습니다.",
-        "response_count": 1,
-        "latest_status": "want_more",
-        "latest_note": "내일도 메모리 업황과 반도체 수요 근거를 이어서 보고 싶다"
+        "response_count": 5,
+        "latest_status": "reviewed",
+        "latest_note": "오늘 브리핑 답장 반영 화면을 최종 확인했다"
       },
       "missing_evidence": [
         "deduplication",
@@ -211,7 +283,7 @@
         },
         {
           "name": "operator_review",
-          "delta": 1.2,
+          "delta": 4.2,
           "reason": "운영자가 이 주제를 더 보고 싶다고 기록했습니다."
         },
         {
@@ -698,7 +770,7 @@
   },
   "review_context": {
     "schema_version": "daily_review.v1",
-    "response_count": 1,
+    "response_count": 5,
     "signal_count": 1
   },
   "autonomous_start": {
